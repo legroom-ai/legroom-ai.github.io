@@ -295,7 +295,7 @@ def get_python_forwarder_mode() -> PythonForwarderMode:
 
 
 _ENGINE_REQUEST_PATH_ENV = "HEADROOM_ENGINE_REQUEST_PATH"
-_ENGINE_REQUEST_PATH_VALID = frozenset({"off", "shadow"})
+_ENGINE_REQUEST_PATH_VALID = frozenset({"off", "shadow", "on"})
 _ENGINE_REQUEST_PATH_DEFAULT = "off"
 
 
@@ -305,9 +305,12 @@ def get_engine_request_path(config_value: str | None = None) -> str:
     Priority: explicit ``config_value`` (from ``ProxyConfig.engine_request_path``)
     → ``HEADROOM_ENGINE_REQUEST_PATH`` env var → ``"off"`` default.
 
-    Valid values: ``"off"`` (default, zero overhead), ``"shadow"`` (observe-only).
-    ``"on"`` is reserved for Chunk 4.4 and rejected here to prevent
-    accidental enablement before the flip is ready.
+    Valid values:
+      ``"off"``    — default, zero engine overhead (legacy path only).
+      ``"shadow"`` — observe-only; engine runs but output is discarded.
+      ``"on"``     — engine output forwarded; engine error falls back to legacy
+                     (Chunk 4.4a). Gated by operator validating shadow
+                     divergence=0 before enabling in production.
 
     Raises ``ValueError`` on unknown values — per the no-silent-fallback
     build constraint.
@@ -324,8 +327,7 @@ def get_engine_request_path(config_value: str | None = None) -> str:
         return raw
     raise ValueError(
         f"Invalid engine_request_path={raw!r} (env: {_ENGINE_REQUEST_PATH_ENV}); "
-        f"expected one of {sorted(_ENGINE_REQUEST_PATH_VALID)!r}. "
-        f"'on' is reserved for Chunk 4.4 and not yet wired."
+        f"expected one of {sorted(_ENGINE_REQUEST_PATH_VALID)!r}."
     )
 
 

@@ -892,8 +892,8 @@ class AnthropicHandlerMixin:
                     frozen_message_count,
                 )
 
-            # Chunk 4.3-ii: snapshot prefix-tracker state BEFORE the legacy path
-            # mutates it. Captured only when the engine shadow is active.
+            # Chunk 4.3-ii / 4.4a: snapshot prefix-tracker state BEFORE the legacy
+            # path mutates it. Captured for both "shadow" and "on" modes.
             # Snapshot happens here — right after frozen_message_count is
             # resolved — so the engine sees the same prefix-tracker view as
             # the live path for this request.
@@ -901,12 +901,17 @@ class AnthropicHandlerMixin:
 
             _engine_request_path = _get_erp(self.config.engine_request_path)
             _shadow_snapshot: tuple[int, list, list] | None = None
-            if _engine_request_path == "shadow":
+            if _engine_request_path in ("shadow", "on"):
                 _shadow_snapshot = (
                     frozen_message_count,
                     prefix_tracker.get_last_original_messages(),
                     prefix_tracker.get_last_forwarded_messages(),
                 )
+
+            # Chunk 4.4a: engine "on" override bytes — populated below when
+            # _engine_request_path == "on" and the engine succeeds.  None
+            # means forward legacy bytes (fallback path or flag != "on").
+            _engine_on_override_bytes: bytes | None = None
 
             # PR-A6 (P5-50, preps P0-6): session-sticky `anthropic-beta` merge.
             # Read the client's beta value (note: anthropic-beta is NOT
@@ -1842,6 +1847,126 @@ class AnthropicHandlerMixin:
                     )
             # ── end of shadow block ───────────────────────────────────────────
 
+            # ── Chunk 4.4a: engine "on" block ─────────────────────────────────
+            # When flag=="on", compute engine_bytes (same machinery as shadow)
+            # and populate _engine_on_override_bytes so the forward path below
+            # sends engine bytes upstream instead of the legacy-computed bytes.
+            #
+            # SAFETY: any exception → loud log + engine_on_fallback_total++
+            # + _engine_on_override_bytes stays None → legacy bytes forwarded.
+            # "on" NEVER breaks a request.  The legacy path is still computed
+            # above (it provides the fallback AND all response-side state).
+            if _engine_request_path == "on" and _shadow_snapshot is not None:
+                try:
+                    from headroom.engine.contract import (
+                        Flavor,
+                        Provider,
+                    )
+                    from headroom.engine.contract import (
+                        RequestContext as _EngineCtxOn,
+                    )
+                    from headroom.engine.session import derive_session_key as _derive_sk_on
+                    from headroom.proxy.helpers import prepare_outbound_body_bytes as _pobb_on
+
+                    # 1. Legacy bytes — what the handler would forward absent override.
+                    _legacy_bytes_on, _ = _pobb_on(
+                        body=body,
+                        original_body_bytes=original_body_bytes,
+                        body_mutated=body_mutation_tracker.mutated,
+                    )
+
+                    # 2. Derive engine session key (same logic as shadow block).
+                    _cred_on = request.headers.get("x-api-key") or request.headers.get(
+                        "authorization", ""
+                    )
+                    _conv_scope_on = request.headers.get("x-headroom-session", None)
+                    _engine_session_key_on = _derive_sk_on(
+                        credential=_cred_on,
+                        conversation_scope=_conv_scope_on,
+                        salt=b"headroom-proxy-engine",
+                    )
+
+                    # 3. Build snapshot-seeded store (same class as shadow block).
+                    _snap_frozen_count_on, _snap_last_orig_on, _snap_last_fwd_on = _shadow_snapshot
+
+                    class _OnSeededStore:
+                        """One-call SessionTrackerStore for the engine-on hook.
+
+                        Identical contract to _ShadowSeededStore above — kept
+                        separate so the two blocks are independently readable.
+                        Writes stay in this transient object; the live session
+                        store is not touched.
+                        """
+
+                        class _Tracker:
+                            def __init__(self, frozen_count: int, last_orig: list, last_fwd: list):
+                                self._frozen_count = frozen_count
+                                self._last_orig = last_orig
+                                self._last_fwd = last_fwd
+
+                            def get_frozen_message_count(self) -> int:
+                                return self._frozen_count
+
+                            def get_last_original_messages(self) -> list:
+                                return list(self._last_orig)
+
+                            def get_last_forwarded_messages(self) -> list:
+                                return list(self._last_fwd)
+
+                            def update_from_response(self, **_kw: Any) -> None:
+                                pass  # "on" writes are discarded (live store owns state)
+
+                        def __init__(self, frozen_count: int, last_orig: list, last_fwd: list):
+                            self._tracker = self._Tracker(frozen_count, last_orig, last_fwd)
+
+                        def compute_session_id(self, req: Any, mdl: str, msgs: Any) -> str:
+                            return "engine-on-seeded"
+
+                        def get_or_create(self, sid: str, provider: str) -> Any:
+                            return self._tracker
+
+                    _on_seeded_store = _OnSeededStore(
+                        frozen_count=_snap_frozen_count_on,
+                        last_orig=list(_snap_last_orig_on),
+                        last_fwd=list(_snap_last_fwd_on),
+                    )
+
+                    # 4. Build RequestContext — same inputs as shadow block.
+                    _engine_ctx_on = _EngineCtxOn(
+                        provider=Provider.ANTHROPIC,
+                        flavor=Flavor.MESSAGES,
+                        headers_view=dict(request.headers),
+                        raw_body=original_body_bytes if original_body_bytes is not None else b"{}",
+                        session_key=_engine_session_key_on,
+                        request_id=request_id,
+                        prefetched_memory_context=_shadow_fetched_memory_context,
+                    )
+
+                    # 5. Run the engine — output FORWARDED upstream.
+                    _engine_decision_on = self.engine.on_request(
+                        _engine_ctx_on,
+                        _session_tracker_store_override=_on_seeded_store,
+                    )
+                    _engine_on_override_bytes = _engine_decision_on.body
+                    logger.debug(
+                        "event=engine_on_active request_id=%s engine_bytes=%d legacy_bytes=%d",
+                        request_id,
+                        len(_engine_on_override_bytes),
+                        len(_legacy_bytes_on),
+                    )
+                except Exception as _on_exc:
+                    # LOUD fallback alarm — operator must investigate.
+                    self.metrics.engine_on_fallback_total += 1
+                    logger.error(
+                        "event=engine_on_fallback request_id=%s error=%r; "
+                        "engine raised in 'on' mode — FALLING BACK to legacy bytes. "
+                        "Operator action required: check engine_on_fallback_total metric.",
+                        request_id,
+                        _on_exc,
+                    )
+                    # _engine_on_override_bytes stays None → legacy forwarded.
+            # ── end of engine "on" block ──────────────────────────────────────
+
             # Forward request - use Bedrock backend if configured, otherwise direct API
             if self.anthropic_backend is not None:
                 # Route through Bedrock backend
@@ -2031,6 +2156,7 @@ class AnthropicHandlerMixin:
                         body_mutated=body_mutation_tracker.mutated,
                         mutation_reasons=body_mutation_tracker.reasons,
                         memory_request_ctx=memory_request_ctx,
+                        override_outbound_bytes=_engine_on_override_bytes,
                     )
                 else:
                     async with stage_timer.measure("upstream_connect"):
@@ -2045,6 +2171,7 @@ class AnthropicHandlerMixin:
                             request_id=request_id,
                             forwarder_name="anthropic_messages",
                             path_for_log="/v1/messages",
+                            override_outbound_bytes=_engine_on_override_bytes,
                         )
                     self.pipeline_extensions.emit(
                         PipelineStage.POST_SEND,

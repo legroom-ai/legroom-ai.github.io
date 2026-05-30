@@ -1283,6 +1283,7 @@ class HeadroomProxy(
         request_id: str | None = None,
         forwarder_name: str = "server",
         path_for_log: str | None = None,
+        override_outbound_bytes: bytes | None = None,
     ) -> httpx.Response:
         """Make request with retry and exponential backoff.
 
@@ -1300,6 +1301,13 @@ class HeadroomProxy(
         for callers that still pass only ``body`` (e.g. CCR continuations
         construct their body from scratch, so canonical serialization is
         correct and original bytes do not exist).
+
+        Chunk 4.4a — ``override_outbound_bytes``:
+          When provided (non-None), these bytes are forwarded verbatim to
+          upstream instead of the bytes derived from ``body`` /
+          ``original_body_bytes``.  Used by the engine ``"on"`` path to
+          forward engine-produced bytes.  When ``None`` behaviour is exactly
+          as today (no change for callers that do not pass this kwarg).
         """
         from headroom.proxy.helpers import (
             log_outbound_request,
@@ -1308,11 +1316,15 @@ class HeadroomProxy(
 
         last_error = None
         reasons = list(mutation_reasons or [])
-        outbound_bytes, source = prepare_outbound_body_bytes(
-            body=body,
-            original_body_bytes=original_body_bytes,
-            body_mutated=body_mutated,
-        )
+        if override_outbound_bytes is not None:
+            outbound_bytes = override_outbound_bytes
+            source = "engine_on"
+        else:
+            outbound_bytes, source = prepare_outbound_body_bytes(
+                body=body,
+                original_body_bytes=original_body_bytes,
+                body_mutated=body_mutated,
+            )
         outbound_headers = {**headers, "content-type": "application/json"}
 
         log_outbound_request(

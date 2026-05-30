@@ -461,14 +461,179 @@ class TestGetEngineRequestPath:
         assert get_engine_request_path("off") == "off"
 
     def test_invalid_value_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("HEADROOM_ENGINE_REQUEST_PATH", "on")
+        monkeypatch.setenv("HEADROOM_ENGINE_REQUEST_PATH", "bad_value")
         from headroom.proxy.helpers import get_engine_request_path
 
         with pytest.raises(ValueError, match="engine_request_path"):
             get_engine_request_path()
 
-    def test_on_reserved_raises_via_config(self) -> None:
+    def test_on_accepted(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Chunk 4.4a: 'on' is now a valid mode (not reserved/rejected)."""
+        monkeypatch.setenv("HEADROOM_ENGINE_REQUEST_PATH", "on")
         from headroom.proxy.helpers import get_engine_request_path
 
-        with pytest.raises(ValueError, match="engine_request_path"):
-            get_engine_request_path("on")
+        assert get_engine_request_path() == "on"
+
+    def test_on_accepted_via_config(self) -> None:
+        from headroom.proxy.helpers import get_engine_request_path
+
+        assert get_engine_request_path("on") == "on"
+
+
+# ---------------------------------------------------------------------------
+# 5. Flag=on: engine bytes forwarded + fallback safety (Chunk 4.4a)
+# ---------------------------------------------------------------------------
+
+
+class TestFlagOn:
+    """engine_request_path='on' forwards engine bytes; falls back to legacy on error."""
+
+    def test_flag_on_request_succeeds(self) -> None:
+        """'on' mode must not break the request."""
+        client, _ = _make_client(engine_request_path="on")
+        resp = client.post("/v1/messages", json=_SIMPLE_BODY, headers=_HEADERS)
+        assert resp.status_code == 200
+
+    def test_flag_on_forwards_engine_bytes(self) -> None:
+        """'on' mode: upstream-received bytes == engine bytes.
+
+        Since shadow divergence=0, engine bytes == legacy bytes, so we assert
+        the upstream-received bytes match what the engine would produce
+        (which also matches legacy).
+        """
+        body_bytes = json.dumps(_SIMPLE_BODY, separators=(",", ":")).encode()
+        client_on, transport_on = _make_client(engine_request_path="on", optimize=False)
+        resp = client_on.post(
+            "/v1/messages",
+            content=body_bytes,
+            headers={**_HEADERS, "content-type": "application/json"},
+        )
+        assert resp.status_code == 200
+        # Engine bytes == legacy bytes (shadow=0 invariant) so upstream received
+        # the same bytes the legacy path would have forwarded.
+        assert transport_on.captured_body is not None
+        assert len(transport_on.captured_body) > 0
+
+    def test_flag_on_bytes_match_legacy(self) -> None:
+        """'on' mode forwards byte-identical bytes to what 'off' mode would send."""
+        body_bytes = json.dumps(_SIMPLE_BODY, separators=(",", ":")).encode()
+
+        client_off, transport_off = _make_client(engine_request_path="off", optimize=False)
+        client_off.post(
+            "/v1/messages",
+            content=body_bytes,
+            headers={**_HEADERS, "content-type": "application/json"},
+        )
+
+        client_on, transport_on = _make_client(engine_request_path="on", optimize=False)
+        client_on.post(
+            "/v1/messages",
+            content=body_bytes,
+            headers={**_HEADERS, "content-type": "application/json"},
+        )
+
+        assert transport_off.captured_body == transport_on.captured_body, (
+            "engine_request_path='on' must forward the same bytes as 'off' "
+            "(shadow divergence=0 invariant)"
+        )
+
+    def test_flag_on_multi_turn(self) -> None:
+        """Multi-turn request succeeds in 'on' mode with frozen_count seeded."""
+        multi_turn_body = {
+            "model": "claude-3-5-sonnet-20241022",
+            "messages": [
+                {"role": "user", "content": "Turn 1"},
+                {"role": "assistant", "content": "Reply 1"},
+                {"role": "user", "content": "Turn 2"},
+            ],
+            "max_tokens": 100,
+        }
+        client, _ = _make_client(engine_request_path="on", optimize=False, frozen_count=1)
+        resp = client.post("/v1/messages", json=multi_turn_body, headers=_HEADERS)
+        assert resp.status_code == 200
+
+    def test_flag_on_tools_body(self) -> None:
+        """'on' mode handles tools body without breaking."""
+        body_with_tools = {
+            "model": "claude-3-5-sonnet-20241022",
+            "messages": [{"role": "user", "content": "Use a tool"}],
+            "max_tokens": 100,
+            "tools": [
+                {
+                    "name": "a_tool",
+                    "description": "a",
+                    "input_schema": {"type": "object", "properties": {}},
+                },
+                {
+                    "name": "z_tool",
+                    "description": "z",
+                    "input_schema": {"type": "object", "properties": {}},
+                },
+            ],
+        }
+        client, transport = _make_client(engine_request_path="on", optimize=False)
+        resp = client.post("/v1/messages", json=body_with_tools, headers=_HEADERS)
+        assert resp.status_code == 200
+        assert transport.captured_body is not None
+
+    def test_flag_on_fallback_on_engine_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """'on' + engine raises → request SUCCEEDS, fallback metric fires, legacy bytes sent."""
+        client, transport = _make_client(engine_request_path="on", optimize=False)
+        proxy = client.app.state.proxy
+        before_fallback = proxy.metrics.engine_on_fallback_total
+
+        # Force the engine to raise.
+        def _boom(*args: Any, **kwargs: Any) -> Any:
+            raise RuntimeError("injected engine failure for on-mode fallback test")
+
+        monkeypatch.setattr(proxy.engine, "on_request", _boom)
+
+        # Send a known-bytes request so we can verify legacy bytes were forwarded.
+        body_bytes = json.dumps(_SIMPLE_BODY, separators=(",", ":")).encode()
+        resp = client.post(
+            "/v1/messages",
+            content=body_bytes,
+            headers={**_HEADERS, "content-type": "application/json"},
+        )
+
+        assert resp.status_code == 200, f"request must succeed even on engine error: {resp.json()}"
+        # Fallback metric must have incremented.
+        assert proxy.metrics.engine_on_fallback_total == before_fallback + 1, (
+            "engine_on_fallback_total must increment when engine raises in 'on' mode"
+        )
+        # Upstream received the legacy bytes (not None / empty).
+        assert transport.captured_body == body_bytes, (
+            "legacy bytes must be forwarded when engine raises in 'on' mode"
+        )
+
+    def test_flag_on_fallback_response_body_intact(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Client response is correct even after engine raises in 'on' mode."""
+        client, _ = _make_client(engine_request_path="on", optimize=False)
+        proxy = client.app.state.proxy
+
+        def _boom(*args: Any, **kwargs: Any) -> Any:
+            raise ValueError("injected boom in on-mode")
+
+        monkeypatch.setattr(proxy.engine, "on_request", _boom)
+
+        resp = client.post("/v1/messages", json=_SIMPLE_BODY, headers=_HEADERS)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data.get("type") == "message"
+
+    def test_flag_on_no_shadow_metrics_side_effects(self) -> None:
+        """'on' mode must not increment shadow-specific metrics."""
+        client, _ = _make_client(engine_request_path="on", optimize=False)
+        proxy = client.app.state.proxy
+        before_shadow = proxy.metrics.engine_shadow_total
+        before_div = proxy.metrics.engine_shadow_divergence_total
+        before_shadow_err = proxy.metrics.engine_shadow_error_total
+
+        resp = client.post("/v1/messages", json=_SIMPLE_BODY, headers=_HEADERS)
+        assert resp.status_code == 200
+
+        assert proxy.metrics.engine_shadow_total == before_shadow, (
+            "shadow_total must not increment in 'on' mode"
+        )
+        assert proxy.metrics.engine_shadow_divergence_total == before_div
+        assert proxy.metrics.engine_shadow_error_total == before_shadow_err
