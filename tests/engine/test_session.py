@@ -31,3 +31,15 @@ def test_raw_secret_is_never_present_in_key():
     key = derive_session_key(credential="sk-ant-SUPERSECRET", conversation_scope=None, salt=SALT)
     assert "SUPERSECRET" not in key
     assert "sk-ant" not in key
+
+
+def test_empty_conversation_scope_behaves_like_none():
+    assert derive_session_key(
+        credential="sk", conversation_scope="", salt=SALT
+    ) == derive_session_key(credential="sk", conversation_scope=None, salt=SALT)
+
+
+def test_derive_session_key_exported_from_engine_package():
+    from headroom.engine import derive_session_key as exported
+
+    assert exported is derive_session_key

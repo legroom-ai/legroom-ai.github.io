@@ -3,6 +3,7 @@ from __future__ import annotations
 import enum
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import Any
 
 
@@ -15,12 +16,12 @@ class Provider(str, enum.Enum):
 
 
 class Flavor(str, enum.Enum):
-    MESSAGES = "messages"
-    CHAT = "chat"
-    RESPONSES = "responses"
-    GENERATE = "generate"
-    INVOKE = "invoke"
-    RAW_PREDICT = "raw_predict"
+    MESSAGES = "messages"  # Anthropic /v1/messages
+    CHAT = "chat"  # OpenAI /v1/chat/completions
+    RESPONSES = "responses"  # OpenAI /v1/responses
+    GENERATE = "generate"  # Gemini generateContent
+    INVOKE = "invoke"  # Bedrock /model/.../invoke
+    RAW_PREDICT = "raw_predict"  # Vertex streamRawPredict
 
 
 @dataclass(frozen=True)
@@ -30,6 +31,11 @@ class RequestContext:
     headers_view: Mapping[str, str]
     raw_body: bytes
     session_key: str
+
+    def __post_init__(self) -> None:
+        # Snapshot headers at the engine boundary: copy to isolate from later caller
+        # mutation, then wrap read-only. Frozen dataclass → set via object.__setattr__.
+        object.__setattr__(self, "headers_view", MappingProxyType(dict(self.headers_view)))
 
 
 @dataclass

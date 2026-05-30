@@ -6,6 +6,7 @@ from headroom.engine.contract import (
     ResponseTelemetry,
     StreamContext,
 )
+from headroom.engine.session import derive_session_key
 
 __all__ = [
     "Flavor",
@@ -14,4 +15,5 @@ __all__ = [
     "RequestDecision",
     "ResponseTelemetry",
     "StreamContext",
+    "derive_session_key",
 ]
