@@ -37,6 +37,7 @@ if sys.platform == "win32" and hasattr(sys.stdout, "buffer"):
 import click
 
 from headroom._version import __version__ as _HEADROOM_VERSION
+from headroom.copilot_auth import DEFAULT_API_URL as COPILOT_API_URL
 from headroom.copilot_auth import (
     has_oauth_auth,
     resolve_client_bearer_token,
@@ -2534,7 +2535,20 @@ def copilot(
                 else "COPILOT_AUTH_MODE=github-oauth"
             ),
         ]
-        openai_api_url = resolve_copilot_api_url(client_bearer)
+        if subscription:
+            # Subscription targets the account-specific Copilot host advertised by
+            # /copilot_internal/user (business/enterprise plans live on dedicated
+            # hosts). An explicit GITHUB_COPILOT_API_URL still wins inside resolve.
+            openai_api_url = resolve_copilot_api_url(client_bearer)
+        else:
+            # Non-subscription OAuth preserves the pre-0.23 default of the generic
+            # Copilot endpoint. resolve_copilot_api_url() forces the account-specific
+            # endpoints.api host, which regressed newer models (e.g. gpt-5.4) on the
+            # responses API for individual plans that worked on 0.22.4 (#610). An
+            # explicit GITHUB_COPILOT_API_URL override still wins.
+            openai_api_url = (
+                os.environ.get("GITHUB_COPILOT_API_URL", COPILOT_API_URL) or COPILOT_API_URL
+            )
         env["GITHUB_COPILOT_API_URL"] = openai_api_url
         env["OPENAI_TARGET_API_URL"] = openai_api_url
         env_vars_display.append(f"COPILOT_PROVIDER_API_URL={openai_api_url}")

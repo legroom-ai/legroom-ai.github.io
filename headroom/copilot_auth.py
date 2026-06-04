@@ -474,21 +474,31 @@ def build_copilot_upstream_url(base_url: str, path: str) -> str:
 
 
 def resolve_copilot_api_url(oauth_token: str | None = None) -> str:
-    """Return the Copilot API endpoint advertised for the current OAuth token."""
+    """Return the Copilot API endpoint advertised for the current OAuth token.
+
+    An explicit ``GITHUB_COPILOT_API_URL`` always wins — it is the operator's
+    escape hatch (corporate proxy, pinning the generic host, tests). Honoring it
+    *before* the user-info lookup was lost in 0.23.0, which silently forced every
+    request onto the account-specific ``endpoints.api`` host (see #610).
+    """
+
+    override = os.environ.get("GITHUB_COPILOT_API_URL", "").strip()
+    if override:
+        return override
 
     token = (oauth_token or read_cached_oauth_token() or "").strip()
     if not token:
-        return os.environ.get("GITHUB_COPILOT_API_URL", DEFAULT_API_URL).strip() or DEFAULT_API_URL
+        return DEFAULT_API_URL
 
     payload = _fetch_copilot_user_info(token)
     if payload is None:
-        return os.environ.get("GITHUB_COPILOT_API_URL", DEFAULT_API_URL).strip() or DEFAULT_API_URL
+        return DEFAULT_API_URL
 
     endpoints = payload.get("endpoints") if isinstance(payload, dict) else None
     api_url = endpoints.get("api") if isinstance(endpoints, dict) else None
     if isinstance(api_url, str) and api_url.strip():
         return api_url.strip()
-    return os.environ.get("GITHUB_COPILOT_API_URL", DEFAULT_API_URL).strip() or DEFAULT_API_URL
+    return DEFAULT_API_URL
 
 
 def _fetch_copilot_user_info(token: str) -> dict[str, Any] | None:
