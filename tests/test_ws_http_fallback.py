@@ -31,9 +31,15 @@ class FakeWebSocket:
 class FakeStreamResponse:
     """Mock httpx streaming response."""
 
-    def __init__(self, status_code: int = 200, sse_events: list[str] | None = None):
+    def __init__(
+        self,
+        status_code: int = 200,
+        sse_events: list[str] | None = None,
+        headers: dict[str, str] | None = None,
+    ):
         self.status_code = status_code
         self._events = sse_events or []
+        self.headers = headers or {}
 
     async def aiter_text(self):
         for event in self._events:
@@ -123,7 +129,12 @@ class TestWsHttpFallback:
         assert "401" in event["error"]["message"]
 
     def test_fallback_sets_stream_true(self):
-        """HTTP fallback should force stream=True in request body."""
+        """HTTP fallback should force stream=True in request body.
+
+        After PR-A3 (byte-faithful Python forwarders) the fallback sends
+        the request body as raw bytes via `content=`, not via the `json=`
+        kwarg. The test extracts the posted JSON from the captured bytes.
+        """
         handler = _make_handler()
         ws = FakeWebSocket()
         captured_kwargs: dict = {}
@@ -138,7 +149,8 @@ class TestWsHttpFallback:
         body = {"model": "gpt-5.4", "input": "test", "stream": False}
         asyncio.run(handler._ws_http_fallback(ws, body, json.dumps(body), {}, "req_3"))
 
-        assert captured_kwargs["json"]["stream"] is True
+        posted = json.loads(captured_kwargs["content"])
+        assert posted["stream"] is True
 
     def test_fallback_unwraps_response_create_envelope(self):
         """HTTP fallback should unwrap WS response.create wrapper for HTTP POST."""
@@ -161,7 +173,7 @@ class TestWsHttpFallback:
         ws_msg = {"type": "response.create", "response": inner}
         asyncio.run(handler._ws_http_fallback(ws, ws_msg, json.dumps(ws_msg), {}, "req_unwrap"))
 
-        posted = captured_kwargs["json"]
+        posted = json.loads(captured_kwargs["content"])
         # Should be the inner response, not the wrapper
         assert "type" not in posted  # no "response.create" type field
         assert posted["model"] == "gpt-5.4"
@@ -184,7 +196,7 @@ class TestWsHttpFallback:
         body = {"type": "response.create", "model": "gpt-5.4", "input": "hi"}
         asyncio.run(handler._ws_http_fallback(ws, body, json.dumps(body), {}, "req_type_strip"))
 
-        posted = captured_kwargs["json"]
+        posted = json.loads(captured_kwargs["content"])
         assert posted["model"] == "gpt-5.4"
         assert posted["stream"] is True
         assert "type" not in posted
@@ -273,3 +285,37 @@ class TestWsHttpFallback:
         asyncio.run(handler._ws_http_fallback(ws, body, json.dumps(body), headers, "req_6"))
 
         assert "api.openai.com" in captured_url["url"]
+
+    def test_fallback_refreshes_codex_rate_limit_state(self, monkeypatch):
+        """A successful fallback refreshes Codex /stats from response headers.
+
+        The fallback can't forward headers onto the (already-accepted) client
+        101, but it should still keep Python /stats in sync so the gauge does
+        not go stale when the WS upgrade fails and we drop to HTTP.
+        """
+        handler = _make_handler()
+        ws = FakeWebSocket()
+        captured: dict[str, dict[str, str]] = {}
+
+        class _FakeState:
+            def update_from_headers(self, hdrs):
+                captured["headers"] = dict(hdrs)
+
+        import headroom.subscription.codex_rate_limits as crl
+
+        monkeypatch.setattr(crl, "get_codex_rate_limit_state", lambda: _FakeState())
+
+        response = FakeStreamResponse(
+            200,
+            ['data: {"type":"response.completed"}\n\n', "data: [DONE]\n\n"],
+            headers={
+                "x-codex-primary-used-percent": "42",
+                "content-type": "text/event-stream",
+            },
+        )
+        handler.http_client = FakeHttpClient(response)
+
+        body = {"model": "gpt-5.4", "input": "hi"}
+        asyncio.run(handler._ws_http_fallback(ws, body, json.dumps(body), {}, "req_capture"))
+
+        assert captured["headers"]["x-codex-primary-used-percent"] == "42"

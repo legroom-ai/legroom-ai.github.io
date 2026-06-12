@@ -29,13 +29,13 @@ Usage:
 Pipeline Usage:
     >>> pipeline = TransformPipeline([
     ...     ContentRouter(),   # Handles all content types
-    ...     RollingWindow(),   # Final size constraint
     ... ])
 """
 
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 import os
 import re
@@ -49,8 +49,63 @@ from ..config import DEFAULT_EXCLUDE_TOOLS, ReadLifecycleConfig, TransformResult
 from ..tokenizer import Tokenizer
 from .base import Transform
 from .content_detector import ContentType, DetectionResult
+from .content_detector import detect_content_type as _regex_detect_content_type
+from .error_detection import content_has_strong_error_indicators
 
 logger = logging.getLogger(__name__)
+
+
+def _router_debug_dumps(value: Any) -> str:
+    return json.dumps(value, ensure_ascii=False, default=str, separators=(",", ":"))
+
+
+def _log_router_debug(event: str, **payload: Any) -> None:
+    if not logger.isEnabledFor(logging.DEBUG):
+        return
+    payload = {"event": event, **payload}
+    logger.debug("event=%s %s", event, _router_debug_dumps(payload))
+
+
+def _json_shape(content: str) -> dict[str, Any]:
+    try:
+        parsed = json.loads(content)
+    except Exception as exc:
+        return {"is_json": False, "error": type(exc).__name__}
+    if isinstance(parsed, dict):
+        return {
+            "is_json": True,
+            "kind": "object",
+            "keys": list(parsed.keys()),
+            "length": len(parsed),
+        }
+    if isinstance(parsed, list):
+        return {"is_json": True, "kind": "array", "length": len(parsed)}
+    return {"is_json": True, "kind": type(parsed).__name__}
+
+
+def _mixed_indicators(content: str) -> dict[str, bool]:
+    return {
+        "has_code_fences": bool(_CODE_FENCE_PATTERN.search(content)),
+        "has_json_blocks": bool(_JSON_BLOCK_START.search(content)),
+        "has_prose": len(_PROSE_PATTERN.findall(content)) > 5,
+        "has_search_results": bool(_SEARCH_RESULT_PATTERN.search(content)),
+    }
+
+
+def _section_debug(section: ContentSection, index: int) -> dict[str, Any]:
+    return {
+        "index": index,
+        "content_type": section.content_type.value,
+        "language": getattr(section, "language", None),
+        "start_line": getattr(section, "start_line", None),
+        "end_line": getattr(section, "end_line", None),
+        "is_code_fence": getattr(section, "is_code_fence", False),
+        "chars": len(section.content),
+        "bytes": len(section.content.encode("utf-8", errors="replace")),
+        "tokens_estimate": len(section.content.split()),
+        "json_shape": _json_shape(section.content),
+        "content": section.content,
+    }
 
 
 def _detect_content(content: str) -> DetectionResult:
@@ -74,6 +129,10 @@ def _detect_content(content: str) -> DetectionResult:
     # "json_array"); translate to the Python `ContentType` enum so
     # downstream mapping keys match.
     content_type = ContentType(rust_result.content_type)
+    if content_type is ContentType.PLAIN_TEXT:
+        regex_result = _regex_detect_content_type(content)
+        if regex_result.content_type is not ContentType.PLAIN_TEXT:
+            return regex_result
     return DetectionResult(
         content_type=content_type,
         confidence=rust_result.confidence,
@@ -291,6 +350,16 @@ class RouterCompressionResult:
         strategy_used: Primary strategy used for compression.
         routing_log: List of routing decisions made.
         sections_processed: Number of content sections processed.
+        strategy_chain: Every strategy attempted in order. For a direct
+            hit it's a single entry; for the SMART_CRUSHER → KOMPRESS →
+            LOG fallback chain it's three. Lets log readers see *how*
+            we got to the final compressor without parsing the
+            decision_reason string.
+        cache_hit: True when this result came from the router's
+            result_cache (no fresh compression ran). Currently the
+            single-content compress() path doesn't populate the cache,
+            so this is False in practice — placeholder for the
+            cache-wire-up follow-up.
     """
 
     compressed: str
@@ -298,6 +367,8 @@ class RouterCompressionResult:
     strategy_used: CompressionStrategy
     routing_log: list[RoutingDecision] = field(default_factory=list)
     sections_processed: int = 1
+    strategy_chain: list[str] = field(default_factory=list)
+    cache_hit: bool = False
 
     @property
     def total_original_tokens(self) -> int:
@@ -387,6 +458,34 @@ class ContentRouterConfig:
     protect_recent_code: int = 4  # Don't compress CODE in last N messages (0 = disabled)
     protect_analysis_context: bool = True  # Detect "analyze/review" intent, protect code
 
+    # Protection: failed tool calls / error outputs stay verbatim (issue #847).
+    # The model needs exact tracebacks and error text to recover; compressing
+    # them measurably hurts agent recovery. Outputs above the size cap still
+    # compress — LogCompressor preserves error lines in big logs, so the two
+    # features stay complementary.
+    protect_error_outputs: bool = True
+    error_protection_max_chars: int = 8000  # ~2K tokens; larger errors compress
+
+    # Cache safety: assistant text-block compression.
+    # Default OFF. Assistant content is echoed back by the client in
+    # subsequent turns and becomes part of the upstream provider's
+    # prefix cache (Anthropic cache_control, DeepSeek/OpenAI auto).
+    # Compressing it changes the bytes that must match for a cache
+    # hit on the next turn. The hash-keyed result cache makes the
+    # compressed output deterministic *within* a process, but cache
+    # eviction or proxy restart can re-compress with a different
+    # output for stochastic compressors — and that miss costs the
+    # whole prefix discount. Enable only for deployments routed to
+    # backends that don't honor cache_control AND whose compressors
+    # are byte-deterministic.
+    compress_assistant_text_blocks: bool = False
+
+    # Minimum content length (in chars) at which a text or tool_result
+    # block is considered for compression. Below this, the overhead of
+    # routing/detecting/caching exceeds any savings, so the block is
+    # passed through verbatim.
+    min_chars_for_block_compression: int = 500
+
     # Adaptive Read protection: fraction of total messages to protect from
     # compression.  At 10 msgs, protects ~5 Reads.  At 100 msgs, protects ~10.
     # Old Reads beyond this window become compressible even though they are
@@ -405,6 +504,8 @@ class ContentRouterConfig:
     # CCR (Compress-Cache-Retrieve) settings for SmartCrusher
     ccr_enabled: bool = True  # Enable CCR marker injection for reversible compression
     ccr_inject_marker: bool = True  # Add retrieval markers to compressed content
+    smart_crusher_max_items_after_crush: int | None = None
+    smart_crusher_with_compaction: bool = True
 
     # Tag protection: preserve custom/workflow XML tags from text compression.
     # When False (default), entire <custom-tag>content</custom-tag> blocks are
@@ -568,13 +669,38 @@ def _extract_json_block(lines: list[str], start: int) -> tuple[str | None, int]:
     bracket_count = 0
     brace_count = 0
     json_lines = []
+    in_string = False
+    escaped = False
 
     for i in range(start, len(lines)):
         line = lines[i]
         json_lines.append(line)
 
-        bracket_count += line.count("[") - line.count("]")
-        brace_count += line.count("{") - line.count("}")
+        # Count brackets/braces, but ignore any that appear inside a JSON
+        # string literal — a naive line.count() treats e.g. the "]" in
+        # {"path": "a]b"} as a closing bracket and terminates the block
+        # early, splitting one array across multiple sections.
+        for ch in line:
+            if escaped:
+                escaped = False
+                continue
+            if ch == "\\":
+                if in_string:
+                    escaped = True
+                continue
+            if ch == '"':
+                in_string = not in_string
+                continue
+            if in_string:
+                continue
+            if ch == "[":
+                bracket_count += 1
+            elif ch == "]":
+                bracket_count -= 1
+            elif ch == "{":
+                brace_count += 1
+            elif ch == "}":
+                brace_count -= 1
 
         if bracket_count <= 0 and brace_count <= 0 and json_lines:
             return "\n".join(json_lines), i
@@ -615,7 +741,6 @@ class ContentRouter(Transform):
     Pipeline Integration:
         >>> pipeline = TransformPipeline([
         ...     ContentRouter(),   # Handles ALL content types
-        ...     RollingWindow(),   # Final size constraint
         ... ])
     """
 
@@ -654,6 +779,17 @@ class ContentRouter(Transform):
         # TOIN integration for cross-strategy learning
         self._toin: Any = None
 
+        # F2.2: per-request CompressionPolicy, set from
+        # ``kwargs["compression_policy"]`` at the start of ``apply()``
+        # and read by ``_record_to_toin`` to gate TOIN writes when
+        # ``policy.toin_read_only`` is true (Subscription mode).
+        # Defaults to ``None`` so direct ``compress()`` callers (e.g.
+        # tests, hand-written pipelines that don't go through the
+        # proxy) keep pre-F2.2 behaviour: TOIN writes are not gated.
+        # Same pattern the existing ``_runtime_target_ratio`` /
+        # ``_runtime_kompress_model`` fields below use.
+        self._runtime_compression_policy: Any = None
+
         self._cache = CompressionCache()
 
     def _record_to_toin(
@@ -687,6 +823,22 @@ class ContentRouter(Transform):
 
         # Skip if no actual compression happened
         if original_tokens <= compressed_tokens:
+            return
+
+        # F2.2 gate: when the active CompressionPolicy says
+        # ``toin_read_only=True`` (Subscription auth mode), don't
+        # mutate the TOIN learning pool from this request. Direct
+        # ``compress()`` callers don't go through ``apply()`` and
+        # have ``self._runtime_compression_policy is None`` — those
+        # keep their pre-F2.2 write-enabled behaviour.
+        policy = self._runtime_compression_policy
+        if policy is not None and policy.toin_read_only:
+            logger.debug(
+                "ContentRouter: skipping TOIN record_compression for %s "
+                "— policy.toin_read_only=True (auth_mode resolved as "
+                "Subscription, F2.2 gate)",
+                strategy.value,
+            )
             return
 
         try:
@@ -755,7 +907,31 @@ class ContentRouter(Transform):
         Returns:
             RouterCompressionResult with compressed content and routing metadata.
         """
+        debug_enabled = logger.isEnabledFor(logging.DEBUG)
+        request_debug = (
+            {
+                "chars": len(content),
+                "bytes": len(content.encode("utf-8", errors="replace")),
+                "tokens_estimate": len(content.split()),
+                "json_shape": _json_shape(content),
+                "mixed_indicators": _mixed_indicators(content),
+                "context_chars": len(context),
+                "question": question,
+                "bias": bias,
+                "content": content,
+                "context": context,
+            }
+            if debug_enabled
+            else {}
+        )
         if not content or not content.strip():
+            if debug_enabled:
+                _log_router_debug(
+                    "content_router_input",
+                    **request_debug,
+                    selected_strategy=CompressionStrategy.PASSTHROUGH.value,
+                    selection_reason="empty_or_whitespace",
+                )
             result = RouterCompressionResult(
                 compressed=content,
                 original=content,
@@ -764,17 +940,82 @@ class ContentRouter(Transform):
             )
         else:
             # Determine strategy from content analysis
-            strategy = self._determine_strategy(content)
+            mixed = is_mixed_content(content)
+            detection = _detect_content(content)
+            force_kompress = bool(getattr(self, "_runtime_force_kompress", False))
+            strategy = (
+                CompressionStrategy.KOMPRESS
+                if force_kompress
+                else self._determine_strategy(content)
+            )
+            if debug_enabled:
+                _log_router_debug(
+                    "content_router_input",
+                    **request_debug,
+                    detected_content_type=detection.content_type.value,
+                    detection_confidence=detection.confidence,
+                    selected_strategy=strategy.value,
+                    selection_reason=(
+                        "runtime_force_kompress"
+                        if force_kompress
+                        else "mixed_content"
+                        if mixed
+                        else "content_detection"
+                    ),
+                )
 
             if strategy == CompressionStrategy.MIXED:
                 result = self._compress_mixed(content, context, question, bias=bias)
             else:
                 result = self._compress_pure(content, strategy, context, question, bias=bias)
 
+        # Empty-output guard: compression must NEVER blank out non-empty input.
+        # An empty user-message content makes Anthropic reject the whole request
+        # with 400 ("messages.N: user messages must have non-empty content").
+        # If any transform yields empty/whitespace from non-empty input, fall
+        # back to the original content (passthrough) instead of emitting empty.
+        if (
+            content
+            and content.strip()
+            and (result.compressed is None or not str(result.compressed).strip())
+        ):
+            logger.warning(
+                "content_router: compression produced EMPTY output from non-empty "
+                "input (%d chars, strategy=%s); falling back to original to avoid 400.",
+                len(content),
+                getattr(result.strategy_used, "value", result.strategy_used),
+            )
+            result.compressed = content
+
         # One observer call per routing decision; the observer is the
         # forcing function for catching strategy-level regressions.
         # Empty routing_log (passthrough fast path) → no calls.
         self._observe(result)
+        if debug_enabled:
+            _log_router_debug(
+                "content_router_output",
+                selected_strategy=result.strategy_used.value,
+                sections_processed=result.sections_processed,
+                total_original_tokens=result.total_original_tokens,
+                total_compressed_tokens=result.total_compressed_tokens,
+                tokens_saved=result.tokens_saved,
+                savings_percentage=result.savings_percentage,
+                compression_ratio=result.compression_ratio,
+                routing_log=[
+                    {
+                        "content_type": decision.content_type.value,
+                        "strategy": decision.strategy.value,
+                        "original_tokens": decision.original_tokens,
+                        "compressed_tokens": decision.compressed_tokens,
+                        "confidence": decision.confidence,
+                        "section_index": decision.section_index,
+                        "compression_ratio": decision.compression_ratio,
+                    }
+                    for decision in result.routing_log
+                ],
+                original=result.original,
+                compressed=result.compressed,
+            )
         return result
 
     def _observe(self, result: RouterCompressionResult) -> None:
@@ -863,6 +1104,13 @@ class ContentRouter(Transform):
             RouterCompressionResult with reassembled content.
         """
         sections = split_into_sections(content)
+        if logger.isEnabledFor(logging.DEBUG):
+            _log_router_debug(
+                "content_router_mixed_sections",
+                section_count=len(sections),
+                sections=[_section_debug(section, idx) for idx, section in enumerate(sections)],
+                content=content,
+            )
 
         if not sections:
             return RouterCompressionResult(
@@ -880,7 +1128,7 @@ class ContentRouter(Transform):
 
             # Compress section
             original_tokens = len(section.content.split())
-            compressed_content, compressed_tokens = self._apply_strategy_to_content(
+            compressed_content, compressed_tokens, _section_chain = self._apply_strategy_to_content(
                 section.content,
                 strategy,
                 context,
@@ -934,7 +1182,7 @@ class ContentRouter(Transform):
         """
         original_tokens = len(content.split())
 
-        compressed, compressed_tokens = self._apply_strategy_to_content(
+        compressed, compressed_tokens, strategy_chain = self._apply_strategy_to_content(
             content, strategy, context, question=question, bias=bias
         )
 
@@ -942,6 +1190,7 @@ class ContentRouter(Transform):
             compressed=compressed,
             original=content,
             strategy_used=strategy,
+            strategy_chain=strategy_chain,
             routing_log=[
                 RoutingDecision(
                     content_type=self._content_type_from_strategy(strategy),
@@ -960,7 +1209,7 @@ class ContentRouter(Transform):
         language: str | None = None,
         question: str | None = None,
         bias: float = 1.0,
-    ) -> tuple[str, int]:
+    ) -> tuple[str, int, list[str]]:
         """Apply a compression strategy to content.
 
         Args:
@@ -972,86 +1221,216 @@ class ContentRouter(Transform):
             bias: Compression bias multiplier (>1 = keep more, <1 = keep fewer).
 
         Returns:
-            Tuple of (compressed_content, compressed_token_count).
+            Tuple of (compressed_content, compressed_token_count,
+            strategy_chain). The chain lists every strategy attempted
+            in order — first the requested one, then any fallbacks.
+            Single-entry chain means a direct hit; multi-entry means
+            the fallback chain fired (e.g. ``[smart_crusher, kompress,
+            log]``). Log readers use this to see *how* we got to the
+            final compressor without parsing decision_reason strings.
         """
         # Track original tokens for TOIN recording
         original_tokens = len(content.split())
         compressed: str | None = None
         compressed_tokens: int | None = None
+        requested_strategy = strategy
+        actual_strategy = strategy
+        compressor_name = strategy.value
+        decision_reason = "strategy_not_enabled_or_unavailable"
+        strategy_chain: list[str] = [strategy.value]
+        error: str | None = None
 
         try:
             if strategy == CompressionStrategy.CODE_AWARE:
                 if self.config.enable_code_aware:
                     compressor = self._get_code_compressor()
                     if compressor:
+                        compressor_name = type(compressor).__name__
                         result = compressor.compress(content, language=language, context=context)
                         compressed, compressed_tokens = result.compressed, result.compressed_tokens
+                        decision_reason = "code_aware"
                 if compressed is None:
                     # Fallback to Kompress
                     compressed, compressed_tokens = self._try_ml_compressor(
                         content, context, question
                     )
                     strategy = CompressionStrategy.KOMPRESS  # Update for TOIN
+                    actual_strategy = strategy
+                    compressor_name = "KompressCompressor"
+                    decision_reason = "code_aware_unavailable_fallback_kompress"
+                    strategy_chain.append(CompressionStrategy.KOMPRESS.value)
 
             elif strategy == CompressionStrategy.SMART_CRUSHER:
                 # SmartCrusher handles its own TOIN recording
                 if self.config.enable_smart_crusher:
                     crusher = self._get_smart_crusher()
                     if crusher:
+                        compressor_name = type(crusher).__name__
                         result = crusher.crush(content, query=context, bias=bias)
-                        return result.compressed, len(result.compressed.split())
+                        compressed, compressed_tokens = (
+                            result.compressed,
+                            len(result.compressed.split()),
+                        )
+                        smart_crusher_fallback = False
+                        if result.compressed == content:
+                            strategy_chain.append(CompressionStrategy.KOMPRESS.value)
+                            fallback_compressed, fallback_tokens = self._try_ml_compressor(
+                                content, context, question
+                            )
+                            if fallback_tokens < compressed_tokens:
+                                compressed = fallback_compressed
+                                compressed_tokens = fallback_tokens
+                                actual_strategy = CompressionStrategy.KOMPRESS
+                                compressor_name = "KompressCompressor"
+                                decision_reason = "smart_crusher_fallback_kompress_after_no_savings"
+                                smart_crusher_fallback = True
+                        if not smart_crusher_fallback:
+                            decision_reason = "smart_crusher"
 
             elif strategy == CompressionStrategy.SEARCH:
                 if self.config.enable_search_compressor:
                     compressor = self._get_search_compressor()
                     if compressor:
+                        compressor_name = type(compressor).__name__
                         result = compressor.compress(content, context=context, bias=bias)
                         compressed, compressed_tokens = (
                             result.compressed,
                             len(result.compressed.split()),
                         )
+                        decision_reason = "search_compressor"
 
             elif strategy == CompressionStrategy.LOG:
                 if self.config.enable_log_compressor:
                     compressor = self._get_log_compressor()
                     if compressor:
+                        compressor_name = type(compressor).__name__
                         result = compressor.compress(content, bias=bias)
+                        # Use the same word-count metric the rest of the
+                        # router uses; `compressed_line_count` is in
+                        # lines, not tokens — recording it here made
+                        # ratios meaningless against `original_tokens`.
                         compressed, compressed_tokens = (
                             result.compressed,
-                            result.compressed_line_count,
+                            len(result.compressed.split()),
                         )
+                        decision_reason = "log_compressor"
 
             elif strategy == CompressionStrategy.DIFF:
                 compressor = self._get_diff_compressor()
                 if compressor:
+                    compressor_name = type(compressor).__name__
                     result = compressor.compress(content, context=context)
                     compressed, compressed_tokens = (
                         result.compressed,
-                        result.compressed_line_count,
+                        len(result.compressed.split()),
                     )
+                    decision_reason = "diff_compressor"
 
             elif strategy == CompressionStrategy.HTML:
                 if self.config.enable_html_extractor:
                     extractor = self._get_html_extractor()
                     if extractor:
+                        compressor_name = type(extractor).__name__
                         result = extractor.extract(content)
                         compressed = result.extracted
                         # Estimate tokens from extracted text (simple word count)
                         compressed_tokens = len(compressed.split()) if compressed else 0
+                        decision_reason = "html_extractor"
 
             elif strategy == CompressionStrategy.KOMPRESS:
                 compressed, compressed_tokens = self._try_ml_compressor(content, context, question)
+                compressor_name = "KompressCompressor"
+                decision_reason = "kompress"
 
             elif strategy == CompressionStrategy.TEXT:
                 # Prefer Kompress ML compressor for text
                 # Passes through unchanged if Kompress not available
                 compressed, compressed_tokens = self._try_ml_compressor(content, context, question)
+                compressor_name = "KompressCompressor"
+                decision_reason = "text_uses_kompress"
+
+            elif strategy == CompressionStrategy.PASSTHROUGH:
+                compressed = content
+                compressed_tokens = original_tokens
+                compressor_name = "Passthrough"
+                decision_reason = "explicit_passthrough"
 
         except Exception as e:
+            error = f"{type(e).__name__}: {e}"
+            decision_reason = "compression_exception"
             logger.warning("Compression with %s failed: %s", strategy.value, e)
 
         # If compression succeeded, record to TOIN
         if compressed is not None and compressed_tokens is not None:
+            fallback_eligible_strategy = strategy in {
+                CompressionStrategy.SMART_CRUSHER,
+                CompressionStrategy.CODE_AWARE,
+            }
+            fallback_no_savings = compressed == content or compressed_tokens >= original_tokens
+            if fallback_eligible_strategy and fallback_no_savings:
+                strategy_chain.append(CompressionStrategy.KOMPRESS.value)
+                fallback_compressed, fallback_tokens = self._try_ml_compressor(
+                    content, context, question
+                )
+                if fallback_tokens < compressed_tokens:
+                    compressed = fallback_compressed
+                    compressed_tokens = fallback_tokens
+                    actual_strategy = CompressionStrategy.KOMPRESS
+                    compressor_name = "KompressCompressor"
+                    decision_reason = f"{decision_reason}_fallback_kompress_after_no_savings"
+                else:
+                    # Last-ditch: line-structured compressors (the proxy's
+                    # own log dumps land here — repetitive JSONL that
+                    # Kompress can't shrink but the log compressor can).
+                    # Only attempted when the strategy was SMART_CRUSHER so
+                    # we don't reroute genuine code/diff content.
+                    if (
+                        strategy == CompressionStrategy.SMART_CRUSHER
+                        and self.config.enable_log_compressor
+                    ):
+                        log_compressor = self._get_log_compressor()
+                        if log_compressor is not None:
+                            strategy_chain.append(CompressionStrategy.LOG.value)
+                            try:
+                                log_result = log_compressor.compress(content, bias=bias)
+                            except Exception as exc:  # noqa: BLE001
+                                logger.debug("Log fallback failed for SMART_CRUSHER: %s", exc)
+                            else:
+                                log_compressed_tokens = len(log_result.compressed.split())
+                                if log_compressed_tokens < compressed_tokens:
+                                    compressed = log_result.compressed
+                                    compressed_tokens = log_compressed_tokens
+                                    actual_strategy = CompressionStrategy.LOG
+                                    compressor_name = type(log_compressor).__name__
+                                    decision_reason = (
+                                        f"{decision_reason}_fallback_log_after_no_savings"
+                                    )
+
+            # Re-narrow for mypy: all reassignments above produce str, but
+            # mypy 1.14.x widens after nested try/except/else reassignments.
+            assert compressed is not None
+            if logger.isEnabledFor(logging.DEBUG):
+                _log_router_debug(
+                    "content_router_strategy_result",
+                    requested_strategy=requested_strategy.value,
+                    actual_strategy=actual_strategy.value,
+                    strategy_chain=strategy_chain,
+                    compressor=compressor_name,
+                    reason=decision_reason,
+                    language=language,
+                    question=question,
+                    bias=bias,
+                    original_tokens=original_tokens,
+                    compressed_tokens=compressed_tokens,
+                    tokens_saved=max(0, original_tokens - compressed_tokens),
+                    compression_ratio=compressed_tokens / original_tokens
+                    if original_tokens
+                    else 1.0,
+                    json_shape=_json_shape(content),
+                    input=content,
+                    output=compressed,
+                    error=error,
+                )
             self._record_to_toin(
                 strategy=strategy,
                 content=content,
@@ -1061,10 +1440,31 @@ class ContentRouter(Transform):
                 language=language,
                 context=context,
             )
-            return compressed, compressed_tokens
+            return compressed, compressed_tokens, strategy_chain
 
         # Fallback: return unchanged
-        return content, original_tokens
+        strategy_chain.append(CompressionStrategy.PASSTHROUGH.value)
+        if logger.isEnabledFor(logging.DEBUG):
+            _log_router_debug(
+                "content_router_strategy_result",
+                requested_strategy=requested_strategy.value,
+                actual_strategy=CompressionStrategy.PASSTHROUGH.value,
+                strategy_chain=strategy_chain,
+                compressor=None,
+                reason=decision_reason,
+                language=language,
+                question=question,
+                bias=bias,
+                original_tokens=original_tokens,
+                compressed_tokens=original_tokens,
+                tokens_saved=0,
+                compression_ratio=1.0,
+                json_shape=_json_shape(content),
+                input=content,
+                output=content,
+                error=error,
+            )
+        return content, original_tokens, strategy_chain
 
     def _try_ml_compressor(
         self, content: str, context: str, question: str | None = None
@@ -1103,7 +1503,7 @@ class ContentRouter(Transform):
         compressed: str | None = None
         compressed_tokens: int | None = None
 
-        # Primary: Kompress — downloads from chopratejas/kompress-base on first use
+        # Primary: Kompress — downloads from chopratejas/kompress-v2-base on first use
         if self.config.enable_kompress:
             compressor = self._get_kompress()
             if compressor:
@@ -1178,14 +1578,23 @@ class ContentRouter(Transform):
         if self._smart_crusher is None:
             try:
                 from ..config import CCRConfig
-                from .smart_crusher import SmartCrusher
+                from .smart_crusher import SmartCrusher, SmartCrusherConfig
 
                 # Pass CCR config for marker injection
                 ccr_config = CCRConfig(
                     enabled=self.config.ccr_enabled,
                     inject_retrieval_marker=self.config.ccr_inject_marker,
                 )
-                self._smart_crusher = SmartCrusher(ccr_config=ccr_config)
+                crusher_config = SmartCrusherConfig()
+                if self.config.smart_crusher_max_items_after_crush is not None:
+                    crusher_config.max_items_after_crush = (
+                        self.config.smart_crusher_max_items_after_crush
+                    )
+                self._smart_crusher = SmartCrusher(
+                    config=crusher_config,
+                    ccr_config=ccr_config,
+                    with_compaction=self.config.smart_crusher_with_compaction,
+                )
             except ImportError:
                 logger.debug("SmartCrusher not available")
         return self._smart_crusher
@@ -1244,12 +1653,36 @@ class ContentRouter(Transform):
         """
         status: dict[str, str] = {}
 
-        # 1. ML text compressor: Kompress
+        # 1. ML text compressor: Kompress.
+        #
+        # Eager preload is cache-only (allow_download=False): on a cold cache we
+        # must NOT trigger a network download here, because this runs on the
+        # blocking startup/lifespan path before the proxy binds its port. A slow
+        # download stalls the bind, and a hard crash in the native download/ML
+        # stack (uncatchable SIGABRT) kills the interpreter before it ever
+        # listens — the proxy then "never opens its port" and the supervisor
+        # gives up. When the model isn't cached we defer to first use instead.
         if self.config.enable_kompress:
+            from .kompress_compressor import KompressModelNotCached
+
             compressor = self._get_kompress()
             if compressor:
-                logger.info("Kompress model pre-loaded at startup")
-                status["kompress"] = "enabled"
+                if not hasattr(compressor, "preload"):
+                    status["kompress"] = "enabled"
+                    status["kompress_backend"] = "unknown"
+                else:
+                    try:
+                        backend = compressor.preload(allow_download=False)
+                    except KompressModelNotCached:
+                        logger.info(
+                            "Kompress model not cached; deferring download to "
+                            "first use to keep startup non-blocking"
+                        )
+                        status["kompress"] = "deferred"
+                    else:
+                        logger.info("Kompress model pre-loaded at startup backend=%s", backend)
+                        status["kompress"] = "enabled"
+                        status["kompress_backend"] = str(backend)
             else:
                 status["kompress"] = "unavailable"
 
@@ -1315,7 +1748,7 @@ class ContentRouter(Transform):
         """Get KompressCompressor (lazy load). Downloads from HuggingFace on first use.
 
         Respects runtime kompress_model kwarg:
-        - None: use default (chopratejas/kompress-base) — cached on self
+        - None: use default (chopratejas/kompress-v2-base) — cached on self
         - "disabled": return None (skip ML compression entirely)
         - any model ID string: create compressor with that model
           (model weights are cached at module level in kompress_compressor.py,
@@ -1502,15 +1935,31 @@ class ContentRouter(Transform):
         skip_user = (
             kwargs.get("compress_user_messages") is not True and self.config.skip_user_messages
         )
-        skip_system = kwargs.get("compress_system_messages") is False
+        skip_system = kwargs.get("compress_system_messages") is not True
         protect_recent = kwargs.get("protect_recent", self.config.protect_recent_code)
         protect_analysis = kwargs.get(
             "protect_analysis_context", self.config.protect_analysis_context
         )
         min_tokens = kwargs.get("min_tokens_to_compress", 50)
+        # Cache-safety knobs for content-block (Anthropic-format) handling:
+        compress_assistant_text_blocks = kwargs.get(
+            "compress_assistant_text_blocks",
+            self.config.compress_assistant_text_blocks,
+        )
+        min_chars_for_block_compression = kwargs.get(
+            "min_chars_for_block_compression",
+            self.config.min_chars_for_block_compression,
+        )
         # Store runtime options on self for access by _route_and_compress_block
         self._runtime_target_ratio: float | None = kwargs.get("target_ratio")
+        self._runtime_force_kompress: bool = bool(kwargs.get("force_kompress", False))
         self._runtime_kompress_model: str | None = kwargs.get("kompress_model")
+        # F2.2: capture the per-request CompressionPolicy so
+        # ``_record_to_toin`` can gate TOIN writes on
+        # ``policy.toin_read_only``. ``None`` when the caller didn't
+        # pass a policy — ``_record_to_toin`` treats that as "no gate"
+        # to preserve pre-F2.2 behaviour for non-proxy callers.
+        self._runtime_compression_policy = kwargs.get("compression_policy")
 
         tokens_before = sum(tokenizer.count_text(str(m.get("content", ""))) for m in messages)
         context = kwargs.get("context", "")
@@ -1543,6 +1992,9 @@ class ContentRouter(Transform):
             )
         else:
             read_protection_window = num_messages  # 0.0 = protect all (old behavior)
+        runtime_read_protection_window = kwargs.get("read_protection_window")
+        if runtime_read_protection_window is not None:
+            read_protection_window = max(0, int(runtime_read_protection_window))
 
         # Adaptive compression ratio: scale with context pressure
         if model_limit > 0:
@@ -1647,6 +2099,10 @@ class ContentRouter(Transform):
                     read_protection_window=read_protection_window,
                     messages_from_end=messages_from_end,
                     compressor_timing=compressor_timing,
+                    min_chars=min_chars_for_block_compression,
+                    skip_user=skip_user,
+                    skip_system=skip_system,
+                    compress_assistant_text_blocks=compress_assistant_text_blocks,
                 )
                 result_slots[i] = transformed_message
                 route_counts["content_blocks"] += 1
@@ -1684,10 +2140,11 @@ class ContentRouter(Transform):
                 route_counts["user_msg"] += 1
                 continue
 
-            # Protection 1b: Never compress system messages (when disabled)
-            if skip_system and role == "system":
+            # Protection 1b: Never compress system/developer messages unless
+            # explicitly opted in. These are cache-hot instruction bytes.
+            if skip_system and role in {"system", "developer"}:
                 result_slots[i] = message
-                transforms_applied.append("router:protected:system_message")
+                transforms_applied.append(f"router:protected:{role}_message")
                 route_counts.setdefault("system_msg", 0)
                 route_counts["system_msg"] += 1
                 continue
@@ -1696,6 +2153,24 @@ class ContentRouter(Transform):
                 # Skip small content
                 result_slots[i] = message
                 route_counts["small"] += 1
+                continue
+
+            # Protection: failed tool calls / error outputs stay verbatim
+            # (issue #847). The model needs exact tracebacks to recover.
+            # Strong (>=2 distinct indicators) match only — a single
+            # keyword false-positives on benign outputs that mention
+            # errors. Above the size cap, fall through — LogCompressor
+            # preserves error lines in big logs.
+            if (
+                self.config.protect_error_outputs
+                and role == "tool"
+                and len(content) <= self.config.error_protection_max_chars
+                and content_has_strong_error_indicators(content)
+            ):
+                result_slots[i] = message
+                transforms_applied.append("router:protected:error_output")
+                route_counts.setdefault("error_protected", 0)
+                route_counts["error_protected"] += 1
                 continue
 
             # Detect content type for protection decisions
@@ -1850,6 +2325,8 @@ class ContentRouter(Transform):
             parts.append(f"{route_counts['analysis_ctx']} protected (analysis ctx)")
         if route_counts.get("already_compressed"):
             parts.append(f"{route_counts['already_compressed']} pinned (already compressed)")
+        if route_counts.get("error_protected"):
+            parts.append(f"{route_counts['error_protected']} protected (error output)")
         if route_counts["ratio_too_high"]:
             parts.append(f"{route_counts['ratio_too_high']} unchanged (ratio>={min_ratio:.2f})")
         if route_counts["content_blocks"]:
@@ -1872,6 +2349,19 @@ class ContentRouter(Transform):
                 num_messages,
                 ", ".join(parts),
             )
+
+        # Forward route_counts to the observer so `/stats` can surface a
+        # session-level protection breakdown (issue #454). The observer
+        # may not implement this method on older versions; ignore
+        # AttributeError so a non-conforming observer doesn't poison
+        # routing.
+        if self._observer is not None and route_counts:
+            try:
+                self._observer.record_router_route_counts(route_counts)
+            except AttributeError:
+                pass
+            except Exception as e:  # pragma: no cover - defensive
+                logger.debug("Router observer raised (non-fatal): %s", e)
 
         all_transforms = lifecycle_transforms + transforms_applied
         return TransformResult(
@@ -1919,11 +2409,31 @@ class ContentRouter(Transform):
         read_protection_window: int = 8,
         messages_from_end: int = 0,
         compressor_timing: dict[str, float] | None = None,
+        min_chars: int = 500,
+        skip_user: bool = True,
+        skip_system: bool = True,
+        compress_assistant_text_blocks: bool = False,
     ) -> dict[str, Any]:
-        """Process content blocks (Anthropic format) for tool_result compression.
+        """Process content blocks (Anthropic format) for compression.
 
-        Handles tool_result blocks by compressing their string content using
-        the appropriate strategy (typically SmartCrusher for JSON arrays).
+        Cache-safety contract:
+          1. Any block carrying `cache_control` is the client's explicit
+             cache breakpoint. Modifying any byte of such a block changes
+             the cache key the upstream provider matches against, turning
+             a 90% read discount into a 25% write penalty (Anthropic).
+             We never modify cache_control'd blocks, regardless of role
+             or block type.
+          2. Assistant text blocks are echoed back by the client in
+             subsequent turns and become part of the upstream provider's
+             auto-prefix cache (DeepSeek, OpenAI). Default-skip; opt in
+             via `compress_assistant_text_blocks` when the deployment
+             knows the backend doesn't honor cache_control AND
+             compression is byte-deterministic.
+          3. User and system blocks carry the prompt the model is acting
+             on; compressing them silently mutates the request. Always
+             skipped per `skip_user` / `skip_system`.
+          4. Tool / function blocks are tool outputs — semantically safe
+             to compress (the model references them once, then moves on).
 
         Args:
             message: The original message.
@@ -1937,16 +2447,45 @@ class ContentRouter(Transform):
             min_ratio: Adaptive compression ratio threshold.
             read_protection_window: Messages from end within which excluded tools are protected.
             messages_from_end: How far this message is from the end of the conversation.
+            min_chars: Minimum block content length (chars) to consider for compression.
+            skip_user: If True, never compress text blocks in user-role messages.
+            skip_system: If True, never compress text blocks in system-role messages.
+            compress_assistant_text_blocks: If True, allow compressing text blocks in
+                assistant-role messages. Default False (cache-safe).
 
         Returns:
             Transformed message with compressed content blocks.
         """
         new_blocks = []
         any_compressed = False
+        role = message.get("role", "")
+
+        # Role-based gate for `text` blocks. Tool/function roles are tool
+        # outputs and compress freely; assistant defaults to skip (cache
+        # safety) with explicit opt-in; unknown roles default to skip.
+        if (skip_user and role == "user") or (skip_system and role in {"system", "developer"}):
+            protect_text_blocks = True
+        elif role == "assistant" and not compress_assistant_text_blocks:
+            protect_text_blocks = True
+        elif role not in ("assistant", "tool", "function"):
+            protect_text_blocks = True
+        else:
+            protect_text_blocks = False
 
         for block in content_blocks:
             if not isinstance(block, dict):
                 new_blocks.append(block)
+                continue
+
+            # Defense in depth: cache_control marker is the client's
+            # cache breakpoint. Frozen-message-count is a coarse
+            # message-level approximation; this is the per-block
+            # guarantee that we never bust an explicit cache key.
+            if "cache_control" in block:
+                new_blocks.append(block)
+                if route_counts is not None:
+                    route_counts.setdefault("cache_control_protected", 0)
+                    route_counts["cache_control_protected"] += 1
                 continue
 
             block_type = block.get("type")
@@ -1971,8 +2510,31 @@ class ContentRouter(Transform):
 
                 tool_content = block.get("content", "")
 
+                # Protection: failed tool calls / error outputs stay verbatim
+                # (issue #847). `is_error` is Anthropic's explicit failure
+                # flag and suffices alone; the indicator scan catches error
+                # text without the flag but requires >=2 distinct keywords
+                # so benign outputs mentioning errors don't skip compression.
+                # Above the size cap, fall through — LogCompressor preserves
+                # error lines in big logs.
+                if (
+                    self.config.protect_error_outputs
+                    and isinstance(tool_content, str)
+                    and len(tool_content) <= self.config.error_protection_max_chars
+                    and (
+                        block.get("is_error") is True
+                        or content_has_strong_error_indicators(tool_content)
+                    )
+                ):
+                    new_blocks.append(block)
+                    transforms_applied.append("router:protected:error_output")
+                    if route_counts is not None:
+                        route_counts.setdefault("error_protected", 0)
+                        route_counts["error_protected"] += 1
+                    continue
+
                 # Only process string content
-                if isinstance(tool_content, str) and len(tool_content) > 500:
+                if isinstance(tool_content, str) and len(tool_content) > min_chars:
                     # Compression pinning: skip already-compressed content
                     if (
                         "Retrieve more: hash=" in tool_content
@@ -2049,6 +2611,91 @@ class ContentRouter(Transform):
                         continue
                     else:
                         # Didn't compress — add to skip set
+                        self._cache.mark_skip(content_key)
+                        if route_counts is not None:
+                            route_counts["ratio_too_high"] += 1
+                else:
+                    if route_counts is not None:
+                        route_counts["small"] += 1
+
+            # Handle text blocks — compress for non-Anthropic clients (e.g.
+            # OpenAI/DeepSeek via Cline) whose SDK normalizes content to
+            # block-list form. Roles are gated above (user/system always
+            # skipped; assistant default-skipped, opt-in via
+            # `compress_assistant_text_blocks`).
+            elif block_type == "text" and not protect_text_blocks:
+                text_content = block.get("text", "")
+                if isinstance(text_content, str) and len(text_content) > min_chars:
+                    # Pinning: skip already-compressed content
+                    if (
+                        "Retrieve more: hash=" in text_content
+                        or "Retrieve original: hash=" in text_content
+                    ):
+                        new_blocks.append(block)
+                        if route_counts is not None:
+                            route_counts.setdefault("already_compressed", 0)
+                            route_counts["already_compressed"] += 1
+                        continue
+
+                    content_key = hash(text_content)
+
+                    # Tier 1: skip set
+                    if self._cache.is_skipped(content_key):
+                        new_blocks.append(block)
+                        if route_counts is not None:
+                            route_counts["ratio_too_high"] += 1
+                            route_counts.setdefault("cache_hit", 0)
+                            route_counts["cache_hit"] += 1
+                        continue
+
+                    # Tier 2: result cache
+                    cached = self._cache.get(content_key)
+                    if cached is not None:
+                        cached_compressed, cached_ratio, cached_strategy = cached
+                        if cached_ratio < min_ratio:
+                            new_blocks.append({**block, "text": cached_compressed})
+                            transforms_applied.append(f"router:text_block:{cached_strategy}")
+                            if compressed_details is not None:
+                                compressed_details.append(
+                                    f"text:{cached_strategy}:{cached_ratio:.2f}"
+                                )
+                            any_compressed = True
+                        else:
+                            self._cache.move_to_skip(content_key)
+                            new_blocks.append(block)
+                            if route_counts is not None:
+                                route_counts["ratio_too_high"] += 1
+                        if route_counts is not None:
+                            route_counts.setdefault("cache_hit", 0)
+                            route_counts["cache_hit"] += 1
+                        continue
+
+                    # Cache miss — full compression
+                    if route_counts is not None:
+                        route_counts.setdefault("cache_miss", 0)
+                        route_counts["cache_miss"] += 1
+                    t0 = time.perf_counter()
+                    result = self.compress(text_content, context=context, bias=1.0)
+                    compress_ms = (time.perf_counter() - t0) * 1000
+                    if compressor_timing is not None:
+                        key = f"compressor:{result.strategy_used.value}"
+                        compressor_timing[key] = compressor_timing.get(key, 0.0) + compress_ms
+                    if result.compression_ratio < min_ratio:
+                        self._cache.put(
+                            content_key,
+                            result.compressed,
+                            result.compression_ratio,
+                            result.strategy_used.value,
+                        )
+                        new_blocks.append({**block, "text": result.compressed})
+                        transforms_applied.append(f"router:text_block:{result.strategy_used.value}")
+                        if compressed_details is not None:
+                            compressed_details.append(
+                                f"text:{result.strategy_used.value}:{result.compression_ratio:.2f}"
+                            )
+                        any_compressed = True
+                        continue
+                    else:
                         self._cache.mark_skip(content_key)
                         if route_counts is not None:
                             route_counts["ratio_too_high"] += 1

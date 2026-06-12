@@ -59,9 +59,9 @@ headroom proxy --no-ccr-responses
 # Disable proactive expansion
 headroom proxy --no-ccr-expansion
 
-# Enable LLMLingua ML compression
-headroom proxy --llmlingua
-headroom proxy --llmlingua --llmlingua-device cuda --llmlingua-rate 0.4
+# (The earlier --llmlingua flag was retired in 0.9.x and replaced by
+# Kompress (ModernBERT). See `wiki/transforms.md` for the current
+# opt-in path via the `[ml]` extra.)
 ```
 
 ### All Options
@@ -69,6 +69,44 @@ headroom proxy --llmlingua --llmlingua-device cuda --llmlingua-rate 0.4
 ```bash
 headroom proxy --help
 ```
+
+### Kompress backend selection
+
+Kompress (the model-based compressor) can run on two engines:
+
+- **ONNX Runtime** — lightweight, CPU-first. Installed with
+  `pip install headroom-ai[proxy]`. Optionally uses the CoreML execution
+  provider on macOS.
+- **PyTorch** — heavier, supports CUDA and Apple-Silicon MPS
+  acceleration. Installed with `pip install headroom-ai[ml]`. With
+  `device=auto` it selects `cuda`, then `mps`, then `cpu`.
+
+Select the backend via the `HEADROOM_KOMPRESS_BACKEND` environment
+variable:
+
+| Value               | Behavior                                                               |
+|---------------------|------------------------------------------------------------------------|
+| `auto`              | Default. ONNX CPU first (stable, lightweight), PyTorch as fallback.    |
+| `onnx` / `onnx_cpu` | Force ONNX Runtime on CPU.                                             |
+| `onnx_coreml`       | Force ONNX Runtime with the CoreML provider (CPU fallback).            |
+| `pytorch`           | Force PyTorch with automatic device selection (CUDA → MPS → CPU).      |
+| `pytorch_mps`       | Force PyTorch on Apple-Silicon MPS; falls back to ONNX CPU on failure. |
+
+Values are case-insensitive and hyphens are accepted (`onnx-cpu` ==
+`onnx_cpu`). Shorthand aliases: `cpu` → `onnx_cpu`, `coreml` →
+`onnx_coreml`, `mps` / `torch_mps` → `pytorch_mps`, `torch` →
+`pytorch`. Unrecognized values log a warning and fall back to `auto`.
+
+Example — opt in to MPS on an Apple-Silicon machine:
+
+```bash
+export HEADROOM_KOMPRESS_BACKEND=mps
+headroom proxy ...
+```
+
+The default deliberately stays on ONNX CPU so existing installs keep
+their compression quality and performance characteristics; accelerator
+backends are opt-in.
 
 ## Per-Request Overrides
 
@@ -267,15 +305,13 @@ Some settings can be configured via environment variables:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `HEADROOM_LOG_LEVEL` | Logging level | `INFO` |
-| `HEADROOM_STORE_URL` | Database URL | temp directory |
-| `HEADROOM_DEFAULT_MODE` | Default mode | `optimize` |
 | `HEADROOM_MODEL_LIMITS` | Custom model config (JSON string or file path) | - |
 | `HEADROOM_CONFIG_DIR` | Canonical config (read-mostly) root. Derives `models.json` and per-plugin config paths when set. | `~/.headroom/config` |
 | `HEADROOM_WORKSPACE_DIR` | Canonical workspace (read-write state) root. Derives savings ledger, memory DB, logs, TOIN, subscription state, and more when set. | `~/.headroom` |
 | `HEADROOM_SAVINGS_PATH` | Full path to the proxy savings JSON ledger. Always wins when set. | derived from `${HEADROOM_WORKSPACE_DIR}` |
 | `HEADROOM_TOIN_PATH` | Full path to the TOIN telemetry JSON file. Always wins when set. | derived from `${HEADROOM_WORKSPACE_DIR}` |
 | `HEADROOM_SUBSCRIPTION_STATE_PATH` | Full path to the subscription tracker state. Always wins when set. | derived from `${HEADROOM_WORKSPACE_DIR}` |
+| `HEADROOM_EMBEDDER_RUNTIME` | Set to `pytorch_mps` to run the memory embedder via the torch sentence-transformers backend on the Apple GPU (MPS). Only engages when Apple MPS is actually available; otherwise it logs a warning and uses the existing default embedder selection path. `pytorch_mps` is the only accepted value. Requires the `[pytorch-mps]` extra. See [Memory](memory.md#embedding-runtime--gpu-offload-apple-silicon). | default embedder selection |
 
 ## Filesystem Contract
 

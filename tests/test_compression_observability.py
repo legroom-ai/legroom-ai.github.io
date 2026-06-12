@@ -273,6 +273,73 @@ def test_prometheus_metrics_accumulates_per_strategy_counters():
     assert m.tokens_saved_by_strategy == {"smart_crusher": 210}
 
 
+def test_prometheus_metrics_accumulates_codex_ws_unit_and_frame_counters():
+    from headroom.proxy.prometheus_metrics import PrometheusMetrics
+
+    m = PrometheusMetrics()
+
+    m.record_codex_ws_unit(
+        strategy="mixed",
+        reason_category="applied",
+        elapsed_ms=1250,
+        text_bytes=10_000,
+        tokens_before=2500,
+        tokens_after=1000,
+        tokens_saved=1500,
+        modified=True,
+        strategy_chain=["mixed", "kompress"],
+        content_type="text",
+        text_shape="jsonl_like",
+    )
+    m.record_codex_ws_unit(
+        strategy="passthrough",
+        reason_category="size_floor",
+        elapsed_ms=2,
+        text_bytes=100,
+        tokens_before=20,
+        tokens_after=20,
+        tokens_saved=0,
+        modified=False,
+        strategy_chain=["passthrough"],
+        content_type="unknown",
+        text_shape="plain_text_like",
+    )
+    m.record_codex_ws_frame(
+        elapsed_ms=1260,
+        bytes_before=20_000,
+        bytes_after=8_000,
+        attempted_tokens=2500,
+        tokens_saved=1500,
+        modified=True,
+        strategy_chain=["mixed", "kompress"],
+        final_strategies=["mixed"],
+    )
+    m.record_codex_ws_frame(
+        elapsed_ms=30_000,
+        bytes_before=426_318,
+        failed=True,
+    )
+
+    assert m.codex_ws_units_total == 2
+    assert m.codex_ws_units_modified_total == 1
+    assert m.codex_ws_units_by_strategy == {"mixed": 1, "passthrough": 1}
+    assert m.codex_ws_units_by_category == {"applied": 1, "size_floor": 1}
+    assert m.codex_ws_units_by_content_type == {"text": 1, "unknown": 1}
+    assert m.codex_ws_units_by_text_shape == {"jsonl_like": 1, "plain_text_like": 1}
+    assert m.codex_ws_units_to_kompress_total == 0
+    assert m.codex_ws_units_kompress_attempted_total == 1
+    assert m.codex_ws_unit_elapsed_ms_max == 1250
+    assert m.codex_ws_unit_tokens_saved_sum == 1500
+
+    assert m.codex_ws_frames_attempted_total == 2
+    assert m.codex_ws_frames_compressed_total == 1
+    assert m.codex_ws_frames_failed_total == 1
+    assert m.codex_ws_frames_to_kompress_total == 0
+    assert m.codex_ws_frames_kompress_attempted_total == 1
+    assert m.codex_ws_frame_elapsed_ms_max == 30_000
+    assert m.codex_ws_frame_tokens_saved_sum == 1500
+
+
 def test_prometheus_export_does_not_leak_per_strategy_metrics():
     """Per-strategy state is tracked in-process only. The Prometheus
     scrape output deliberately must NOT emit new metric names — the
@@ -341,61 +408,8 @@ def test_router_with_prometheus_observer_increments_counters():
     }
 
 
-# ─── IntelligentContextManager wiring ──────────────────────────────────
-
-
-def test_intelligent_context_manager_forwards_observer_to_inner_router():
-    """COMPRESS_FIRST path must fire the observer.
-
-    Regression guard for the bug introduced in PR #302 (commit
-    cf979958, 2026-04-28): the observer was wired onto the outer
-    ContentRouter in `proxy/server.py` but NOT onto the inner
-    ContentRouter inside `IntelligentContextManager._get_content_router`.
-    On Anthropic/Claude Code traffic — where most compression happens
-    inside `_apply_compress_first` walking `tool_result` blocks — that
-    silently zero'd the per-strategy counters even when 1M+ tokens were
-    being compressed (see issue #327).
-
-    The fix threads `observer=` through the IntelligentContextManager
-    constructor into the inner router. This test asserts the wiring at
-    the construction boundary; the observer fires when the inner router
-    actually compresses content (covered indirectly by the existing
-    `test_content_router_records_observer_call_per_routing_decision`).
-    """
-    from headroom.config import IntelligentContextConfig
-    from headroom.transforms.intelligent_context import IntelligentContextManager
-
-    spy = SpyObserver()
-    icm = IntelligentContextManager(
-        config=IntelligentContextConfig(enabled=True),
-        observer=spy,
-    )
-
-    # Force the lazy router to materialize.
-    inner_router = icm._get_content_router()
-
-    assert inner_router is not None, (
-        "IntelligentContextManager could not construct its inner ContentRouter; "
-        "fixture setup is broken"
-    )
-    assert inner_router._observer is spy, (
-        "Inner ContentRouter is missing the observer reference. "
-        "IntelligentContextManager must forward `observer=` to "
-        "ContentRouter(...) at intelligent_context.py:_get_content_router."
-    )
-
-
-def test_intelligent_context_manager_observer_defaults_to_none():
-    """Default constructor (no observer kwarg) leaves the inner router
-    unobserved. Lock the default behavior so SDK callers that don't
-    have a metrics object aren't forced to plumb one through."""
-    from headroom.config import IntelligentContextConfig
-    from headroom.transforms.intelligent_context import IntelligentContextManager
-
-    icm = IntelligentContextManager(
-        config=IntelligentContextConfig(enabled=True),
-    )
-    assert icm._observer is None
-    inner_router = icm._get_content_router()
-    assert inner_router is not None
-    assert inner_router._observer is None
+# IntelligentContextManager observability tests retired with PR-B1 —
+# the manager itself was deleted along with the message-dropping
+# strategy. Inner-router observability is now exercised solely
+# through ContentRouter, covered by
+# `test_content_router_records_observer_call_per_routing_decision`.

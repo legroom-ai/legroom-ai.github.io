@@ -9,6 +9,8 @@ import shlex
 import shutil
 import subprocess
 import sys
+from collections.abc import Iterator
+from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from hashlib import sha1
 from pathlib import Path
 from typing import Any
@@ -20,7 +22,9 @@ from headroom.install.paths import claude_settings_path, codex_config_path, vali
 from headroom.install.planner import build_manifest
 from headroom.install.providers import _apply_unix_env_scope, _apply_windows_env_scope
 from headroom.install.runtime import (
+    acquire_runtime_start_lock,
     resolve_headroom_command,
+    runtime_status,
     start_detached_agent,
     start_persistent_docker,
     stop_runtime,
@@ -46,10 +50,14 @@ _CODEX_FEATURE_MARKER_END = "# --- end Headroom init features ---"
 _SUPPORTED_TARGETS = ("claude", "copilot", "codex", "openclaw")
 _LOCAL_TARGETS = {"claude", "codex"}
 _GLOBAL_TARGETS = {"claude", "copilot", "codex", "openclaw"}
+_STARTUP_READY_TIMEOUT_SECONDS = 15
 
 
 def _command_string(parts: list[str]) -> str:
     if os.name == "nt":
+        # Normalize backslash paths to forward slashes so hook commands
+        # work when Claude Code executes them via Git Bash (#724).
+        parts = [p.replace("\\", "/") for p in parts]
         return subprocess.list2cmdline(parts)
     return shlex.join(parts)
 
@@ -199,30 +207,90 @@ def _ensure_copilot_hooks(path: Path, profile: str) -> None:
     _write_json(path, payload)
 
 
-def _replace_marker_block(content: str, marker_start: str, marker_end: str, block: str) -> str:
+def _replace_marker_block(
+    content: str, marker_start: str, marker_end: str, block: str, *, at_root: bool = False
+) -> str:
     if marker_start in content and marker_end in content:
         start = content.index(marker_start)
         end = content.index(marker_end) + len(marker_end)
         content = content[:start].rstrip() + "\n\n" + content[end:].lstrip()
-    return (content.rstrip() + "\n\n" + block.strip() + "\n").lstrip()
+    block = block.strip()
+    if at_root:
+        # The block carries top-level keys, so it must sit above the first table
+        # header; appended after a table (e.g. [features]) TOML scopes those keys
+        # into that table and Codex rejects the config (#260).
+        lines = content.splitlines()
+        for index, line in enumerate(lines):
+            stripped = line.strip()
+            if stripped.startswith("[") and stripped.endswith("]"):
+                head = "\n".join(lines[:index]).rstrip()
+                tail = "\n".join(lines[index:]).lstrip("\n")
+                prefix = f"{head}\n\n" if head else ""
+                return (f"{prefix}{block}\n\n{tail}").rstrip() + "\n"
+    return (content.rstrip() + "\n\n" + block + "\n").lstrip()
+
+
+def _strip_codex_init_block(content: str) -> str:
+    """Remove all Headroom init-managed blocks and orphan keys from a Codex config.toml string."""
+    import re
+
+    # Remove any provider marker → end marker span, possibly repeated.
+    while _CODEX_PROVIDER_MARKER_START in content and _CODEX_PROVIDER_MARKER_END in content:
+        start = content.index(_CODEX_PROVIDER_MARKER_START)
+        end_idx = content.index(_CODEX_PROVIDER_MARKER_END, start)
+        if end_idx < start:
+            break
+        end = end_idx + len(_CODEX_PROVIDER_MARKER_END)
+        content = content[:start].rstrip("\n") + "\n" + content[end:].lstrip("\n")
+
+    # Remove stale unpaired markers.
+    content = content.replace(_CODEX_PROVIDER_MARKER_START + "\n", "")
+    content = content.replace(_CODEX_PROVIDER_MARKER_END + "\n", "")
+
+    # Strip any orphan top-level keys that a crashed or partial write may have
+    # left outside the marker block.
+    content = re.sub(r'(?m)^[ \t]*model_provider[ \t]*=[ \t]*"headroom"[ \t]*\r?\n', "", content)
+    content = re.sub(
+        r'(?m)^[ \t]*openai_base_url[ \t]*=[ \t]*"http://127\.0\.0\.1:\d+/v1"[ \t]*\r?\n',
+        "",
+        content,
+    )
+
+    # Strip any orphaned [model_providers.headroom] table that is recognisably ours.
+    orphan_headroom_table = re.compile(
+        r"(?ms)^\[model_providers\.headroom\][^\[]*?"
+        r'base_url[ \t]*=[ \t]*"http://127\.0\.0\.1:\d+/v1"[^\[]*?'
+        r"(?=^\[|\Z)"
+    )
+    content = orphan_headroom_table.sub("", content)
+
+    return content.lstrip("\n").rstrip() + "\n" if content.strip() else ""
 
 
 def _ensure_codex_provider(path: Path, port: int) -> None:
+    import re
+
     logger.debug("ensure codex provider block: %s (port=%s)", path, port)
     block = (
         f"{_CODEX_PROVIDER_MARKER_START}\n"
-        'model_provider = "headroom"\n\n'
+        'model_provider = "headroom"\n'
+        f'openai_base_url = "http://127.0.0.1:{port}/v1"\n\n'
         "[model_providers.headroom]\n"
         'name = "Headroom init proxy"\n'
         f'base_url = "http://127.0.0.1:{port}/v1"\n'
-        'env_key = "OPENAI_API_KEY"\n'
-        "requires_openai_auth = true\n"
         "supports_websockets = true\n"
         f"{_CODEX_PROVIDER_MARKER_END}"
     )
     content = path.read_text(encoding="utf-8") if path.exists() else ""
+    # init owns model_provider/openai_base_url: drop any prior assignment (any
+    # value, including one an older version mis-scoped under a table) so we
+    # replace it instead of emitting a duplicate top-level key (#260).
+    content = re.sub(r"(?m)^[ \t]*model_provider[ \t]*=.*\r?\n", "", content)
+    content = re.sub(r"(?m)^[ \t]*openai_base_url[ \t]*=.*\r?\n", "", content)
+    # The provider block carries top-level keys (model_provider, openai_base_url),
+    # so it must land at the document root rather than after a trailing table (#260).
     content = _replace_marker_block(
-        content, _CODEX_PROVIDER_MARKER_START, _CODEX_PROVIDER_MARKER_END, block
+        content, _CODEX_PROVIDER_MARKER_START, _CODEX_PROVIDER_MARKER_END, block, at_root=True
     )
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
@@ -486,22 +554,54 @@ def _install_copilot_marketplace() -> None:
     )
 
 
+@contextmanager
+def _suppress_hook_output() -> Iterator[None]:
+    """Keep best-effort hook recovery from emitting invalid hook output."""
+    stdout_fd = os.dup(1)
+    stderr_fd = os.dup(2)
+    try:
+        with open(os.devnull, "w", encoding="utf-8") as devnull:
+            sys.stdout.flush()
+            sys.stderr.flush()
+            os.dup2(devnull.fileno(), 1)
+            os.dup2(devnull.fileno(), 2)
+            with redirect_stdout(devnull), redirect_stderr(devnull):
+                yield
+    finally:
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os.dup2(stdout_fd, 1)
+        os.dup2(stderr_fd, 2)
+        os.close(stdout_fd)
+        os.close(stderr_fd)
+
+
 def _ensure_profile_running(profile: str) -> None:
     manifest = load_manifest(profile)
     if manifest is None:
         return
-    if wait_ready(manifest, timeout_seconds=1):
-        return
-    try:
-        if manifest.preset == InstallPreset.PERSISTENT_DOCKER.value:
-            start_persistent_docker(manifest)
-        elif manifest.supervisor_kind == SupervisorKind.SERVICE.value:
-            start_supervisor(manifest)
-        else:
-            start_detached_agent(manifest.profile)
-        wait_ready(manifest, timeout_seconds=45)
-    except Exception:
-        return
+    with _suppress_hook_output():
+        if wait_ready(manifest, timeout_seconds=1):
+            return
+        try:
+            with acquire_runtime_start_lock(manifest.profile) as acquired:
+                if not acquired:
+                    return
+                if wait_ready(manifest, timeout_seconds=1):
+                    return
+                if runtime_status(manifest) == "running":
+                    if wait_ready(manifest, timeout_seconds=_STARTUP_READY_TIMEOUT_SECONDS):
+                        return
+                    stop_runtime(manifest)
+                if manifest.preset == InstallPreset.PERSISTENT_DOCKER.value:
+                    start_persistent_docker(manifest)
+                elif manifest.supervisor_kind == SupervisorKind.SERVICE.value:
+                    start_supervisor(manifest)
+                else:
+                    start_detached_agent(manifest.profile)
+                wait_ready(manifest, timeout_seconds=45)
+        except Exception:
+            return
 
 
 def _probe_init_targets(global_scope: bool) -> list[tuple[str, str | None]]:
@@ -660,6 +760,32 @@ def _run_init_targets(
             _init_codex(global_scope=global_scope, profile=profile, port=port)
         elif target == "openclaw":
             _init_openclaw(global_scope=global_scope, port=port)
+
+    # Register the headroom MCP server with every targeted agent that has
+    # a registrar implemented. Wave 1 covers Claude Code; subsequent waves
+    # add Cursor / Codex / Continue / Cline / Windsurf / Goose without
+    # touching the call sites.
+    _install_headroom_mcp_for_targets(targets=targets, port=port)
+
+
+def _install_headroom_mcp_for_targets(*, targets: list[str], port: int) -> None:
+    """Install the headroom MCP server into each detected target agent."""
+    from headroom.mcp_registry import format_results, install_everywhere
+
+    proxy_url = f"http://127.0.0.1:{port}"
+    results = install_everywhere(proxy_url=proxy_url, agents=targets)
+    if not results:
+        return
+
+    lines = format_results(
+        results,
+        verbose=True,
+        overwrite_hint=f"headroom mcp install --proxy-url {proxy_url} --force",
+    )
+    if lines:
+        click.echo("\nMCP retrieve tool:")
+        for line in lines:
+            click.echo(line)
 
 
 @main.group(invoke_without_command=True)

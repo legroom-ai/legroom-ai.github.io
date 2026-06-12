@@ -96,9 +96,35 @@ def test_openai_passthrough_applies_copilot_auth(monkeypatch: pytest.MonkeyPatch
         def __init__(self) -> None:
             self.metrics = SimpleNamespace(record_request=self._record_request)
             self.http_client = SimpleNamespace(request=self._request)
+            self.cost_tracker = None
+            self._counter = 0
 
         async def _record_request(self, **kwargs) -> None:  # noqa: ANN003
             return None
+
+        async def _next_request_id(self) -> str:
+            # The passthrough handler now allocates a request_id at end-
+            # of-call because it records via ``_record_request_outcome``,
+            # which requires one. Pre-refactor the dummy didn't need
+            # this method because metrics.record_request was called
+            # directly without a request_id.
+            self._counter += 1
+            return f"req-{self._counter}"
+
+        async def _record_request_outcome(self, outcome) -> None:  # noqa: ANN001
+            from headroom.proxy.outcome import emit_request_outcome
+
+            await emit_request_outcome(self, outcome)
+
+        def _extract_tags(self, headers: dict) -> dict[str, str]:
+            # Mirror of HeadroomProxy._extract_tags. The passthrough
+            # handler now extracts tags at entry as part of the
+            # outcome-tag invariant lock (PR #480).
+            return {
+                k.lower().replace("x-headroom-", ""): v
+                for k, v in headers.items()
+                if k.lower().startswith("x-headroom-")
+            }
 
         async def _request(self, **kwargs):  # noqa: ANN003
             seen["request_kwargs"] = kwargs
@@ -164,12 +190,13 @@ def test_streaming_response_applies_copilot_auth(monkeypatch: pytest.MonkeyPatch
                 send=self._send,
             )
 
-        def _build_request(self, method: str, url: str, json: dict, headers: dict):  # noqa: ANN003, A002
+        def _build_request(self, method: str, url: str, **kwargs):  # noqa: ANN003
+            # PR-A3: streaming forwarder is byte-faithful; it now passes
+            # ``content=<bytes>`` instead of ``json=<dict>``.
             seen["request"] = {
                 "method": method,
                 "url": url,
-                "json": json,
-                "headers": headers,
+                **kwargs,
             }
             return SimpleNamespace()
 
@@ -195,5 +222,8 @@ def test_streaming_response_applies_copilot_auth(monkeypatch: pytest.MonkeyPatch
     )
 
     assert seen["url"] == "https://api.githubcopilot.com/v1/responses"
-    assert seen["request"]["headers"] == {"Authorization": "Bearer upstream-token"}
+    # PR-A3: byte-faithful forwarder always sets ``content-type`` explicitly.
+    sent_headers = seen["request"]["headers"]
+    assert sent_headers["Authorization"] == "Bearer upstream-token"
+    assert sent_headers["content-type"] == "application/json"
     assert response.status_code == 200

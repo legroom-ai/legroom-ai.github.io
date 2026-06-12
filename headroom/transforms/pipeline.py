@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 import logging
+import os
+import threading
 import time
+from collections.abc import Callable
 from contextlib import nullcontext
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from ..config import (
     CacheAlignerConfig,
     DiffArtifact,
     HeadroomConfig,
-    IntelligentContextConfig,
-    RollingWindowConfig,
-    ToolCrusherConfig,
     TransformDiff,
     TransformResult,
     WasteSignals,
@@ -24,15 +24,29 @@ from ..utils import deep_copy_messages
 from .base import Transform
 from .cache_aligner import CacheAligner
 from .content_router import ContentRouter
-from .intelligent_context import IntelligentContextManager
-from .rolling_window import RollingWindow
-from .smart_crusher import SmartCrusher
-from .tool_crusher import ToolCrusher
 
 if TYPE_CHECKING:
     from ..providers.base import Provider
 
 logger = logging.getLogger(__name__)
+
+_N = TypeVar("_N", int, float)
+
+
+def _breaker_env(name: str, default: _N, cast: Callable[[str], _N]) -> _N:
+    """Parse a circuit-breaker env var, falling back on bad input.
+
+    The breaker is a safety net — a typo'd value must degrade to the
+    default with a warning, not crash proxy startup.
+    """
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    try:
+        return cast(raw)
+    except ValueError:
+        logger.warning("Invalid %s=%r; using default %s", name, raw, default)
+        return default
 
 
 class TransformPipeline:
@@ -43,8 +57,11 @@ class TransformPipeline:
     1. Cache Aligner - normalize prefix for cache hits
     2. Content Router - intelligent content-aware compression (routes to appropriate
        compressor: Kompress for text, SmartCrusher for JSON, CodeCompressor for code, etc.)
-    3. SmartCrusher/ToolCrusher - fallback if ContentRouter disabled
-    4. IntelligentContextManager/RollingWindow - enforce token limits
+
+    Phase B PR-B1 retired the IntelligentContextManager / RollingWindow
+    "drop messages from history" stage. Live-zone-only compression is the
+    sole strategy going forward — message-list mutation no longer happens
+    in the pipeline.
     """
 
     def __init__(
@@ -68,6 +85,16 @@ class TransformPipeline:
             self.transforms = transforms
         else:
             self.transforms = self._build_default_transforms()
+
+        # Circuit breaker (issue #847): after N consecutive pipeline
+        # failures, pass messages through untouched for a cooldown window
+        # instead of re-running (and re-failing) transforms on every
+        # request. Threshold <= 0 disables the breaker.
+        self._breaker_threshold = _breaker_env("HEADROOM_PIPELINE_BREAKER_THRESHOLD", 3, int)
+        self._breaker_cooldown_s = _breaker_env("HEADROOM_PIPELINE_BREAKER_COOLDOWN_S", 60.0, float)
+        self._breaker_lock = threading.Lock()
+        self._breaker_failures = 0
+        self._breaker_open_until = 0.0
 
     def _build_default_transforms(self) -> list[Transform]:
         """Build default transform pipeline from config."""
@@ -102,42 +129,8 @@ class TransformPipeline:
         # - Logs -> LogCompressor
         # - Search results -> SearchCompressor
         # - HTML -> HTMLExtractor
-        if self.config.content_router_enabled:
-            transforms.append(ContentRouter())
-            logger.info("Pipeline using ContentRouter for intelligent content-aware compression")
-        elif self.config.smart_crusher.enabled:
-            # Fallback: SmartCrusher only handles JSON arrays
-            from .smart_crusher import SmartCrusherConfig as SCConfig
-
-            smart_config = SCConfig(
-                enabled=True,
-                min_items_to_analyze=self.config.smart_crusher.min_items_to_analyze,
-                min_tokens_to_crush=self.config.smart_crusher.min_tokens_to_crush,
-                variance_threshold=self.config.smart_crusher.variance_threshold,
-                uniqueness_threshold=self.config.smart_crusher.uniqueness_threshold,
-                similarity_threshold=self.config.smart_crusher.similarity_threshold,
-                max_items_after_crush=self.config.smart_crusher.max_items_after_crush,
-                preserve_change_points=self.config.smart_crusher.preserve_change_points,
-                factor_out_constants=self.config.smart_crusher.factor_out_constants,
-                include_summaries=self.config.smart_crusher.include_summaries,
-            )
-            transforms.append(SmartCrusher(smart_config))
-        elif self.config.tool_crusher.enabled:
-            # Fallback to fixed-rule crushing
-            transforms.append(ToolCrusher(self.config.tool_crusher))
-
-        # 3. Context Management (enforce limits last)
-        # IntelligentContextManager takes precedence over RollingWindow when enabled
-        if self.config.intelligent_context.enabled:
-            # Use semantic-aware context management with scoring
-            transforms.append(IntelligentContextManager(self.config.intelligent_context))
-            logger.info(
-                "Pipeline using IntelligentContextManager with strategies: "
-                "COMPRESS_FIRST -> SUMMARIZE -> DROP_BY_SCORE"
-            )
-        elif self.config.rolling_window.enabled:
-            # Fallback to position-based rolling window
-            transforms.append(RollingWindow(self.config.rolling_window))
+        transforms.append(ContentRouter())
+        logger.info("Pipeline using ContentRouter for intelligent content-aware compression")
 
         return transforms
 
@@ -171,6 +164,36 @@ class TransformPipeline:
             return name
 
         return self._provider.__class__.__name__.removesuffix("Provider").lower()
+
+    def _breaker_is_open(self) -> bool:
+        """True while the circuit breaker cooldown window is active."""
+        if self._breaker_threshold <= 0:
+            return False
+        with self._breaker_lock:
+            return time.monotonic() < self._breaker_open_until
+
+    def _breaker_record_failure(self) -> None:
+        """Count a pipeline failure; open the breaker at the threshold."""
+        if self._breaker_threshold <= 0:
+            return
+        with self._breaker_lock:
+            self._breaker_failures += 1
+            if self._breaker_failures >= self._breaker_threshold:
+                self._breaker_open_until = time.monotonic() + self._breaker_cooldown_s
+                self._breaker_failures = 0
+                logger.warning(
+                    "Pipeline circuit breaker OPEN after %d consecutive failures; "
+                    "passing messages through for %.0fs",
+                    self._breaker_threshold,
+                    self._breaker_cooldown_s,
+                )
+
+    def _breaker_record_success(self) -> None:
+        """Reset the consecutive-failure count after a clean run."""
+        if self._breaker_threshold <= 0:
+            return
+        with self._breaker_lock:
+            self._breaker_failures = 0
 
     def apply(
         self,
@@ -206,6 +229,16 @@ class TransformPipeline:
             )
 
         # Start with original tokens
+        # Circuit breaker open — pass through untouched (issue #847).
+        if self._breaker_is_open():
+            passthrough_tokens = tokenizer.count_messages(messages)
+            return TransformResult(
+                messages=messages,
+                tokens_before=passthrough_tokens,
+                tokens_after=passthrough_tokens,
+                transforms_applied=["pipeline:circuit_open"],
+            )
+
         t_count = time.perf_counter()
         tokens_before = tokenizer.count_messages(messages)
         count_ms = (time.perf_counter() - t_count) * 1000
@@ -286,7 +319,11 @@ class TransformPipeline:
                 with transform_span_context as transform_span:
                     # Time the transform
                     t0 = time.perf_counter()
-                    result = transform.apply(current_messages, tokenizer, **kwargs)
+                    try:
+                        result = transform.apply(current_messages, tokenizer, **kwargs)
+                    except Exception:
+                        self._breaker_record_failure()
+                        raise
                     duration_ms = (time.perf_counter() - t0) * 1000
 
                     # Update messages for next transform
@@ -353,6 +390,9 @@ class TransformPipeline:
                                 duration_ms=duration_ms,
                             )
                         )
+
+            # All transforms ran without raising — reset the breaker.
+            self._breaker_record_success()
 
             # Single final token count — the only full recount in the pipeline.
             # Earlier per-transform counts come from each transform's own result.
@@ -457,34 +497,20 @@ class TransformPipeline:
 
 
 def create_pipeline(
-    tool_crusher_config: ToolCrusherConfig | None = None,
     cache_aligner_config: CacheAlignerConfig | None = None,
-    rolling_window_config: RollingWindowConfig | None = None,
-    intelligent_context_config: IntelligentContextConfig | None = None,
 ) -> TransformPipeline:
     """
     Create a pipeline with specific configurations.
 
     Args:
-        tool_crusher_config: Tool crusher configuration.
         cache_aligner_config: Cache aligner configuration.
-        rolling_window_config: Rolling window configuration.
-        intelligent_context_config: Intelligent context configuration.
-            When provided with enabled=True, replaces RollingWindow with
-            semantic-aware context management.
 
     Returns:
         Configured TransformPipeline.
     """
     config = HeadroomConfig()
 
-    if tool_crusher_config is not None:
-        config.tool_crusher = tool_crusher_config
     if cache_aligner_config is not None:
         config.cache_aligner = cache_aligner_config
-    if rolling_window_config is not None:
-        config.rolling_window = rolling_window_config
-    if intelligent_context_config is not None:
-        config.intelligent_context = intelligent_context_config
 
     return TransformPipeline(config)

@@ -171,7 +171,7 @@ The default port is 8787. To use a custom port:
 
 1. Uninstall: `./uninstall.sh`
 2. Reinstall with new port: `./install.sh --port 9000`
-3. Update shell integration: `export HEADROOM_PROXY_PORT=9000`
+3. Update shell integration: `export HEADROOM_PORT=9000`
 
 ### Log Location
 
@@ -195,28 +195,21 @@ Configure additional options in the plist `EnvironmentVariables` section:
 <key>EnvironmentVariables</key>
 <dict>
     <!-- Required: Proxy port -->
-    <key>HEADROOM_PROXY_PORT</key>
+    <key>HEADROOM_PORT</key>
     <string>8787</string>
 
     <!-- Optional: API key (or set in shell) -->
     <key>ANTHROPIC_API_KEY</key>
     <string>sk-ant-...</string>
 
-    <!-- Optional: Enable LLMLingua compression -->
-    <key>HEADROOM_COMPRESSION_PROVIDER</key>
-    <string>llmlingua</string>
-
-    <!-- Optional: LLMLingua device (auto, cuda, cpu, mps) -->
-    <key>HEADROOM_LLMLINGUA_DEVICE</key>
-    <string>mps</string>
 </dict>
 ```
 
-**Note:** LLMLingua requires additional installation:
-
-```bash
-pip install headroom-ai[llmlingua]
-```
+**Note:** The earlier LLMLingua-2 launch-agent variables
+(`HEADROOM_COMPRESSION_PROVIDER=llmlingua`, `HEADROOM_LLMLINGUA_DEVICE`,
+the `headroom-ai[llmlingua]` extra) were retired with the
+`--llmlingua` flag. For ML compression today, install the `[ml]`
+extra and follow `wiki/transforms.md`.
 
 ### Crash Recovery
 
@@ -242,7 +235,7 @@ Add to `~/.bashrc` (bash) or `~/.zshrc` (zsh):
 
 ```bash
 # Configure port (optional, defaults to 8787)
-export HEADROOM_PROXY_PORT=8787
+export HEADROOM_PORT=8787
 
 # Source shell integration
 source /path/to/headroom/examples/deployment/macos-launchagent/shell-integration.sh
@@ -525,7 +518,7 @@ This will:
 
 # Remove shell integration from ~/.bashrc or ~/.zshrc
 # Delete or comment out:
-#   export HEADROOM_PROXY_PORT=8787
+#   export HEADROOM_PORT=8787
 #   source .../shell-integration.sh
 ```
 
@@ -655,6 +648,34 @@ Limit CPU and memory usage:
 </dict>
 ```
 
+## Apple GPU (MPS) Embedding Offload
+
+On Apple Silicon, the proxy's memory embedder can run on the Apple GPU (MPS)
+instead of the default ONNX CPU backend. Offloading embedding to the GPU frees
+the CPU under load, keeping the proxy responsive — useful on fanless Macs (e.g.
+the M5 Air) that are prone to CPU-saturation timeouts.
+
+Enable it by installing the extra and setting the env var:
+
+```bash
+pip install 'headroom-ai[pytorch-mps]'   # also works as [pytorch_mps]
+export HEADROOM_EMBEDDER_RUNTIME=pytorch_mps
+```
+
+Under a LaunchAgent, set the env var in the plist `EnvironmentVariables`
+section:
+
+```xml
+<key>HEADROOM_EMBEDDER_RUNTIME</key>
+<string>pytorch_mps</string>
+```
+
+It only engages when Apple MPS is actually available (Apple Silicon + torch).
+If MPS is unavailable or the dependencies are missing, the proxy logs a warning
+and uses the existing default embedder selection path. This is strictly opt-in;
+default behavior is unchanged. See [Memory](memory.md#embedding-runtime--gpu-offload-apple-silicon)
+for details.
+
 ## FAQ
 
 **Q: Why LaunchAgent instead of running `headroom proxy` manually?**
@@ -683,4 +704,4 @@ A: The LaunchAgent setup is Anthropic-specific. For other providers, see [proxy.
 
 **Q: Does this work with Apple Silicon (M1/M2/M3)?**
 
-A: Yes, fully compatible. For LLMLingua compression, use `--llmlingua-device mps` for Apple Silicon acceleration.
+A: Yes, fully compatible. ML compression (Kompress, opt-in via `headroom-ai[ml]`) auto-detects MPS on Apple Silicon.

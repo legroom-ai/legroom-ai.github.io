@@ -36,6 +36,9 @@ def _get_litellm_clients() -> tuple[Any | None, Any | None]:
 
     try:
         import litellm
+
+        litellm.suppress_debug_info = True
+        litellm.set_verbose = False
         from litellm import get_model_info as litellm_get_model_info
     except ImportError:
         return None, None
@@ -53,6 +56,12 @@ _UNKNOWN_MODEL_WARNINGS: set[str] = set()
 # Anthropic model context limits
 # All Claude 3+ models have 200K context
 ANTHROPIC_CONTEXT_LIMITS: dict[str, int] = {
+    # Claude 4.7 (Opus 4.7) - 1M context. Claude Code sends the model
+    # name with a `[1m]` suffix to select the 1M tier; both forms are
+    # registered explicitly because the lookup chain does not strip the
+    # tier suffix and LiteLLM does not key on it either.
+    "claude-opus-4-7": 1000000,
+    "claude-opus-4-7[1m]": 1000000,
     # Claude 4.6 (Opus 4.6) - 1M context
     "claude-opus-4-6": 1000000,
     # Claude 4.5 (Opus 4.5)
@@ -80,6 +89,10 @@ ANTHROPIC_CONTEXT_LIMITS: dict[str, int] = {
 # NOTE: These are ESTIMATES. Always verify against actual Anthropic billing.
 # Last updated: 2025-01-14
 ANTHROPIC_PRICING: dict[str, dict[str, float]] = {
+    # Claude 4.7 (Opus tier pricing) — registered for both the bare
+    # name and the `[1m]` tier-suffixed form Claude Code sends.
+    "claude-opus-4-7": {"input": 15.00, "output": 75.00, "cached_input": 1.50},
+    "claude-opus-4-7[1m]": {"input": 15.00, "output": 75.00, "cached_input": 1.50},
     # Claude 4.6 (Opus tier pricing)
     "claude-opus-4-6": {"input": 15.00, "output": 75.00, "cached_input": 1.50},
     # Claude 4.5 (Opus tier pricing)
@@ -213,13 +226,15 @@ class AnthropicTokenCounter(TokenCounter):
     Falls back to tiktoken approximation only when no client is available.
     """
 
-    def __init__(self, model: str, client: Any = None):
+    def __init__(self, model: str, client: Any = None, warn: bool = True):
         """Initialize token counter.
 
         Args:
             model: Anthropic model name.
             client: Optional anthropic.Anthropic client for API-based counting.
                     If not provided, falls back to tiktoken approximation.
+            warn: If False, suppresses the no-client UserWarning (useful for
+                  internal proxy usage where approximation is intentional).
         """
         global _FALLBACK_WARNING_SHOWN
 
@@ -228,7 +243,7 @@ class AnthropicTokenCounter(TokenCounter):
         self._encoding: Any = None
         self._use_api = client is not None
 
-        if not self._use_api and not _FALLBACK_WARNING_SHOWN:
+        if not self._use_api and warn and not _FALLBACK_WARNING_SHOWN:
             warnings.warn(
                 "AnthropicProvider: No client provided, using tiktoken approximation. "
                 "For accurate counting, pass an Anthropic client: "
@@ -436,6 +451,7 @@ class AnthropicProvider(Provider):
         self,
         client: Any = None,
         context_limits: dict[str, int] | None = None,
+        warn: bool = True,
     ):
         """Initialize Anthropic provider.
 
@@ -443,12 +459,16 @@ class AnthropicProvider(Provider):
             client: Optional anthropic.Anthropic client for accurate token counting.
                     If not provided, uses tiktoken approximation.
             context_limits: Optional override for model context limits.
+            warn: If False, suppresses the no-client UserWarning. Set to False
+                  in contexts where tiktoken approximation is intentional (e.g.
+                  the internal proxy pipeline provider).
 
         Example:
             from anthropic import Anthropic
             provider = AnthropicProvider(client=Anthropic())
         """
         self._client = client
+        self._warn = warn
         self._token_counters: dict[str, AnthropicTokenCounter] = {}
 
         # Build context limits: defaults -> config file -> env var -> explicit
@@ -478,6 +498,7 @@ class AnthropicProvider(Provider):
             self._token_counters[model] = AnthropicTokenCounter(
                 model=model,
                 client=self._client,
+                warn=self._warn,
             )
         return self._token_counters[model]
 

@@ -19,7 +19,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-from ..cache.compression_store import get_compression_store
+from ..cache.compression_store import format_retrieval_miss_detail, get_compression_store
 from .tool_injection import CCR_TOOL_NAME, parse_tool_call
 
 logger = logging.getLogger(__name__)
@@ -202,6 +202,28 @@ class CCRResponseHandler:
         store = get_compression_store()
 
         try:
+            get_status = getattr(store, "get_entry_status", None)
+            entry_status = (
+                get_status(ccr_call.hash_key, clean_expired=True) if callable(get_status) else None
+            )
+            if entry_status is not None and entry_status["status"] != "available":
+                content = json.dumps(
+                    {
+                        "error": format_retrieval_miss_detail(entry_status),
+                        "hash": ccr_call.hash_key,
+                        "status": entry_status["status"],
+                        "ttl_seconds": entry_status.get(
+                            "ttl_seconds", entry_status["default_ttl_seconds"]
+                        ),
+                    },
+                    indent=2,
+                )
+                return CCRToolResult(
+                    tool_call_id=ccr_call.tool_call_id,
+                    content=content,
+                    success=False,
+                )
+
             if ccr_call.query:
                 # Search within compressed content
                 results = store.search(ccr_call.hash_key, ccr_call.query)
@@ -241,10 +263,17 @@ class CCRResponseHandler:
                         was_search=False,
                     )
                 else:
+                    miss_status = (
+                        get_status(ccr_call.hash_key, clean_expired=True)
+                        if callable(get_status)
+                        else {"hash": ccr_call.hash_key, "status": "missing"}
+                    )
                     content = json.dumps(
                         {
-                            "error": "Entry not found or expired (TTL: 5 minutes)",
+                            "error": format_retrieval_miss_detail(miss_status),
                             "hash": ccr_call.hash_key,
+                            "status": miss_status["status"],
+                            "ttl_seconds": miss_status.get("ttl_seconds"),
                         },
                         indent=2,
                     )
@@ -430,6 +459,19 @@ class CCRResponseHandler:
 
             if not ccr_calls:
                 # No CCR tool calls, we're done
+                break
+
+            # If the model called CCR alongside non-CCR tools, we cannot build
+            # a valid continuation — every tool_use in the assistant message
+            # requires a matching tool_result, but we only have CCR results.
+            # Skip CCR handling and let the client resolve all tool calls.
+            if other_calls:
+                logger.warning(
+                    "CCR: Skipping CCR handling — model called %d non-CCR tool(s) "
+                    "alongside headroom_retrieve. Cannot create a valid continuation "
+                    "without results for the other tools. Client must handle all tool calls.",
+                    len(other_calls),
+                )
                 break
 
             rounds += 1
@@ -665,18 +707,40 @@ class StreamingCCRHandler:
     def _parse_sse_stream(self, data: bytes) -> dict[str, Any]:
         """Parse SSE stream data into a response dict.
 
-        SSE format: data: {...}\n\n
+        SSE format: data: {...}\\n\\n
+
+        PR-A8 / P1-8: bytes-level event splitter; each complete event
+        decodes as UTF-8 only AFTER the ``\\n\\n`` boundary has been
+        located in bytes. Multi-byte characters split across upstream
+        TCP reads are preserved intact. Invalid UTF-8 in a *complete*
+        event is an upstream protocol bug — surfaced loudly, not
+        silently corrupted.
         """
-        # Accumulate all event data
-        events = []
-        for line in data.decode("utf-8", errors="replace").split("\n"):
-            if line.startswith("data: "):
-                event_data = line[6:]
-                if event_data.strip() and event_data.strip() != "[DONE]":
-                    try:
-                        events.append(json.loads(event_data))
-                    except json.JSONDecodeError:
-                        pass
+        from headroom.proxy.helpers import parse_sse_events_from_byte_buffer
+
+        # Accumulate all event data via the canonical bytes-buffer
+        # splitter. ``data`` is a closed payload here, so any partial
+        # tail bytes left in ``buf`` indicate the upstream truncated
+        # mid-event — log and ignore (already handled at the streaming
+        # layer above).
+        buf = bytearray(data)
+        events: list[dict[str, Any]] = []
+        for _event_name, data_str in parse_sse_events_from_byte_buffer(buf):
+            stripped = data_str.strip()
+            if not stripped or stripped == "[DONE]":
+                continue
+            try:
+                events.append(json.loads(stripped))
+            except json.JSONDecodeError:
+                # Per-event JSON garbage from upstream — skip the
+                # event but keep the rest of the stream parseable.
+                continue
+        if buf:
+            logger.debug(
+                "CCR: %d trailing bytes left in SSE buffer after parse "
+                "(upstream truncated mid-event)",
+                len(buf),
+            )
 
         # Reconstruct response from events
         # This is provider-specific

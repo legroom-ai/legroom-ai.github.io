@@ -128,7 +128,7 @@ class CompressConfig:
 
     # Model variant
     kompress_model: str | None = None
-    """Kompress model ID. None = default (chopratejas/kompress-base).
+    """Kompress model ID. None = default (chopratejas/kompress-v2-base).
     Set to a HuggingFace model ID for domain-specific compression.
     Set to 'disabled' to skip ML compression entirely
     (only SmartCrusher + CacheAligner will run)."""
@@ -252,6 +252,24 @@ def compress(
         tokens_after = result.tokens_after
         compressed_messages = result.messages
 
+        # Guard: if "optimization" inflated tokens, revert to originals.
+        # Mirrors the inflation guards in the proxy handlers
+        # (anthropic/openai/gemini/batch) — the library path had none.
+        if tokens_after > tokens_before:
+            logger.warning(
+                "Optimization inflated tokens (%d -> %d); reverting to original messages",
+                tokens_before,
+                tokens_after,
+            )
+            return CompressResult(
+                messages=messages,
+                tokens_before=tokens_before,
+                tokens_after=tokens_before,
+                tokens_saved=0,
+                compression_ratio=0.0,
+                transforms_applied=["inflation_guard:reverted"],
+            )
+
         routing_markers = summarize_routing_markers(result.transforms_applied)
         if routing_markers:
             routed_event = pipeline_extensions.emit(
@@ -337,11 +355,12 @@ def _get_pipeline() -> Any:
 
         from headroom.transforms import TransformPipeline
 
-        # Default pipeline: CacheAligner → ContentRouter → IntelligentContext
+        # Default pipeline: CacheAligner → ContentRouter
         # CacheAligner: stabilizes prefix for provider KV cache hits
         # ContentRouter: routes to the right compressor per content type
         #   (SmartCrusher for JSON, CodeCompressor for code, Kompress for text)
-        # IntelligentContext: enforces token limits with score-based dropping
+        # Phase B PR-B1 retired the trailing context-management stage —
+        # live-zone-only compression never drops messages.
         _pipeline = TransformPipeline()
         logger.debug("Headroom compression pipeline initialized")
         return _pipeline

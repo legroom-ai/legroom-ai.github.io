@@ -141,6 +141,13 @@ class _DummyOpenAIHandler(OpenAIHandlerMixin):
         self.anthropic_backend = None
         self.cost_tracker = None
         self.memory_handler = None
+        # PR-A6 wires session-sticky `OpenAI-Beta` merging into the
+        # responses HTTP handler — it reads `compute_session_id` to key
+        # the SessionBetaTracker. The routing tests don't exercise the
+        # tracker semantics themselves, so a fixed-id stub is enough.
+        self.session_tracker_store = SimpleNamespace(
+            compute_session_id=lambda *a, **k: "sess-openai-1",
+        )
         self.captured_request: tuple[str, str, dict, dict] | None = None
         self.captured_stream_request: tuple[str, dict, dict] | None = None
 
@@ -160,6 +167,13 @@ class _DummyOpenAIHandler(OpenAIHandlerMixin):
         # a wall-clock timeout; tests just need the callable invoked
         # synchronously so MagicMock call_count assertions fire.
         return fn()
+
+    async def _record_request_outcome(self, outcome) -> None:
+        # Test stub: delegates to the production funnel so wire shape
+        # matches HeadroomProxy._record_request_outcome.
+        from headroom.proxy.outcome import emit_request_outcome
+
+        await emit_request_outcome(self, outcome)
 
     async def _stream_response(
         self,
@@ -239,7 +253,30 @@ def test_handle_openai_responses_routes_chatgpt_auth_to_backend_api(monkeypatch)
     assert response.status_code == 200
 
 
-def test_handle_openai_responses_stream_keeps_compression(monkeypatch):
+def test_handle_openai_responses_routes_api_key_auth_direct_to_openai(monkeypatch):
+    request = _build_request(
+        {"model": "gpt-4o-mini", "input": "hello"},
+        {"Authorization": "Bearer sk-test"},
+    )
+    handler = _DummyOpenAIHandler()
+
+    monkeypatch.setattr("headroom.tokenizers.get_tokenizer", lambda model: _DummyTokenizer())
+
+    response = anyio.run(handler.handle_openai_responses, request)
+
+    assert handler.captured_request is not None
+    method, url, headers, body = handler.captured_request
+    assert method == "POST"
+    assert url == "https://api.openai.com/v1/responses"
+    assert headers.get("ChatGPT-Account-ID") is None
+    assert body["input"] == "hello"
+    assert response.status_code == 200
+
+
+def test_handle_openai_responses_stream_skips_python_compression(monkeypatch):
+    """PR-C5: Python no longer compresses /v1/responses (Rust handles it
+    natively). The streaming forward path must still fire — only the
+    Python compression dispatch is retired."""
     request = _build_request(
         {
             "model": "gpt-5.4",
@@ -257,15 +294,6 @@ def test_handle_openai_responses_stream_keeps_compression(monkeypatch):
     )
     handler = _DummyOpenAIHandler()
     handler.config.optimize = True
-    handler.openai_pipeline.apply.return_value = SimpleNamespace(
-        messages=[
-            {"role": "system", "content": "Keep it short"},
-            {"role": "user", "content": "hello"},
-        ],
-        transforms_applied=[],
-        tokens_before=2,
-        tokens_after=2,
-    )
 
     monkeypatch.setattr("headroom.tokenizers.get_tokenizer", lambda model: _DummyTokenizer())
 
@@ -273,7 +301,7 @@ def test_handle_openai_responses_stream_keeps_compression(monkeypatch):
 
     assert response.status_code == 200
     assert handler.captured_stream_request is not None
-    assert handler.openai_pipeline.apply.call_count == 1
+    assert handler.openai_pipeline.apply.call_count == 0
     assert handler.captured_stream_request[2]["stream"] is True
 
 
@@ -282,7 +310,7 @@ def test_handle_openai_responses_memory_timeout_fails_open(monkeypatch):
         def __init__(self):
             self.config = SimpleNamespace(inject_context=True, inject_tools=False)
 
-        async def search_and_format_context(self, memory_user_id, messages):
+        async def search_and_format_context(self, memory_user_id, messages, **_kwargs):
             return "should not be used"
 
         def has_memory_tool_calls(self, response, provider):
@@ -310,6 +338,40 @@ def test_handle_openai_responses_memory_timeout_fails_open(monkeypatch):
     assert handler.captured_request is not None
     _, _, _, body = handler.captured_request
     assert body.get("instructions") is None
+
+
+def test_codex_responses_timeout_fails_open_in_standalone_proxy(monkeypatch):
+    """Codex users running only the proxy still get fail-open on timeout."""
+    request = _build_request(
+        {
+            "model": "gpt-5.4",
+            "input": [
+                {
+                    "type": "function_call_output",
+                    "call_id": "call-1",
+                    "output": "large tool output",
+                }
+            ],
+        },
+        {"Authorization": "Bearer sk-test", "x-client": "codex"},
+    )
+    handler = _DummyOpenAIHandler()
+    handler.config.optimize = True
+
+    monkeypatch.setattr("headroom.tokenizers.get_tokenizer", lambda model: _DummyTokenizer())
+    monkeypatch.setattr(
+        handler,
+        "_compress_openai_responses_payload",
+        lambda *args, **kwargs: (_ for _ in ()).throw(TimeoutError()),
+    )
+
+    response = anyio.run(handler.handle_openai_responses, request)
+
+    assert response.status_code == 200
+    assert handler.captured_request is not None
+    _, url, _, body = handler.captured_request
+    assert url == "https://api.openai.com/v1/responses"
+    assert body["input"][0]["output"] == "large tool output"
 
 
 class _DummyWebSocket:

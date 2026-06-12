@@ -4,6 +4,7 @@ These tests verify the /v1/retrieve endpoints work correctly.
 """
 
 import json
+from unittest.mock import patch
 
 import pytest
 
@@ -65,7 +66,23 @@ class TestCCRRetrieveEndpoint:
         """Request with nonexistent hash should return 404."""
         response = client.post("/v1/retrieve", json={"hash": "nonexistent123"})
         assert response.status_code == 404
-        assert "not found or expired" in response.json()["detail"]
+        assert "Entry not found" in response.json()["detail"]
+        assert "CCR TTL: 300 seconds" in response.json()["detail"]
+
+    def test_retrieve_expired_hash_reports_expiration_detail(self, client):
+        """Expired entries report expiration separately from missing hashes."""
+        store = get_compression_store(default_ttl=1)
+        with patch("headroom.cache.compression_store.time.time", return_value=1000.0):
+            hash_key = store.store(original="payload", compressed="payload")
+
+        with patch("headroom.cache.compression_store.time.time", return_value=1002.0):
+            response = client.post("/v1/retrieve", json={"hash": hash_key})
+
+        assert response.status_code == 404
+        detail = response.json()["detail"]
+        assert "Entry expired" in detail
+        assert "CCR TTL: 1 seconds" in detail
+        assert "age: 2 seconds" in detail
 
     def test_retrieve_full_content(self, client):
         """Full retrieval returns original content."""
@@ -117,6 +134,35 @@ class TestCCRRetrieveEndpoint:
         assert data["query"] == "Python programming"
         assert "results" in data
         assert data["count"] >= 1
+
+    def test_retrieve_with_search_plain_text_original(self, client):
+        """Query retrieval searches plain-text originals stored by Kompress."""
+        store = get_compression_store()
+        original = (
+            "Codex WS compression stores plain text originals. "
+            "The target symbol is _compress_openai_responses_payload."
+        )
+        hash_key = store.store(original=original, compressed="compressed")
+
+        response = client.post(
+            "/v1/retrieve",
+            json={"hash": hash_key, "query": "_compress_openai_responses_payload"},
+        )
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["hash"] == hash_key
+        assert data["count"] == 1
+        assert data["results"][0]["type"] == "text"
+        assert "_compress_openai_responses_payload" in data["results"][0]["text"]
+
+    def test_retrieve_with_search_nonexistent_hash_returns_404(self, client):
+        """Query mode should not mask a missing hash as an empty search."""
+        response = client.post(
+            "/v1/retrieve",
+            json={"hash": "nonexistent123", "query": "anything"},
+        )
+        assert response.status_code == 404
 
     def test_retrieve_increments_count(self, client):
         """Each retrieval increments the retrieval count."""
@@ -185,6 +231,21 @@ class TestCCRRetrieveGetEndpoint:
         # Results should be a list (may be empty if BM25 threshold not met)
         assert isinstance(data["results"], list)
 
+    def test_get_retrieve_with_query_plain_text_original(self, client):
+        """GET query retrieval searches plain-text originals."""
+        store = get_compression_store()
+        hash_key = store.store(
+            original="plain text contains _compress_openai_responses_payload",
+            compressed="plain text",
+        )
+
+        response = client.get(f"/v1/retrieve/{hash_key}?query=_compress_openai_responses_payload")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["count"] == 1
+        assert data["results"][0]["type"] == "text"
+
     def test_get_retrieve_nonexistent(self, client):
         """GET with nonexistent hash returns 404."""
         response = client.get("/v1/retrieve/nonexistent123")
@@ -202,7 +263,18 @@ class TestCCRStatsEndpoint:
         data = response.json()
         assert "store" in data
         assert data["store"]["entry_count"] == 0
+        assert data["store"]["default_ttl_seconds"] == 300
         assert "recent_retrievals" in data
+
+    def test_stats_exposes_env_configured_ttl(self, client, monkeypatch):
+        """Stats expose the effective CCR TTL configured through env."""
+        reset_compression_store()
+        monkeypatch.setenv("HEADROOM_CCR_TTL_SECONDS", "7200")
+
+        response = client.get("/v1/retrieve/stats")
+
+        assert response.status_code == 200
+        assert response.json()["store"]["default_ttl_seconds"] == 7200
 
     def test_stats_with_entries(self, client):
         """Stats reflect store contents."""
@@ -376,7 +448,6 @@ class TestEndToEndTOINIntegration:
         reset_compression_store()
         config = ProxyConfig(
             optimize=True,  # Enable optimization
-            smart_routing=False,  # Use legacy mode for simpler testing
             cache_enabled=False,
             rate_limit_enabled=False,
             cost_tracking_enabled=False,
@@ -567,8 +638,12 @@ class TestEndToEndTOINIntegration:
         store = get_compression_store()
         store.process_pending_feedback()
 
-        # Verify TOIN learned field semantics
-        pattern = fresh_toin._patterns.get(signature.structure_hash)
+        # PR-B5: pattern key is now `(auth_mode, model_family, sig_hash)`.
+        # Callers that don't supply auth/model land on the
+        # `("unknown", "unknown", sig_hash)` slot.
+        from headroom.telemetry.toin import _make_pattern_key
+
+        pattern = fresh_toin._patterns.get(_make_pattern_key(None, None, signature.structure_hash))
         assert pattern is not None, "Pattern should exist after compression and retrieval"
 
         # CRITICAL ASSERTION: This catches the bug where compression_store
@@ -641,7 +716,12 @@ class TestEndToEndTOINIntegration:
         store.process_pending_feedback()
 
         # Step 3: Verify TOIN learned
-        pattern = fresh_toin._patterns.get(signature.structure_hash)
+        # PR-B5: pattern key is now `(auth_mode, model_family, sig_hash)`.
+        # Callers that don't supply auth/model land on the
+        # `("unknown", "unknown", sig_hash)` slot.
+        from headroom.telemetry.toin import _make_pattern_key
+
+        pattern = fresh_toin._patterns.get(_make_pattern_key(None, None, signature.structure_hash))
         assert pattern is not None, "Pattern should exist"
         assert pattern.total_compressions >= 1, "Should have compression count"
         assert pattern.total_retrievals >= 1, "Should have retrieval count"
@@ -653,6 +733,10 @@ class TestEndToEndTOINIntegration:
             "the production feedback loop is broken."
         )
 
-        # Step 5: Get recommendation (verifies learning is usable)
-        recommendation = fresh_toin.get_recommendation(signature, "find category")
-        assert recommendation.confidence >= 0, "Recommendation should have confidence"
+        # Step 5: PR-B5 retired the request-time recommendation API in favor of
+        # observation-only learning + startup-published recommendations.toml.
+        # `get_recommendation()` now returns None and emits a deprecation
+        # warning; the dispatcher consumes published advice via the Rust
+        # `RecommendationStore`. Assert the deprecation contract here so a
+        # future revival of the API doesn't slip past silently.
+        assert fresh_toin.get_recommendation(signature, "find category") is None

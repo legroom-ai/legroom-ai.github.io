@@ -15,18 +15,22 @@ jobs:
   smoke-test:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-      - name: Install dependencies
-        run: pip install -e ".[all]"
 
-      # `compression_only.evaluate_ccr_lossless` constructs a SmartCrusher
-      # which now hard-imports `headroom._core` (Stage 3c.1b). Build the
-      # Rust extension before running the smoke test or every call raises
-      # `ModuleNotFoundError`. Mirrors the main CI `test` job pattern.
+      - name: Cache pip
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-eval-${{ hashFiles('pyproject.toml') }}
+          restore-keys: ${{ runner.os }}-pip-eval-
+
+      # `pip install -e .` invokes maturin (declared in pyproject.toml's
+      # build-system) which calls cargo to compile the Rust extension.
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@1.95.0
 
@@ -35,21 +39,9 @@ jobs:
         with:
           workspaces: ". -> target"
 
-      - name: Install maturin
-        run: pip install 'maturin>=1.5,<2.0'
-
-      - name: Build Rust extension (headroom._core)
+      - name: Install dependencies (builds Rust extension via maturin)
         run: |
-          set -euo pipefail
-          maturin build --release -m crates/headroom-py/Cargo.toml --out dist
-          pip install --force-reinstall --no-deps dist/headroom_core_py-*.whl
-          SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
-          SO_FILE=$(find "$SITE_PACKAGES/headroom" -maxdepth 1 -name "_core.cpython-*.so" -print -quit 2>/dev/null)
-          if [[ -z "$SO_FILE" ]]; then
-            echo "error: could not find _core.cpython-*.so under $SITE_PACKAGES/headroom/" >&2
-            exit 1
-          fi
-          ln -sf "$SO_FILE" "headroom/$(basename "$SO_FILE")"
+          pip install -e ".[all]"
           python -c "from headroom._core import SmartCrusher; print('headroom._core OK:', SmartCrusher)"
 
       - name: Run CCR round-trip (zero cost)
@@ -62,31 +54,81 @@ jobs:
           print(f'CCR Round-trip: {result.passed_cases}/{result.total_cases} passed')
           assert result.passed, f'CCR failures: {result.errors}'
           "
-      - name: Run built-in tool output eval
-        run: python -m headroom.evals quick -n 8 --provider openai --model gpt-4o-mini
+
+      - name: Run tool schema compaction integrity eval (zero cost)
+        run: |
+          python -c "
+          from headroom.evals.runners.compression_only import CompressionOnlyRunner
+          runner = CompressionOnlyRunner()
+          result = runner.evaluate_tool_schema_compaction()
+          print(f'Tool schema compaction: {result.passed_cases}/{result.total_cases} passed, {result.total_tokens_saved} annotation tokens stripped')
+          assert result.passed, f'Schema compaction failures: {result.errors}'
+          "
+
+      # OPENAI_API_KEY is intentionally not set in the public OSS repo
+      # (the secret list is empty). The CCR round-trip step above is the
+      # mandatory gate; this step only runs when an operator has wired
+      # OPENAI_API_KEY as a repo secret (e.g. on a downstream fork). When
+      # missing, emit a loud GitHub `::warning::` annotation so the skip
+      # is visible in the run summary — never a silent pass.
+      - name: Run built-in tool output eval (skipped when OPENAI_API_KEY unset)
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -z "${OPENAI_API_KEY}" ]; then
+            echo "::warning title=Smoke eval skipped::OPENAI_API_KEY is not configured for this repo; only the CCR round-trip gate ran. Wire the secret to enable the live OpenAI eval."
+            exit 0
+          fi
+          python -m headroom.evals quick -n 8 --provider openai --model gpt-4o-mini
 
   # Full Tier 1 suite, weekly or manual (~$3-5, ~30-45 min)
   weekly-suite:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-      - name: Install dependencies
-        run: pip install -e ".[all]"
+
+      - name: Cache pip
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-eval-${{ hashFiles('pyproject.toml') }}
+          restore-keys: ${{ runner.os }}-pip-eval-
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.95.0
+
+      - name: Cache cargo registry + build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target"
+
+      - name: Install dependencies (builds Rust extension via maturin)
+        run: |
+          pip install -e ".[all]"
+          python -c "from headroom._core import SmartCrusher; print('headroom._core OK')"
       - name: Run Tier 1 evaluation suite
-        run: python -m headroom.evals suite --tier 1 --ci -o eval_results/
+        run: |
+          if [ -z "${OPENAI_API_KEY}" ]; then
+            echo "::warning title=Weekly eval skipped::OPENAI_API_KEY is not configured for this repo; skipping the live Tier 1 suite."
+            mkdir -p eval_results
+            printf '%s\n\n%s\n' \
+              '# Weekly Evaluation Skipped' \
+              'OPENAI_API_KEY is not configured for this repository, so the live Tier 1 evaluation suite was skipped.' \
+              > eval_results/skipped.md
+            exit 0
+          fi
+          python -m headroom.evals suite --tier 1 --ci -o eval_results/
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       - name: Upload results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: eval-results-${{ github.run_number }}
           path: eval_results/

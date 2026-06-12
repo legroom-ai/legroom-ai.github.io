@@ -28,9 +28,12 @@ use headroom_core::transforms::tag_protector::{
     protect_tags as rust_protect_tags, restore_tags as rust_restore_tags,
 };
 use headroom_core::transforms::{
+    compress_openai_responses_live_zone as rust_compress_openai_responses_live_zone,
     detect as rust_detect_chain, is_json_array_of_dicts as rust_is_json_array_of_dicts,
-    ContentType as RustContentType, DetectionResult as RustDetectionResult, DiffCompressionResult,
-    DiffCompressor, DiffCompressorConfig, DiffCompressorStats,
+    summarize_openai_responses_no_change_reason as rust_summarize_openai_responses_no_change_reason,
+    AuthMode as RustLiveZoneAuthMode, ContentType as RustContentType,
+    DetectionResult as RustDetectionResult, DiffCompressionResult, DiffCompressor,
+    DiffCompressorConfig, DiffCompressorStats, LiveZoneOutcome,
     LogCompressionResult as RustLogResult, LogCompressor as RustLogCompressor,
     LogCompressorConfig as RustLogConfig, LogCompressorStats as RustLogStats,
     LogFormat as RustLogFormat, LogLevel as RustLogLevel,
@@ -38,7 +41,7 @@ use headroom_core::transforms::{
     SearchCompressorConfig as RustSearchConfig, SearchCompressorStats as RustSearchStats,
 };
 use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyString};
+use pyo3::types::{PyBytes, PyDict};
 
 /// Identity stub used by the Python smoke test to verify linkage.
 #[pyfunction]
@@ -72,7 +75,7 @@ fn build_crush_array_dict<'py>(
     compacted: Option<String>,
     compaction_kind: Option<&'static str>,
 ) -> Bound<'py, PyDict> {
-    let dict = PyDict::new_bound(py);
+    let dict = PyDict::new(py);
     dict.set_item("items", kept_json).unwrap();
     dict.set_item("ccr_hash", ccr_hash).unwrap();
     dict.set_item("dropped_summary", dropped_summary).unwrap();
@@ -674,6 +677,26 @@ impl PySmartCrusher {
         }
     }
 
+    /// Construct with the lossless-first compaction stage's formatter
+    /// chosen by name: `"csv-schema"` (the `new()` default), `"json"`,
+    /// or `"markdown-kv"`. Raises `ValueError` on unknown names so a
+    /// misconfigured knob is visible instead of silently falling back.
+    #[staticmethod]
+    #[pyo3(signature = (config = None, format_name = "csv-schema"))]
+    fn with_compaction_format(
+        config: Option<&PySmartCrusherConfig>,
+        format_name: &str,
+    ) -> PyResult<Self> {
+        let cfg = config.map(|c| c.inner.clone()).unwrap_or_default();
+        match RustSmartCrusher::with_compaction_format(cfg, format_name) {
+            Some(inner) => Ok(Self { inner }),
+            None => Err(pyo3::exceptions::PyValueError::new_err(format!(
+                "unknown compaction format {format_name:?}; expected one of: {}",
+                headroom_core::transforms::smart_crusher::compaction::CompactionStage::SUPPORTED_FORMAT_NAMES.join(", ")
+            ))),
+        }
+    }
+
     /// `crush(content, query="", bias=1.0) -> CrushResult`. Argument
     /// order and keyword names mirror the Python implementation.
     ///
@@ -856,32 +879,31 @@ impl PyDetectionResult {
     /// the underlying Rust value.
     #[getter]
     fn metadata<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
-        let dict = PyDict::new_bound(py);
+        let dict = PyDict::new(py);
         for (k, v) in &self.inner.metadata {
             // Convert each JSON value into the closest Python primitive.
             // Detection metadata is always a flat dict of scalars (ints,
             // bools, strings) so we don't need to recurse.
-            let py_value: PyObject = match v {
-                serde_json::Value::Bool(b) => b.into_py(py),
+            match v {
+                serde_json::Value::Bool(b) => dict.set_item(k, b)?,
                 serde_json::Value::Number(n) => {
                     if let Some(i) = n.as_u64() {
-                        i.into_py(py)
+                        dict.set_item(k, i)?
                     } else if let Some(i) = n.as_i64() {
-                        i.into_py(py)
+                        dict.set_item(k, i)?
                     } else if let Some(f) = n.as_f64() {
-                        f.into_py(py)
+                        dict.set_item(k, f)?
                     } else {
-                        py.None()
+                        dict.set_item(k, py.None())?
                     }
                 }
-                serde_json::Value::String(s) => PyString::new_bound(py, s).into_py(py),
-                serde_json::Value::Null => py.None(),
+                serde_json::Value::String(s) => dict.set_item(k, s)?,
+                serde_json::Value::Null => dict.set_item(k, py.None())?,
                 // Detection never emits arrays / objects in metadata
                 // today; if it ever does, fall through to JSON-string for
                 // visibility rather than silently dropping.
-                other => PyString::new_bound(py, &other.to_string()).into_py(py),
+                other => dict.set_item(k, other.to_string())?,
             };
-            dict.set_item(k, py_value)?;
         }
         Ok(dict)
     }
@@ -1016,7 +1038,7 @@ fn content_has_error_indicators(text: &str) -> bool {
 #[pyfunction]
 fn keyword_registry_snapshot(py: Python<'_>) -> Py<PyDict> {
     let registry = KeywordRegistry::default_set();
-    let dict = PyDict::new_bound(py);
+    let dict = PyDict::new(py);
     for (key, words) in registry.as_map() {
         dict.set_item(key, words).unwrap();
     }
@@ -1127,7 +1149,7 @@ impl PySearchCompressionResult {
     }
     #[getter]
     fn summaries<'py>(&self, py: Python<'py>) -> Bound<'py, PyDict> {
-        let dict = PyDict::new_bound(py);
+        let dict = PyDict::new(py);
         for (k, v) in &self.inner.summaries {
             dict.set_item(k, v).unwrap();
         }
@@ -1327,7 +1349,7 @@ impl PyLogCompressionResult {
     }
     #[getter]
     fn stats<'py>(&self, py: Python<'py>) -> Bound<'py, PyDict> {
-        let dict = PyDict::new_bound(py);
+        let dict = PyDict::new(py);
         for (k, v) in &self.inner.stats {
             dict.set_item(k, v).unwrap();
         }
@@ -1459,6 +1481,105 @@ fn known_html_tag_names() -> Vec<&'static str> {
 
 // ─── Module init ───────────────────────────────────────────────────────────
 
+/// Apply OpenAI `/v1/responses` live-zone compression to a request body.
+///
+/// Hot-fix entry point added 2026-05-06: re-enables `/v1/responses`
+/// compression on the Python proxy after PR-C5 retired the Python
+/// pipeline. PR-C5's "Rust handles it" claim assumed the standalone
+/// `crates/headroom-proxy` binary would sit in front of Python; that
+/// binary is not deployed by the CLI (`headroom proxy`,
+/// `headroom wrap codex`). This binding lets the Python proxy call
+/// the live-zone dispatcher inline so Codex `/v1/responses` traffic
+/// is compressed end-to-end.
+///
+/// # Arguments
+/// * `body` — raw request body bytes (post memory-injection).
+/// * `auth_mode` — one of `"payg"`, `"oauth"`, `"subscription"`,
+///   `"unknown"`. Currently unused by the dispatcher (the policy
+///   gating is upstream); accepted for forward-compat.
+/// * `model` — model name from the request body. Empty string defaults
+///   to `headroom_core::transforms::live_zone::DEFAULT_MODEL`.
+///
+/// # Returns
+/// `(body, modified)`:
+/// * Modified: `(new_body_bytes, True)` — caller forwards the new bytes.
+/// * Unchanged / passthrough: `(input_bytes, False)` — caller forwards
+///   the original.
+///
+/// # Failure mode
+/// Never raises. The dispatcher's `LiveZoneError` outcomes (body not
+/// JSON, no `messages`/`input` array) are passthrough conditions, not
+/// failures — matching the Rust proxy's
+/// `compress_openai_responses_request` contract.
+#[pyfunction]
+#[pyo3(signature = (body, auth_mode = "payg", model = ""))]
+fn compress_openai_responses_live_zone(
+    py: Python<'_>,
+    body: &[u8],
+    auth_mode: &str,
+    model: &str,
+) -> (Py<PyBytes>, bool, u64, Vec<String>, Option<String>) {
+    let mode = match auth_mode.to_ascii_lowercase().as_str() {
+        "payg" => RustLiveZoneAuthMode::Payg,
+        "oauth" => RustLiveZoneAuthMode::OAuth,
+        "subscription" => RustLiveZoneAuthMode::Subscription,
+        _ => RustLiveZoneAuthMode::Unknown,
+    };
+    let model_str = if model.is_empty() {
+        headroom_core::transforms::live_zone::DEFAULT_MODEL
+    } else {
+        model
+    };
+
+    match rust_compress_openai_responses_live_zone(body, mode, model_str) {
+        Ok(LiveZoneOutcome::NoChange { manifest }) => {
+            let saved = manifest.tokens_saved() as u64;
+            let transforms: Vec<String> = manifest
+                .transforms_applied()
+                .into_iter()
+                .map(String::from)
+                .collect();
+            let reason = rust_summarize_openai_responses_no_change_reason(&manifest).to_string();
+            (
+                PyBytes::new(py, body).unbind(),
+                false,
+                saved,
+                transforms,
+                Some(reason),
+            )
+        }
+        Ok(LiveZoneOutcome::Modified { new_body, manifest }) => {
+            // `RawValue::get` returns the underlying serialized JSON
+            // as `&str`; bytes are valid UTF-8 by construction.
+            let bytes = new_body.get().as_bytes();
+            let saved = manifest.tokens_saved() as u64;
+            let transforms: Vec<String> = manifest
+                .transforms_applied()
+                .into_iter()
+                .map(String::from)
+                .collect();
+            (
+                PyBytes::new(py, bytes).unbind(),
+                true,
+                saved,
+                transforms,
+                None,
+            )
+        }
+        Err(_) => {
+            // BodyNotJson / NoMessagesArray are non-fatal: nothing to
+            // compress, fall through to passthrough byte-for-byte.
+            (
+                PyBytes::new(py, body).unbind(),
+                false,
+                0,
+                Vec::new(),
+                Some("dispatch_error".to_string()),
+            )
+        }
+    }
+}
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(hello, m)?)?;
@@ -1487,5 +1608,6 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(score_line, m)?)?;
     m.add_function(wrap_pyfunction!(content_has_error_indicators, m)?)?;
     m.add_function(wrap_pyfunction!(keyword_registry_snapshot, m)?)?;
+    m.add_function(wrap_pyfunction!(compress_openai_responses_live_zone, m)?)?;
     Ok(())
 }
