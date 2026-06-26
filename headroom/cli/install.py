@@ -221,6 +221,12 @@ def install_apply(
 ) -> None:
     """Install a persistent Headroom deployment."""
 
+    if anyllm_provider and backend != "anyllm":
+        click.echo(
+            f"Warning: --anyllm-provider is ignored unless --backend anyllm "
+            f"(got --backend {backend})."
+        )
+
     if preset == InstallPreset.PERSISTENT_DOCKER.value:
         runtime = RuntimeKind.DOCKER.value
 

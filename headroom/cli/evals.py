@@ -41,12 +41,14 @@ def _parse_categories(categories: str | None) -> list[int] | None:
 
 @main.group()
 def evals() -> None:
-    """Memory evaluation commands.
+    """Evaluation commands (memory, compression robustness, retention).
 
     \b
     Examples:
         headroom evals memory       Run LoCoMo memory evaluation
         headroom evals memory-v2    Run V2 evaluation with LLM-controlled tools
+        headroom evals adversarial  Compression-robustness adversarial grid
+        headroom evals probes       Retention probes over recorded sessions
     """
     pass
 

@@ -2396,6 +2396,13 @@ def _ensure_proxy(
 ) -> subprocess.Popen | None:
     """Start or verify proxy. Returns process handle if we started it."""
     helpers = _live_wrap_module()
+    # --no-proxy reuses an already-running proxy, so backend/region/provider
+    # flags (which only apply when we start one) would be silently dropped.
+    if no_proxy and (backend or anyllm_provider or region):
+        click.echo(
+            "  Warning: --backend/--region/--anyllm-provider have no effect with --no-proxy "
+            "(reusing the existing proxy)."
+        )
     if not no_proxy:
         manifest = helpers._find_persistent_manifest(port)
         if manifest is not None:

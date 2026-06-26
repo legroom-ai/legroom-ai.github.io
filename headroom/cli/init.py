@@ -953,6 +953,11 @@ def init(
         memory,
         ctx.invoked_subcommand,
     )
+    if anyllm_provider and backend != "anyllm":
+        click.echo(
+            f"Warning: --anyllm-provider is ignored unless --backend anyllm "
+            f"(got --backend {backend})."
+        )
     if ctx.invoked_subcommand is not None:
         ctx.obj = {
             "global_scope": global_scope,

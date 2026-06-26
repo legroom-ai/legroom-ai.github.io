@@ -910,6 +910,28 @@ def proxy(
             err=True,
         )
 
+    # Warn on contradictory / no-op flag combinations. The resolved value still
+    # applies; the warning just prevents a silently-ignored flag.
+    if no_rate_limit and (rpm is not None or tpm is not None):
+        click.secho(
+            "Warning: --rpm/--tpm have no effect because --no-rate-limit disables rate limiting.",
+            fg="yellow",
+            err=True,
+        )
+    if no_optimize and target_ratio is not None:
+        click.secho(
+            "Warning: --target-ratio has no effect because --no-optimize disables compression.",
+            fg="yellow",
+            err=True,
+        )
+    if telemetry and no_telemetry:
+        click.secho(
+            "Warning: both --telemetry and --no-telemetry were specified; --no-telemetry "
+            "takes precedence and telemetry will be disabled.",
+            fg="yellow",
+            err=True,
+        )
+
     # Opt-in: turn on tool_result interceptors (ast-grep Read outline, etc.).
     # Only fetch the bundled CLI tool binaries when the feature is enabled —
     # otherwise we'd pay a network round-trip and risk a readonly-FS failure
