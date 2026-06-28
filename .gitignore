@@ -118,6 +118,9 @@ env.bak/
 venv.bak/
 .python-version
 
+# Node.js dependencies (never commit vendored deps)
+node_modules/
+
 # Secrets and API keys - NEVER commit these
 *.pem
 *.key
