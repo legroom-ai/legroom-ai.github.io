@@ -98,6 +98,19 @@ def test_personas_omit_target_ratio_in_pipeline_kwargs() -> None:
         assert kwargs["compress_system_messages"] is False
         assert kwargs["force_kompress"] is False
         assert "target_ratio" not in kwargs  # persona never pins a keep-ratio
+        assert kwargs["compact_excluded_lossless"] is True  # grep/log/json fold on
+
+
+def test_agent_90_does_not_enable_lossless_excluded() -> None:
+    kwargs = proxy_pipeline_kwargs(ProxyConfig(savings_profile="agent-90"))
+    assert kwargs["compact_excluded_lossless"] is False
+    env = get_agent_savings_profile("agent-90").proxy_env()
+    assert env["HEADROOM_COMPACT_EXCLUDED_LOSSLESS"] == "0"
+
+
+def test_coding_persona_env_enables_lossless_excluded() -> None:
+    env = get_agent_savings_profile("coding").proxy_env()
+    assert env["HEADROOM_COMPACT_EXCLUDED_LOSSLESS"] == "1"
 
 
 def test_persona_apply_profile_leaves_target_ratio_untouched() -> None:

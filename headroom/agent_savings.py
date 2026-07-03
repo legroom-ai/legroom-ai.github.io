@@ -37,6 +37,11 @@ class AgentSavingsProfile:
     force_kompress: bool
     proxy_mode: str
     accuracy_guard: str
+    # Lossless compaction of EXCLUDED tool output (grep/log = byte-lossless,
+    # json = data-lossless). Recovers savings on Read/Grep-heavy coding traffic
+    # that the exclude list otherwise protects, with no accuracy loss on the
+    # byte-lossless tiers. Default off; workload personas opt in.
+    compact_excluded_lossless: bool = False
 
     @property
     def savings_percent(self) -> int:
@@ -60,6 +65,7 @@ class AgentSavingsProfile:
             ),
             "HEADROOM_FORCE_KOMPRESS": "1" if self.force_kompress else "0",
             "HEADROOM_ACCURACY_GUARD": self.accuracy_guard,
+            "HEADROOM_COMPACT_EXCLUDED_LOSSLESS": ("1" if self.compact_excluded_lossless else "0"),
         }
         # Only pin a keep-ratio when the profile sets one; workload personas
         # leave it unset so Kompress decides and the ambient default applies.
@@ -130,6 +136,7 @@ _PROFILES: dict[str, AgentSavingsProfile] = {
         force_kompress=False,  # don't override diff/log lossless with lossy ML
         proxy_mode="token",
         accuracy_guard="strict",
+        compact_excluded_lossless=True,  # recover grep/log/json savings, lossless
     ),
     "general": AgentSavingsProfile(
         name="general",
@@ -145,6 +152,7 @@ _PROFILES: dict[str, AgentSavingsProfile] = {
         force_kompress=False,
         proxy_mode="token",
         accuracy_guard="strict",
+        compact_excluded_lossless=True,
     ),
 }
 
@@ -217,6 +225,7 @@ def proxy_pipeline_kwargs(config: object) -> dict[str, object]:
                 "smart_crusher_with_compaction": profile.smart_crusher_with_compaction,
                 "force_kompress": profile.force_kompress,
                 "read_protection_window": profile.protect_recent,
+                "compact_excluded_lossless": profile.compact_excluded_lossless,
             }
         )
         # Only pin a keep-ratio when the profile sets one (personas leave it

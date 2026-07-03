@@ -2872,6 +2872,9 @@ class ContentRouter(Transform):
             kwargs.get("force_kompress", self.config.force_kompress_all)
         )
         self._runtime_kompress_model: str | None = kwargs.get("kompress_model")
+        self._runtime_compact_excluded_lossless: bool = bool(
+            kwargs.get("compact_excluded_lossless", self.config.compact_excluded_lossless)
+        )
         # F2.2: capture the per-request CompressionPolicy so
         # ``_record_to_toin`` can gate TOIN writes on
         # ``policy.toin_read_only``. ``None`` when the caller didn't
@@ -3451,7 +3454,9 @@ class ContentRouter(Transform):
         else ``None``. Source code and glob path-lists match nothing -> verbatim.
         Never raises.
         """
-        if not self.config.compact_excluded_lossless:
+        if not getattr(
+            self, "_runtime_compact_excluded_lossless", self.config.compact_excluded_lossless
+        ):
             return None
         if not isinstance(content, str) or len(content) < 200:
             return None
