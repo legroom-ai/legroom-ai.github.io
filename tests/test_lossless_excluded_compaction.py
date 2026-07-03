@@ -1,15 +1,16 @@
-"""Information-preserving compaction for EXCLUDED tool output.
+"""Byte-lossless compaction for EXCLUDED tool output.
 
 Excluded tools (Read/Grep/Glob/Write/Edit) are protected from *lossy*
 compression for accuracy. This feature still compacts them by detected shape,
-using only reversible / data-preserving transforms:
+using only **byte-recoverable** transforms:
 
 * SEARCH (grep)  -> ripgrep --heading fold   [byte-lossless]
 * LOG            -> ANSI strip + run-collapse [byte-lossless modulo ANSI color]
-* JSON           -> whitespace-minify         [data-lossless; NOT byte-exact]
 
-Source code and glob path-lists match nothing -> untouched. Always on
-(byte/data-lossless, so it needs no feature gate) in every path.
+JSON is deliberately left verbatim: minify is data-lossless but byte-*different*,
+and excluded tools include Read/Edit — minified JSON in context would break an
+Edit whose old_string was copied from the pretty file on disk. Source code, JSON,
+and glob path-lists -> untouched. Always on (byte-recoverable, no feature gate).
 """
 
 from __future__ import annotations
@@ -68,11 +69,10 @@ def test_log_compaction_recovers_modulo_ansi():
     assert expand_runs(out) == strip_ansi(LOG)  # recover the lines (ANSI dropped)
 
 
-def test_json_minify_is_data_lossless():
-    out, kind = _compact(JSON)
-    assert kind == "json"
-    assert len(out) < len(JSON)
-    assert json.loads(out) == json.loads(JSON)  # same object; NOT byte-exact
+def test_json_left_verbatim_for_edit_safety():
+    # JSON is NOT minified on excluded tools: minify is byte-different and would
+    # break a read-then-Edit(old_string) on the pretty file. Edit-safety wins.
+    assert _compact(JSON) is None
 
 
 def test_source_and_glob_untouched():
@@ -108,10 +108,11 @@ def test_pipeline_compacts_log_read(tokenizer):
     assert expand_runs(out) == strip_ansi(LOG)
 
 
-def test_pipeline_minifies_json_read(tokenizer):
+def test_pipeline_leaves_json_read_verbatim(tokenizer):
+    # Excluded Read of JSON stays byte-identical (edit-safety): no minify.
     out, transforms = _run(JSON, "read", tokenizer)
-    assert "router:excluded:lossless_json" in transforms
-    assert json.loads(out) == json.loads(JSON)
+    assert "router:excluded:lossless_json" not in transforms
+    assert out == JSON
 
 
 def test_pipeline_leaves_source_read_untouched(tokenizer):

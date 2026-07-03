@@ -882,7 +882,11 @@ class TestExcludeTools:
                     {
                         "type": "tool_result",
                         "tool_use_id": "toolu_glob_1",
-                        "content": generate_search_results(50),
+                        # JSON stays verbatim (excluded + not a byte-lossless
+                        # shape), so this cleanly tests format-level exclusion.
+                        # Search/log fold behavior is covered in the dedicated
+                        # fold tests (test_lossless_excluded_compaction).
+                        "content": generate_json_data(50),
                     }
                 ],
             },

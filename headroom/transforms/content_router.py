@@ -976,10 +976,11 @@ class ContentRouterConfig:
     exclude_tools: set[str] | None = None
 
     # Excluded tools are protected only from *lossy* compression. Their output
-    # is still given information-preserving compaction by detected shape (grep
-    # -> ripgrep --heading fold; logs -> ANSI strip + run-collapse; JSON ->
-    # whitespace-minify), in every path — see ``_lossless_compact_excluded``.
-    # This is always safe (byte/data-lossless) so it needs no config gate.
+    # is still given BYTE-lossless compaction by detected shape (grep -> ripgrep
+    # --heading fold; logs -> ANSI strip + run-collapse), in every path — see
+    # ``_lossless_compact_excluded``. JSON is left verbatim (minify is byte-
+    # different and would break read-then-edit). Always byte-recoverable, so no
+    # config gate.
 
     # Shell tool names (case-insensitive). Their output is non-excluded/lossy,
     # BUT a read-only *search* run through them (grep/rg/git grep) yields byte-
@@ -3542,11 +3543,10 @@ class ContentRouter(Transform):
         )
 
     def _lossless_compact_excluded(self, content: Any) -> tuple[str, str] | None:
-        """Information-preserving compaction for a protected (excluded) tool output.
+        """Byte-lossless compaction for a protected (excluded) tool output.
 
-        Excluded tools are kept out of *lossy* compression for accuracy. This
-        applies only reversible/data-preserving transforms, dispatched by
-        recognized shape:
+        Excluded tools are kept out of *lossy* compression for accuracy. Only
+        **byte-recoverable** transforms are applied here, dispatched by shape:
 
         * SEARCH (grep ``path:line:content``) -> ripgrep --heading fold.
           Byte-recoverable (``search_unheading`` reproduces the original). Gated
@@ -3554,14 +3554,16 @@ class ContentRouter(Transform):
           grep-over-code SOURCE_CODE and would wrongly reject it.
         * LOG (build/test/app logs) -> ANSI strip + run-collapse. Recoverable
           modulo non-semantic ANSI color (``expand_runs`` restores the lines).
-        * JSON -> whitespace-minify. **Data-lossless** (``json.loads`` equals the
-          original object) but NOT byte-exact.
+
+        JSON is deliberately NOT minified here: excluded tools include Read/Edit,
+        the read-then-edit path, and minified JSON (data-lossless but byte-
+        *different*) would break an ``Edit`` whose ``old_string`` was copied from
+        the pretty-printed file on disk. Search/log outputs aren't edited byte-
+        for-byte, so folding them is safe.
 
         Returns ``(compacted, kind)`` when a recognized shape actually shrinks,
-        else ``None``. Source code and glob path-lists match nothing -> verbatim.
-        Always safe to run — the transforms are byte/data-lossless — so there is
-        no feature gate: excluded tool output is compacted in every path. Never
-        raises.
+        else ``None``. Source code, JSON, and glob path-lists -> verbatim. Always
+        safe (byte-recoverable) so there is no feature gate. Never raises.
         """
         if not isinstance(content, str) or len(content) < 200:
             return None
@@ -3575,26 +3577,9 @@ class ContentRouter(Transform):
             if _try_detect_log(content) is not None:
                 out = compact_lossless(content, "log")
                 return (out, "log") if len(out) < len(content) else None
-            minified = self._minify_json_data_lossless(content)
-            return (minified, "json") if minified is not None else None
+            return None
         except Exception:  # noqa: BLE001
             return None
-
-    @staticmethod
-    def _minify_json_data_lossless(content: str) -> str | None:
-        """Whitespace-minify a complete JSON value: data-preserving, not byte-exact.
-
-        The ``json.loads`` parse is the data-equality guarantee (identical
-        object). Returns the minified form only when the content is a JSON
-        object/array and the result is smaller; ``None`` otherwise (source code,
-        partial/non-JSON).
-        """
-        stripped = content.strip()
-        if not stripped or stripped[0] not in "{[":
-            return None
-        obj = json.loads(stripped)
-        minified = json.dumps(obj, separators=(",", ":"), ensure_ascii=False)
-        return minified if len(minified) < len(content) else None
 
     def _bash_search_fold(self, tool_name: str, tool_id: str, content: Any) -> str | None:
         """Byte-lossless fold for a read-only search run through a shell tool.
