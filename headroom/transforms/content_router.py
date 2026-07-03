@@ -93,6 +93,92 @@ def _tool_call_args_text(raw: Any) -> str:
     return " ".join(text.split())[:300]
 
 
+def _tool_call_command_text(raw: Any) -> str:
+    """Extract the raw shell command from a tool call's args, if present.
+
+    Anthropic ``input`` is a dict ({"command": "grep …"}); OpenAI ``arguments``
+    is a JSON string; Codex's shell uses a ``command`` list. Returns "" when
+    there is no command field (non-shell tools).
+    """
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except (ValueError, TypeError):
+            return ""
+    if not isinstance(raw, dict):
+        return ""
+    cmd = raw.get("command", raw.get("cmd", ""))
+    if isinstance(cmd, list):
+        cmd = " ".join(str(c) for c in cmd)
+    return cmd if isinstance(cmd, str) else ""
+
+
+# Shell wrappers that prefix the real program — peeled to find it. Shell
+# grammar, not tunable policy: rtk (the user's token proxy), sudo/env/timeout/…
+_SHELL_WRAPPERS = frozenset(
+    {
+        "rtk",
+        "sudo",
+        "env",
+        "time",
+        "nice",
+        "ionice",
+        "nohup",
+        "stdbuf",
+        "command",
+        "timeout",
+        "xargs",
+    }
+)
+
+
+def _bash_program(command: str) -> tuple[str, list[str]]:
+    """Return ``(program_basename_lower, trailing_tokens)`` for a shell command.
+
+    Peels leading wrappers (``rtk grep`` -> ``grep``, ``timeout 30 rg`` -> ``rg``)
+    and env assignments (``FOO=1 grep`` -> ``grep``). Empty program when it can't
+    be determined. Whitespace-split is deliberately simple — the reversibility
+    guard downstream makes a parse miss harmless.
+    """
+    toks = command.strip().split()
+    i = 0
+    while i < len(toks):
+        tok = toks[i]
+        if "=" in tok and not tok.startswith("-"):  # VAR=val env assignment
+            i += 1
+            continue
+        base = tok.rsplit("/", 1)[-1].lower()  # /usr/bin/grep -> grep
+        if base in _SHELL_WRAPPERS:
+            i += 1
+            # Skip this wrapper's own option/numeric args (timeout 30, nice -n 5).
+            while i < len(toks) and (
+                toks[i].startswith("-") or toks[i].replace(".", "", 1).isdigit()
+            ):
+                i += 1
+            continue
+        return base, toks[i + 1 :]
+    return "", []
+
+
+def _bash_command_is_search(command: str, search_commands: frozenset[str]) -> bool:
+    """True when ``command`` is a read-only search whose output folds byte-
+    losslessly (grep/rg/git grep/…). Peels wrappers and recurses into ``sh -c``.
+    """
+    prog, rest = _bash_program(command)
+    if not prog:
+        return False
+    if prog in {"sh", "bash", "zsh", "dash"} and rest:
+        # `bash -lc "grep …"` (Codex): the real command is the -c argument.
+        for j, tok in enumerate(rest):
+            if tok in {"-c", "-lc", "-lic", "-ic"} and j + 1 < len(rest):
+                inner = " ".join(rest[j + 1 :]).strip("'\"")
+                return _bash_command_is_search(inner, search_commands)
+        return False
+    if prog == "git" and rest and rest[0].lower() == "grep":
+        return True
+    return prog in search_commands
+
+
 def _log_router_debug(event: str, **payload: Any) -> None:
     if not logger.isEnabledFor(logging.DEBUG):
         return
@@ -895,6 +981,16 @@ class ContentRouterConfig:
     # whitespace-minify), in every path — see ``_lossless_compact_excluded``.
     # This is always safe (byte/data-lossless) so it needs no config gate.
 
+    # Shell tool names (case-insensitive). Their output is non-excluded/lossy,
+    # BUT a read-only *search* run through them (grep/rg/git grep) yields byte-
+    # losslessly foldable output — folded instead of lossy-compressed. See
+    # ``_bash_search_fold``. Config so new harness tool names / search programs
+    # can be added without code changes.
+    bash_tool_names: frozenset[str] = frozenset({"bash", "shell", "local_shell"})
+    bash_search_commands: frozenset[str] = frozenset(
+        {"grep", "egrep", "fgrep", "rg", "ripgrep", "ag", "ack"}
+    )
+
     # Read lifecycle management (stale/superseded detection)
     read_lifecycle: ReadLifecycleConfig = field(default_factory=ReadLifecycleConfig)
 
@@ -1198,6 +1294,8 @@ class ContentRouter(Transform):
         self._relevance_prewarm_started: bool = False
         # tool_call_id → compact args text, populated by _build_tool_name_map.
         self._tool_call_args: dict[str, str] = {}
+        # tool_call_id → raw shell command (bash-search fold), same population.
+        self._tool_call_commands: dict[str, str] = {}
 
         # Phase 0 (#1171): cap the input size handed to kompress (ModernBERT
         # ONNX). Its inference scales O(tokens) and runs synchronously on the
@@ -2617,6 +2715,7 @@ class ContentRouter(Transform):
         """
         mapping: dict[str, str] = {}
         args_map: dict[str, str] = {}
+        commands_map: dict[str, str] = {}
 
         for msg in messages:
             if msg.get("role") != "assistant":
@@ -2633,6 +2732,9 @@ class ContentRouter(Transform):
                         args = _tool_call_args_text(fn.get("arguments"))
                         if args:
                             args_map[tc_id] = args
+                        command = _tool_call_command_text(fn.get("arguments"))
+                        if command:
+                            commands_map[tc_id] = command
 
             # Anthropic format: content blocks with type=tool_use
             content = msg.get("content", [])
@@ -2646,8 +2748,12 @@ class ContentRouter(Transform):
                             args = _tool_call_args_text(block.get("input"))
                             if args:
                                 args_map[tc_id] = args
+                            command = _tool_call_command_text(block.get("input"))
+                            if command:
+                                commands_map[tc_id] = command
 
         self._tool_call_args = args_map
+        self._tool_call_commands = commands_map
         return mapping
 
     def _net_cost_allows(
@@ -3109,6 +3215,18 @@ class ContentRouter(Transform):
                 tool_name = tool_name_map.get(tool_call_id, "")
                 bias = self._get_tool_bias(tool_name) if tool_name else 1.0
 
+                # Bash-search lossless pre-empt: a read-only search (grep/rg/git
+                # grep) run via a shell tool yields byte-losslessly foldable
+                # output. Fold it instead of the lossy strategy path.
+                bash_folded = self._bash_search_fold(tool_name, tool_call_id, content)
+                if bash_folded is not None:
+                    result_slots[i] = {**message, "content": bash_folded}
+                    transforms_applied.append("router:bash:lossless_search")
+                    route_counts["bash_lossless_search"] = (
+                        route_counts.get("bash_lossless_search", 0) + 1
+                    )
+                    continue
+
             # Protection 1: Never compress user messages (unless overridden)
             if skip_user and role == "user":
                 result_slots[i] = message
@@ -3478,6 +3596,35 @@ class ContentRouter(Transform):
         minified = json.dumps(obj, separators=(",", ":"), ensure_ascii=False)
         return minified if len(minified) < len(content) else None
 
+    def _bash_search_fold(self, tool_name: str, tool_id: str, content: Any) -> str | None:
+        """Byte-lossless fold for a read-only search run through a shell tool.
+
+        ``bash`` is not excluded, so its output normally takes the lossy strategy
+        path. But when the command is a read-only search (grep/rg/git grep/…),
+        its output is byte-losslessly foldable — so fold it (the same guarantee
+        excluded Grep gets) instead of lossy-compressing. The command whitelist
+        is only a *gate to attempt*: ``compact_lossless`` verifies reversibility
+        and returns the input unchanged when it can't safely shrink, so a mis-
+        gated command (``grep -l`` path-lists, ``grep -c`` counts) simply falls
+        through to the normal path with no accuracy risk.
+
+        Returns the folded text (smaller, recoverable) or ``None`` to fall through.
+        """
+        if not isinstance(content, str) or len(content) < 200:
+            return None
+        if tool_name.lower() not in self.config.bash_tool_names:
+            return None
+        command = self._tool_call_commands.get(tool_id, "")
+        if not command or not _bash_command_is_search(command, self.config.bash_search_commands):
+            return None
+        try:
+            from .lossless_compaction import compact_lossless
+
+            folded = compact_lossless(content, "search")
+        except Exception:  # noqa: BLE001
+            return None
+        return folded if len(folded) < len(content) else None
+
     def _get_tool_bias(self, tool_name: str) -> float:
         """Look up compression bias for a tool name.
 
@@ -3635,6 +3782,20 @@ class ContentRouter(Transform):
                         block_context = build_relevance_query(context, tool_name, call_args)
 
                 tool_content = block.get("content", "")
+
+                # Bash-search lossless pre-empt (twin of the string-form path):
+                # fold read-only search output (grep/rg/git grep) byte-losslessly
+                # instead of taking the lossy strategy path.
+                bash_folded = self._bash_search_fold(tool_name, tool_use_id, tool_content)
+                if bash_folded is not None:
+                    new_blocks.append({**block, "content": bash_folded})
+                    transforms_applied.append("router:bash:lossless_search")
+                    if route_counts is not None:
+                        route_counts["bash_lossless_search"] = (
+                            route_counts.get("bash_lossless_search", 0) + 1
+                        )
+                    any_compressed = True
+                    continue
 
                 # Protection: failed tool calls / error outputs stay verbatim
                 # (issue #847). `is_error` is Anthropic's explicit failure
