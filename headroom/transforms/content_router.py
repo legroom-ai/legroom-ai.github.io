@@ -3511,6 +3511,7 @@ class ContentRouter(Transform):
                     # (#1307). Keep the original verbatim instead.
                     if (
                         enforce_rev
+                        and self.config.ccr_inject_marker
                         and result.strategy_used in self.LOSSY_UNMARKED_STRATEGIES
                         and not CCR_RETRIEVAL_MARKER_RE.search(result.compressed)
                     ):
@@ -4217,8 +4218,16 @@ class ContentRouter(Transform):
             # (#1307). The string/`role=="tool"` path guards this; mirror it
             # here for tool_result blocks (never cached, so the Tier-2 path
             # above can't serve a poisoned entry).
+            #
+            # EXCEPTION: no-CCR mode (config.ccr_inject_marker=False). Here the
+            # operator has *deliberately* disabled retrieval markers — recovery
+            # is not expected, so unmarked lossy output is the intended result,
+            # not a bug to skip. This drops the marker-token overhead AND the
+            # forgone compressions the guard would otherwise skip. Only applies
+            # when markers are off; with markers on the guard is unchanged.
             if (
                 enforce_reversibility
+                and self.config.ccr_inject_marker
                 and result.strategy_used in self.LOSSY_UNMARKED_STRATEGIES
                 and not CCR_RETRIEVAL_MARKER_RE.search(result.compressed)
             ):
