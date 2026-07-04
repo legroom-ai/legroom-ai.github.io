@@ -1789,6 +1789,19 @@ class ContentRouter(Transform):
                 best, best_label = cand, f"lossless_{kind}"
         return best, best_label
 
+    def _has_lossless_fold(self, content: str) -> bool:
+        """True if a byte/data-lossless fold shrinks ``content`` (any format).
+
+        Lets small blocks bypass the lossy ``min_chars`` floor: a lossless fold
+        is byte-exact and cheap (stdlib regex), so there is no size threshold
+        below which it should be skipped. The floor exists only to keep the
+        expensive lossy compressors off marginal blocks — it must not gate the
+        free, recoverable fold.
+        """
+        if not isinstance(content, str):
+            return False
+        return self._lossless_first(content, CompressionStrategy.PASSTHROUGH)[1] is not None
+
     def _apply_strategy_to_content(
         self,
         content: str,
@@ -3884,8 +3897,12 @@ class ContentRouter(Transform):
                         route_counts["error_protected"] += 1
                     continue
 
-                # Only process string content
-                if isinstance(tool_content, str) and len(tool_content) > min_chars:
+                # Only process string content. Blocks below the lossy min_chars
+                # floor still pass when a byte-lossless fold shrinks them — the
+                # floor guards the lossy path only; lossless has no size floor.
+                if isinstance(tool_content, str) and (
+                    len(tool_content) > min_chars or self._has_lossless_fold(tool_content)
+                ):
                     # Compression pinning: skip already-compressed content
                     if (
                         "Retrieve more: hash=" in tool_content
@@ -3931,7 +3948,9 @@ class ContentRouter(Transform):
             # `compress_assistant_text_blocks`).
             elif block_type == "text" and not protect_text_blocks:
                 text_content = block.get("text", "")
-                if isinstance(text_content, str) and len(text_content) > min_chars:
+                if isinstance(text_content, str) and (
+                    len(text_content) > min_chars or self._has_lossless_fold(text_content)
+                ):
                     # Pinning: skip already-compressed content
                     if (
                         "Retrieve more: hash=" in text_content
@@ -4018,10 +4037,16 @@ class ContentRouter(Transform):
             ``True`` the caller should update the block with the returned
             content and set ``any_compressed``.
         """
+        # In lossless-only mode a "skip" means no byte-lossless fold exists for
+        # this block (e.g. source code) — it is left verbatim, which is NOT a
+        # rejected compression. Bucket it honestly so it doesn't masquerade as
+        # ratio_too_high (which properly means "a lossy attempt didn't shrink
+        # enough"). In CCR mode the ratio_too_high meaning is unchanged.
+        _noop_bucket = "lossless_noop" if self.config.lossless else "ratio_too_high"
         # Tier 1: skip set — instant rejection
         if self._cache.is_skipped(content_key):
             if route_counts is not None:
-                route_counts["ratio_too_high"] = route_counts.get("ratio_too_high", 0) + 1
+                route_counts[_noop_bucket] = route_counts.get(_noop_bucket, 0) + 1
                 route_counts["cache_hit"] = route_counts.get("cache_hit", 0) + 1
             return None, False
 
@@ -4109,10 +4134,12 @@ class ContentRouter(Transform):
                     f"{details_prefix}:{result.strategy_used.value}:{result.compression_ratio:.2f}"
                 )
             return result.compressed, True
-        # Didn't compress enough — add to skip set
+        # Didn't compress enough — add to skip set. In lossless-only mode this is
+        # a "no fold available" passthrough (code/text left verbatim), not a
+        # rejected lossy compression, so bucket it as lossless_noop.
         self._cache.mark_skip(content_key)
         if route_counts is not None:
-            route_counts["ratio_too_high"] = route_counts.get("ratio_too_high", 0) + 1
+            route_counts[_noop_bucket] = route_counts.get(_noop_bucket, 0) + 1
         return None, False
 
     def _detect_analysis_intent(self, messages: list[dict[str, Any]]) -> bool:

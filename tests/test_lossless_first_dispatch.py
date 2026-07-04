@@ -74,3 +74,29 @@ def test_flag_off_still_keeps_lossless_floor_for_foldable():
     assert was is True
     assert tr == ["router:tool_result:lossless_search"]
     assert search_unheading(out) == block
+
+
+def test_has_lossless_fold_admits_small_block_below_size_floor():
+    # A <500-char search block must be admitted — lossless has NO size floor
+    # (the min_chars floor guards the lossy path only).
+    router = ContentRouter(ContentRouterConfig(lossless=True))
+    small = "\n".join(f"pkg/mod/long_filename.py:{n}:value = {n}" for n in range(1, 8)) + "\n"
+    assert len(small) < 500
+    assert router._has_lossless_fold(small) is True
+    # non-foldable tiny code must NOT be admitted (stays "small")
+    assert router._has_lossless_fold("def f():\n    return 1\n") is False
+
+
+def test_lossless_mode_non_foldable_is_lossless_noop_not_ratio_too_high():
+    # In lossless-only mode, code with no byte-lossless fold is left verbatim.
+    # That is NOT a rejected compression, so it must not be bucketed as
+    # ratio_too_high (which means "a lossy attempt didn't shrink enough").
+    router = ContentRouter(ContentRouterConfig(lossless=True))
+    code = "\n".join(f"    x{i} = compute_value({i}, offset={i * 3})" for i in range(60)) + "\n"
+    rc: dict = {}
+    out, was = router._compress_block_content(
+        code, hash(code), "", 1.0, 1.0, None, [], rc, [], "tool_result", "tool", True,
+    )
+    assert was is False
+    assert rc.get("lossless_noop", 0) >= 1
+    assert rc.get("ratio_too_high", 0) == 0
