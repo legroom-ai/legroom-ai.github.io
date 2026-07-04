@@ -877,8 +877,9 @@ class ContentRouterConfig:
     # in a later tool output that already appeared verbatim in an earlier tool
     # output with an in-context pointer. Prefix-monotonic (cache-safe) and
     # information-preserving (the original stays in context). Env: HEADROOM_DEDUPE=1.
-    # Only runs alongside lossless mode, where code stays verbatim so references
-    # never resolve to degraded content.
+    # Runs in both modes: lossless references verbatim/folded content; CCR mode
+    # references the earlier block's kompressed-but-CCR-recoverable form
+    # (deterministic content-hash → stable → still cache-safe, no added loss).
     enable_cross_turn_dedup: bool = False
     min_section_tokens: int = 20  # Min tokens to compress a section
 
@@ -3559,11 +3560,16 @@ class ContentRouter(Transform):
         # Build final message list from slots
         transformed_messages = [m for m in result_slots if m is not None]
 
-        # Cross-turn (whole-conversation) verbatim de-dup, over the final block
-        # forms. Only in lossless mode, where code stays verbatim so in-context
-        # references never resolve to degraded content. Prefix-monotonic → no
-        # prompt-cache bust (frozen + cache_control blocks are never rewritten).
-        if self._cross_turn_dedup_enabled and self.config.lossless:
+        # Cross-turn (whole-conversation) verbatim de-dup, over the FINAL block
+        # forms, so it works in both modes: in lossless mode it references
+        # verbatim/byte-folded content; in CCR mode it references the earlier
+        # block's kompressed-but-CCR-recoverable form (deterministic — the CCR
+        # hash is content-derived — so per-block forms are stable and the rewrite
+        # stays prefix-monotonic → no prompt-cache bust). It never adds loss: the
+        # later duplicate would carry the same (recoverable) form anyway; dedup
+        # just points to the earlier copy instead of repeating it. Frozen +
+        # cache_control blocks are reference targets only (never rewritten).
+        if self._cross_turn_dedup_enabled:
             transformed_messages = self._cross_turn_dedup_messages(
                 transformed_messages, frozen_message_count, transforms_applied, route_counts
             )

@@ -183,3 +183,25 @@ def test_apply_no_dedup_when_flag_off():
         b["content"] for m in out for b in m["content"] if isinstance(b, dict)
     )
     assert "[headroom:" not in joined
+
+
+def test_apply_dedup_runs_in_ccr_mode_too():
+    # Dedup is no longer gated to lossless mode: with lossless=False (CCR) and
+    # the flag on, an exact re-read still folds to an in-context pointer.
+    span = "\n".join(
+        f"    total_{i} = reconcile(entry_id={i}, ledger=book_{i})" for i in range(12)
+    )
+    from headroom.transforms.content_router import ContentRouter, ContentRouterConfig
+    import copy
+    msgs = [
+        _toolmsg(f"$ cat ledger.py\n{span}\n# eof", "t1"),
+        {"role": "assistant", "content": "re-check"},
+        _toolmsg(f"$ cat ledger.py\n{span}\n# eof", "t2"),  # exact re-run
+    ]
+    r = ContentRouter(ContentRouterConfig(lossless=False, enable_cross_turn_dedup=True))
+    out = r.apply(copy.deepcopy(msgs), _mk_tok()).messages
+    joined = "".join(
+        b["content"] for m in out if isinstance(m.get("content"), list)
+        for b in m["content"] if isinstance(b, dict)
+    )
+    assert "[headroom:" in joined  # dedup fired despite lossless=False
