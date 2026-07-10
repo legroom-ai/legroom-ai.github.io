@@ -9,14 +9,26 @@ the adaptive short-label feature actually retrievable end-to-end.
 
 from __future__ import annotations
 
+import json
+
+import pytest
+
 from headroom.cache.backends import InMemoryBackend
-from headroom.cache.compression_store import CompressionStore
+from headroom.cache.compression_store import (
+    CompressionStore,
+    get_compression_store,
+    reset_compression_store,
+)
+from headroom.cache.label_allocator import DEFAULT_MIN_WIDTH
 from headroom.ccr.marker import (
+    CCR_HASH_FULL_WIDTH,
     CCR_TERSE_MARKER_RE,
+    is_ccr_hex_id,
     terse_marker,
     terse_markers_enabled,
 )
-from headroom.ccr.tool_injection import CCRToolInjector
+from headroom.ccr.response_handler import CCRResponseHandler
+from headroom.ccr.tool_injection import CCR_TOOL_NAME, CCRToolInjector, parse_tool_call
 from headroom.parser import CCR_RETRIEVAL_MARKER_RE
 from headroom.transforms.compression_units import _CCR_MARKER_RE
 
@@ -82,3 +94,115 @@ def test_terse_id_resolves_via_store_end_to_end():
     assert label in ids  # the id the model would pass to headroom_retrieve
     entry = store.retrieve(label)
     assert entry is not None and entry.original_content == content
+
+
+# --------------------------------------------------------------------------- #
+# Regression: short adaptive labels must survive the RESPONSE-HANDLER parse path
+# (parse_tool_call), not just the marker scan. The scan told the model it could
+# retrieve `[ccr:f2]`; parse_tool_call then rejected hash="f2" as malformed (its
+# width check was hardcoded to 12/24), so CCRResponseHandler classified the call
+# as non-CCR and retrieval never ran. These lock the emit<->parse symmetry.
+# --------------------------------------------------------------------------- #
+
+
+def _call(provider: str, hash_key: str) -> dict:
+    """A headroom_retrieve tool call in the given provider's shape."""
+    if provider == "openai":
+        return {"function": {"name": CCR_TOOL_NAME, "arguments": json.dumps({"hash": hash_key})}}
+    return {"name": CCR_TOOL_NAME, "input": {"hash": hash_key}}
+
+
+def _response(provider: str, hash_key: str) -> dict:
+    """A full model response whose only tool call is headroom_retrieve(hash=...)."""
+    if provider == "openai":
+        return {
+            "choices": [
+                {"message": {"role": "assistant", "tool_calls": [_call(provider, hash_key)]}}
+            ]
+        }
+    return {
+        "content": [
+            {"type": "text", "text": "retrieving"},
+            {"type": "tool_use", "id": "tu_1", **_call(provider, hash_key)},
+        ]
+    }
+
+
+@pytest.mark.parametrize("width", range(DEFAULT_MIN_WIDTH, CCR_HASH_FULL_WIDTH + 1))
+def test_is_ccr_hex_id_accepts_every_valid_width(width):
+    assert is_ccr_hex_id("a" * width)
+
+
+@pytest.mark.parametrize(
+    "bad",
+    ["", "a", "a" * (CCR_HASH_FULL_WIDTH + 1), "zz", "g2", "ab!", 42, None, b"f2"],
+)
+def test_is_ccr_hex_id_rejects_invalid(bad):
+    assert not is_ccr_hex_id(bad)
+
+
+def test_is_ccr_hex_id_case_insensitive():
+    assert is_ccr_hex_id("AB") and is_ccr_hex_id("F2")
+
+
+@pytest.mark.parametrize("provider", ["anthropic", "openai"])
+@pytest.mark.parametrize("label", ["f2", "abc", "a" * 12, "a" * 24])
+def test_parse_tool_call_accepts_short_and_full_labels(provider, label):
+    assert parse_tool_call(_call(provider, label), provider) == label
+
+
+@pytest.mark.parametrize("provider", ["anthropic", "openai"])
+@pytest.mark.parametrize("bad", ["a", "a" * 25, "zz", "g1"])
+def test_parse_tool_call_rejects_malformed_ids(provider, bad):
+    assert parse_tool_call(_call(provider, bad), provider) is None
+
+
+def test_parse_tool_call_ignores_non_ccr_tool():
+    assert parse_tool_call({"name": "grep", "input": {"hash": "f2"}}, "anthropic") is None
+
+
+@pytest.mark.parametrize("provider", ["anthropic", "openai"])
+def test_short_label_reaches_response_handler_as_ccr_call(provider):
+    # The exact bug: a short-label retrieve call must be classified as CCR (so it
+    # dispatches to retrieval), not shunted into `other_calls`.
+    handler = CCRResponseHandler()
+    ccr_calls, other = handler._parse_ccr_tool_calls(_response(provider, "f2"), provider)
+    assert [c.hash_key for c in ccr_calls] == ["f2"]
+    assert other == []
+
+
+@pytest.fixture
+def short_label_global_store(monkeypatch):
+    """Global CCR store with short labels on + in-memory backend; reset around the test."""
+    monkeypatch.setenv("HEADROOM_CCR_SHORT_LABELS", "1")
+    reset_compression_store()
+    store = get_compression_store(backend=InMemoryBackend())
+    try:
+        yield store
+    finally:
+        reset_compression_store()
+
+
+def test_store_issued_short_labels_all_parse(short_label_global_store):
+    # emit<->parse symmetry: every id the store hands out is one parse_tool_call accepts.
+    for i in range(30):
+        label = short_label_global_store.store(f"distinct block {i} " * 12, "compressed")
+        for provider in ("anthropic", "openai"):
+            assert parse_tool_call(_call(provider, label), provider) == label, (label, provider)
+
+
+@pytest.mark.parametrize("provider", ["anthropic", "openai"])
+def test_short_label_full_retrieval_end_to_end(short_label_global_store, provider):
+    # store short label -> model calls headroom_retrieve(hash=<short>) -> handler
+    # classifies it as CCR -> _execute_retrieval returns the ORIGINAL content.
+    content = "the original tool output that was compressed away " * 20
+    label = short_label_global_store.store(content, "compressed")
+    assert len(label) < CCR_HASH_FULL_WIDTH  # genuinely a short label, not the full hash
+
+    handler = CCRResponseHandler()
+    ccr_calls, other = handler._parse_ccr_tool_calls(_response(provider, label), provider)
+    assert len(ccr_calls) == 1 and other == []
+
+    result = handler._execute_retrieval(ccr_calls[0])
+    assert result.success
+    assert content in result.content

@@ -18,7 +18,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
-from .marker import CCR_TERSE_MARKER_RE
+from .marker import CCR_HEX_ID_INNER, CCR_TERSE_MARKER_RE, is_ccr_hex_id
 
 # Tool name constant - used for matching tool calls
 CCR_TOOL_NAME = "headroom_retrieve"
@@ -186,17 +186,20 @@ class CCRToolInjector:
         default_factory=lambda: [
             # Hash width is VARIABLE. The store hands out the full 24-hex
             # SHA-256[:24] by default, but the adaptive labeler
-            # (HEADROOM_CCR_SHORT_LABELS) issues the shortest unique hex prefix —
-            # as few as 2 chars — so every hex pattern accepts 2-24 chars.
-            # SmartCrusher's `<<ccr:>>` markers still carry 12-24. The last
-            # capture group is always the hash/id (see _scan_text).
+            # (HEADROOM_CCR_SHORT_LABELS) issues the shortest unique hex prefix.
+            # The accepted range comes from ``CCR_HEX_ID_INNER`` — the SAME source
+            # ``parse_tool_call`` validates against, so a marker the model is shown
+            # can never be one retrieval then rejects. SmartCrusher's `<<ccr:>>`
+            # markers still carry 12-24. Last capture group is the hash/id.
             #
             # Standard format: [N <type> compressed to M. Retrieve more: hash=xxx]
-            re.compile(r"\[(\d+) \w+ compressed to (\d+)\. Retrieve more: hash=([a-f0-9]{2,24})\]"),
+            re.compile(
+                rf"\[(\d+) \w+ compressed to (\d+)\. Retrieve more: hash=({CCR_HEX_ID_INNER})\]"
+            ),
             # Legacy format without "to M" or "Retrieve more:" (old TextCompressor)
-            re.compile(r"\[(\d+) \w+ compressed\. hash=([a-f0-9]{2,24})\]"),
+            re.compile(rf"\[(\d+) \w+ compressed\. hash=({CCR_HEX_ID_INNER})\]"),
             # Generic fallback: any bracket compression marker with a hash
-            re.compile(r"\[.*?compressed.*?hash=([a-f0-9]{2,24})\]", re.IGNORECASE),
+            re.compile(rf"\[.*?compressed.*?hash=({CCR_HEX_ID_INNER})\]", re.IGNORECASE),
             # SmartCrusher markers: `<<ccr:HASH ...>>` / `<<ccr:HASH,KIND,SIZE>>`.
             re.compile(r"<<ccr:([a-f0-9]{12,24})\b"),
             # Terse marker (HEADROOM_CCR_TERSE_MARKER): `[ccr:<id>]`. The single
@@ -487,13 +490,12 @@ def parse_tool_call(
     if hash_key is None:
         return None
 
-    # Validate hash format. SmartCrusher emits 12-hex-char hashes while legacy
-    # bracket markers / the compression_store use 24-hex-char hashes; accept
-    # either real length and reject anything else as malformed.
-    if not isinstance(hash_key, str) or len(hash_key) not in (12, 24):
-        return None
-    # Validate hex characters only
-    if not all(c in "0123456789abcdef" for c in hash_key.lower()):
+    # Validate the id against the SAME range the marker scan advertises
+    # (CCR_HEX_ID_INNER): a hex prefix from the adaptive labeler's minimum width
+    # up to the full 24-hex hash. Hardcoding (12, 24) here silently dropped the
+    # shorter adaptive labels (HEADROOM_CCR_SHORT_LABELS), so retrieve tool calls
+    # like headroom_retrieve(hash="f2") were classified as non-CCR and never ran.
+    if not is_ccr_hex_id(hash_key):
         return None
 
     return hash_key
