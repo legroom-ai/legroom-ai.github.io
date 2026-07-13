@@ -106,9 +106,6 @@ from headroom.providers.copilot import (
 from headroom.providers.cursor import render_setup_lines as _render_cursor_setup_lines
 from headroom.providers.mistral_vibe import build_launch_env as _build_mistral_vibe_launch_env
 from headroom.providers.openclaw import (
-    OPENCLAW_NPM_PACKAGE,
-)
-from headroom.providers.openclaw import (
     build_plugin_entry as _build_openclaw_plugin_entry_impl,
 )
 from headroom.providers.openclaw import (
@@ -5675,7 +5672,7 @@ def openhands(
 )
 @click.option(
     "--plugin-spec",
-    default=OPENCLAW_NPM_PACKAGE,
+    default="headroom-ai/openclaw",
     show_default=True,
     help="NPM plugin spec for OpenClaw install (used when --plugin-path is omitted)",
 )
@@ -5814,6 +5811,9 @@ def openclaw(
         enabled=True,
     )
 
+    click.echo("  Writing plugin configuration...")
+    _write_openclaw_plugin_entry(openclaw_bin, entry)
+
     install_cmd = [
         openclaw_bin,
         "plugins",
@@ -5863,12 +5863,6 @@ def openclaw(
             raise click.ClickException(f"openclaw plugins install failed: {details}")
     elif verbose and install_result.stdout.strip():
         click.echo(install_result.stdout.strip())
-
-    # Write the managed plugin entry only after a successful (or recoverable)
-    # install, so a hard install failure leaves no stale
-    # plugins.entries.headroom config behind.
-    click.echo("  Writing plugin configuration...")
-    _write_openclaw_plugin_entry(openclaw_bin, entry)
 
     _set_openclaw_context_engine_slot(openclaw_bin, "headroom")
     _run_checked(
