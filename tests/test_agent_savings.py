@@ -89,6 +89,35 @@ def test_coding_persona_compresses_recent_delta_and_stays_visible() -> None:
     assert env["HEADROOM_MIN_CHARS_FOR_BLOCK"] == "25"
 
 
+def test_coding_profile_couples_zero_protect_recent_with_type_read_guard() -> None:
+    """Fidelity invariant behind #2145's protect_recent 2->0.
+
+    Dropping positional protection (protect_recent=0) is only safe because the
+    code working set stays byte-exact via the TYPE-based read guard
+    (protect_reads=True), and any *other* recent delta that does get compressed
+    stays losslessly recoverable via CCR (lossless=0 means lossy-with-CCR, not
+    silent loss) while the frozen prefix is left untouched (cache mode). This is
+    the honest boundary: recent file reads are verbatim, recent non-read deltas
+    are recoverable — not "nothing is ever touched". If a future edit drops the
+    read guard while keeping protect_recent=0, recent reads would silently
+    degrade, so this test fails closed on that pairing.
+    """
+    profile = get_agent_savings_profile("coding")
+
+    # Positional protection is off ...
+    assert profile.protect_recent == 0
+    # ... so the byte-exact guarantee for reads MUST come from the type guard.
+    assert profile.protect_reads is True
+
+    env = profile.proxy_env()
+    assert env["HEADROOM_PROTECT_RECENT"] == "0"
+    assert env["HEADROOM_PROTECT_READS"] == "1"
+    # Lossy compression is on, but CCR keeps compressed deltas recoverable, and
+    # cache mode compresses only the newest delta (frozen prefix stays byte-stable).
+    assert env["HEADROOM_LOSSLESS"] == "0"
+    assert env["HEADROOM_MODE"] == "cache"
+
+
 def test_general_persona_has_no_positional_code_protection() -> None:
     profile = get_agent_savings_profile("general")
 
