@@ -138,8 +138,6 @@ def install_all(
             # A failing extension disables *itself* and the proxy keeps running
             # without it — covers environment/auth failures and compatibility
             # errors (e.g. a plugin built against a core API this version lacks).
-            # ponytail: if an extension ever needs mandatory fail-closed abort,
-            # define ExtensionFatalError in this module and re-raise it here.
             log.warning(
                 "proxy extension %r failed to install and was skipped: %s",
                 name,
