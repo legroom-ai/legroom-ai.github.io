@@ -1,7 +1,22 @@
-Legroom
-Copyright 2025 Legroom Contributors
+legroom-ai
+Copyright 2026 legroom-ai
 
-This product includes software developed by the Legroom Contributors.
+This product is a modified fork of "Headroom" and includes software developed
+by the Headroom Contributors.
+
+Original work:
+  Headroom
+  Copyright 2025 Headroom Contributors
+  Licensed under the Apache License, Version 2.0.
+  Source: https://github.com/headroomlabs-ai/headroom
+
+Modifications:
+  Copyright 2026 legroom-ai
+  - Renamed the distribution to "legroom-ai" and rebranded the Python package
+    (headroom -> legroom), the Rust crates (headroom-* -> legroom-*), and the
+    PyO3 extension module (legroom._core).
+  - No changes to the underlying compression protocol or algorithms.
+  Licensed under the Apache License, Version 2.0.
 
 Third-Party Licenses
 ====================
