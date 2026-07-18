@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Claude Certified Architect – Foundations — Practice Tests</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">✳</span>
+      <div>
+        <h1>Claude Certified Architect – Foundations</h1>
+        <p class="subtitle">Practice Tests by Ghalib Ahmad · 300 questions · 5 tests</p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="auth" id="auth">
+        <div id="g-signin"></div>
+        <span class="auth-hint" id="auth-hint" hidden></span>
+        <div class="user-chip" id="user-chip" hidden>
+          <img id="user-avatar" class="user-avatar" alt="" referrerpolicy="no-referrer" />
+          <span class="user-name" id="user-name"></span>
+          <button id="signout-btn" class="btn ghost">Sign out</button>
+        </div>
+      </div>
+      <div class="stats" id="stats">
+        <div class="stat timer" id="timer" hidden><span class="stat-num" id="timer-num">--:--</span><span class="stat-label">Time left</span></div>
+        <div class="stat"><span class="stat-num" id="stat-answered">0</span><span class="stat-label">Answered</span></div>
+        <div class="stat"><span class="stat-num" id="stat-correct">0</span><span class="stat-label">Correct</span></div>
+        <div class="stat"><span class="stat-num" id="stat-accuracy">—</span><span class="stat-label">Accuracy</span></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <label>Practice test
+      <select id="test-filter"></select>
+    </label>
+    <label>Domain
+      <select id="category-filter"></select>
+    </label>
+    <label>Mode
+      <select id="mode-select">
+        <option value="practice">Practice (instant feedback)</option>
+        <option value="exam">Exam (reveal at end)</option>
+        <option value="mock">Mock exam (timed, 60 Q / 78 min)</option>
+      </select>
+    </label>
+    <button id="shuffle-btn" class="btn ghost">⤮ Shuffle</button>
+    <button id="reset-btn" class="btn ghost">↺ Reset progress</button>
+    <div class="spacer"></div>
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      <span class="progress-text" id="progress-text">0 / 0</span>
+    </div>
+  </div>
+
+  <section class="mock-start card" id="mock-start" hidden>
+    <h2>Full-length timed mock exam</h2>
+    <p class="mock-lead">Simulates a full Claude Certified Architect – Foundations exam.</p>
+    <ul class="mock-facts">
+      <li><strong>60</strong> questions, drawn at random and balanced across all 5 exam domains</li>
+      <li><strong>78 minutes</strong> on a countdown timer — the exam auto-submits when time runs out</li>
+      <li><strong>No feedback</strong> during the exam; you can flag/revisit any question via the navigator</li>
+      <li>Scored at the end with a <strong>per-domain breakdown</strong> and full answer review (passing ≈ 70%)</li>
+    </ul>
+    <button id="start-mock-btn" class="btn primary">Start mock exam</button>
+    <button id="cancel-mock-btn" class="btn ghost" hidden>Cancel</button>
+  </section>
+
+  <main id="main">
+    <section class="card" id="question-card">
+      <div class="card-head">
+        <span class="badge" id="q-category">—</span>
+        <span class="q-index" id="q-index">Question 0 of 0</span>
+      </div>
+      <h2 class="q-text" id="q-text">Loading questions…</h2>
+      <p class="q-hint" id="q-hint"></p>
+      <form id="options-form" class="options"></form>
+      <div class="feedback" id="feedback" hidden></div>
+      <div class="actions">
+        <button class="btn" id="prev-btn">← Previous</button>
+        <button class="btn primary" id="check-btn">Check answer</button>
+        <button class="btn" id="next-btn">Next →</button>
+      </div>
+    </section>
+
+    <aside class="card grid-card">
+      <h3>Question navigator</h3>
+      <div class="grid" id="nav-grid"></div>
+      <div class="legend">
+        <span><i class="dot correct"></i> correct</span>
+        <span><i class="dot wrong"></i> wrong</span>
+        <span><i class="dot current"></i> current</span>
+        <span><i class="dot unseen"></i> unseen</span>
+      </div>
+    </aside>
+  </main>
+
+  <div class="exam-result card" id="exam-result" hidden></div>
+
+  <footer class="foot">
+    <span id="foot-status">Loading…</span>
+    <span>Local practice tool · not affiliated with Anthropic</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
