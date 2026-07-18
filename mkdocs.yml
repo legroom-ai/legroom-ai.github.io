@@ -2,9 +2,9 @@ site_name: Legroom
 docs_dir: wiki
 site_description: "The Context Optimization Layer for LLM Applications — compress everything your AI agent reads."
 site_url: https://legroom-ai.github.io
-repo_url: https://github.com/legroom-ai/legroom-ai.github.io
-repo_name: ghaliba3/legroom
-edit_uri: edit/main/docs/
+repo_url: https://github.com/legroom-ai/legroom-ai
+repo_name: legroom-ai/legroom-ai
+edit_uri: edit/main/wiki/
 
 theme:
   name: material

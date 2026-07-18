@@ -10,12 +10,18 @@ Compress everything your AI agent reads. Same answers, fraction of the tokens.
 
 <div class="badges" markdown>
 
-[![PyPI](https://img.shields.io/pypi/v/legroom-ai.svg)](https://pypi.org/project/legroom-ai/)
-[![Python](https://img.shields.io/pypi/pyversions/legroom-ai.svg)](https://pypi.org/project/legroom-ai/)
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/legroom-ai/legroom-ai.github.io/blob/main/LICENSE)
-[![Discord](https://img.shields.io/badge/Discord-Join%20us-5865F2?logo=discord&logoColor=white)](https://discord.gg/yRmaUNpsPJ)
+[![npm version](https://img.shields.io/npm/v/legroom-ai.svg)](https://www.npmjs.com/package/legroom-ai)
+[![npm downloads](https://img.shields.io/npm/dm/legroom-ai.svg)](https://www.npmjs.com/package/legroom-ai)
+[![Node](https://img.shields.io/node/v/legroom-ai.svg)](https://www.npmjs.com/package/legroom-ai)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/legroom-ai/legroom-ai/blob/main/LICENSE)
 
 </div>
+
+Install the TypeScript SDK:
+
+```bash
+npm install legroom-ai
+```
 
 <div class="stats-bar" markdown>
 
@@ -108,7 +114,11 @@ Legroom works as a **transparent proxy** (zero code changes), a **Python functio
 
     If you prefer an always-on proxy that `wrap` can reuse or recover, see [Persistent Installs &rarr;](persistent-installs.md).
 
-=== "TypeScript SDK"
+=== "TypeScript SDK (npm)"
+
+    ```bash
+    npm install legroom-ai
+    ```
 
     ```typescript
     import { compress } from 'legroom-ai';
@@ -117,6 +127,8 @@ Legroom works as a **transparent proxy** (zero code changes), a **Python functio
     // Use result.messages with any LLM client
     console.log(`Saved ${result.tokensSaved} tokens`);
     ```
+
+    No runtime dependencies. [Full TypeScript SDK guide &rarr;](typescript-sdk.md)
 
     Works with Vercel AI SDK, OpenAI Node SDK, and Anthropic TS SDK. [Full TS guide &rarr;](typescript-sdk.md)
 

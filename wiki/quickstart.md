@@ -6,6 +6,14 @@ Get Legroom running in 5 minutes with these copy-paste examples.
 
 ## Installation
 
+The published package is the **`legroom-ai` npm TypeScript SDK** — install it with:
+
+```bash
+npm install legroom-ai
+```
+
+The commands below set up the broader self-hosted Legroom platform (proxy + CLI) that the SDK talks to.
+
 **CLI on macOS Apple Silicon/Linux with uv:**
 
 ```bash
@@ -29,16 +37,10 @@ pip install "legroom-ai[proxy]"
 pip install "legroom-ai[all]"
 ```
 
-**TypeScript / Node.js:**
-
-```bash
-npm install legroom-ai
-```
-
 **Docker-native:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ghaliba3/legroom/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/legroom-ai/legroom-ai.github.io/main/scripts/install.sh | bash
 ```
 
 See [Docker-native install](docker-install.md) if you want Docker to provide the Legroom runtime while your agent CLIs stay on the host.
