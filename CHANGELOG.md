@@ -284,6 +284,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **code:** fix two `CodeAwareCompressor` AST-reassembly bugs: an exported JS/TS function or class (`export function foo() {`) produced a duplicated `export export` keyword and invalid syntax, because line-based node slicing (used to preserve indentation) pulled in the preceding `export` sibling's text on top of the `export_statement` handler's own prefix reconstruction. Separately, in every supported language, a doc comment immediately above a top-level function, class, or type was detached from its declaration during extraction and re-emitted in a cluster at the end of the compressed output instead of staying attached to what it documents.
 - * **proxy:** Buffered upstream responses containing a `server_tool_use` (or any other unrecognized Anthropic content block) no longer turn a fully-generated response into an HTTP 502. `StreamingMixin._response_to_sse` raised `ValueError` on unknown block types after the entire upstream generation had already been buffered, so a slow-but-successful response failed and the client retried the whole multi-minute request. Unknown blocks are now emitted verbatim in `content_block_start` (following the existing redacted_thinking` pattern), so `server_tool_use`, `server_tool_result`, `mcp_tool_use`, and future block types round-trip ([#1806](https://github.com/legroom-ai/legroom/issues/1806)).
 
+## [0.32.1](https://github.com/legroom-ai/legroom-ai.github.io/compare/v0.32.0...v0.32.1) (2026-07-18)
+
+
+### Bug Fixes
+
+* **backends/litellm:** guard None completion_tokens in usage mapping ([#2322](https://github.com/legroom-ai/legroom-ai.github.io/issues/2322)) ([44a174f](https://github.com/legroom-ai/legroom-ai.github.io/commit/44a174fef4d514eceed20a767dc87d00cfde0eaa))
+* **deps:** bump mcp to 1.28.1 to clear 3 high-severity CVEs ([#2348](https://github.com/legroom-ai/legroom-ai.github.io/issues/2348)) ([a90be94](https://github.com/legroom-ai/legroom-ai.github.io/commit/a90be94e32c393332d37db4fb439e0c776b89f27))
+* **proxy/gemini:** None-guard token counts from usageMetadata ([#2347](https://github.com/legroom-ai/legroom-ai.github.io/issues/2347)) ([f64aac9](https://github.com/legroom-ai/legroom-ai.github.io/commit/f64aac9733d5e314f381644eaea62e2c28b6dc65))
+* **security:** exclude compromised ast-grep-cli 0.44.1 (supply-chain trojan) ([#2342](https://github.com/legroom-ai/legroom-ai.github.io/issues/2342)) ([494fb5a](https://github.com/legroom-ai/legroom-ai.github.io/commit/494fb5a60e15ae1ce425f79f1432827b42923c73))
+* **transforms/kompress-remote:** keep compress fail-open on malformed 200 ([#2320](https://github.com/legroom-ai/legroom-ai.github.io/issues/2320)) ([b759990](https://github.com/legroom-ai/legroom-ai.github.io/commit/b75999017fc060a4617077ef86c21ce3249d0842))
+* **wrap:** make RTK opt-in (off by default) across wrap subcommands ([#2344](https://github.com/legroom-ai/legroom-ai.github.io/issues/2344)) ([44136ed](https://github.com/legroom-ai/legroom-ai.github.io/commit/44136ed0427edff338c5d7979b589f8540c9b967))
+* **wrap:** stop same-port persistent routing during claude unwrap ([#2340](https://github.com/legroom-ai/legroom-ai.github.io/issues/2340)) ([#2350](https://github.com/legroom-ai/legroom-ai.github.io/issues/2350)) ([cf5fa64](https://github.com/legroom-ai/legroom-ai.github.io/commit/cf5fa644b6e019a3ea31b4f48509a63921055253))
+
 ## [0.32.0](https://github.com/legroom-ai/legroom/compare/v0.31.0...v0.32.0) (2026-07-17)
 
 
