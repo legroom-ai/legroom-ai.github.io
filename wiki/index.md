@@ -430,4 +430,4 @@ your default `python3` is newer than the current wheel set.
 
 ---
 
-Apache 2.0 — Free for commercial use. [GitHub](https://github.com/legroom-ai/legroom-ai.github.io) | [PyPI](https://pypi.org/project/legroom-ai/) | [Discord](https://discord.gg/yRmaUNpsPJ)
+Apache 2.0 — Free for commercial use. [GitHub](https://github.com/legroom-ai/legroom-ai.github.io) | [PyPI](https://pypi.org/project/legroom-ai/) | [Discord](https://discord.gg/Zq426dHNW)

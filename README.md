@@ -27,7 +27,7 @@
   <a href="#get-started-60-seconds">Install</a> ·
   <a href="#proof">Proof</a> ·
   <a href="#agent-compatibility-matrix">Agents</a> ·
-  <a href="https://discord.gg/yRmaUNpsPJ">Discord</a> ·
+  <a href="https://discord.gg/Zq426dHNW">Discord</a> ·
   <a href="llms.txt">llms.txt</a>
 </p>
 
@@ -551,7 +551,7 @@ Devcontainers in `.devcontainer/` (default + `memory-stack` with Qdrant & Neo4j)
 
 ## Community
 
-- **[Discord](https://discord.gg/yRmaUNpsPJ)** — questions, feedback, war stories.
+- **[Discord](https://discord.gg/Zq426dHNW)** — questions, feedback, war stories.
 - **[Kompress-v2-base on HuggingFace](https://huggingface.co/ghaliba3/kompress-v2-base)** — the model behind our text compression.
 
 ### Community projects
