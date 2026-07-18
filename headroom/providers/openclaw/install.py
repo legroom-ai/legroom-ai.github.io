@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import click
 
-from headroom.install.models import DeploymentManifest, ManagedMutation, ToolTarget
-from headroom.install.paths import openclaw_config_path
-from headroom.install.runtime import resolve_headroom_command
+from legroom.install.models import DeploymentManifest, ManagedMutation, ToolTarget
+from legroom.install.paths import openclaw_config_path
+from legroom.install.runtime import resolve_legroom_command
 
 
 def shutil_which(name: str) -> str | None:
@@ -26,7 +26,7 @@ def apply_provider_scope(manifest: DeploymentManifest) -> ManagedMutation:
     if not shutil_which("openclaw"):
         raise click.ClickException("openclaw not found in PATH; cannot apply provider scope.")
     command = [
-        *resolve_headroom_command(),
+        *resolve_legroom_command(),
         "wrap",
         "openclaw",
         "--no-auto-start",
@@ -46,5 +46,5 @@ def revert_provider_scope(mutation: ManagedMutation, manifest: DeploymentManifes
     del mutation, manifest
     if not shutil_which("openclaw"):
         return
-    command = [*resolve_headroom_command(), "unwrap", "openclaw"]
+    command = [*resolve_legroom_command(), "unwrap", "openclaw"]
     _invoke_openclaw(command)

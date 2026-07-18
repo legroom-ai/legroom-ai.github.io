@@ -1,4 +1,4 @@
-"""SSL context builder for the Headroom upstream httpx client.
+"""SSL context builder for the Legroom upstream httpx client.
 
 Respects the standard CA-bundle environment variables used by Python
 (``SSL_CERT_FILE``), requests (``REQUESTS_CA_BUNDLE``), and Node.js /
@@ -12,7 +12,7 @@ Priority order (first match wins):
 3. ``NODE_EXTRA_CA_CERTS`` — **additive** semantics (extra roots loaded
    on top of the default/system trust store, matching Node.js behavior)
 
-Strict-mode toggle (``HEADROOM_TLS_STRICT``):
+Strict-mode toggle (``LEGROOM_TLS_STRICT``):
     Python 3.13 + OpenSSL 3.x enable ``VERIFY_X509_STRICT`` by default, which
     enforces RFC 5280 §4.2.1.9 — a CA cert's ``basicConstraints`` MUST be
     marked critical. Corporate TLS-inspection roots (Zscaler, Netskope, …)
@@ -21,8 +21,8 @@ Strict-mode toggle (``HEADROOM_TLS_STRICT``):
     though the root is correctly installed and trusted. A CA bundle env var
     can't fix this — the cert is found, it's the strict check that fails.
 
-    Setting ``HEADROOM_TLS_STRICT=0`` clears *only* ``VERIFY_X509_STRICT`` from
-    every TLS context Headroom controls (the httpx upstream client AND the
+    Setting ``LEGROOM_TLS_STRICT=0`` clears *only* ``VERIFY_X509_STRICT`` from
+    every TLS context Legroom controls (the httpx upstream client AND the
     urllib3/requests stack used by ``huggingface_hub`` for model downloads).
     Chain validation, signature checks, expiry, and hostname verification all
     stay on — this is strictly narrower than ``verify=False``. Default is
@@ -36,7 +36,7 @@ import os
 import ssl
 from typing import Any, cast
 
-logger = logging.getLogger("headroom.proxy")
+logger = logging.getLogger("legroom.proxy")
 
 _REPLACEMENT_CA_VARS = (
     "SSL_CERT_FILE",
@@ -44,14 +44,14 @@ _REPLACEMENT_CA_VARS = (
 )
 
 # Env var that opts out of OpenSSL's RFC 5280 strict CA-constraint checks.
-TLS_STRICT_ENV = "HEADROOM_TLS_STRICT"
+TLS_STRICT_ENV = "LEGROOM_TLS_STRICT"
 
 # Values (case-insensitive) that mean "turn strict mode OFF".
 _TLS_STRICT_OFF_VALUES = frozenset({"0", "false", "no", "off"})
 
 
 def tls_strict_disabled() -> bool:
-    """True when ``HEADROOM_TLS_STRICT`` opts out of OpenSSL strict mode.
+    """True when ``LEGROOM_TLS_STRICT`` opts out of OpenSSL strict mode.
 
     Default (unset / any other value) is strict, matching Python 3.13's own
     default. Only the explicit off-values flip it.
@@ -82,7 +82,7 @@ def _relax_x509_strict_for_custom_ca(ctx: ssl.SSLContext, *, path: str) -> ssl.S
     enabled while making custom CA bundles usable in those environments.
 
     A custom CA bundle is itself a strong signal of a corporate PKI, so the
-    strict flag is relaxed here regardless of ``HEADROOM_TLS_STRICT`` (the
+    strict flag is relaxed here regardless of ``LEGROOM_TLS_STRICT`` (the
     historical behavior). The env toggle additionally covers the case where
     the corporate root lives in the *default* trust store and no bundle var
     is set — see :func:`build_httpx_verify`.
@@ -155,7 +155,7 @@ def _default_strict_relaxed_context() -> ssl.SSLContext:
     """Default trust store, but with ``VERIFY_X509_STRICT`` cleared.
 
     Used when no custom CA bundle is configured (the corporate root lives in
-    the OS/default trust store) but ``HEADROOM_TLS_STRICT=0`` asks us to
+    the OS/default trust store) but ``LEGROOM_TLS_STRICT=0`` asks us to
     tolerate a non-critical ``basicConstraints`` CA. Mirrors what httpx builds
     for ``verify=True`` (default context + ALPN), minus the strict flag.
     """
@@ -172,7 +172,7 @@ def build_httpx_verify() -> ssl.SSLContext | bool:
     1. A custom CA bundle env var (``SSL_CERT_FILE`` / ``REQUESTS_CA_BUNDLE`` /
        ``NODE_EXTRA_CA_CERTS``) → a context trusting that bundle, with strict
        mode already relaxed (corporate PKI signal).
-    2. No bundle, but ``HEADROOM_TLS_STRICT=0`` → the default trust store with
+    2. No bundle, but ``LEGROOM_TLS_STRICT=0`` → the default trust store with
        ``VERIFY_X509_STRICT`` cleared, so a corporate root that's installed in
        the OS store but trips RFC 5280 strict mode still validates.
     3. Otherwise → ``True`` (httpx's default strict verification).
@@ -200,7 +200,7 @@ def apply_global_tls_relaxation() -> bool:
     ``Basic Constraints ... not marked critical`` rejection on a model cache
     miss.
 
-    When ``HEADROOM_TLS_STRICT=0`` this monkeypatches
+    When ``LEGROOM_TLS_STRICT=0`` this monkeypatches
     ``create_urllib3_context`` to clear the strict flag from every context it
     returns. The patch is idempotent (guarded by a sentinel attribute) and a
     no-op when urllib3 isn't importable. Returns True if a patch was applied
@@ -222,7 +222,7 @@ def apply_global_tls_relaxation() -> bool:
         logger.debug("event=ssl_urllib3_patch_skipped reason=import_failed")
         return False
 
-    if getattr(_u3ssl.create_urllib3_context, "_headroom_strict_relaxed", False):
+    if getattr(_u3ssl.create_urllib3_context, "_legroom_strict_relaxed", False):
         return True
 
     _orig = _u3ssl.create_urllib3_context
@@ -235,7 +235,7 @@ def apply_global_tls_relaxation() -> bool:
             ctx.verify_flags &= ~strict_flag
         return ctx
 
-    _relaxed_create_urllib3_context._headroom_strict_relaxed = True  # type: ignore[attr-defined]
+    _relaxed_create_urllib3_context._legroom_strict_relaxed = True  # type: ignore[attr-defined]
     _u3ssl.create_urllib3_context = _relaxed_create_urllib3_context  # type: ignore[assignment]
     logger.info("event=ssl_x509_strict_disabled reason=urllib3_global_patch")
     return True

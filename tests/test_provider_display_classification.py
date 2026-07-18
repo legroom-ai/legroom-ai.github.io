@@ -10,12 +10,12 @@ from __future__ import annotations
 
 import pytest
 
-from headroom.proxy.helpers import (
+from legroom.proxy.helpers import (
     classify_openai_upstream,
     resolve_display_provider,
 )
-from headroom.proxy.models import ProxyConfig
-from headroom.proxy.server import _remap_provider_counts
+from legroom.proxy.models import ProxyConfig
+from legroom.proxy.server import _remap_provider_counts
 
 
 @pytest.mark.parametrize(

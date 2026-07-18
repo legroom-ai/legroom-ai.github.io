@@ -4,7 +4,7 @@ import time
 
 import pytest
 
-from headroom.cache.prefix_tracker import (
+from legroom.cache.prefix_tracker import (
     MISS_COLD_START,
     MISS_PREFIX_CHANGE,
     MISS_TTL_EXPIRY,
@@ -340,10 +340,10 @@ class TestSessionTrackerStore:
         assert store.active_sessions == 0
 
     def test_compute_session_id_from_header(self, store):
-        """Should use x-headroom-session-id header if present."""
+        """Should use x-legroom-session-id header if present."""
 
         class MockRequest:
-            headers = {"x-headroom-session-id": "explicit-id-123"}
+            headers = {"x-legroom-session-id": "explicit-id-123"}
 
         session_id = store.compute_session_id(
             MockRequest(), "claude-3", [{"role": "user", "content": "Hi"}]

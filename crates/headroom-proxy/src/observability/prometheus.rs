@@ -22,7 +22,7 @@
 //!   `:event-type` header from the message (`chunk`, `metadata`,
 //!   `internalServerException`, etc.). The set is bounded by
 //!   AWS's documented event-type vocabulary, not customer input —
-//!   see `crates/headroom-proxy/src/bedrock/eventstream.rs` for
+//!   see `crates/legroom-proxy/src/bedrock/eventstream.rs` for
 //!   the parsed shape.
 //!
 //! # Wiring
@@ -44,7 +44,7 @@
 //! itself (bounded by `model × region × auth_mode`), so leaving
 //! them at `debug` level avoids per-request log volume in normal
 //! operation while still being available under
-//! `RUST_LOG=headroom_proxy::observability=debug`.
+//! `RUST_LOG=legroom_proxy::observability=debug`.
 
 use std::sync::OnceLock;
 
@@ -55,7 +55,7 @@ use prometheus::{
     Encoder, HistogramOpts, HistogramVec, IntCounterVec, Opts, Registry, TextEncoder,
 };
 
-use headroom_core::auth_mode::AuthMode;
+use legroom_core::auth_mode::AuthMode;
 
 /// Latency-histogram buckets in seconds. Chosen to discriminate
 /// across typical Bedrock latencies: cold-start (~1-2s), warm

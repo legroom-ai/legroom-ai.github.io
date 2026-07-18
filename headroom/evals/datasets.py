@@ -31,7 +31,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from headroom.evals.core import EvalCase, EvalSuite
+from legroom.evals.core import EvalCase, EvalSuite
 
 
 def _check_datasets_installed() -> None:
@@ -41,7 +41,7 @@ def _check_datasets_installed() -> None:
     except ImportError as e:
         raise ImportError(
             "HuggingFace datasets required for this loader. "
-            "Install with: pip install headroom-ai[evals]"
+            "Install with: pip install legroom-ai[evals]"
         ) from e
 
 
@@ -862,7 +862,7 @@ def load_humaneval(
 def load_tool_output_samples() -> EvalSuite:
     """Load built-in tool output samples for testing.
 
-    These are realistic tool outputs that headroom is designed to compress:
+    These are realistic tool outputs that legroom is designed to compress:
     - API responses (JSON)
     - Log outputs
     - Code files
@@ -880,8 +880,8 @@ def load_tool_output_samples() -> EvalSuite:
                     "items": [
                         {
                             "id": 12345,
-                            "name": "headroom",
-                            "full_name": "anthropic/headroom",
+                            "name": "legroom",
+                            "full_name": "anthropic/legroom",
                             "description": "Context optimization for LLM applications",
                             "stargazers_count": 1250,
                             "language": "Python",

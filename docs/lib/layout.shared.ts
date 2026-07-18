@@ -3,8 +3,8 @@ import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
 export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
-      title: 'Headroom',
+      title: 'Legroom',
     },
-    githubUrl: 'https://github.com/ghaliba3/headroom',
+    githubUrl: 'https://github.com/legroom-ai/legroom-ai.github.io',
   };
 }

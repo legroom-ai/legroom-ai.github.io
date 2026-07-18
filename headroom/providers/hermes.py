@@ -1,7 +1,7 @@
 """Hermes Studio scoped coding-agent proxy support.
 
 Hermes owns authentication and protocol adaptation for its scoped proxy routes.
-This module owns the small Headroom integration point: safely compress the chat
+This module owns the small Legroom integration point: safely compress the chat
 portion of those requests before the generic proxy forwards them upstream.
 """
 
@@ -11,7 +11,7 @@ import json
 import logging
 from typing import Any
 
-logger = logging.getLogger("headroom.providers.hermes")
+logger = logging.getLogger("legroom.providers.hermes")
 
 _CHAT_ROLES = frozenset({"user", "assistant"})
 _CLAUDE_TEXT_PART_TYPES = frozenset({"text"})
@@ -40,7 +40,7 @@ def compress_scoped_passthrough_body(
 
     The adapter deliberately understands only Hermes's two scoped routes. It
     leaves system, tool, reasoning, and non-dictionary input items untouched;
-    only user/assistant messages are handed to Headroom's compressor.
+    only user/assistant messages are handed to Legroom's compressor.
     """
     if not optimize or bypass or not is_scoped_coding_agent_path(path):
         return body
@@ -182,10 +182,10 @@ def _restore_responses_text_parts(
 def _compress_messages(
     messages: list[dict[str, Any]], *, model: str, route_name: str
 ) -> list[dict[str, Any]] | None:
-    from headroom import compress as headroom_compress
+    from legroom import compress as legroom_compress
 
     before_bytes = len(json.dumps(messages, ensure_ascii=False).encode("utf-8"))
-    result = headroom_compress(messages=messages, model=model, optimize=True)
+    result = legroom_compress(messages=messages, model=model, optimize=True)
     compressed = list(result.messages)
     after_bytes = len(json.dumps(compressed, ensure_ascii=False).encode("utf-8"))
     logger.info(

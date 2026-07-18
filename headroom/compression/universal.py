@@ -24,19 +24,19 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-from headroom.compression.detector import (
+from legroom.compression.detector import (
     ContentType,
     DetectionResult,
     FallbackDetector,
     get_detector,
 )
-from headroom.compression.handlers.base import (
+from legroom.compression.handlers.base import (
     NoOpHandler,
     StructureHandler,
 )
-from headroom.compression.handlers.code_handler import CodeStructureHandler
-from headroom.compression.handlers.json_handler import JSONStructureHandler
-from headroom.compression.masks import (
+from legroom.compression.handlers.code_handler import CodeStructureHandler
+from legroom.compression.handlers.json_handler import JSONStructureHandler
+from legroom.compression.masks import (
     StructureMask,
     compute_entropy_mask_for_content,
     mask_to_spans,
@@ -185,7 +185,7 @@ class UniversalCompressor:
             Compressed text.
         """
         try:
-            from headroom.transforms.kompress_compressor import KompressCompressor
+            from legroom.transforms.kompress_compressor import KompressCompressor
 
             compressor = KompressCompressor()
             result = compressor.compress(text)
@@ -369,7 +369,7 @@ class UniversalCompressor:
         """
         try:
             if self._ccr_store is None:
-                from headroom.cache.compression_store import CompressionStore
+                from legroom.cache.compression_store import CompressionStore
 
                 self._ccr_store = CompressionStore()
 
@@ -461,7 +461,7 @@ def compress(content: str, **kwargs: Any) -> CompressionResult:
         CompressionResult.
 
     Example:
-        >>> from headroom.compression import compress
+        >>> from legroom.compression import compress
         >>> result = compress('{"users": [{"id": 1}, {"id": 2}]}')
         >>> print(result.compressed)
     """

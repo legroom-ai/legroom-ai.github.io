@@ -122,7 +122,7 @@ async fn anthropic_messages_strips_1m_suffix_glm() {
     let captured = mount_anthropic_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -159,7 +159,7 @@ async fn anthropic_messages_strips_1m_suffix_claude() {
     let captured = mount_anthropic_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -193,7 +193,7 @@ async fn anthropic_messages_passthrough_when_no_suffix() {
     let captured = mount_anthropic_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -247,7 +247,7 @@ async fn openai_chat_completions_passthrough_with_1m_model() {
     let captured = mount_chat_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -298,7 +298,7 @@ async fn openai_responses_passthrough_with_1m_model() {
     let captured = mount_responses_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 

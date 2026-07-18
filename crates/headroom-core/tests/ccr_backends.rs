@@ -5,10 +5,10 @@
 
 use std::time::Duration;
 
-use headroom_core::ccr::backends::{
+use legroom_core::ccr::backends::{
     from_config, CcrBackendConfig, InMemoryCcrStore, SqliteCcrStore,
 };
-use headroom_core::ccr::{compute_key, CcrStore};
+use legroom_core::ccr::{compute_key, CcrStore};
 
 #[test]
 fn sqlite_round_trip() {
@@ -92,7 +92,7 @@ fn from_config_in_memory_roundtrip() {
 #[cfg(not(feature = "redis"))]
 #[test]
 fn from_config_redis_unsupported_when_feature_off() {
-    use headroom_core::ccr::backends::CcrBackendInitError;
+    use legroom_core::ccr::backends::CcrBackendInitError;
 
     let cfg = CcrBackendConfig::Redis {
         url: "redis://127.0.0.1:6379".to_string(),
@@ -157,19 +157,19 @@ fn backend_swap_byte_equal_keys() {
 #[cfg(feature = "redis")]
 mod redis_tests {
     use super::*;
-    use headroom_core::ccr::backends::RedisCcrStore;
+    use legroom_core::ccr::backends::RedisCcrStore;
 
-    /// Reads `HEADROOM_TEST_REDIS_URL` from the environment — when the
+    /// Reads `LEGROOM_TEST_REDIS_URL` from the environment — when the
     /// feature is on but no URL is configured we silently no-op. CI
     /// runs the redis test in a docker-compose'd matrix.
     fn redis_url() -> Option<String> {
-        std::env::var("HEADROOM_TEST_REDIS_URL").ok()
+        std::env::var("LEGROOM_TEST_REDIS_URL").ok()
     }
 
     #[test]
     fn redis_round_trip() {
         let Some(url) = redis_url() else {
-            eprintln!("skipping redis_round_trip: HEADROOM_TEST_REDIS_URL not set");
+            eprintln!("skipping redis_round_trip: LEGROOM_TEST_REDIS_URL not set");
             return;
         };
         let store = RedisCcrStore::open(&url, 300).expect("open redis store");
@@ -182,7 +182,7 @@ mod redis_tests {
     #[test]
     fn redis_round_trip_via_from_config() {
         let Some(url) = redis_url() else {
-            eprintln!("skipping redis_round_trip_via_from_config: HEADROOM_TEST_REDIS_URL not set");
+            eprintln!("skipping redis_round_trip_via_from_config: LEGROOM_TEST_REDIS_URL not set");
             return;
         };
         let cfg = CcrBackendConfig::Redis {

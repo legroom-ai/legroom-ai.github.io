@@ -1,8 +1,8 @@
-"""One-function compression API for Headroom.
+"""One-function compression API for Legroom.
 
-The simplest way to use Headroom — no proxy, no config, just compress:
+The simplest way to use Legroom — no proxy, no config, just compress:
 
-    from headroom import compress
+    from legroom import compress
 
     result = compress(messages, model="claude-sonnet-4-5-20250929")
     result.messages          # Compressed messages (same format, fewer tokens)
@@ -16,7 +16,7 @@ Examples:
 
     # With Anthropic SDK
     from anthropic import Anthropic
-    from headroom import compress
+    from legroom import compress
 
     client = Anthropic()
     messages = [{"role": "user", "content": huge_tool_output}]
@@ -28,7 +28,7 @@ Examples:
 
     # With OpenAI SDK
     from openai import OpenAI
-    from headroom import compress
+    from legroom import compress
 
     client = OpenAI()
     messages = [{"role": "user", "content": "analyze this"}, {"role": "tool", "content": big_data}]
@@ -37,7 +37,7 @@ Examples:
 
     # With LiteLLM
     import litellm
-    from headroom import compress
+    from legroom import compress
 
     messages = [...]
     compressed = compress(messages, model="bedrock/claude-sonnet")
@@ -45,7 +45,7 @@ Examples:
 
     # With any HTTP client
     import httpx
-    from headroom import compress
+    from legroom import compress
 
     compressed = compress(messages, model="claude-sonnet-4-5-20250929")
     httpx.post("https://api.anthropic.com/v1/messages", json={
@@ -79,7 +79,7 @@ class CompressConfig:
     """User-facing compression options.
 
     Controls what gets compressed, how aggressively, and with which model.
-    Pass to ``compress()`` or any integration that uses headroom.
+    Pass to ``compress()`` or any integration that uses legroom.
 
     Examples::
 
@@ -177,9 +177,9 @@ def compress(
     config: CompressConfig | None = None,
     **kwargs: Any,
 ) -> CompressResult:
-    """Compress messages using Headroom's full compression pipeline.
+    """Compress messages using Legroom's full compression pipeline.
 
-    This is the simplest way to use Headroom. No proxy, no config needed.
+    This is the simplest way to use Legroom. No proxy, no config needed.
     Just pass messages and get compressed messages back.
 
     Args:
@@ -231,7 +231,7 @@ def compress(
         # Compute biases from hooks if provided
         biases = None
         if hooks:
-            from headroom.hooks import CompressContext
+            from legroom.hooks import CompressContext
 
             ctx = CompressContext(model=model)
             messages = hooks.pre_compress(messages, ctx)
@@ -324,7 +324,7 @@ def compress(
 
         # Post-compress hook
         if hooks and tokens_saved > 0:
-            from headroom.hooks import CompressEvent
+            from legroom.hooks import CompressEvent
 
             hooks.post_compress(
                 CompressEvent(
@@ -373,7 +373,7 @@ def compress_spreadsheet(
     Each sheet is rendered to CSV text and submitted as its own user message so
     the tabular compressor (CSV → SmartCrusher, lossless-first + lossy CCR
     fallback) is applied per sheet. Requires the ``spreadsheet`` extra
-    (``pip install headroom-ai[spreadsheet]``).
+    (``pip install legroom-ai[spreadsheet]``).
 
     Args:
         path: Path to a ``.xlsx`` or ``.xls`` file.
@@ -384,7 +384,7 @@ def compress_spreadsheet(
     Returns:
         CompressResult over the per-sheet messages.
     """
-    from headroom.transforms.spreadsheet_ingest import load_spreadsheet
+    from legroom.transforms.spreadsheet_ingest import load_spreadsheet
 
     sheets = load_spreadsheet(path)
     messages = [{"role": "user", "content": text} for text in sheets.values()]
@@ -406,7 +406,7 @@ def _get_pipeline() -> Any:
         if _pipeline is not None:
             return _pipeline
 
-        from headroom.transforms import TransformPipeline
+        from legroom.transforms import TransformPipeline
 
         # Default pipeline: CacheAligner → ContentRouter
         # CacheAligner: stabilizes prefix for provider KV cache hits
@@ -415,5 +415,5 @@ def _get_pipeline() -> Any:
         # Phase B PR-B1 retired the trailing context-management stage —
         # live-zone-only compression never drops messages.
         _pipeline = TransformPipeline()
-        logger.debug("Headroom compression pipeline initialized")
+        logger.debug("Legroom compression pipeline initialized")
         return _pipeline

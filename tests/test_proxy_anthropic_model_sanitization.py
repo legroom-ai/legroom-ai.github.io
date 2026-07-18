@@ -9,7 +9,7 @@ pytest.importorskip("fastapi")
 
 from fastapi.testclient import TestClient
 
-from headroom.proxy.server import ProxyConfig, create_app
+from legroom.proxy.server import ProxyConfig, create_app
 
 
 def test_anthropic_messages_strips_local_1m_model_suffix_before_forwarding() -> None:

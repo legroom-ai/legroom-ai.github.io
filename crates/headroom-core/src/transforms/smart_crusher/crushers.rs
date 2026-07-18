@@ -1,6 +1,6 @@
 //! Three universal crushers for non-dict-array JSON shapes.
 //!
-//! Direct ports from `headroom/transforms/smart_crusher.py`:
+//! Direct ports from `legroom/transforms/smart_crusher.py`:
 //!
 //! - `crush_string_array`  ← `_crush_string_array`  (line 2727)
 //! - `crush_number_array`  ← `_crush_number_array`  (line 2810) — has BUG #1
@@ -66,7 +66,7 @@ use crate::transforms::adaptive_sizer::compute_optimal_k;
 /// every case where `k_total >= 2` (the common path) and only deviates
 /// for `k_total <= 1` (the previously buggy edge).
 ///
-/// Same fix lands in `headroom/transforms/smart_crusher.py:2722` at
+/// Same fix lands in `legroom/transforms/smart_crusher.py:2722` at
 /// commit 7 (parity-fixture stage). Until then this is a one-sided fix
 /// — Rust is correct, Python overshoots — and parity fixtures for the
 /// `k_total=1` edge case won't match. Real-world inputs reach `k_total=1`

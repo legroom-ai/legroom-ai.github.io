@@ -1,4 +1,4 @@
-"""Best-effort "is a newer Headroom released?" check.
+"""Best-effort "is a newer Legroom released?" check.
 
 This module is intentionally dependency-light (stdlib + ``packaging`` only —
 ``httpx`` lives in the ``[proxy]`` extra and must not be required by the base
@@ -12,7 +12,7 @@ Two halves, deliberately split so a background thread never races stdout:
 * :func:`format_update_notice` reads *only* the cache and returns a one-line
   notice string (or ``None``). Callers own the rendering.
 
-Opt out with ``HEADROOM_UPDATE_CHECK=off``. Also skipped in ``--stateless``
+Opt out with ``LEGROOM_UPDATE_CHECK=off``. Also skipped in ``--stateless``
 mode, in CI, inside Docker, and from a git checkout (developers manage their
 own tree).
 """
@@ -30,7 +30,7 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-PACKAGE_NAME = "headroom-ai"
+PACKAGE_NAME = "legroom-ai"
 _PYPI_JSON_URL = f"https://pypi.org/pypi/{PACKAGE_NAME}/json"
 _CACHE_FILE = "update_check.json"
 
@@ -54,18 +54,18 @@ def _env_on(name: str) -> bool:
 def is_update_check_enabled() -> bool:
     """Whether the update check / banner should run at all.
 
-    Disabled by ``HEADROOM_UPDATE_CHECK=off``, offline mode
-    (``HEADROOM_OFFLINE``), stateless mode
-    (``HEADROOM_STATELESS=true``/``1``/``yes``/``on``, matching the proxy's own
+    Disabled by ``LEGROOM_UPDATE_CHECK=off``, offline mode
+    (``LEGROOM_OFFLINE``), stateless mode
+    (``LEGROOM_STATELESS=true``/``1``/``yes``/``on``, matching the proxy's own
     parsing), or any CI environment (``CI`` set).
     """
-    from headroom.offline import is_offline
+    from legroom.offline import is_offline
 
     if is_offline():
         return False
-    if _env_off("HEADROOM_UPDATE_CHECK"):
+    if _env_off("LEGROOM_UPDATE_CHECK"):
         return False
-    if _env_on("HEADROOM_STATELESS"):
+    if _env_on("LEGROOM_STATELESS"):
         return False
     if os.environ.get("CI", "").strip():
         return False
@@ -75,7 +75,7 @@ def is_update_check_enabled() -> bool:
 def _is_source_checkout() -> bool:
     """True when running from a git checkout (developers manage their tree)."""
     try:
-        from headroom._version import _source_root
+        from legroom._version import _source_root
 
         return _source_root() is not None
     except Exception:
@@ -86,7 +86,7 @@ def _in_docker() -> bool:
     """Best-effort container detection — image rebuilds, not self-update."""
     try:
         return Path("/.dockerenv").exists() or bool(
-            os.environ.get("HEADROOM_IN_DOCKER", "").strip()
+            os.environ.get("LEGROOM_IN_DOCKER", "").strip()
         )
     except Exception:
         return False
@@ -96,7 +96,7 @@ def installed_version() -> str | None:
     """Return the *installed-distribution* version, or None.
 
     Deliberately uses ``importlib.metadata`` rather than
-    ``headroom._version.get_version()`` — the latter computes a synthetic
+    ``legroom._version.get_version()`` — the latter computes a synthetic
     version from git history in a checkout, which would produce a meaningless
     comparison against PyPI.
     """
@@ -112,7 +112,7 @@ def installed_version() -> str | None:
 
 
 def _cache_path() -> Path:
-    from headroom.paths import workspace_dir
+    from legroom.paths import workspace_dir
 
     return workspace_dir() / _CACHE_FILE
 
@@ -133,7 +133,7 @@ def read_cache() -> dict[str, Any] | None:
 def write_cache(latest_version: str, *, now: float | None = None) -> None:
     """Persist the latest-known version + check timestamp. Never raises."""
     try:
-        from headroom.paths import ensure_workspace_dir
+        from legroom.paths import ensure_workspace_dir
 
         ensure_workspace_dir()
         payload = {
@@ -197,7 +197,7 @@ def fetch_latest_version(*, allow_pre: bool = False, timeout: float = 4.0) -> st
     try:
         req = urllib.request.Request(
             _PYPI_JSON_URL,
-            headers={"Accept": "application/json", "User-Agent": "headroom-update-check"},
+            headers={"Accept": "application/json", "User-Agent": "legroom-update-check"},
         )
         with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 — fixed https URL
             data = json.loads(resp.read().decode("utf-8"))
@@ -222,7 +222,7 @@ def should_check(now: float | None = None) -> bool:
 def run_check(*, allow_pre: bool = False, now: float | None = None) -> str | None:
     """Probe PyPI and update the cache. Returns the latest version or None.
 
-    Synchronous — used directly by ``headroom update`` and indirectly by
+    Synchronous — used directly by ``legroom update`` and indirectly by
     :func:`maybe_check_async`. Honors the enable gate.
     """
     if not is_update_check_enabled():
@@ -252,7 +252,7 @@ def maybe_check_async() -> threading.Thread | None:
             except Exception:
                 logger.debug("update_check: background check crashed", exc_info=True)
 
-        thread = threading.Thread(target=_worker, name="headroom-update-check", daemon=True)
+        thread = threading.Thread(target=_worker, name="legroom-update-check", daemon=True)
         thread.start()
         return thread
     except Exception:
@@ -288,7 +288,7 @@ def format_update_notice() -> str | None:
 
         # ASCII-only: some Windows consoles can't encode unicode and would raise
         # UnicodeEncodeError at the echo site, breaking a "best-effort" banner.
-        return f"Update available: Headroom {latest} (you have {current}) - run: headroom update"
+        return f"Update available: Legroom {latest} (you have {current}) - run: legroom update"
     except Exception:
         logger.debug("update_check: format_update_notice crashed", exc_info=True)
         return None

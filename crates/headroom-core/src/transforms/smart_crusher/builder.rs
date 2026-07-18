@@ -7,7 +7,7 @@
 //! Builder is for callers who want to customize the composition:
 //!
 //! ```ignore
-//! use headroom_core::transforms::smart_crusher::{
+//! use legroom_core::transforms::smart_crusher::{
 //!     SmartCrusher, SmartCrusherConfig, SmartCrusherBuilder,
 //! };
 //! // Enterprise: swap the scorer, add a business-rule constraint,

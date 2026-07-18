@@ -6,7 +6,7 @@ Manages the token budget for agent memory files:
 - Detects stale memories referencing deleted/renamed entities
 - Merges similar memories to save tokens
 
-This is Headroom's superpower applied to itself — the proxy that optimizes
+This is Legroom's superpower applied to itself — the proxy that optimizes
 LLM context also optimizes its own memory files for minimum token consumption.
 """
 
@@ -19,8 +19,8 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from headroom._subprocess import run
-from headroom.memory.writers.base import MemoryEntry, _estimate_tokens
+from legroom._subprocess import run
+from legroom.memory.writers.base import MemoryEntry, _estimate_tokens
 
 logger = logging.getLogger(__name__)
 

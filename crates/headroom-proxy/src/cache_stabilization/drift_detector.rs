@@ -33,7 +33,7 @@
 //! detector is a pure observer and the proxy's "passthrough is sacred"
 //! invariant (Phase A) is preserved by construction.
 //!
-//! Known trade-off: without an explicit `x-headroom-session-id`, the
+//! Known trade-off: without an explicit `x-legroom-session-id`, the
 //! session identity is anchored on the conversation's first message
 //! (see [`conversation_discriminator`]), so a client that *rewrites*
 //! that message (history compaction, rolling-window truncation)
@@ -46,7 +46,7 @@
 //! # Privacy
 //!
 //! The session key prefers the client's explicit
-//! `x-headroom-session-id` header — the same opt-in the Python proxy
+//! `x-legroom-session-id` header — the same opt-in the Python proxy
 //! honors for all session-sticky state — and otherwise combines the
 //! strongest available client identifier (`Authorization`, `x-api-key`,
 //! client IP, finally `(client_ip, user_agent)`) with a fingerprint of
@@ -478,7 +478,7 @@ fn early_window_drifted(
 /// Derive a stable per-session key from the request headers, client
 /// address, and body. Priority order:
 ///
-/// 1. `x-headroom-session-id` header (hashed) — the explicit opt-in
+/// 1. `x-legroom-session-id` header (hashed) — the explicit opt-in
 ///    the Python proxy already honors for every session-sticky
 ///    subsystem (prefix tracker, beta-header tracker). When the
 ///    client declares its session, believe it.
@@ -507,7 +507,7 @@ pub fn derive_session_key(
     kind: ApiKind,
 ) -> String {
     if let Some(sid) = headers
-        .get("x-headroom-session-id")
+        .get("x-legroom-session-id")
         .and_then(|v| v.to_str().ok())
         .filter(|s| !s.is_empty())
     {
@@ -564,7 +564,7 @@ pub fn derive_session_key(
 /// mode sending delta-only `input`) re-keys to a fresh session — the
 /// rewrite surfaces as `cache_drift_first_request` on the new key
 /// rather than `cache_drift_observed` against the old baseline. An
-/// explicit `x-headroom-session-id` pins the identity and reports
+/// explicit `x-legroom-session-id` pins the identity and reports
 /// those rewrites as drift. Conversations sharing one credential AND
 /// a byte-identical opener on the same model still conflate.
 fn conversation_discriminator(body: &serde_json::Value, kind: ApiKind) -> String {
@@ -945,8 +945,8 @@ mod tests {
     }
 
     #[test]
-    fn explicit_headroom_session_header_wins_over_credentials() {
-        // The Python proxy honors `x-headroom-session-id` as the highest-
+    fn explicit_legroom_session_header_wins_over_credentials() {
+        // The Python proxy honors `x-legroom-session-id` as the highest-
         // priority session identity (prefix tracker, beta-header tracker);
         // the drift detector must respect the same explicit opt-in.
         let mut headers = HeaderMap::new();
@@ -954,7 +954,7 @@ mod tests {
             axum::http::header::AUTHORIZATION,
             "Bearer shared-workspace-token".parse().unwrap(),
         );
-        headers.insert("x-headroom-session-id", "conv-42".parse().unwrap());
+        headers.insert("x-legroom-session-id", "conv-42".parse().unwrap());
         let addr: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 9)), 4242);
         let body_a = anthropic_body("sys", json!([]), vec!["conversation A opener"]);
         let body_b = anthropic_body("sys", json!([]), vec!["conversation B opener"]);
@@ -972,7 +972,7 @@ mod tests {
         assert_eq!(key_a, key_b);
         // …and different ids mean different sessions.
         let mut headers2 = headers.clone();
-        headers2.insert("x-headroom-session-id", "conv-43".parse().unwrap());
+        headers2.insert("x-legroom-session-id", "conv-43".parse().unwrap());
         let key_c = derive_session_key(&headers2, &addr, &body_a, ApiKind::Anthropic);
         assert_ne!(key_a, key_c);
     }
@@ -1027,7 +1027,7 @@ mod tests {
         // Fewer messages than previously observed *under the same
         // session key* means the settled prefix was rewritten in place
         // — that IS a cache bust. (Reachable when the identity is
-        // pinned, e.g. an explicit x-headroom-session-id; on the
+        // pinned, e.g. an explicit x-legroom-session-id; on the
         // credential arms a first-message rewrite re-keys instead —
         // see conversation_discriminator's trade-off note.)
         let h1 = compute_structural_hash(

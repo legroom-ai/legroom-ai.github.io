@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from headroom.providers.registry import DEFAULT_VERTEX_API_URL
+from legroom.providers.registry import DEFAULT_VERTEX_API_URL
 
 VERTEX_GOOGLE_PUBLISHER = "google"
 VERTEX_ANTHROPIC_PUBLISHER = "anthropic"

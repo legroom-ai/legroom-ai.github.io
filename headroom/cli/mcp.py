@@ -1,6 +1,6 @@
 """MCP (Model Context Protocol) CLI commands for Claude Code integration.
 
-Provides commands to configure and run the Headroom MCP server, enabling
+Provides commands to configure and run the Legroom MCP server, enabling
 Claude Code subscription users to use CCR (Compress-Cache-Retrieve) without
 needing API key access.
 """
@@ -25,12 +25,12 @@ DEFAULT_HTTP_PORT = 8788
 DEFAULT_HTTP_PATH = "/mcp"
 
 
-def get_headroom_command() -> list[str]:
-    """Get the command to run headroom MCP server.
+def get_legroom_command() -> list[str]:
+    """Get the command to run legroom MCP server.
 
     Returns the CLI invocation used by Claude Code config.
     """
-    return ["headroom", "mcp", "serve"]
+    return ["legroom", "mcp", "serve"]
 
 
 def load_mcp_config() -> dict[str, Any]:
@@ -53,11 +53,11 @@ def save_mcp_config(config: dict) -> None:
         f.write("\n")  # Trailing newline
 
 
-def find_headroom_registration() -> tuple[Path, dict[str, Any]] | None:
-    """Locate an existing 'headroom' MCP server registration.
+def find_legroom_registration() -> tuple[Path, dict[str, Any]] | None:
+    """Locate an existing 'legroom' MCP server registration.
 
     Claude Code stores servers registered with `claude mcp add` (user scope) in
-    ~/.claude.json under "mcpServers". Headroom's own `mcp install` fallback
+    ~/.claude.json under "mcpServers". Legroom's own `mcp install` fallback
     writes ~/.claude/mcp.json, and a project may define ./.mcp.json. Check all of
     them so `status` reflects reality instead of only looking at mcp.json.
 
@@ -72,8 +72,8 @@ def find_headroom_registration() -> tuple[Path, dict[str, Any]] | None:
         except (json.JSONDecodeError, OSError):
             continue
         servers = data.get("mcpServers", {})
-        if isinstance(servers, dict) and "headroom" in servers:
-            return path, servers["headroom"]
+        if isinstance(servers, dict) and "legroom" in servers:
+            return path, servers["legroom"]
     return None
 
 
@@ -82,14 +82,14 @@ def mcp() -> None:
     """MCP server for Claude Code integration.
 
     \b
-    The MCP server exposes headroom_retrieve as a tool that Claude Code
+    The MCP server exposes legroom_retrieve as a tool that Claude Code
     can use to retrieve compressed content. This enables CCR (Compress-
     Cache-Retrieve) for subscription users who don't have API access.
 
     \b
     Quick Start:
-        headroom mcp install    # Configure Claude Code
-        headroom proxy          # Start the proxy (in another terminal)
+        legroom mcp install    # Configure Claude Code
+        legroom proxy          # Start the proxy (in another terminal)
         ANTHROPIC_BASE_URL=http://127.0.0.1:8787 claude
 
     \b
@@ -102,17 +102,17 @@ def mcp() -> None:
         1. ANTHROPIC_BASE_URL routes all requests through the proxy
         2. The proxy compresses large tool outputs (file listings, search results)
         3. Claude sees compressed summaries with hash markers
-        4. When Claude needs full details, it calls headroom_retrieve
+        4. When Claude needs full details, it calls legroom_retrieve
         5. The MCP server fetches original content from the proxy
 
     \b
     Note on tool naming: MCP clients display tools as
-    `mcp__<server>__<tool>`. Our server is named "headroom" and our
-    tools are named headroom_retrieve / headroom_compress / etc., so
-    Claude Code shows them as `mcp__headroom__headroom_retrieve`. The
-    "headroom" doubling is normal MCP namespacing — not a bug. The
+    `mcp__<server>__<tool>`. Our server is named "legroom" and our
+    tools are named legroom_retrieve / legroom_compress / etc., so
+    Claude Code shows them as `mcp__legroom__legroom_retrieve`. The
+    "legroom" doubling is normal MCP namespacing — not a bug. The
     proxy's compression markers (and any docs/prompts) reference the
-    bare tool name `headroom_retrieve`.
+    bare tool name `legroom_retrieve`.
     """
     pass
 
@@ -121,7 +121,7 @@ def mcp() -> None:
 @click.option(
     "--proxy-url",
     default=DEFAULT_PROXY_URL,
-    help=f"Headroom proxy URL (default: {DEFAULT_PROXY_URL})",
+    help=f"Legroom proxy URL (default: {DEFAULT_PROXY_URL})",
 )
 @click.option(
     "--agent",
@@ -132,10 +132,10 @@ def mcp() -> None:
 @click.option(
     "--force",
     is_flag=True,
-    help="Overwrite existing headroom config in case of mismatch.",
+    help="Overwrite existing legroom config in case of mismatch.",
 )
 def mcp_install(proxy_url: str, agents: tuple[str, ...], force: bool) -> None:
-    """Install the Headroom MCP server into every detected coding agent.
+    """Install the Legroom MCP server into every detected coding agent.
 
     \b
     By default this installs into every agent that has a registrar and is
@@ -145,18 +145,18 @@ def mcp_install(proxy_url: str, agents: tuple[str, ...], force: bool) -> None:
 
     \b
     Examples:
-        headroom mcp install                            # every detected agent
-        headroom mcp install --agent claude             # Claude Code only
-        headroom mcp install --proxy-url http://localhost:9000
+        legroom mcp install                            # every detected agent
+        legroom mcp install --agent claude             # Claude Code only
+        legroom mcp install --proxy-url http://localhost:9000
     """
     try:
         import mcp  # noqa: F401
     except ImportError:
         click.echo("Error: MCP SDK not installed.", err=True)
-        click.echo("Install with: pip install 'headroom-ai[mcp]'", err=True)
+        click.echo("Install with: pip install 'legroom-ai[mcp]'", err=True)
         raise SystemExit(1) from None
 
-    from headroom.mcp_registry import any_succeeded, format_results, install_everywhere
+    from legroom.mcp_registry import any_succeeded, format_results, install_everywhere
 
     results = install_everywhere(
         proxy_url=proxy_url,
@@ -168,11 +168,11 @@ def mcp_install(proxy_url: str, agents: tuple[str, ...], force: bool) -> None:
         click.echo("No agents matched the requested filter.")
         raise SystemExit(1)
 
-    click.echo("Installing Headroom MCP server...")
+    click.echo("Installing Legroom MCP server...")
     for line in format_results(
         results,
         verbose=True,
-        overwrite_hint=f"headroom mcp install --proxy-url {proxy_url} --force",
+        overwrite_hint=f"legroom mcp install --proxy-url {proxy_url} --force",
     ):
         click.echo(line)
 
@@ -181,7 +181,7 @@ def mcp_install(proxy_url: str, agents: tuple[str, ...], force: bool) -> None:
 
     click.echo(
         f"\nNext steps:\n"
-        f"  1. Start the Headroom proxy (if not running): headroom proxy\n"
+        f"  1. Start the Legroom proxy (if not running): legroom proxy\n"
         f"  2. Start your agent (e.g.) ANTHROPIC_BASE_URL={proxy_url} claude\n"
         f"  3. Restart any agent that was already running so it picks up the new MCP server.\n"
     )
@@ -189,13 +189,13 @@ def mcp_install(proxy_url: str, agents: tuple[str, ...], force: bool) -> None:
 
 @mcp.command("uninstall")
 def mcp_uninstall() -> None:
-    """Remove Headroom MCP server from detected agent configs.
+    """Remove Legroom MCP server from detected agent configs.
 
     \b
-    Removes headroom from every agent registrar known to Headroom. Other MCP
+    Removes legroom from every agent registrar known to Legroom. Other MCP
     servers are preserved.
     """
-    from headroom.mcp_registry import get_all_registrars
+    from legroom.mcp_registry import get_all_registrars
 
     removed = False
 
@@ -203,7 +203,7 @@ def mcp_uninstall() -> None:
         if not registrar.detect():
             continue
         removed_names: list[str] = []
-        for server_name in ("headroom", "codebase-memory-mcp"):
+        for server_name in ("legroom", "codebase-memory-mcp"):
             if registrar.unregister_server(server_name):
                 removed_names.append(server_name)
         if removed_names:
@@ -213,18 +213,18 @@ def mcp_uninstall() -> None:
             removed = True
 
     if not removed:
-        click.echo("Headroom MCP is not configured. Nothing to uninstall.")
+        click.echo("Legroom MCP is not configured. Nothing to uninstall.")
 
 
 @mcp.command("status")
 def mcp_status() -> None:
-    """Check Headroom MCP configuration status.
+    """Check Legroom MCP configuration status.
 
     \b
-    Shows whether headroom is configured in Claude Code and if
+    Shows whether legroom is configured in Claude Code and if
     the proxy is reachable.
     """
-    click.echo("Headroom MCP Status")
+    click.echo("Legroom MCP Status")
     click.echo("=" * 40)
 
     # Check MCP SDK
@@ -234,9 +234,9 @@ def mcp_status() -> None:
         click.echo("MCP SDK:        ✓ Installed")
     except ImportError:
         click.echo("MCP SDK:        ✗ Not installed")
-        click.echo("                pip install 'headroom-ai[mcp]'")
+        click.echo("                pip install 'legroom-ai[mcp]'")
 
-    from headroom.mcp_registry import get_all_registrars
+    from legroom.mcp_registry import get_all_registrars
 
     proxy_url = DEFAULT_PROXY_URL
     any_configured = False
@@ -245,16 +245,16 @@ def mcp_status() -> None:
         if not registrar.detect():
             click.echo(f"  {registrar.display_name}: ✗ Not detected")
             continue
-        spec = registrar.get_server("headroom")
+        spec = registrar.get_server("legroom")
         if spec is None:
             click.echo(f"  {registrar.display_name}: ✗ Not configured")
             continue
         any_configured = True
-        proxy_url = spec.env.get("HEADROOM_PROXY_URL", proxy_url)
+        proxy_url = spec.env.get("LEGROOM_PROXY_URL", proxy_url)
         click.echo(f"  {registrar.display_name}: ✓ Configured")
 
     if not any_configured:
-        click.echo("                Run: headroom mcp install")
+        click.echo("                Run: legroom mcp install")
     click.echo(f"Proxy URL:      {proxy_url}")
 
     # Check proxy connectivity
@@ -269,12 +269,12 @@ def mcp_status() -> None:
                 click.echo(f"Proxy Status:   ✗ Unhealthy (status {response.status_code})")
         except httpx.ConnectError:
             click.echo("Proxy Status:   ✗ Not running")
-            click.echo("                Run: headroom proxy")
+            click.echo("                Run: legroom proxy")
         except httpx.TimeoutException:
             click.echo("Proxy Status:   ✗ Timeout")
         except httpx.HTTPError as e:
             # Catch the rest (InvalidURL, UnsupportedProtocol, ProtocolError, …)
-            # so a malformed configured HEADROOM_PROXY_URL can't crash `status`.
+            # so a malformed configured LEGROOM_PROXY_URL can't crash `status`.
             click.echo(f"Proxy Status:   ✗ Unreachable ({proxy_url}: {e})")
     except ImportError:
         click.echo("Proxy Status:   ? (httpx not installed)")
@@ -284,15 +284,15 @@ def mcp_status() -> None:
 @click.option(
     "--proxy-url",
     default=None,
-    envvar="HEADROOM_PROXY_URL",
-    help=f"Headroom proxy URL (default: {DEFAULT_PROXY_URL})",
+    envvar="LEGROOM_PROXY_URL",
+    help=f"Legroom proxy URL (default: {DEFAULT_PROXY_URL})",
 )
 @click.option(
     "--transport",
     type=click.Choice(["stdio", "http"], case_sensitive=False),
     default="stdio",
     show_default=True,
-    help="Transport to use for headroom mcp serve",
+    help="Transport to use for legroom mcp serve",
 )
 @click.option(
     "--host",
@@ -341,18 +341,18 @@ def mcp_serve(
 
     \b
     For manual testing:
-        headroom mcp serve --debug
-        headroom mcp serve --transport http --host 127.0.0.1 --port 8788 --path /mcp
+        legroom mcp serve --debug
+        legroom mcp serve --transport http --host 127.0.0.1 --port 8788 --path /mcp
     """
     import asyncio
     import logging
 
     # Check for MCP SDK
     try:
-        from headroom.ccr.mcp_server import create_ccr_mcp_server
+        from legroom.ccr.mcp_server import create_ccr_mcp_server
     except ImportError as e:
         click.echo(f"Error: MCP dependencies not installed: {e}", err=True)
-        click.echo("Install with: pip install 'headroom-ai[mcp]'", err=True)
+        click.echo("Install with: pip install 'legroom-ai[mcp]'", err=True)
         raise SystemExit(1) from None
 
     if debug:

@@ -12,7 +12,7 @@ import copy
 
 import pytest
 
-from headroom.proxy.helpers import (
+from legroom.proxy.helpers import (
     _model_supports_openai_tool_search,
     inject_tool_search_deferral_openai,
 )
@@ -46,11 +46,11 @@ def test_model_unsupported(model):
 
 
 def test_env_override_wins_then_falls_back(monkeypatch):
-    monkeypatch.setenv("HEADROOM_OPENAI_TOOL_SEARCH_MODELS", r"^my-model")
+    monkeypatch.setenv("LEGROOM_OPENAI_TOOL_SEARCH_MODELS", r"^my-model")
     assert _model_supports_openai_tool_search("my-model-v1") is True
     assert _model_supports_openai_tool_search("gpt-5.4") is False  # override replaces the gate
     # a malformed regex must not crash — fall back to the version gate.
-    monkeypatch.setenv("HEADROOM_OPENAI_TOOL_SEARCH_MODELS", "[unclosed")
+    monkeypatch.setenv("LEGROOM_OPENAI_TOOL_SEARCH_MODELS", "[unclosed")
     assert _model_supports_openai_tool_search("gpt-5.4") is True
 
 

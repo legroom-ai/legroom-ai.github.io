@@ -1,7 +1,7 @@
 """Rust-backed search-results compressor.
 
 Phase 3e.2 ported the implementation to
-`crates/headroom-core/src/transforms/search_compressor.rs`. This module
+`crates/legroom-core/src/transforms/search_compressor.rs`. This module
 is now a thin shim that:
 
 1. Keeps the public dataclass surface (`SearchMatch`, `FileMatches`,
@@ -171,10 +171,10 @@ class SearchCompressor:
         # must build it (scripts/build_rust_extension.sh) or install a
         # prebuilt one. Failing loudly here is better than silently
         # degrading; see feedback memory `feedback_no_silent_fallbacks.md`.
-        from headroom._core import (
+        from legroom._core import (
             SearchCompressor as _RustSearchCompressor,
         )
-        from headroom._core import (
+        from legroom._core import (
             SearchCompressorConfig as _RustSearchCompressorConfig,
         )
 
@@ -233,7 +233,7 @@ class SearchCompressor:
 
     def _parse_search_results(self, content: str) -> dict[str, FileMatches]:
         """Parse via the Rust parser, build legacy Python dataclasses."""
-        from headroom._core import parse_search_lines
+        from legroom._core import parse_search_lines
 
         out: dict[str, FileMatches] = {}
         for file_path, line_no, body in parse_search_lines(content):
@@ -261,7 +261,7 @@ class SearchCompressor:
         assertion, so this equality is test-pinned, not mechanically
         enforced.)
         """
-        from headroom.transforms.error_detection import PRIORITY_PATTERNS_SEARCH
+        from legroom.transforms.error_detection import PRIORITY_PATTERNS_SEARCH
 
         context_lower = context.lower()
         # Dedup whitespace words (len>2 by codepoints), and add CJK char bigrams
@@ -296,7 +296,7 @@ class SearchCompressor:
         bias: float = 1.0,
     ) -> dict[str, FileMatches]:
         """Select top matches per file and globally."""
-        from headroom.transforms.adaptive_sizer import compute_optimal_k
+        from legroom.transforms.adaptive_sizer import compute_optimal_k
 
         sorted_files = sorted(
             file_matches.items(),

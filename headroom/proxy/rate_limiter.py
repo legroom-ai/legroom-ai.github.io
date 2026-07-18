@@ -1,4 +1,4 @@
-"""Token bucket rate limiter for the Headroom proxy.
+"""Token bucket rate limiter for the Legroom proxy.
 
 Rate limits requests and token usage per API key or IP address.
 
@@ -12,10 +12,10 @@ import logging
 import time
 from collections import defaultdict
 
-from headroom.proxy.models import RateLimitState
-from headroom.proxy.rate_limit_policy import consume_from_bucket, refilled_tokens, stale_bucket_keys
+from legroom.proxy.models import RateLimitState
+from legroom.proxy.rate_limit_policy import consume_from_bucket, refilled_tokens, stale_bucket_keys
 
-logger = logging.getLogger("headroom.proxy")
+logger = logging.getLogger("legroom.proxy")
 
 # Maximum rate limiter buckets (prevents DoS via spoofed API keys)
 MAX_RATE_LIMITER_BUCKETS = 1000

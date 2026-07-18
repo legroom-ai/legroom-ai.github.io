@@ -3,13 +3,13 @@ from __future__ import annotations
 from types import SimpleNamespace
 from typing import Any
 
-from headroom.proxy.handlers.openai import (
+from legroom.proxy.handlers.openai import (
     OpenAIHandlerMixin,
     _compact_openai_responses_tools,
     _openai_responses_context_budget,
     _responses_request_allows_memory_tool_continuation,
 )
-from headroom.transforms.content_router import (
+from legroom.transforms.content_router import (
     CompressionStrategy,
     ContentRouter,
     ContentRouterConfig,
@@ -218,7 +218,7 @@ class _StubPipeline:
 
 class _HandlerHarness(OpenAIHandlerMixin):
     """Minimal subclass exposing just the deps the unit-extraction path
-    actually reads. The full HeadroomProxy ctor wires dozens of unrelated
+    actually reads. The full LegroomProxy ctor wires dozens of unrelated
     services; this keeps the test focused on the gate behavior."""
 
     def __init__(self, router: ContentRouter):
@@ -336,7 +336,7 @@ def test_compression_pass_debug_logs_are_suppressed(caplog) -> None:
         ],
     }
 
-    caplog.set_level(_logging.INFO, logger="headroom.proxy")
+    caplog.set_level(_logging.INFO, logger="legroom.proxy")
     handler._compress_openai_responses_payload(
         payload_a, model="gpt-5.5", request_id="hr_shared_request"
     )

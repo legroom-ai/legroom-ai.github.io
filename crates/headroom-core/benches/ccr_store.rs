@@ -8,7 +8,7 @@
 //! contend.
 //!
 //! Run with:
-//!     cargo bench -p headroom-core --bench ccr_store
+//!     cargo bench -p legroom-core --bench ccr_store
 //!
 //! The critical numbers to watch are the `mt/N=8` rows: with the
 //! Mutex design, all 8 threads serialize on one lock, so throughput
@@ -21,7 +21,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
-use headroom_core::ccr::{CcrStore, InMemoryCcrStore};
+use legroom_core::ccr::{CcrStore, InMemoryCcrStore};
 
 // ─── Baseline: the old single-Mutex<HashMap> design ────────────────
 //

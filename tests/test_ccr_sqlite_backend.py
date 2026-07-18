@@ -13,8 +13,8 @@ import time
 
 import pytest
 
-from headroom.cache.backends.sqlite import SQLiteBackend
-from headroom.cache.compression_store import CompressionEntry, CompressionStore
+from legroom.cache.backends.sqlite import SQLiteBackend
+from legroom.cache.compression_store import CompressionEntry, CompressionStore
 
 
 def make_entry(hash_key: str = "h1", content: str = "x" * 600, ttl: int = 1800) -> CompressionEntry:
@@ -93,7 +93,7 @@ class TestSQLiteBackend:
         assert b.count() == 0
 
     def test_unknown_json_fields_tolerated(self, db_path):
-        """Forward-compat: entries written by a newer headroom version
+        """Forward-compat: entries written by a newer legroom version
         (extra fields) must still load."""
         b = SQLiteBackend(db_path)
         b.set("h1", make_entry())
@@ -197,30 +197,30 @@ class TestMultiWorkerSafety:
 class TestDefaults:
     def test_session_scale_ttl_lockstep(self):
         """CCRConfig, CompressionEntry, and CompressionStore must agree."""
-        from headroom.config import CCRConfig
+        from legroom.config import CCRConfig
 
         assert CCRConfig().store_ttl_seconds == 1800
         assert CompressionEntry.__dataclass_fields__["ttl"].default == 1800
         assert CompressionStore()._default_ttl == 1800
 
     def test_default_backend_is_sqlite(self, monkeypatch, tmp_path):
-        from headroom.cache.compression_store import _create_default_ccr_backend
+        from legroom.cache.compression_store import _create_default_ccr_backend
 
-        monkeypatch.delenv("HEADROOM_CCR_BACKEND", raising=False)
-        monkeypatch.setenv("HEADROOM_CCR_SQLITE_PATH", str(tmp_path / "d.db"))
+        monkeypatch.delenv("LEGROOM_CCR_BACKEND", raising=False)
+        monkeypatch.setenv("LEGROOM_CCR_SQLITE_PATH", str(tmp_path / "d.db"))
         backend = _create_default_ccr_backend()
         assert backend is not None
         assert backend.get_stats()["backend_type"] == "sqlite"
 
     def test_workspace_dir(self, monkeypatch, tmp_path):
-        from headroom.cache.compression_store import _create_default_ccr_backend
+        from legroom.cache.compression_store import _create_default_ccr_backend
 
         workspace = tmp_path / "workspace"
         fake_home = tmp_path / "fake_home"
 
-        monkeypatch.delenv("HEADROOM_CCR_BACKEND", raising=False)
-        monkeypatch.delenv("HEADROOM_CCR_SQLITE_PATH", raising=False)
-        monkeypatch.setenv("HEADROOM_WORKSPACE_DIR", str(workspace))
+        monkeypatch.delenv("LEGROOM_CCR_BACKEND", raising=False)
+        monkeypatch.delenv("LEGROOM_CCR_SQLITE_PATH", raising=False)
+        monkeypatch.setenv("LEGROOM_WORKSPACE_DIR", str(workspace))
         monkeypatch.setenv("HOME", str(fake_home))
         monkeypatch.setenv("USERPROFILE", str(fake_home))
 
@@ -229,33 +229,33 @@ class TestDefaults:
         assert str(backend._path) == str(workspace / "ccr_store.db")
 
     def test_sqlite_path_env_wins(self, monkeypatch, tmp_path):
-        from headroom.cache.compression_store import _create_default_ccr_backend
+        from legroom.cache.compression_store import _create_default_ccr_backend
 
         workspace = tmp_path / "workspace"
         sqlite_path = tmp_path / "sqlite_override.db"
 
-        monkeypatch.delenv("HEADROOM_CCR_BACKEND", raising=False)
-        monkeypatch.setenv("HEADROOM_WORKSPACE_DIR", str(workspace))
-        monkeypatch.setenv("HEADROOM_CCR_SQLITE_PATH", str(sqlite_path))
+        monkeypatch.delenv("LEGROOM_CCR_BACKEND", raising=False)
+        monkeypatch.setenv("LEGROOM_WORKSPACE_DIR", str(workspace))
+        monkeypatch.setenv("LEGROOM_CCR_SQLITE_PATH", str(sqlite_path))
         backend = _create_default_ccr_backend()
 
         assert backend is not None
         assert str(backend._path) == str(sqlite_path)
 
     def test_home_fallback(self, monkeypatch, tmp_path):
-        from headroom.cache.compression_store import _create_default_ccr_backend
+        from legroom.cache.compression_store import _create_default_ccr_backend
 
         fake_home = tmp_path / "fake_home"
 
-        monkeypatch.delenv("HEADROOM_CCR_BACKEND", raising=False)
-        monkeypatch.delenv("HEADROOM_CCR_SQLITE_PATH", raising=False)
-        monkeypatch.delenv("HEADROOM_WORKSPACE_DIR", raising=False)
+        monkeypatch.delenv("LEGROOM_CCR_BACKEND", raising=False)
+        monkeypatch.delenv("LEGROOM_CCR_SQLITE_PATH", raising=False)
+        monkeypatch.delenv("LEGROOM_WORKSPACE_DIR", raising=False)
         monkeypatch.setenv("HOME", str(fake_home))
         monkeypatch.setenv("USERPROFILE", str(fake_home))
 
         backend = _create_default_ccr_backend()
         assert backend is not None
-        assert str(backend._path) == str(fake_home / ".headroom" / "ccr_store.db")
+        assert str(backend._path) == str(fake_home / ".legroom" / "ccr_store.db")
 
     def test_explicit_db_path(self, tmp_path):
         explicit = tmp_path / "explicit.db"
@@ -263,13 +263,13 @@ class TestDefaults:
         assert backend._path == explicit
 
     def test_memory_opt_out(self, monkeypatch):
-        from headroom.cache.compression_store import _create_default_ccr_backend
+        from legroom.cache.compression_store import _create_default_ccr_backend
 
-        monkeypatch.setenv("HEADROOM_CCR_BACKEND", "memory")
+        monkeypatch.setenv("LEGROOM_CCR_BACKEND", "memory")
         assert _create_default_ccr_backend() is None
 
     def test_miss_message_is_actionable(self):
-        from headroom.cache.compression_store import CCR_MISS_MESSAGE
+        from legroom.cache.compression_store import CCR_MISS_MESSAGE
 
         assert "re-read" in CCR_MISS_MESSAGE
         assert "re-run" in CCR_MISS_MESSAGE

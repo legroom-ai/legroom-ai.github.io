@@ -1,14 +1,14 @@
 ---
 title: Local LLM Prefill Benchmark
-description: Measure local LLM prompt-processing savings by running Headroom in passthrough and optimized proxy modes against an OpenAI-compatible local server.
+description: Measure local LLM prompt-processing savings by running Legroom in passthrough and optimized proxy modes against an OpenAI-compatible local server.
 ---
 
-Local models do not charge per token, but they still pay for every prompt token during prefill. On Apple Silicon and other local inference setups, long coding-agent sessions often bottleneck on prompt processing rather than generation speed. Headroom can help by sending fewer prompt tokens to the local server.
+Local models do not charge per token, but they still pay for every prompt token during prefill. On Apple Silicon and other local inference setups, long coding-agent sessions often bottleneck on prompt processing rather than generation speed. Legroom can help by sending fewer prompt tokens to the local server.
 
 This workflow measures that effect with the proxy dashboard: run the same task once with optimization disabled, reset the agent state, run it again with optimization enabled, and compare token counts.
 
 <Callout type="info" title="Community demo">
-Joe Maddalone demonstrated this workflow in [Cut Local LLM Prompt Processing 30% on a Mac with Headroom](https://www.youtube.com/watch?v=j6U_kKiMXgo). His June 2026 demo used an OpenAI-compatible local server, a coding-agent refactor task, `--no-optimize` for the baseline, and the dashboard to compare sessions.
+Joe Maddalone demonstrated this workflow in [Cut Local LLM Prompt Processing 30% on a Mac with Legroom](https://www.youtube.com/watch?v=j6U_kKiMXgo). His June 2026 demo used an OpenAI-compatible local server, a coding-agent refactor task, `--no-optimize` for the baseline, and the dashboard to compare sessions.
 </Callout>
 
 ## Setup
@@ -18,21 +18,21 @@ Start your local OpenAI-compatible model server first. Examples include MLX/OMLX
 For this guide, assume the local server is listening on `http://127.0.0.1:8000`.
 
 ```bash
-pip install "headroom-ai[proxy]"
+pip install "legroom-ai[proxy]"
 ```
 
 ## 1. Baseline passthrough run
 
-Start Headroom as a transparent proxy with optimization disabled:
+Start Legroom as a transparent proxy with optimization disabled:
 
 ```bash
-headroom proxy \
+legroom proxy \
   --port 8787 \
   --openai-api-url http://127.0.0.1:8000 \
   --no-optimize
 ```
 
-Point your agent or app at Headroom, not directly at the local server:
+Point your agent or app at Legroom, not directly at the local server:
 
 ```bash
 export OPENAI_BASE_URL=http://127.0.0.1:8787/v1
@@ -44,11 +44,11 @@ Run a realistic task. Coding-agent refactors are good benchmark candidates becau
 Open the dashboard while the run is active:
 
 ```bash
-headroom dashboard --port 8787 --no-open
+legroom dashboard --port 8787 --no-open
 # or open http://127.0.0.1:8787/dashboard
 ```
 
-Record the baseline session totals. With `--no-optimize`, before and after token counts should match because Headroom is only forwarding traffic.
+Record the baseline session totals. With `--no-optimize`, before and after token counts should match because Legroom is only forwarding traffic.
 
 ## 2. Reset the task
 
@@ -64,10 +64,10 @@ For coding-agent tests, a clean git worktree is the simplest reset point.
 
 ## 3. Optimized run
 
-Restart Headroom without `--no-optimize`:
+Restart Legroom without `--no-optimize`:
 
 ```bash
-headroom proxy \
+legroom proxy \
   --port 8787 \
   --openai-api-url http://127.0.0.1:8000
 ```
@@ -81,13 +81,13 @@ The savings percentage is the prompt-token reduction sent upstream to the local 
 After you have a baseline, you can test learning-enabled runs:
 
 ```bash
-headroom proxy \
+legroom proxy \
   --port 8787 \
   --openai-api-url http://127.0.0.1:8000 \
   --learn
 ```
 
-`--learn` implies memory and lets Headroom learn recurring traffic patterns from proxy sessions. Treat this as a separate benchmark condition: compare passthrough, optimized, and optimized-with-learning runs independently.
+`--learn` implies memory and lets Legroom learn recurring traffic patterns from proxy sessions. Treat this as a separate benchmark condition: compare passthrough, optimized, and optimized-with-learning runs independently.
 
 ## What to report
 

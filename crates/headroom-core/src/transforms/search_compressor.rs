@@ -1,5 +1,5 @@
 //! Search-results compressor — Rust port of
-//! `headroom.transforms.search_compressor`.
+//! `legroom.transforms.search_compressor`.
 //!
 //! Compresses grep / ripgrep / ag output (one of the most common tool
 //! outputs in coding tasks). Typical compression: 5-10×.

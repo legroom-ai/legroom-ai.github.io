@@ -1,8 +1,8 @@
-import { installHeadroomTransport } from "../dist/index.js";
+import { installLegroomTransport } from "../dist/index.js";
 
-const proxyUrl = process.env.HEADROOM_OPENCODE_TRANSPORT_PROXY_URL;
+const proxyUrl = process.env.LEGROOM_OPENCODE_TRANSPORT_PROXY_URL;
 if (!proxyUrl) {
-  throw new Error("Headroom OpenCode transport shim loaded without HEADROOM_OPENCODE_TRANSPORT_PROXY_URL");
+  throw new Error("Legroom OpenCode transport shim loaded without LEGROOM_OPENCODE_TRANSPORT_PROXY_URL");
 }
 
-installHeadroomTransport({ proxyUrl });
+installLegroomTransport({ proxyUrl });

@@ -6,11 +6,11 @@ LiteLLM/Bedrock streaming never surfaces prompt tokens during a stream — it
 emits ``message_start`` with ``usage.input_tokens=0`` and only reports
 ``output_tokens`` (at the end, in ``message_delta``). Anthropic clients such as
 Claude Code read ``usage.input_tokens`` from the ``message_start`` SSE event to
-emit OTel/cost metrics, so every Headroom+Bedrock streaming request reported ~0
+emit OTel/cost metrics, so every Legroom+Bedrock streaming request reported ~0
 input tokens — underreporting token usage by ~99%.
 
 ``StreamingMixin._stream_response_bedrock`` now backfills ``input_tokens`` on
-``message_start`` with the count Headroom actually sent upstream
+``message_start`` with the count Legroom actually sent upstream
 (``optimized_tokens``) when the backend left it unset/zero, while preserving any
 non-zero value the backend genuinely reported.
 """
@@ -28,8 +28,8 @@ httpx = pytest.importorskip("httpx")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from headroom.backends.base import StreamEvent  # noqa: E402
-from headroom.proxy.server import ProxyConfig, create_app  # noqa: E402
+from legroom.backends.base import StreamEvent  # noqa: E402
+from legroom.proxy.server import ProxyConfig, create_app  # noqa: E402
 
 
 def _make_bedrock_backend(events: list[StreamEvent]) -> MagicMock:
@@ -118,7 +118,7 @@ def _post_stream(backend: MagicMock) -> str:
         backend="anyllm",
         anyllm_provider="anthropic",
     )
-    with patch("headroom.proxy.server.AnyLLMBackend", return_value=backend):
+    with patch("legroom.proxy.server.AnyLLMBackend", return_value=backend):
         app = create_app(config)
         with TestClient(app) as client:
             resp = client.post(

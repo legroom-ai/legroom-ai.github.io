@@ -97,7 +97,7 @@ mod tracing_capture {
         let captured = mount_anthropic_capture(&upstream).await;
         let proxy = start_proxy_with(&upstream.uri(), |c| {
             c.compression = true;
-            c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+            c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
             c.log_level = "warn".into();
         })
         .await;

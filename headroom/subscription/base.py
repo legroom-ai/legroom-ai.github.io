@@ -7,7 +7,7 @@ registry — adding a new provider requires *zero* changes to the server.
 
 Quick-start for a new provider::
 
-    from headroom.subscription.base import QuotaTracker, get_quota_registry
+    from legroom.subscription.base import QuotaTracker, get_quota_registry
 
     class GeminiQuotaTracker(QuotaTracker):
         key   = "gemini_quota"

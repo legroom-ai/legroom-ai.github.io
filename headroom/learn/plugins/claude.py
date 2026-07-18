@@ -1,4 +1,4 @@
-"""Claude Code plugin for headroom learn.
+"""Claude Code plugin for legroom learn.
 
 Reads conversation logs from ~/.claude/projects/ (JSONL format).
 """

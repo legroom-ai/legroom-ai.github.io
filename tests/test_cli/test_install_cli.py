@@ -3,7 +3,7 @@ from __future__ import annotations
 import click
 from click.testing import CliRunner
 
-from headroom.cli.main import main
+from legroom.cli.main import main
 
 
 def test_install_apply_starts_service_supervisor(monkeypatch) -> None:
@@ -25,31 +25,31 @@ def test_install_apply_starts_service_supervisor(monkeypatch) -> None:
 
     manifest = Manifest()
 
-    monkeypatch.setattr("headroom.cli.install.build_manifest", lambda **_: manifest)
-    monkeypatch.setattr("headroom.cli.install.load_manifest", lambda profile: None)
+    monkeypatch.setattr("legroom.cli.install.build_manifest", lambda **_: manifest)
+    monkeypatch.setattr("legroom.cli.install.load_manifest", lambda profile: None)
     monkeypatch.setattr(
-        "headroom.cli.install.apply_mutations",
+        "legroom.cli.install.apply_mutations",
         lambda deployment: calls.append("apply") or [],
     )
-    monkeypatch.setattr("headroom.cli.install.install_supervisor", lambda deployment: [])
+    monkeypatch.setattr("legroom.cli.install.install_supervisor", lambda deployment: [])
     monkeypatch.setattr(
-        "headroom.cli.install.save_manifest", lambda deployment: calls.append("save")
+        "legroom.cli.install.save_manifest", lambda deployment: calls.append("save")
     )
     monkeypatch.setattr(
-        "headroom.cli.install.start_supervisor", lambda deployment: calls.append("start_service")
+        "legroom.cli.install.start_supervisor", lambda deployment: calls.append("start_service")
     )
     monkeypatch.setattr(
-        "headroom.cli.install.start_detached_agent", lambda profile: calls.append("start_agent")
+        "legroom.cli.install.start_detached_agent", lambda profile: calls.append("start_agent")
     )
     monkeypatch.setattr(
-        "headroom.cli.install.start_persistent_docker",
+        "legroom.cli.install.start_persistent_docker",
         lambda deployment: calls.append("start_docker"),
     )
     monkeypatch.setattr(
-        "headroom.cli.install.wait_ready", lambda deployment, timeout_seconds=45: True
+        "legroom.cli.install.wait_ready", lambda deployment, timeout_seconds=45: True
     )
-    monkeypatch.setattr("headroom.cli.install.probe_ready", lambda url: False)
-    monkeypatch.setattr("headroom.cli.install.runtime_status", lambda manifest: "stopped")
+    monkeypatch.setattr("legroom.cli.install.probe_ready", lambda url: False)
+    monkeypatch.setattr("legroom.cli.install.runtime_status", lambda manifest: "stopped")
 
     result = runner.invoke(main, ["install", "apply"])
 
@@ -82,15 +82,15 @@ def test_install_apply_forwards_no_http2_to_build_manifest(monkeypatch) -> None:
         captured.update(kwargs)
         return manifest
 
-    monkeypatch.setattr("headroom.cli.install.build_manifest", fake_build_manifest)
-    monkeypatch.setattr("headroom.cli.install.load_manifest", lambda profile: None)
-    monkeypatch.setattr("headroom.cli.install.apply_mutations", lambda deployment: [])
-    monkeypatch.setattr("headroom.cli.install.install_supervisor", lambda deployment: [])
-    monkeypatch.setattr("headroom.cli.install.save_manifest", lambda deployment: None)
-    monkeypatch.setattr("headroom.cli.install.start_supervisor", lambda deployment: None)
-    monkeypatch.setattr("headroom.cli.install.start_detached_agent", lambda profile: None)
+    monkeypatch.setattr("legroom.cli.install.build_manifest", fake_build_manifest)
+    monkeypatch.setattr("legroom.cli.install.load_manifest", lambda profile: None)
+    monkeypatch.setattr("legroom.cli.install.apply_mutations", lambda deployment: [])
+    monkeypatch.setattr("legroom.cli.install.install_supervisor", lambda deployment: [])
+    monkeypatch.setattr("legroom.cli.install.save_manifest", lambda deployment: None)
+    monkeypatch.setattr("legroom.cli.install.start_supervisor", lambda deployment: None)
+    monkeypatch.setattr("legroom.cli.install.start_detached_agent", lambda profile: None)
     monkeypatch.setattr(
-        "headroom.cli.install.wait_ready", lambda deployment, timeout_seconds=45: True
+        "legroom.cli.install.wait_ready", lambda deployment, timeout_seconds=45: True
     )
 
     result = runner.invoke(main, ["install", "apply", "--no-http2"])
@@ -121,11 +121,11 @@ def test_install_status_includes_backend_from_health_probe(monkeypatch) -> None:
         backend = "anthropic"
         health_url = "http://127.0.0.1:8787/readyz"
 
-    monkeypatch.setattr("headroom.cli.install.load_manifest", lambda profile: Manifest())
-    monkeypatch.setattr("headroom.cli.install.runtime_status", lambda manifest: "running")
-    monkeypatch.setattr("headroom.cli.install.probe_ready", lambda url: True)
+    monkeypatch.setattr("legroom.cli.install.load_manifest", lambda profile: Manifest())
+    monkeypatch.setattr("legroom.cli.install.runtime_status", lambda manifest: "running")
+    monkeypatch.setattr("legroom.cli.install.probe_ready", lambda url: True)
     monkeypatch.setattr(
-        "headroom.cli.install.probe_json",
+        "legroom.cli.install.probe_json",
         lambda url: {"config": {"backend": "anthropic"}},
     )
 
@@ -152,10 +152,10 @@ def test_install_status_survives_non_dict_config(monkeypatch) -> None:
         backend = "anthropic"
         health_url = "http://127.0.0.1:8787/readyz"
 
-    monkeypatch.setattr("headroom.cli.install.load_manifest", lambda profile: Manifest())
-    monkeypatch.setattr("headroom.cli.install.runtime_status", lambda manifest: "running")
-    monkeypatch.setattr("headroom.cli.install.probe_ready", lambda url: True)
-    monkeypatch.setattr("headroom.cli.install.probe_json", lambda url: {"config": None})
+    monkeypatch.setattr("legroom.cli.install.load_manifest", lambda profile: Manifest())
+    monkeypatch.setattr("legroom.cli.install.runtime_status", lambda manifest: "running")
+    monkeypatch.setattr("legroom.cli.install.probe_ready", lambda url: True)
+    monkeypatch.setattr("legroom.cli.install.probe_json", lambda url: {"config": None})
 
     result = runner.invoke(main, ["install", "status"])
 
@@ -177,28 +177,28 @@ def test_install_restart_uses_internal_helpers(monkeypatch) -> None:
         health_url = "http://127.0.0.1:8787/readyz"
         mutations = [object()]
 
-    monkeypatch.setattr("headroom.cli.install.load_manifest", lambda profile: Manifest())
+    monkeypatch.setattr("legroom.cli.install.load_manifest", lambda profile: Manifest())
     monkeypatch.setattr(
-        "headroom.cli.install.revert_mutations", lambda manifest: calls.append("revert")
+        "legroom.cli.install.revert_mutations", lambda manifest: calls.append("revert")
     )
     monkeypatch.setattr(
-        "headroom.cli.install.stop_supervisor", lambda manifest: calls.append("stop_supervisor")
+        "legroom.cli.install.stop_supervisor", lambda manifest: calls.append("stop_supervisor")
     )
     monkeypatch.setattr(
-        "headroom.cli.install.stop_runtime", lambda manifest: calls.append("stop_runtime")
+        "legroom.cli.install.stop_runtime", lambda manifest: calls.append("stop_runtime")
     )
     monkeypatch.setattr(
-        "headroom.cli.install.start_supervisor", lambda manifest: calls.append("start_supervisor")
+        "legroom.cli.install.start_supervisor", lambda manifest: calls.append("start_supervisor")
     )
     monkeypatch.setattr(
-        "headroom.cli.install.wait_ready", lambda manifest, timeout_seconds=45: True
+        "legroom.cli.install.wait_ready", lambda manifest, timeout_seconds=45: True
     )
     monkeypatch.setattr(
-        "headroom.cli.install.apply_mutations", lambda manifest: calls.append("apply") or []
+        "legroom.cli.install.apply_mutations", lambda manifest: calls.append("apply") or []
     )
-    monkeypatch.setattr("headroom.cli.install.save_manifest", lambda manifest: calls.append("save"))
-    monkeypatch.setattr("headroom.cli.install.probe_ready", lambda url: False)
-    monkeypatch.setattr("headroom.cli.install.runtime_status", lambda manifest: "stopped")
+    monkeypatch.setattr("legroom.cli.install.save_manifest", lambda manifest: calls.append("save"))
+    monkeypatch.setattr("legroom.cli.install.probe_ready", lambda url: False)
+    monkeypatch.setattr("legroom.cli.install.runtime_status", lambda manifest: "stopped")
 
     result = runner.invoke(main, ["install", "restart"])
 
@@ -228,10 +228,10 @@ def test_install_start_noops_when_already_healthy(monkeypatch) -> None:
         health_url = "http://127.0.0.1:8787/readyz"
         mutations = [object()]
 
-    monkeypatch.setattr("headroom.cli.install.load_manifest", lambda profile: Manifest())
-    monkeypatch.setattr("headroom.cli.install.probe_ready", lambda url: True)
+    monkeypatch.setattr("legroom.cli.install.load_manifest", lambda profile: Manifest())
+    monkeypatch.setattr("legroom.cli.install.probe_ready", lambda url: True)
     monkeypatch.setattr(
-        "headroom.cli.install.start_supervisor", lambda manifest: calls.append("start_supervisor")
+        "legroom.cli.install.start_supervisor", lambda manifest: calls.append("start_supervisor")
     )
 
     result = runner.invoke(main, ["install", "start"])
@@ -253,9 +253,9 @@ def test_install_start_noops_for_healthy_docker_without_docker_on_path(monkeypat
         health_url = "http://127.0.0.1:8787/readyz"
         mutations = [object()]
 
-    monkeypatch.setattr("headroom.cli.install.load_manifest", lambda profile: Manifest())
-    monkeypatch.setattr("headroom.cli.install.probe_ready", lambda url: True)
-    monkeypatch.setattr("headroom.cli.install.shutil.which", lambda name, *args, **kwargs: None)
+    monkeypatch.setattr("legroom.cli.install.load_manifest", lambda profile: Manifest())
+    monkeypatch.setattr("legroom.cli.install.probe_ready", lambda url: True)
+    monkeypatch.setattr("legroom.cli.install.shutil.which", lambda name, *args, **kwargs: None)
 
     result = runner.invoke(main, ["install", "start"])
 
@@ -276,8 +276,8 @@ def test_install_start_does_not_spawn_when_start_lock_is_contended(monkeypatch) 
         health_url = "http://127.0.0.1:8787/readyz"
         mutations = []
 
-    monkeypatch.setattr("headroom.cli.install.load_manifest", lambda profile: Manifest())
-    monkeypatch.setattr("headroom.cli.install.probe_ready", lambda url: False)
+    monkeypatch.setattr("legroom.cli.install.load_manifest", lambda profile: Manifest())
+    monkeypatch.setattr("legroom.cli.install.probe_ready", lambda url: False)
 
     import contextlib
 
@@ -285,9 +285,9 @@ def test_install_start_does_not_spawn_when_start_lock_is_contended(monkeypatch) 
     def fake_lock(profile):
         yield False
 
-    monkeypatch.setattr("headroom.cli.install.acquire_runtime_start_lock", fake_lock)
+    monkeypatch.setattr("legroom.cli.install.acquire_runtime_start_lock", fake_lock)
     monkeypatch.setattr(
-        "headroom.cli.install.start_supervisor", lambda manifest: calls.append("start_supervisor")
+        "legroom.cli.install.start_supervisor", lambda manifest: calls.append("start_supervisor")
     )
 
     result = runner.invoke(main, ["install", "start"])
@@ -310,29 +310,29 @@ def test_install_start_restarts_wedged_runtime_under_single_lock(monkeypatch) ->
         health_url = "http://127.0.0.1:8787/readyz"
         mutations = [object()]
 
-    monkeypatch.setattr("headroom.cli.install.load_manifest", lambda profile: Manifest())
+    monkeypatch.setattr("legroom.cli.install.load_manifest", lambda profile: Manifest())
     probe_calls = {"count": 0}
 
     def fake_probe_ready(url: str) -> bool:
         probe_calls["count"] += 1
         return probe_calls["count"] > 2
 
-    monkeypatch.setattr("headroom.cli.install.probe_ready", fake_probe_ready)
-    monkeypatch.setattr("headroom.cli.install.runtime_status", lambda manifest: "running")
+    monkeypatch.setattr("legroom.cli.install.probe_ready", fake_probe_ready)
+    monkeypatch.setattr("legroom.cli.install.runtime_status", lambda manifest: "running")
     wait_results = iter([False, True])
     monkeypatch.setattr(
-        "headroom.cli.install.wait_ready", lambda manifest, timeout_seconds: next(wait_results)
+        "legroom.cli.install.wait_ready", lambda manifest, timeout_seconds: next(wait_results)
     )
     monkeypatch.setattr(
-        "headroom.cli.install.revert_mutations", lambda manifest: calls.append("revert")
+        "legroom.cli.install.revert_mutations", lambda manifest: calls.append("revert")
     )
     monkeypatch.setattr(
-        "headroom.cli.install.apply_mutations", lambda manifest: calls.append("apply") or []
+        "legroom.cli.install.apply_mutations", lambda manifest: calls.append("apply") or []
     )
-    monkeypatch.setattr("headroom.cli.install.save_manifest", lambda manifest: calls.append("save"))
-    monkeypatch.setattr("headroom.cli.install.stop_runtime", lambda manifest: calls.append("stop"))
+    monkeypatch.setattr("legroom.cli.install.save_manifest", lambda manifest: calls.append("save"))
+    monkeypatch.setattr("legroom.cli.install.stop_runtime", lambda manifest: calls.append("stop"))
     monkeypatch.setattr(
-        "headroom.cli.install.start_supervisor", lambda manifest: calls.append("start_supervisor")
+        "legroom.cli.install.start_supervisor", lambda manifest: calls.append("start_supervisor")
     )
 
     result = runner.invoke(main, ["install", "start"])
@@ -383,15 +383,15 @@ def test_install_apply_accepts_opencode_target(monkeypatch) -> None:
         captured.update(kwargs)
         return manifest
 
-    monkeypatch.setattr("headroom.cli.install.build_manifest", fake_build_manifest)
-    monkeypatch.setattr("headroom.cli.install.load_manifest", lambda profile: None)
-    monkeypatch.setattr("headroom.cli.install.apply_mutations", lambda deployment: [])
-    monkeypatch.setattr("headroom.cli.install.install_supervisor", lambda deployment: [])
-    monkeypatch.setattr("headroom.cli.install.save_manifest", lambda deployment: None)
-    monkeypatch.setattr("headroom.cli.install.start_supervisor", lambda deployment: None)
-    monkeypatch.setattr("headroom.cli.install.start_detached_agent", lambda profile: None)
+    monkeypatch.setattr("legroom.cli.install.build_manifest", fake_build_manifest)
+    monkeypatch.setattr("legroom.cli.install.load_manifest", lambda profile: None)
+    monkeypatch.setattr("legroom.cli.install.apply_mutations", lambda deployment: [])
+    monkeypatch.setattr("legroom.cli.install.install_supervisor", lambda deployment: [])
+    monkeypatch.setattr("legroom.cli.install.save_manifest", lambda deployment: None)
+    monkeypatch.setattr("legroom.cli.install.start_supervisor", lambda deployment: None)
+    monkeypatch.setattr("legroom.cli.install.start_detached_agent", lambda profile: None)
     monkeypatch.setattr(
-        "headroom.cli.install.wait_ready", lambda deployment, timeout_seconds=45: True
+        "legroom.cli.install.wait_ready", lambda deployment, timeout_seconds=45: True
     )
 
     result = runner.invoke(
@@ -433,38 +433,38 @@ def test_install_apply_restores_previous_deployment_after_failed_update(monkeypa
     existing_manifest = Manifest("default", ["codex"])
     existing_manifest.mutations = [object()]
 
-    monkeypatch.setattr("headroom.cli.install.build_manifest", lambda **_: new_manifest)
-    monkeypatch.setattr("headroom.cli.install.load_manifest", lambda profile: existing_manifest)
+    monkeypatch.setattr("legroom.cli.install.build_manifest", lambda **_: new_manifest)
+    monkeypatch.setattr("legroom.cli.install.load_manifest", lambda profile: existing_manifest)
     monkeypatch.setattr(
-        "headroom.cli.install.apply_mutations",
+        "legroom.cli.install.apply_mutations",
         lambda deployment: calls.append(f"apply:{','.join(deployment.targets)}") or [],
     )
     monkeypatch.setattr(
-        "headroom.cli.install.install_supervisor",
+        "legroom.cli.install.install_supervisor",
         lambda deployment: calls.append(f"supervisor:{','.join(deployment.targets)}") or [],
     )
     monkeypatch.setattr(
-        "headroom.cli.install.save_manifest",
+        "legroom.cli.install.save_manifest",
         lambda deployment: calls.append(f"save:{','.join(deployment.targets)}"),
     )
     monkeypatch.setattr(
-        "headroom.cli.install.stop_supervisor",
+        "legroom.cli.install.stop_supervisor",
         lambda deployment: calls.append(f"stop-supervisor:{','.join(deployment.targets)}"),
     )
     monkeypatch.setattr(
-        "headroom.cli.install.stop_runtime",
+        "legroom.cli.install.stop_runtime",
         lambda deployment: calls.append(f"stop-runtime:{','.join(deployment.targets)}"),
     )
     monkeypatch.setattr(
-        "headroom.cli.install.remove_supervisor",
+        "legroom.cli.install.remove_supervisor",
         lambda deployment: calls.append(f"remove-supervisor:{','.join(deployment.targets)}"),
     )
     monkeypatch.setattr(
-        "headroom.cli.install.revert_mutations",
+        "legroom.cli.install.revert_mutations",
         lambda deployment: calls.append(f"revert:{','.join(deployment.targets)}"),
     )
     monkeypatch.setattr(
-        "headroom.cli.install.delete_manifest",
+        "legroom.cli.install.delete_manifest",
         lambda profile: calls.append(f"delete:{profile}"),
     )
 
@@ -473,7 +473,7 @@ def test_install_apply_restores_previous_deployment_after_failed_update(monkeypa
         if deployment is new_manifest:
             raise click.ClickException("boom")
 
-    monkeypatch.setattr("headroom.cli.install._start_deployment", _start)
+    monkeypatch.setattr("legroom.cli.install._start_deployment", _start)
 
     result = runner.invoke(main, ["install", "apply"])
 
@@ -511,12 +511,12 @@ def test_install_start_rejects_task_lifecycle(monkeypatch) -> None:
         scope = "user"
         health_url = "http://127.0.0.1:8787/readyz"
 
-    monkeypatch.setattr("headroom.cli.install.load_manifest", lambda profile: Manifest())
+    monkeypatch.setattr("legroom.cli.install.load_manifest", lambda profile: Manifest())
 
     result = runner.invoke(main, ["install", "start"])
 
     assert result.exit_code != 0
-    assert "headroom install start" in result.output
+    assert "legroom install start" in result.output
 
 
 def test_install_apply_uses_docker_runtime_for_persistent_docker(monkeypatch) -> None:
@@ -530,18 +530,18 @@ def test_install_apply_uses_docker_runtime_for_persistent_docker(monkeypatch) ->
         supervisor_kind = "none"
         scope = "user"
         health_url = "http://127.0.0.1:8787/readyz"
-        container_name = "headroom-default"
+        container_name = "legroom-default"
         targets: list[str] = []
         mutations = []
         artifacts = []
 
-    monkeypatch.setattr("headroom.cli.install.build_manifest", lambda **_: Manifest())
-    monkeypatch.setattr("headroom.cli.install.load_manifest", lambda profile: None)
-    monkeypatch.setattr("headroom.cli.install.apply_mutations", lambda deployment: [])
-    monkeypatch.setattr("headroom.cli.install.install_supervisor", lambda deployment: [])
-    monkeypatch.setattr("headroom.cli.install.save_manifest", lambda deployment: None)
-    monkeypatch.setattr("headroom.cli.install.probe_ready", lambda url: False)
-    monkeypatch.setattr("headroom.cli.install.runtime_status", lambda deployment: "stopped")
+    monkeypatch.setattr("legroom.cli.install.build_manifest", lambda **_: Manifest())
+    monkeypatch.setattr("legroom.cli.install.load_manifest", lambda profile: None)
+    monkeypatch.setattr("legroom.cli.install.apply_mutations", lambda deployment: [])
+    monkeypatch.setattr("legroom.cli.install.install_supervisor", lambda deployment: [])
+    monkeypatch.setattr("legroom.cli.install.save_manifest", lambda deployment: None)
+    monkeypatch.setattr("legroom.cli.install.probe_ready", lambda url: False)
+    monkeypatch.setattr("legroom.cli.install.runtime_status", lambda deployment: "stopped")
 
     import contextlib
 
@@ -549,23 +549,23 @@ def test_install_apply_uses_docker_runtime_for_persistent_docker(monkeypatch) ->
     def fake_lock(profile):
         yield True
 
-    monkeypatch.setattr("headroom.cli.install.acquire_runtime_start_lock", fake_lock)
+    monkeypatch.setattr("legroom.cli.install.acquire_runtime_start_lock", fake_lock)
     monkeypatch.setattr(
-        "headroom.cli.install.start_persistent_docker",
+        "legroom.cli.install.start_persistent_docker",
         lambda deployment: calls.append("start_docker"),
     )
     monkeypatch.setattr(
-        "headroom.cli.install.wait_ready", lambda deployment, timeout_seconds=45: True
+        "legroom.cli.install.wait_ready", lambda deployment, timeout_seconds=45: True
     )
-    monkeypatch.setattr("headroom.cli.install.probe_ready", lambda url: False)
-    monkeypatch.setattr("headroom.cli.install.runtime_status", lambda deployment: "stopped")
+    monkeypatch.setattr("legroom.cli.install.probe_ready", lambda url: False)
+    monkeypatch.setattr("legroom.cli.install.runtime_status", lambda deployment: "stopped")
     # _start_deployment guards the persistent-docker preset with
     # `shutil.which("docker")`. Fake docker as present so the test exercises the
     # runtime-selection path itself rather than the host's docker install —
     # otherwise it passes on dev machines with Docker but fails on CI runners
     # (e.g. macos-latest) that have no docker on PATH.
     monkeypatch.setattr(
-        "headroom.cli.install.shutil.which",
+        "legroom.cli.install.shutil.which",
         lambda name, *args, **kwargs: "/usr/local/bin/docker" if name == "docker" else None,
     )
 
@@ -596,19 +596,19 @@ def test_deploy_prefers_docker_when_available(monkeypatch) -> None:
         return Manifest()
 
     monkeypatch.setattr(
-        "headroom.cli.install._command_available", lambda command: command == "docker"
+        "legroom.cli.install._command_available", lambda command: command == "docker"
     )
     monkeypatch.setattr(
-        "headroom.cli.install.shutil.which",
+        "legroom.cli.install.shutil.which",
         lambda name, *args, **kwargs: "/usr/local/bin/docker" if name == "docker" else None,
     )
-    monkeypatch.setattr("headroom.cli.install.build_manifest", fake_build)
-    monkeypatch.setattr("headroom.cli.install.load_manifest", lambda profile: None)
-    monkeypatch.setattr("headroom.cli.install.apply_mutations", lambda deployment: [])
-    monkeypatch.setattr("headroom.cli.install.install_supervisor", lambda deployment: [])
-    monkeypatch.setattr("headroom.cli.install.save_manifest", lambda deployment: None)
-    monkeypatch.setattr("headroom.cli.install.probe_ready", lambda url: False)
-    monkeypatch.setattr("headroom.cli.install.runtime_status", lambda deployment: "stopped")
+    monkeypatch.setattr("legroom.cli.install.build_manifest", fake_build)
+    monkeypatch.setattr("legroom.cli.install.load_manifest", lambda profile: None)
+    monkeypatch.setattr("legroom.cli.install.apply_mutations", lambda deployment: [])
+    monkeypatch.setattr("legroom.cli.install.install_supervisor", lambda deployment: [])
+    monkeypatch.setattr("legroom.cli.install.save_manifest", lambda deployment: None)
+    monkeypatch.setattr("legroom.cli.install.probe_ready", lambda url: False)
+    monkeypatch.setattr("legroom.cli.install.runtime_status", lambda deployment: "stopped")
 
     import contextlib
 
@@ -616,13 +616,13 @@ def test_deploy_prefers_docker_when_available(monkeypatch) -> None:
     def fake_lock(profile):
         yield True
 
-    monkeypatch.setattr("headroom.cli.install.acquire_runtime_start_lock", fake_lock)
+    monkeypatch.setattr("legroom.cli.install.acquire_runtime_start_lock", fake_lock)
     monkeypatch.setattr(
-        "headroom.cli.install.start_persistent_docker",
+        "legroom.cli.install.start_persistent_docker",
         lambda deployment: calls.append("start_docker"),
     )
     monkeypatch.setattr(
-        "headroom.cli.install.wait_ready", lambda deployment, timeout_seconds=45: True
+        "legroom.cli.install.wait_ready", lambda deployment, timeout_seconds=45: True
     )
 
     result = runner.invoke(main, ["deploy"])
@@ -657,19 +657,19 @@ def test_deploy_prefers_gpu_docker_when_available(monkeypatch) -> None:
         captured.update(kwargs)
         return manifest
 
-    monkeypatch.setattr("headroom.cli.install._detect_nvidia_gpu_names", lambda: ["RTX 4090"])
-    monkeypatch.setattr("headroom.cli.install._docker_supports_nvidia_gpus", lambda: True)
+    monkeypatch.setattr("legroom.cli.install._detect_nvidia_gpu_names", lambda: ["RTX 4090"])
+    monkeypatch.setattr("legroom.cli.install._docker_supports_nvidia_gpus", lambda: True)
     monkeypatch.setattr(
-        "headroom.cli.install.shutil.which",
+        "legroom.cli.install.shutil.which",
         lambda name, *args, **kwargs: "/usr/local/bin/docker" if name == "docker" else None,
     )
-    monkeypatch.setattr("headroom.cli.install.build_manifest", fake_build)
-    monkeypatch.setattr("headroom.cli.install.load_manifest", lambda profile: None)
-    monkeypatch.setattr("headroom.cli.install.apply_mutations", lambda deployment: [])
-    monkeypatch.setattr("headroom.cli.install.install_supervisor", lambda deployment: [])
-    monkeypatch.setattr("headroom.cli.install.save_manifest", lambda deployment: None)
-    monkeypatch.setattr("headroom.cli.install.probe_ready", lambda url: False)
-    monkeypatch.setattr("headroom.cli.install.runtime_status", lambda deployment: "stopped")
+    monkeypatch.setattr("legroom.cli.install.build_manifest", fake_build)
+    monkeypatch.setattr("legroom.cli.install.load_manifest", lambda profile: None)
+    monkeypatch.setattr("legroom.cli.install.apply_mutations", lambda deployment: [])
+    monkeypatch.setattr("legroom.cli.install.install_supervisor", lambda deployment: [])
+    monkeypatch.setattr("legroom.cli.install.save_manifest", lambda deployment: None)
+    monkeypatch.setattr("legroom.cli.install.probe_ready", lambda url: False)
+    monkeypatch.setattr("legroom.cli.install.runtime_status", lambda deployment: "stopped")
 
     import contextlib
 
@@ -677,10 +677,10 @@ def test_deploy_prefers_gpu_docker_when_available(monkeypatch) -> None:
     def fake_lock(profile):
         yield True
 
-    monkeypatch.setattr("headroom.cli.install.acquire_runtime_start_lock", fake_lock)
-    monkeypatch.setattr("headroom.cli.install.start_persistent_docker", lambda deployment: None)
+    monkeypatch.setattr("legroom.cli.install.acquire_runtime_start_lock", fake_lock)
+    monkeypatch.setattr("legroom.cli.install.start_persistent_docker", lambda deployment: None)
     monkeypatch.setattr(
-        "headroom.cli.install.wait_ready", lambda deployment, timeout_seconds=45: True
+        "legroom.cli.install.wait_ready", lambda deployment, timeout_seconds=45: True
     )
 
     result = runner.invoke(main, ["deploy"])
@@ -689,7 +689,7 @@ def test_deploy_prefers_gpu_docker_when_available(monkeypatch) -> None:
     assert "RTX 4090" in result.output
     assert captured["preset"] == "persistent-docker"
     assert captured["runtime_kind"] == "docker"
-    assert manifest.base_env["HEADROOM_DOCKER_GPUS"] == "all"
+    assert manifest.base_env["LEGROOM_DOCKER_GPUS"] == "all"
 
 
 def test_deploy_falls_back_to_detached_python_without_supervisor(monkeypatch) -> None:
@@ -709,17 +709,17 @@ def test_deploy_falls_back_to_detached_python_without_supervisor(monkeypatch) ->
 
     manifest = Manifest()
 
-    monkeypatch.setattr("headroom.cli.install._command_available", lambda command: False)
-    monkeypatch.setattr("headroom.cli.install.build_manifest", lambda **_: manifest)
-    monkeypatch.setattr("headroom.cli.install.load_manifest", lambda profile: None)
-    monkeypatch.setattr("headroom.cli.install.apply_mutations", lambda deployment: [])
+    monkeypatch.setattr("legroom.cli.install._command_available", lambda command: False)
+    monkeypatch.setattr("legroom.cli.install.build_manifest", lambda **_: manifest)
+    monkeypatch.setattr("legroom.cli.install.load_manifest", lambda profile: None)
+    monkeypatch.setattr("legroom.cli.install.apply_mutations", lambda deployment: [])
     monkeypatch.setattr(
-        "headroom.cli.install.install_supervisor",
+        "legroom.cli.install.install_supervisor",
         lambda deployment: calls.append(f"supervisor:{deployment.supervisor_kind}") or [],
     )
-    monkeypatch.setattr("headroom.cli.install.save_manifest", lambda deployment: None)
-    monkeypatch.setattr("headroom.cli.install.probe_ready", lambda url: False)
-    monkeypatch.setattr("headroom.cli.install.runtime_status", lambda deployment: "stopped")
+    monkeypatch.setattr("legroom.cli.install.save_manifest", lambda deployment: None)
+    monkeypatch.setattr("legroom.cli.install.probe_ready", lambda url: False)
+    monkeypatch.setattr("legroom.cli.install.runtime_status", lambda deployment: "stopped")
 
     import contextlib
 
@@ -727,13 +727,13 @@ def test_deploy_falls_back_to_detached_python_without_supervisor(monkeypatch) ->
     def fake_lock(profile):
         yield True
 
-    monkeypatch.setattr("headroom.cli.install.acquire_runtime_start_lock", fake_lock)
+    monkeypatch.setattr("legroom.cli.install.acquire_runtime_start_lock", fake_lock)
     monkeypatch.setattr(
-        "headroom.cli.install.start_detached_agent",
+        "legroom.cli.install.start_detached_agent",
         lambda profile: calls.append(f"agent:{profile}"),
     )
     monkeypatch.setattr(
-        "headroom.cli.install.wait_ready", lambda deployment, timeout_seconds=45: True
+        "legroom.cli.install.wait_ready", lambda deployment, timeout_seconds=45: True
     )
 
     result = runner.invoke(main, ["deploy", "--no-docker"])
@@ -757,23 +757,23 @@ def test_install_remove_continues_when_runtime_teardown_errors(monkeypatch) -> N
         health_url = "http://127.0.0.1:8787/readyz"
         mutations = [object()]
 
-    monkeypatch.setattr("headroom.cli.install.load_manifest", lambda profile: Manifest())
+    monkeypatch.setattr("legroom.cli.install.load_manifest", lambda profile: Manifest())
     monkeypatch.setattr(
-        "headroom.cli.install.revert_mutations", lambda manifest: calls.append("revert")
+        "legroom.cli.install.revert_mutations", lambda manifest: calls.append("revert")
     )
     monkeypatch.setattr(
-        "headroom.cli.install.stop_supervisor",
+        "legroom.cli.install.stop_supervisor",
         lambda manifest: (_ for _ in ()).throw(RuntimeError("boom")),
     )
     monkeypatch.setattr(
-        "headroom.cli.install.stop_runtime",
+        "legroom.cli.install.stop_runtime",
         lambda manifest: (_ for _ in ()).throw(RuntimeError("boom")),
     )
     monkeypatch.setattr(
-        "headroom.cli.install.remove_supervisor", lambda manifest: calls.append("remove_supervisor")
+        "legroom.cli.install.remove_supervisor", lambda manifest: calls.append("remove_supervisor")
     )
     monkeypatch.setattr(
-        "headroom.cli.install.delete_manifest", lambda profile: calls.append("delete")
+        "legroom.cli.install.delete_manifest", lambda profile: calls.append("delete")
     )
 
     result = runner.invoke(main, ["install", "remove"])
@@ -789,8 +789,8 @@ def test_install_agent_ensure_reports_already_healthy(monkeypatch) -> None:
         profile = "default"
         health_url = "http://127.0.0.1:8787/readyz"
 
-    monkeypatch.setattr("headroom.cli.install.load_manifest", lambda profile: Manifest())
-    monkeypatch.setattr("headroom.cli.install.probe_ready", lambda url: True)
+    monkeypatch.setattr("legroom.cli.install.load_manifest", lambda profile: Manifest())
+    monkeypatch.setattr("legroom.cli.install.probe_ready", lambda url: True)
 
     result = runner.invoke(main, ["install", "agent", "ensure"])
 
@@ -805,8 +805,8 @@ def test_install_agent_run_exits_with_foreground_status(monkeypatch) -> None:
         profile = "default"
         health_url = "http://127.0.0.1:8787/readyz"
 
-    monkeypatch.setattr("headroom.cli.install.load_manifest", lambda profile: Manifest())
-    monkeypatch.setattr("headroom.cli.install.run_foreground", lambda manifest: 7)
+    monkeypatch.setattr("legroom.cli.install.load_manifest", lambda profile: Manifest())
+    monkeypatch.setattr("legroom.cli.install.run_foreground", lambda manifest: 7)
 
     result = runner.invoke(main, ["install", "agent", "run"])
 
@@ -822,8 +822,8 @@ def test_install_agent_ensure_no_spawn_when_lock_not_acquired(monkeypatch) -> No
         profile = "default"
         health_url = "http://127.0.0.1:8787/readyz"
 
-    monkeypatch.setattr("headroom.cli.install.load_manifest", lambda profile: Manifest())
-    monkeypatch.setattr("headroom.cli.install.probe_ready", lambda url: False)
+    monkeypatch.setattr("legroom.cli.install.load_manifest", lambda profile: Manifest())
+    monkeypatch.setattr("legroom.cli.install.probe_ready", lambda url: False)
 
     import contextlib
 
@@ -831,13 +831,13 @@ def test_install_agent_ensure_no_spawn_when_lock_not_acquired(monkeypatch) -> No
     def fake_lock(profile):
         yield False
 
-    monkeypatch.setattr("headroom.cli.install.acquire_runtime_start_lock", fake_lock)
+    monkeypatch.setattr("legroom.cli.install.acquire_runtime_start_lock", fake_lock)
     monkeypatch.setattr(
-        "headroom.cli.install.start_detached_agent",
+        "legroom.cli.install.start_detached_agent",
         lambda profile: calls.append("start_agent"),
     )
     monkeypatch.setattr(
-        "headroom.cli.install.start_persistent_docker",
+        "legroom.cli.install.start_persistent_docker",
         lambda manifest: calls.append("start_docker"),
     )
 
@@ -866,24 +866,24 @@ def test_install_agent_ensure_stops_wedged_runtime_before_restart(monkeypatch) -
         scope = "user"
         mutations = [object()]
 
-    monkeypatch.setattr("headroom.cli.install.load_manifest", lambda profile: Manifest())
-    monkeypatch.setattr("headroom.cli.install.probe_ready", lambda url: False)
-    monkeypatch.setattr("headroom.cli.install.runtime_status", lambda manifest: "running")
-    monkeypatch.setattr("headroom.cli.install.wait_ready", lambda manifest, timeout_seconds: False)
+    monkeypatch.setattr("legroom.cli.install.load_manifest", lambda profile: Manifest())
+    monkeypatch.setattr("legroom.cli.install.probe_ready", lambda url: False)
+    monkeypatch.setattr("legroom.cli.install.runtime_status", lambda manifest: "running")
+    monkeypatch.setattr("legroom.cli.install.wait_ready", lambda manifest, timeout_seconds: False)
     monkeypatch.setattr(
-        "headroom.cli.install.revert_mutations", lambda manifest: calls.append("revert")
+        "legroom.cli.install.revert_mutations", lambda manifest: calls.append("revert")
     )
     monkeypatch.setattr(
-        "headroom.cli.install.apply_mutations", lambda manifest: calls.append("apply") or []
+        "legroom.cli.install.apply_mutations", lambda manifest: calls.append("apply") or []
     )
-    monkeypatch.setattr("headroom.cli.install.save_manifest", lambda manifest: calls.append("save"))
-    monkeypatch.setattr("headroom.cli.install.stop_runtime", lambda manifest: calls.append("stop"))
+    monkeypatch.setattr("legroom.cli.install.save_manifest", lambda manifest: calls.append("save"))
+    monkeypatch.setattr("legroom.cli.install.stop_runtime", lambda manifest: calls.append("stop"))
     monkeypatch.setattr(
-        "headroom.cli.install.start_detached_agent",
+        "legroom.cli.install.start_detached_agent",
         lambda profile: calls.append("start_agent"),
     )
     monkeypatch.setattr(
-        "headroom.cli.install.start_persistent_docker",
+        "legroom.cli.install.start_persistent_docker",
         lambda manifest: calls.append("start_docker"),
     )
 
@@ -893,9 +893,9 @@ def test_install_agent_ensure_stops_wedged_runtime_before_restart(monkeypatch) -
     def fake_lock(profile):
         yield True
 
-    monkeypatch.setattr("headroom.cli.install.acquire_runtime_start_lock", fake_lock)
+    monkeypatch.setattr("legroom.cli.install.acquire_runtime_start_lock", fake_lock)
     monkeypatch.setattr(
-        "headroom.cli.install._start_deployment",
+        "legroom.cli.install._start_deployment",
         lambda manifest, **kwargs: calls.append("start_deployment"),
     )
 
@@ -922,19 +922,19 @@ def test_install_agent_ensure_starts_when_stopped_and_lock_acquired(monkeypatch)
         scope = "user"
         mutations = []
 
-    monkeypatch.setattr("headroom.cli.install.load_manifest", lambda profile: Manifest())
-    monkeypatch.setattr("headroom.cli.install.probe_ready", lambda url: False)
-    monkeypatch.setattr("headroom.cli.install.runtime_status", lambda manifest: "stopped")
+    monkeypatch.setattr("legroom.cli.install.load_manifest", lambda profile: Manifest())
+    monkeypatch.setattr("legroom.cli.install.probe_ready", lambda url: False)
+    monkeypatch.setattr("legroom.cli.install.runtime_status", lambda manifest: "stopped")
     monkeypatch.setattr(
-        "headroom.cli.install.apply_mutations", lambda manifest: calls.append("apply") or []
+        "legroom.cli.install.apply_mutations", lambda manifest: calls.append("apply") or []
     )
-    monkeypatch.setattr("headroom.cli.install.save_manifest", lambda manifest: calls.append("save"))
+    monkeypatch.setattr("legroom.cli.install.save_manifest", lambda manifest: calls.append("save"))
     monkeypatch.setattr(
-        "headroom.cli.install.start_detached_agent",
+        "legroom.cli.install.start_detached_agent",
         lambda profile: calls.append("start_agent"),
     )
     monkeypatch.setattr(
-        "headroom.cli.install.start_persistent_docker",
+        "legroom.cli.install.start_persistent_docker",
         lambda manifest: calls.append("start_docker"),
     )
 
@@ -944,8 +944,8 @@ def test_install_agent_ensure_starts_when_stopped_and_lock_acquired(monkeypatch)
     def fake_lock(profile):
         yield True
 
-    monkeypatch.setattr("headroom.cli.install.acquire_runtime_start_lock", fake_lock)
-    monkeypatch.setattr("headroom.cli.install.wait_ready", lambda manifest, timeout_seconds: True)
+    monkeypatch.setattr("legroom.cli.install.acquire_runtime_start_lock", fake_lock)
+    monkeypatch.setattr("legroom.cli.install.wait_ready", lambda manifest, timeout_seconds: True)
 
     result = runner.invoke(main, ["install", "agent", "ensure"])
     assert result.exit_code == 0, result.output
@@ -963,11 +963,11 @@ def test_install_agent_ensure_no_duplicate_spawn_after_lock_recheck(monkeypatch)
 
     # First probe_ready (before lock) returns False, second (after lock) returns True
     probe_results = iter([False, True])
-    monkeypatch.setattr("headroom.cli.install.load_manifest", lambda profile: Manifest())
-    monkeypatch.setattr("headroom.cli.install.probe_ready", lambda url: next(probe_results))
+    monkeypatch.setattr("legroom.cli.install.load_manifest", lambda profile: Manifest())
+    monkeypatch.setattr("legroom.cli.install.probe_ready", lambda url: next(probe_results))
 
     monkeypatch.setattr(
-        "headroom.cli.install.start_detached_agent",
+        "legroom.cli.install.start_detached_agent",
         lambda profile: calls.append("start_agent"),
     )
 
@@ -977,7 +977,7 @@ def test_install_agent_ensure_no_duplicate_spawn_after_lock_recheck(monkeypatch)
     def fake_lock(profile):
         yield True
 
-    monkeypatch.setattr("headroom.cli.install.acquire_runtime_start_lock", fake_lock)
+    monkeypatch.setattr("legroom.cli.install.acquire_runtime_start_lock", fake_lock)
 
     result = runner.invoke(main, ["install", "agent", "ensure"])
     assert result.exit_code == 0, result.output
@@ -1003,9 +1003,9 @@ def test_install_agent_ensure_propagates_start_deployment_failure(monkeypatch) -
         scope = "user"
         mutations = []
 
-    monkeypatch.setattr("headroom.cli.install.load_manifest", lambda profile: Manifest())
-    monkeypatch.setattr("headroom.cli.install.probe_ready", lambda url: False)
-    monkeypatch.setattr("headroom.cli.install.runtime_status", lambda manifest: "stopped")
+    monkeypatch.setattr("legroom.cli.install.load_manifest", lambda profile: Manifest())
+    monkeypatch.setattr("legroom.cli.install.probe_ready", lambda url: False)
+    monkeypatch.setattr("legroom.cli.install.runtime_status", lambda manifest: "stopped")
 
     import contextlib
 
@@ -1013,12 +1013,12 @@ def test_install_agent_ensure_propagates_start_deployment_failure(monkeypatch) -
     def fake_lock(profile):
         yield True
 
-    monkeypatch.setattr("headroom.cli.install.acquire_runtime_start_lock", fake_lock)
+    monkeypatch.setattr("legroom.cli.install.acquire_runtime_start_lock", fake_lock)
 
     def boom(manifest, **kwargs):
         raise click.ClickException("simulated start failure")
 
-    monkeypatch.setattr("headroom.cli.install._start_deployment", boom)
+    monkeypatch.setattr("legroom.cli.install._start_deployment", boom)
 
     result = runner.invoke(main, ["install", "agent", "ensure"])
     assert result.exit_code != 0, f"expected non-zero exit, got {result.exit_code}: {result.output}"

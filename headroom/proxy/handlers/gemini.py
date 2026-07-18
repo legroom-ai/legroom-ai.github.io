@@ -1,4 +1,4 @@
-"""Gemini handler mixin for HeadroomProxy.
+"""Gemini handler mixin for LegroomProxy.
 
 Contains all Google Gemini API handlers including format conversion utilities.
 """
@@ -16,14 +16,14 @@ if TYPE_CHECKING:
     from fastapi import Request
     from fastapi.responses import JSONResponse, Response, StreamingResponse
 
-from headroom.agent_savings import proxy_pipeline_kwargs
-from headroom.copilot_auth import build_copilot_upstream_url
-from headroom.proxy.auth_mode import classify_client
-from headroom.proxy.compression_decision import CompressionDecision
-from headroom.proxy.helpers import COMPRESSION_TIMEOUT_SECONDS, extract_tags
-from headroom.proxy.outcome import RequestOutcome
+from legroom.agent_savings import proxy_pipeline_kwargs
+from legroom.copilot_auth import build_copilot_upstream_url
+from legroom.proxy.auth_mode import classify_client
+from legroom.proxy.compression_decision import CompressionDecision
+from legroom.proxy.helpers import COMPRESSION_TIMEOUT_SECONDS, extract_tags
+from legroom.proxy.outcome import RequestOutcome
 
-logger = logging.getLogger("headroom.proxy")
+logger = logging.getLogger("legroom.proxy")
 
 DEFAULT_CLOUDCODE_API_URL = "https://cloudcode-pa.googleapis.com"
 ANTIGRAVITY_DAILY_API_URL = "https://daily-cloudcode-pa.sandbox.googleapis.com"
@@ -36,7 +36,7 @@ def _usage_int(value: Any, default: int = 0) -> int:
 
 
 class GeminiHandlerMixin:
-    """Mixin providing Gemini API handler methods for HeadroomProxy."""
+    """Mixin providing Gemini API handler methods for LegroomProxy."""
 
     def _is_cloudcode_antigravity_request(
         self, body: dict[str, Any], headers: dict[str, str]
@@ -241,9 +241,9 @@ class GeminiHandlerMixin:
         from fastapi import HTTPException
         from fastapi.responses import JSONResponse, Response
 
-        from headroom.proxy.helpers import MAX_REQUEST_BODY_SIZE, _read_request_json
-        from headroom.tokenizers import get_tokenizer
-        from headroom.utils import extract_user_query
+        from legroom.proxy.helpers import MAX_REQUEST_BODY_SIZE, _read_request_json
+        from legroom.tokenizers import get_tokenizer
+        from legroom.utils import extract_user_query
 
         start_time = time.time()
         request_id = await self._next_request_id()
@@ -282,12 +282,12 @@ class GeminiHandlerMixin:
         headers.pop("content-length", None)
         tags = extract_tags(headers)
         client = classify_client(headers)
-        # PR-A5 (P5-49): strip internal x-headroom-* from upstream-bound
+        # PR-A5 (P5-49): strip internal x-legroom-* from upstream-bound
         # headers AFTER `_extract_tags` reads them. Memory user-id reads
         # `request.headers` below.
-        from headroom.proxy.helpers import _strip_internal_headers, log_outbound_headers
+        from legroom.proxy.helpers import _strip_internal_headers, log_outbound_headers
 
-        _pre_strip_count_gem = sum(1 for k in headers if k.lower().startswith("x-headroom-"))
+        _pre_strip_count_gem = sum(1 for k in headers if k.lower().startswith("x-legroom-"))
         headers = _strip_internal_headers(headers)
         log_outbound_headers(
             forwarder="gemini_generate_content",
@@ -296,12 +296,12 @@ class GeminiHandlerMixin:
         )
 
         # Memory: Get user ID when memory is enabled. Reads `request.headers`
-        # directly because `headers` was stripped of `x-headroom-*` (PR-A5).
+        # directly because `headers` was stripped of `x-legroom-*` (PR-A5).
         memory_user_id: str | None = None
         memory_request_ctx = None
         if self.memory_handler:
             memory_user_id = request.headers.get(
-                "x-headroom-user-id",
+                "x-legroom-user-id",
                 os.environ.get("USER", os.environ.get("USERNAME", "default")),
             )
             # Per-project memory routing (GH #462). Gemini's
@@ -309,10 +309,10 @@ class GeminiHandlerMixin:
             # ``extract_system_prompt`` doesn't know that shape, so we
             # pull it directly when present and fall back to the
             # request body for OpenAI/Anthropic-shaped payloads.
-            from headroom.memory.storage_router import (
+            from legroom.memory.storage_router import (
                 RequestContext as _MemRequestContext,
             )
-            from headroom.memory.storage_router import (
+            from legroom.memory.storage_router import (
                 extract_system_prompt as _extract_sys_prompt,
             )
 
@@ -340,11 +340,11 @@ class GeminiHandlerMixin:
 
         # Canonical memory-injection gate (parallels Anthropic + OpenAI).
         # Pre-PR-this Gemini's memory site silently ignored
-        # `x-headroom-bypass: true`, mutating request bytes under the
+        # `x-legroom-bypass: true`, mutating request bytes under the
         # user's "don't touch my bytes" signal.
-        from headroom.proxy.helpers import get_memory_injection_mode, log_memory_injection
-        from headroom.proxy.memory_decision import MemoryDecision
-        from headroom.proxy.memory_query import MemoryQuery
+        from legroom.proxy.helpers import get_memory_injection_mode, log_memory_injection
+        from legroom.proxy.memory_decision import MemoryDecision
+        from legroom.proxy.memory_query import MemoryQuery
 
         memory_decision = MemoryDecision.decide(
             headers=request.headers,
@@ -462,12 +462,12 @@ class GeminiHandlerMixin:
                 response_headers = dict(response.headers)
                 response_headers.pop("content-encoding", None)
                 response_headers.pop("content-length", None)
-                response_headers["x-headroom-tokens-before"] = str(total_input_tokens)
-                response_headers["x-headroom-tokens-after"] = str(total_input_tokens)
-                response_headers["x-headroom-tokens-saved"] = "0"
-                response_headers["x-headroom-model"] = model
+                response_headers["x-legroom-tokens-before"] = str(total_input_tokens)
+                response_headers["x-legroom-tokens-after"] = str(total_input_tokens)
+                response_headers["x-legroom-tokens-saved"] = "0"
+                response_headers["x-legroom-model"] = model
                 if cache_read_tokens > 0:
-                    response_headers["x-headroom-cached"] = "true"
+                    response_headers["x-legroom-cached"] = "true"
                 return Response(
                     content=response.content,
                     status_code=response.status_code,
@@ -757,21 +757,21 @@ class GeminiHandlerMixin:
                 response_headers.pop("content-encoding", None)
                 response_headers.pop("content-length", None)
 
-                # Inject Headroom compression metrics (for SaaS metering)
-                response_headers["x-headroom-tokens-before"] = str(original_tokens)
-                response_headers["x-headroom-tokens-after"] = str(optimized_tokens)
-                response_headers["x-headroom-tokens-saved"] = str(tokens_saved)
-                response_headers["x-headroom-model"] = model
+                # Inject Legroom compression metrics (for SaaS metering)
+                response_headers["x-legroom-tokens-before"] = str(original_tokens)
+                response_headers["x-legroom-tokens-after"] = str(optimized_tokens)
+                response_headers["x-legroom-tokens-saved"] = str(tokens_saved)
+                response_headers["x-legroom-model"] = model
                 if transforms_applied:
-                    from headroom.proxy.cost import header_safe_transforms
+                    from legroom.proxy.cost import header_safe_transforms
 
-                    response_headers["x-headroom-transforms"] = ",".join(
+                    response_headers["x-legroom-transforms"] = ",".join(
                         header_safe_transforms(transforms_applied)
                     )
                 if cache_read_tokens > 0:
-                    response_headers["x-headroom-cached"] = "true"
+                    response_headers["x-legroom-cached"] = "true"
                 if _compression_failed:
-                    response_headers["x-headroom-compression-failed"] = "true"
+                    response_headers["x-legroom-compression-failed"] = "true"
 
                 return Response(
                     content=response.content,
@@ -798,9 +798,9 @@ class GeminiHandlerMixin:
         """Handle Pi/OpenClaw Google Cloud Code Assist and Antigravity streaming requests."""
         from fastapi.responses import JSONResponse
 
-        from headroom.proxy.helpers import _read_request_json
-        from headroom.tokenizers import get_tokenizer
-        from headroom.utils import extract_user_query
+        from legroom.proxy.helpers import _read_request_json
+        from legroom.tokenizers import get_tokenizer
+        from legroom.utils import extract_user_query
 
         start_time = time.time()
         request_id = await self._next_request_id()
@@ -840,11 +840,11 @@ class GeminiHandlerMixin:
         # Note: streaming handlers delegate to _stream_response, which
         # does its own classify_client. No need to compute here.
         is_antigravity = self._is_cloudcode_antigravity_request(body, headers)
-        # PR-A5 (P5-49): strip internal x-headroom-* from upstream-bound headers
+        # PR-A5 (P5-49): strip internal x-legroom-* from upstream-bound headers
         # AFTER `_extract_tags` and `is_cloudcode_antigravity` reads.
-        from headroom.proxy.helpers import _strip_internal_headers, log_outbound_headers
+        from legroom.proxy.helpers import _strip_internal_headers, log_outbound_headers
 
-        _pre_strip_count_cca = sum(1 for k in headers if k.lower().startswith("x-headroom-"))
+        _pre_strip_count_cca = sum(1 for k in headers if k.lower().startswith("x-legroom-"))
         headers = _strip_internal_headers(headers)
         log_outbound_headers(
             forwarder="gemini_cloudcode_assist",
@@ -963,8 +963,8 @@ class GeminiHandlerMixin:
         """Handle Gemini streaming endpoint /v1beta/models/{model}:streamGenerateContent."""
         from fastapi.responses import JSONResponse
 
-        from headroom.proxy.helpers import _read_request_json
-        from headroom.tokenizers import get_tokenizer
+        from legroom.proxy.helpers import _read_request_json
+        from legroom.tokenizers import get_tokenizer
 
         start_time = time.time()
         request_id = await self._next_request_id()
@@ -991,10 +991,10 @@ class GeminiHandlerMixin:
         tags = extract_tags(headers)
         # Streaming variant — delegates to _stream_response which
         # classifies the client itself from headers.
-        # PR-A5 (P5-49): strip internal x-headroom-* before forwarding upstream.
-        from headroom.proxy.helpers import _strip_internal_headers, log_outbound_headers
+        # PR-A5 (P5-49): strip internal x-legroom-* before forwarding upstream.
+        from legroom.proxy.helpers import _strip_internal_headers, log_outbound_headers
 
-        _pre_strip_count_gem_stream = sum(1 for k in headers if k.lower().startswith("x-headroom-"))
+        _pre_strip_count_gem_stream = sum(1 for k in headers if k.lower().startswith("x-legroom-"))
         headers = _strip_internal_headers(headers)
         log_outbound_headers(
             forwarder="gemini_stream_generate_content",
@@ -1051,9 +1051,9 @@ class GeminiHandlerMixin:
         """
         from fastapi.responses import JSONResponse, Response
 
-        from headroom.proxy.helpers import _read_request_json
-        from headroom.tokenizers import get_tokenizer
-        from headroom.utils import extract_user_query
+        from legroom.proxy.helpers import _read_request_json
+        from legroom.tokenizers import get_tokenizer
+        from legroom.utils import extract_user_query
 
         start_time = time.time()
         request_id = await self._next_request_id()
@@ -1079,10 +1079,10 @@ class GeminiHandlerMixin:
         headers.pop("content-length", None)
         client = classify_client(headers)
         tags = extract_tags(headers)
-        # PR-A5 (P5-49): strip internal x-headroom-* before forwarding upstream.
-        from headroom.proxy.helpers import _strip_internal_headers, log_outbound_headers
+        # PR-A5 (P5-49): strip internal x-legroom-* before forwarding upstream.
+        from legroom.proxy.helpers import _strip_internal_headers, log_outbound_headers
 
-        _pre_strip_count_gem_count = sum(1 for k in headers if k.lower().startswith("x-headroom-"))
+        _pre_strip_count_gem_count = sum(1 for k in headers if k.lower().startswith("x-legroom-"))
         headers = _strip_internal_headers(headers)
         log_outbound_headers(
             forwarder="gemini_count_tokens",

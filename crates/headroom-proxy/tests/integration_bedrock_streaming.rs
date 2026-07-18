@@ -25,7 +25,7 @@ mod common;
 use aws_credential_types::Credentials;
 use bytes::{Bytes, BytesMut};
 use common::start_proxy_with_state;
-use headroom_proxy::bedrock::{
+use legroom_proxy::bedrock::{
     parse_eventstream, CrcValidation, EventStreamParser, HeaderValue, MessageBuilder, ParseError,
 };
 use proptest::prelude::*;
@@ -103,7 +103,7 @@ fn synthesize_bedrock_stream() -> Bytes {
 
 async fn bedrock_proxy(
     upstream: &MockServer,
-    customize: impl FnOnce(&mut headroom_proxy::Config),
+    customize: impl FnOnce(&mut legroom_proxy::Config),
 ) -> common::ProxyHandle {
     let endpoint: Url = upstream.uri().parse().unwrap();
     start_proxy_with_state(
@@ -243,7 +243,7 @@ async fn eventstream_translated_to_sse() {
     let bedrock_bytes = synthesize_bedrock_stream();
     mount_eventstream_upstream(&upstream, bedrock_bytes).await;
     let proxy = bedrock_proxy(&upstream, |c| {
-        c.compression_mode = headroom_proxy::config::CompressionMode::Off;
+        c.compression_mode = legroom_proxy::config::CompressionMode::Off;
     })
     .await;
 
@@ -317,7 +317,7 @@ async fn usage_extracted_from_translated_stream() {
     let bedrock_bytes = synthesize_bedrock_stream();
     mount_eventstream_upstream(&upstream, bedrock_bytes).await;
     let proxy = bedrock_proxy(&upstream, |c| {
-        c.compression_mode = headroom_proxy::config::CompressionMode::Off;
+        c.compression_mode = legroom_proxy::config::CompressionMode::Off;
     })
     .await;
 
@@ -356,8 +356,8 @@ async fn usage_extracted_from_translated_stream() {
     // assert what the in-task instance would have computed. (We
     // can't easily intercept the spawned task's tracing output in
     // this test without a custom subscriber.)
-    use headroom_proxy::sse::anthropic::AnthropicStreamState;
-    use headroom_proxy::sse::framing::SseFramer;
+    use legroom_proxy::sse::anthropic::AnthropicStreamState;
+    use legroom_proxy::sse::framing::SseFramer;
     let mut framer = SseFramer::new();
     framer.push(&body);
     let mut state = AnthropicStreamState::new();
@@ -379,7 +379,7 @@ async fn client_can_choose_eventstream_or_sse() {
     let bedrock_bytes = synthesize_bedrock_stream();
     mount_eventstream_upstream(&upstream, bedrock_bytes.clone()).await;
     let proxy = bedrock_proxy(&upstream, |c| {
-        c.compression_mode = headroom_proxy::config::CompressionMode::Off;
+        c.compression_mode = legroom_proxy::config::CompressionMode::Off;
     })
     .await;
 
@@ -483,7 +483,7 @@ async fn converse_stream_route_translates_to_sse() {
     let bedrock_bytes = synthesize_bedrock_stream();
     mount_eventstream_upstream_for_action(&upstream, bedrock_bytes, "converse-stream").await;
     let proxy = bedrock_proxy(&upstream, |c| {
-        c.compression_mode = headroom_proxy::config::CompressionMode::Off;
+        c.compression_mode = legroom_proxy::config::CompressionMode::Off;
     })
     .await;
 

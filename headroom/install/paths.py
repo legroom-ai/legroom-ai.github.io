@@ -9,7 +9,7 @@ from pathlib import Path
 
 import click
 
-from headroom import paths as _paths
+from legroom import paths as _paths
 
 _PROFILE_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 
@@ -55,37 +55,37 @@ def pid_path(profile: str) -> Path:
 def unix_run_script_path(profile: str) -> Path:
     """Return the foreground runner shell script path."""
 
-    return profile_root(profile) / "run-headroom.sh"
+    return profile_root(profile) / "run-legroom.sh"
 
 
 def unix_ensure_script_path(profile: str) -> Path:
     """Return the watchdog shell script path."""
 
-    return profile_root(profile) / "ensure-headroom.sh"
+    return profile_root(profile) / "ensure-legroom.sh"
 
 
 def windows_run_script_path(profile: str) -> Path:
     """Return the foreground runner PowerShell script path."""
 
-    return profile_root(profile) / "run-headroom.ps1"
+    return profile_root(profile) / "run-legroom.ps1"
 
 
 def windows_run_cmd_path(profile: str) -> Path:
     """Return the foreground runner CMD shim path."""
 
-    return profile_root(profile) / "run-headroom.cmd"
+    return profile_root(profile) / "run-legroom.cmd"
 
 
 def windows_ensure_script_path(profile: str) -> Path:
     """Return the watchdog PowerShell script path."""
 
-    return profile_root(profile) / "ensure-headroom.ps1"
+    return profile_root(profile) / "ensure-legroom.ps1"
 
 
 def windows_ensure_cmd_path(profile: str) -> Path:
     """Return the watchdog CMD shim path."""
 
-    return profile_root(profile) / "ensure-headroom.cmd"
+    return profile_root(profile) / "ensure-legroom.cmd"
 
 
 def unix_user_env_targets() -> list[Path]:
@@ -100,7 +100,7 @@ def unix_system_env_targets() -> list[Path]:
 
     if sys.platform == "darwin":
         return [Path("/etc/profile"), Path("/etc/zprofile"), Path("/etc/bashrc")]
-    return [Path("/etc/profile.d/headroom.sh")]
+    return [Path("/etc/profile.d/legroom.sh")]
 
 
 def claude_settings_path() -> Path:

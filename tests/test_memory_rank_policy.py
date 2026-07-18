@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from datetime import datetime, timedelta, timezone
 
-from headroom.proxy.memory_rank_policy import (
+from legroom.proxy.memory_rank_policy import (
     boost_memory_score,
     memory_recency_factor,
     parse_memory_created_at,

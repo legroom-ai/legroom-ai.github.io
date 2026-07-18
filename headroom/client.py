@@ -1,4 +1,4 @@
-"""Main HeadroomClient implementation for Headroom SDK."""
+"""Main LegroomClient implementation for Legroom SDK."""
 
 from __future__ import annotations
 
@@ -15,8 +15,8 @@ from .cache import (
     SemanticCacheLayer,
 )
 from .config import (
-    HeadroomConfig,
-    HeadroomMode,
+    LegroomConfig,
+    LegroomMode,
     RequestMetrics,
     SimulationResult,
 )
@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 class ChatCompletions:
     """Wrapper for chat.completions API (OpenAI-style)."""
 
-    def __init__(self, client: HeadroomClient):
+    def __init__(self, client: LegroomClient):
         self._client = client
 
     def create(
@@ -50,27 +50,27 @@ class ChatCompletions:
         model: str,
         messages: list[dict[str, Any]],
         stream: bool = False,
-        # Headroom-specific parameters
-        headroom_mode: str | None = None,
-        headroom_cache_prefix_tokens: int | None = None,
-        headroom_output_buffer_tokens: int | None = None,
-        headroom_keep_turns: int | None = None,
-        headroom_tool_profiles: dict[str, dict[str, Any]] | None = None,
+        # Legroom-specific parameters
+        legroom_mode: str | None = None,
+        legroom_cache_prefix_tokens: int | None = None,
+        legroom_output_buffer_tokens: int | None = None,
+        legroom_keep_turns: int | None = None,
+        legroom_tool_profiles: dict[str, dict[str, Any]] | None = None,
         # Pass through all other kwargs
         **kwargs: Any,
     ) -> Any:
         """
-        Create a chat completion with optional Headroom optimization.
+        Create a chat completion with optional Legroom optimization.
 
         Args:
             model: Model name.
             messages: List of messages.
             stream: Whether to stream the response.
-            headroom_mode: Override default mode ("audit" | "optimize").
-            headroom_cache_prefix_tokens: Target cache-aligned prefix size.
-            headroom_output_buffer_tokens: Reserve tokens for output.
-            headroom_keep_turns: Never drop last N turns.
-            headroom_tool_profiles: Per-tool compression config.
+            legroom_mode: Override default mode ("audit" | "optimize").
+            legroom_cache_prefix_tokens: Target cache-aligned prefix size.
+            legroom_output_buffer_tokens: Reserve tokens for output.
+            legroom_keep_turns: Never drop last N turns.
+            legroom_tool_profiles: Per-tool compression config.
             **kwargs: Additional arguments passed to underlying client.
 
         Returns:
@@ -80,11 +80,11 @@ class ChatCompletions:
             model=model,
             messages=messages,
             stream=stream,
-            headroom_mode=headroom_mode,
-            headroom_cache_prefix_tokens=headroom_cache_prefix_tokens,
-            headroom_output_buffer_tokens=headroom_output_buffer_tokens,
-            headroom_keep_turns=headroom_keep_turns,
-            headroom_tool_profiles=headroom_tool_profiles,
+            legroom_mode=legroom_mode,
+            legroom_cache_prefix_tokens=legroom_cache_prefix_tokens,
+            legroom_output_buffer_tokens=legroom_output_buffer_tokens,
+            legroom_keep_turns=legroom_keep_turns,
+            legroom_tool_profiles=legroom_tool_profiles,
             api_style="openai",
             **kwargs,
         )
@@ -94,9 +94,9 @@ class ChatCompletions:
         *,
         model: str,
         messages: list[dict[str, Any]],
-        headroom_mode: str = "optimize",
-        headroom_output_buffer_tokens: int | None = None,
-        headroom_tool_profiles: dict[str, dict[str, Any]] | None = None,
+        legroom_mode: str = "optimize",
+        legroom_output_buffer_tokens: int | None = None,
+        legroom_tool_profiles: dict[str, dict[str, Any]] | None = None,
         **kwargs: Any,
     ) -> SimulationResult:
         """
@@ -105,9 +105,9 @@ class ChatCompletions:
         Args:
             model: Model name.
             messages: List of messages.
-            headroom_mode: Mode to simulate.
-            headroom_output_buffer_tokens: Output buffer to use.
-            headroom_tool_profiles: Tool profiles to use.
+            legroom_mode: Mode to simulate.
+            legroom_output_buffer_tokens: Output buffer to use.
+            legroom_tool_profiles: Tool profiles to use.
             **kwargs: Additional arguments (ignored).
 
         Returns:
@@ -116,16 +116,16 @@ class ChatCompletions:
         return self._client._simulate(
             model=model,
             messages=messages,
-            headroom_mode=headroom_mode,
-            headroom_output_buffer_tokens=headroom_output_buffer_tokens,
-            headroom_tool_profiles=headroom_tool_profiles,
+            legroom_mode=legroom_mode,
+            legroom_output_buffer_tokens=legroom_output_buffer_tokens,
+            legroom_tool_profiles=legroom_tool_profiles,
         )
 
 
 class Messages:
     """Wrapper for messages API (Anthropic-style)."""
 
-    def __init__(self, client: HeadroomClient):
+    def __init__(self, client: LegroomClient):
         self._client = client
 
     def create(
@@ -134,27 +134,27 @@ class Messages:
         model: str,
         messages: list[dict[str, Any]],
         max_tokens: int = 1024,
-        # Headroom-specific parameters
-        headroom_mode: str | None = None,
-        headroom_cache_prefix_tokens: int | None = None,
-        headroom_output_buffer_tokens: int | None = None,
-        headroom_keep_turns: int | None = None,
-        headroom_tool_profiles: dict[str, dict[str, Any]] | None = None,
+        # Legroom-specific parameters
+        legroom_mode: str | None = None,
+        legroom_cache_prefix_tokens: int | None = None,
+        legroom_output_buffer_tokens: int | None = None,
+        legroom_keep_turns: int | None = None,
+        legroom_tool_profiles: dict[str, dict[str, Any]] | None = None,
         # Pass through all other kwargs
         **kwargs: Any,
     ) -> Any:
         """
-        Create a message with optional Headroom optimization.
+        Create a message with optional Legroom optimization.
 
         Args:
             model: Model name.
             messages: List of messages.
             max_tokens: Maximum tokens in response.
-            headroom_mode: Override default mode ("audit" | "optimize").
-            headroom_cache_prefix_tokens: Target cache-aligned prefix size.
-            headroom_output_buffer_tokens: Reserve tokens for output.
-            headroom_keep_turns: Never drop last N turns.
-            headroom_tool_profiles: Per-tool compression config.
+            legroom_mode: Override default mode ("audit" | "optimize").
+            legroom_cache_prefix_tokens: Target cache-aligned prefix size.
+            legroom_output_buffer_tokens: Reserve tokens for output.
+            legroom_keep_turns: Never drop last N turns.
+            legroom_tool_profiles: Per-tool compression config.
             **kwargs: Additional arguments passed to underlying client.
 
         Returns:
@@ -164,11 +164,11 @@ class Messages:
             model=model,
             messages=messages,
             stream=False,
-            headroom_mode=headroom_mode,
-            headroom_cache_prefix_tokens=headroom_cache_prefix_tokens,
-            headroom_output_buffer_tokens=headroom_output_buffer_tokens,
-            headroom_keep_turns=headroom_keep_turns,
-            headroom_tool_profiles=headroom_tool_profiles,
+            legroom_mode=legroom_mode,
+            legroom_cache_prefix_tokens=legroom_cache_prefix_tokens,
+            legroom_output_buffer_tokens=legroom_output_buffer_tokens,
+            legroom_keep_turns=legroom_keep_turns,
+            legroom_tool_profiles=legroom_tool_profiles,
             api_style="anthropic",
             max_tokens=max_tokens,
             **kwargs,
@@ -180,27 +180,27 @@ class Messages:
         model: str,
         messages: list[dict[str, Any]],
         max_tokens: int = 1024,
-        # Headroom-specific parameters
-        headroom_mode: str | None = None,
-        headroom_cache_prefix_tokens: int | None = None,
-        headroom_output_buffer_tokens: int | None = None,
-        headroom_keep_turns: int | None = None,
-        headroom_tool_profiles: dict[str, dict[str, Any]] | None = None,
+        # Legroom-specific parameters
+        legroom_mode: str | None = None,
+        legroom_cache_prefix_tokens: int | None = None,
+        legroom_output_buffer_tokens: int | None = None,
+        legroom_keep_turns: int | None = None,
+        legroom_tool_profiles: dict[str, dict[str, Any]] | None = None,
         # Pass through all other kwargs
         **kwargs: Any,
     ) -> Any:
         """
-        Stream a message with optional Headroom optimization.
+        Stream a message with optional Legroom optimization.
 
         Args:
             model: Model name.
             messages: List of messages.
             max_tokens: Maximum tokens in response.
-            headroom_mode: Override default mode ("audit" | "optimize").
-            headroom_cache_prefix_tokens: Target cache-aligned prefix size.
-            headroom_output_buffer_tokens: Reserve tokens for output.
-            headroom_keep_turns: Never drop last N turns.
-            headroom_tool_profiles: Per-tool compression config.
+            legroom_mode: Override default mode ("audit" | "optimize").
+            legroom_cache_prefix_tokens: Target cache-aligned prefix size.
+            legroom_output_buffer_tokens: Reserve tokens for output.
+            legroom_keep_turns: Never drop last N turns.
+            legroom_tool_profiles: Per-tool compression config.
             **kwargs: Additional arguments passed to underlying client.
 
         Returns:
@@ -210,11 +210,11 @@ class Messages:
             model=model,
             messages=messages,
             stream=True,
-            headroom_mode=headroom_mode,
-            headroom_cache_prefix_tokens=headroom_cache_prefix_tokens,
-            headroom_output_buffer_tokens=headroom_output_buffer_tokens,
-            headroom_keep_turns=headroom_keep_turns,
-            headroom_tool_profiles=headroom_tool_profiles,
+            legroom_mode=legroom_mode,
+            legroom_cache_prefix_tokens=legroom_cache_prefix_tokens,
+            legroom_output_buffer_tokens=legroom_output_buffer_tokens,
+            legroom_keep_turns=legroom_keep_turns,
+            legroom_tool_profiles=legroom_tool_profiles,
             api_style="anthropic",
             max_tokens=max_tokens,
             **kwargs,
@@ -225,9 +225,9 @@ class Messages:
         *,
         model: str,
         messages: list[dict[str, Any]],
-        headroom_mode: str = "optimize",
-        headroom_output_buffer_tokens: int | None = None,
-        headroom_tool_profiles: dict[str, dict[str, Any]] | None = None,
+        legroom_mode: str = "optimize",
+        legroom_output_buffer_tokens: int | None = None,
+        legroom_tool_profiles: dict[str, dict[str, Any]] | None = None,
         **kwargs: Any,
     ) -> SimulationResult:
         """
@@ -236,9 +236,9 @@ class Messages:
         Args:
             model: Model name.
             messages: List of messages.
-            headroom_mode: Mode to simulate.
-            headroom_output_buffer_tokens: Output buffer to use.
-            headroom_tool_profiles: Tool profiles to use.
+            legroom_mode: Mode to simulate.
+            legroom_output_buffer_tokens: Output buffer to use.
+            legroom_tool_profiles: Tool profiles to use.
             **kwargs: Additional arguments (ignored).
 
         Returns:
@@ -247,13 +247,13 @@ class Messages:
         return self._client._simulate(
             model=model,
             messages=messages,
-            headroom_mode=headroom_mode,
-            headroom_output_buffer_tokens=headroom_output_buffer_tokens,
-            headroom_tool_profiles=headroom_tool_profiles,
+            legroom_mode=legroom_mode,
+            legroom_output_buffer_tokens=legroom_output_buffer_tokens,
+            legroom_tool_profiles=legroom_tool_profiles,
         )
 
 
-class HeadroomClient:
+class LegroomClient:
     """
     Context Budget Controller wrapper for LLM API clients.
 
@@ -271,10 +271,10 @@ class HeadroomClient:
         cache_optimizer: BaseCacheOptimizer | None = None,
         enable_cache_optimizer: bool = True,
         enable_semantic_cache: bool = False,
-        config: HeadroomConfig | None = None,
+        config: LegroomConfig | None = None,
     ):
         """
-        Initialize HeadroomClient.
+        Initialize LegroomClient.
 
         Args:
             original_client: The underlying LLM client (OpenAI-compatible).
@@ -286,7 +286,7 @@ class HeadroomClient:
                 enable_cache_optimizer=True, auto-detects from provider.
             enable_cache_optimizer: Enable provider-specific cache optimization.
             enable_semantic_cache: Enable query-level semantic caching.
-            config: Optional HeadroomConfig for full control over all settings.
+            config: Optional LegroomConfig for full control over all settings.
                 When provided, takes precedence over individual settings like
                 store_url, default_mode, etc.
         """
@@ -298,11 +298,11 @@ class HeadroomClient:
             import os
             import tempfile
 
-            db_path = os.path.join(tempfile.gettempdir(), "headroom.db")
+            db_path = os.path.join(tempfile.gettempdir(), "legroom.db")
             store_url = f"sqlite:///{db_path}"
 
         self._store_url = store_url
-        self._default_mode = HeadroomMode(default_mode)
+        self._default_mode = LegroomMode(default_mode)
 
         # Use provided config or build from individual parameters
         if config is not None:
@@ -315,7 +315,7 @@ class HeadroomClient:
             self._default_mode = config.default_mode
         else:
             # Build config from individual parameters
-            self._config = HeadroomConfig()
+            self._config = LegroomConfig()
             self._config.store_url = store_url
             self._config.default_mode = self._default_mode
             self._config.cache_optimizer.enabled = enable_cache_optimizer
@@ -397,18 +397,18 @@ class HeadroomClient:
         model: str,
         messages: list[dict[str, Any]],
         stream: bool = False,
-        headroom_mode: str | None = None,
-        headroom_cache_prefix_tokens: int | None = None,
-        headroom_output_buffer_tokens: int | None = None,
-        headroom_keep_turns: int | None = None,
-        headroom_tool_profiles: dict[str, dict[str, Any]] | None = None,
+        legroom_mode: str | None = None,
+        legroom_cache_prefix_tokens: int | None = None,
+        legroom_output_buffer_tokens: int | None = None,
+        legroom_keep_turns: int | None = None,
+        legroom_tool_profiles: dict[str, dict[str, Any]] | None = None,
         api_style: str = "openai",
         **kwargs: Any,
     ) -> Any:
         """Internal implementation of create."""
         request_id = generate_request_id()
         timestamp = datetime.now(timezone.utc).replace(tzinfo=None)
-        mode = HeadroomMode(headroom_mode) if headroom_mode else self._default_mode
+        mode = LegroomMode(legroom_mode) if legroom_mode else self._default_mode
 
         input_event = self._pipeline_extensions.emit(
             PipelineStage.INPUT_RECEIVED,
@@ -446,8 +446,8 @@ class HeadroomClient:
         cached_response = None
 
         # Apply transforms if in optimize mode
-        if mode == HeadroomMode.OPTIMIZE:
-            output_buffer = headroom_output_buffer_tokens or self._config.output_buffer_tokens
+        if mode == LegroomMode.OPTIMIZE:
+            output_buffer = legroom_output_buffer_tokens or self._config.output_buffer_tokens
             model_limit = self._get_context_limit(model)
 
             result = self._pipeline.apply(
@@ -455,7 +455,7 @@ class HeadroomClient:
                 model,
                 model_limit=model_limit,
                 output_buffer=output_buffer,
-                tool_profiles=headroom_tool_profiles or {},
+                tool_profiles=legroom_tool_profiles or {},
             )
 
             optimized_messages = result.messages
@@ -758,9 +758,9 @@ class HeadroomClient:
         *,
         model: str,
         messages: list[dict[str, Any]],
-        headroom_mode: str = "optimize",
-        headroom_output_buffer_tokens: int | None = None,
-        headroom_tool_profiles: dict[str, dict[str, Any]] | None = None,
+        legroom_mode: str = "optimize",
+        legroom_output_buffer_tokens: int | None = None,
+        legroom_tool_profiles: dict[str, dict[str, Any]] | None = None,
     ) -> SimulationResult:
         """Internal implementation of simulate."""
         tokenizer = self._get_tokenizer(model)
@@ -775,7 +775,7 @@ class HeadroomClient:
         compute_prefix_hash(messages)
 
         # Apply transforms
-        output_buffer = headroom_output_buffer_tokens or self._config.output_buffer_tokens
+        output_buffer = legroom_output_buffer_tokens or self._config.output_buffer_tokens
         model_limit = self._get_context_limit(model)
 
         result = self._pipeline.simulate(
@@ -783,7 +783,7 @@ class HeadroomClient:
             model,
             model_limit=model_limit,
             output_buffer=output_buffer,
-            tool_profiles=headroom_tool_profiles or {},
+            tool_profiles=legroom_tool_profiles or {},
         )
 
         tokens_saved = tokens_before - result.tokens_after
@@ -866,7 +866,7 @@ class HeadroomClient:
         """Close storage connection."""
         self._storage.close()
 
-    def __enter__(self) -> HeadroomClient:
+    def __enter__(self) -> LegroomClient:
         """Context manager entry."""
         return self
 
@@ -875,7 +875,7 @@ class HeadroomClient:
         self.close()
 
     def validate_setup(self) -> dict[str, Any]:
-        """Validate that Headroom is properly configured.
+        """Validate that Legroom is properly configured.
 
         This method checks:
         - Provider is valid and can count tokens
@@ -897,7 +897,7 @@ class HeadroomClient:
             ValidationError: If validation fails and raise_on_error=True.
 
         Example:
-            client = HeadroomClient(...)
+            client = LegroomClient(...)
             result = client.validate_setup()
             if not result["valid"]:
                 print("Setup issues:", result)
@@ -938,7 +938,7 @@ class HeadroomClient:
         # Validate config
         try:
             # Check mode is valid
-            if self._default_mode in (HeadroomMode.AUDIT, HeadroomMode.OPTIMIZE):
+            if self._default_mode in (LegroomMode.AUDIT, LegroomMode.OPTIMIZE):
                 result["config"]["ok"] = True
             else:
                 result["config"]["error"] = f"Invalid mode: {self._default_mode}"
@@ -1019,7 +1019,7 @@ class HeadroomClient:
 
     def _update_session_stats(
         self,
-        mode: HeadroomMode,
+        mode: LegroomMode,
         tokens_before: int,
         tokens_after: int,
         cache_hit: bool = False,
@@ -1036,7 +1036,7 @@ class HeadroomClient:
 
         self._session_stats["requests_total"] += 1
 
-        if mode == HeadroomMode.OPTIMIZE:
+        if mode == LegroomMode.OPTIMIZE:
             self._session_stats["requests_optimized"] += 1
             self._session_stats["tokens_saved_total"] += max(0, tokens_before - tokens_after)
         else:

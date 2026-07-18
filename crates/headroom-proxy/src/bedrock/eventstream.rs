@@ -81,7 +81,7 @@ const PRELUDE_LEN: usize = 12;
 const MESSAGE_CRC_LEN: usize = 4;
 
 /// Sanity ceiling for `total_length`. AWS's documented maximum is
-/// 16 MiB. We refuse anything beyond ~32 MiB (2× headroom for future
+/// 16 MiB. We refuse anything beyond ~32 MiB (2× legroom for future
 /// limit raises) so a truncated stream that decoded a garbage length
 /// does not allocate gigabytes. Configurable via the public
 /// [`EventStreamParser::with_max_message_bytes`] constructor.

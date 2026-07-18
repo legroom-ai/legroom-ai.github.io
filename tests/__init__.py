@@ -1,1 +1,1 @@
-"""Tests for Headroom SDK."""
+"""Tests for Legroom SDK."""

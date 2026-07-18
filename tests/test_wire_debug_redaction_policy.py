@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from headroom.proxy.wire_debug_redaction_policy import (
+from legroom.proxy.wire_debug_redaction_policy import (
     WIRE_DEBUG_REDACTED,
     redact_for_wire_debug,
     should_redact_key,

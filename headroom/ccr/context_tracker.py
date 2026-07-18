@@ -36,7 +36,7 @@ def looks_like_claude_code_compact_summary(*texts: str | None) -> bool:
 
     Claude Code can carry a previous session forward by injecting a compact
     conversation summary into a fresh session. Those summaries are already
-    context; tracking them for CCR proactive expansion makes Headroom re-add
+    context; tracking them for CCR proactive expansion makes Legroom re-add
     stale session state to later turns. Keep this detector deliberately narrow
     so ordinary tool output that happens to mention "summary" remains eligible.
     """
@@ -564,8 +564,8 @@ class ContextTracker:
         parts.append("[End Proactive Expansion]")
         body = "\n".join(parts)
         # Escape any stray close tag in payload to prevent wrapper boundary forgery
-        body = body.replace("</headroom_proactive_expansion>", "<\\/headroom_proactive_expansion>")
-        return f"<headroom_proactive_expansion>\n{body}\n</headroom_proactive_expansion>"
+        body = body.replace("</legroom_proactive_expansion>", "<\\/legroom_proactive_expansion>")
+        return f"<legroom_proactive_expansion>\n{body}\n</legroom_proactive_expansion>"
 
     def get_tracked_hashes(self) -> list[str]:
         """Get list of currently tracked hashes."""

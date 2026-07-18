@@ -1,33 +1,33 @@
-# headroom-opencode
+# legroom-opencode
 
-OpenCode integration helpers for Headroom. The package supports two integration paths:
+OpenCode integration helpers for Legroom. The package supports two integration paths:
 
-1. Provider config helpers used by `headroom wrap opencode` and persistent installs.
-2. A native OpenCode plugin that installs Headroom transport interception and exposes the retrieve tool.
+1. Provider config helpers used by `legroom wrap opencode` and persistent installs.
+2. A native OpenCode plugin that installs Legroom transport interception and exposes the retrieve tool.
 
 ## Install
 
 ```bash
-npm install headroom-opencode
+npm install legroom-opencode
 ```
 
 ## Provider Config Helpers
 
-Use these helpers when you need to generate OpenCode config that routes a `headroom` provider through a running Headroom proxy.
+Use these helpers when you need to generate OpenCode config that routes a `legroom` provider through a running Legroom proxy.
 
 ```ts
 import {
   buildOpencodeConfigContent,
-  createHeadroomProvider,
-} from "headroom-opencode";
+  createLegroomProvider,
+} from "legroom-opencode";
 
-const provider = createHeadroomProvider({ proxyPort: 8787 });
+const provider = createLegroomProvider({ proxyPort: 8787 });
 const config = buildOpencodeConfigContent({
   proxyPort: 8787,
   defaultModel: "claude-sonnet-4-6",
 });
 
-console.log(provider.provider.headroom.npm);
+console.log(provider.provider.legroom.npm);
 console.log(config.model);
 ```
 
@@ -35,31 +35,31 @@ The generated provider uses `@ai-sdk/openai-compatible` and points model request
 
 ## Native OpenCode Plugin
 
-Use `HeadroomPlugin` when OpenCode should intercept provider traffic in-process and expose Headroom tooling from a plugin.
+Use `LegroomPlugin` when OpenCode should intercept provider traffic in-process and expose Legroom tooling from a plugin.
 
 ```ts
-import { HeadroomPlugin } from "headroom-opencode";
+import { LegroomPlugin } from "legroom-opencode";
 
 export default async function plugin(input) {
-  return HeadroomPlugin(input, {
-    proxyUrl: process.env.HEADROOM_PROXY_URL ?? "http://127.0.0.1:8787",
+  return LegroomPlugin(input, {
+    proxyUrl: process.env.LEGROOM_PROXY_URL ?? "http://127.0.0.1:8787",
   });
 }
 ```
 
-`HeadroomPlugin`:
+`LegroomPlugin`:
 
-- installs Headroom transport interception for OpenCode provider traffic.
-- exposes the `headroom_retrieve` tool.
-- publishes `HEADROOM_PROXY_URL` in the plugin output env.
+- installs Legroom transport interception for OpenCode provider traffic.
+- exposes the `legroom_retrieve` tool.
+- publishes `LEGROOM_PROXY_URL` in the plugin output env.
 - defaults to `http://127.0.0.1:8787` when no proxy URL is supplied.
 
 ## Retrieve Tool
 
 ```ts
-import { createHeadroomRetrieveTool } from "headroom-opencode";
+import { createLegroomRetrieveTool } from "legroom-opencode";
 
-const retrieve = createHeadroomRetrieveTool({
+const retrieve = createLegroomRetrieveTool({
   proxyBaseUrl: "http://127.0.0.1:8787",
 });
 
@@ -68,14 +68,14 @@ const result = await retrieve.execute({
 });
 ```
 
-The tool calls `/v1/retrieve/<hash>` on the Headroom proxy.
+The tool calls `/v1/retrieve/<hash>` on the Legroom proxy.
 
 ## Compression Helper
 
 ```ts
-import { compressWithHeadroom } from "headroom-opencode";
+import { compressWithLegroom } from "legroom-opencode";
 
-const result = await compressWithHeadroom(
+const result = await compressWithLegroom(
   [{ role: "user", content: "Summarize this file" }],
   { model: "gpt-4o", proxyUrl: "http://127.0.0.1:8787" },
 );
@@ -93,13 +93,13 @@ console.log(`Saved ${result.tokensSaved} tokens`);
 | `gpt-4o` | 128K | 16K |
 | `gpt-4.1` | 1M | 32K |
 
-The provider config exposes these as `headroom/<model>` and defaults to `headroom/claude-sonnet-4-6`.
+The provider config exposes these as `legroom/<model>` and defaults to `legroom/claude-sonnet-4-6`.
 
 ## Environment
 
 | Variable | Used by | Description |
 |---|---|---|
-| `HEADROOM_PROXY_URL` | Native plugin | Proxy URL used by `HeadroomPlugin` |
+| `LEGROOM_PROXY_URL` | Native plugin | Proxy URL used by `LegroomPlugin` |
 | `OPENCODE_CONFIG_CONTENT` | OpenCode wrapper | Generated OpenCode provider, model, and MCP config |
 
 ## License

@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from headroom.evals.core import EvalSuite
+    from legroom.evals.core import EvalSuite
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +86,7 @@ class CompressionOnlyRunner:
 
         If needles are not provided, generates them from the content.
         """
-        from headroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
+        from legroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
 
         start_time = time.time()
         crusher = SmartCrusher(config=SmartCrusherConfig())
@@ -176,8 +176,8 @@ class CompressionOnlyRunner:
             - "content": str
             - "probe_facts": list[str] (facts that must survive compression)
         """
-        from headroom.evals.metrics import compute_information_recall
-        from headroom.transforms.content_router import ContentRouter
+        from legroom.evals.metrics import compute_information_recall
+        from legroom.transforms.content_router import ContentRouter
 
         start_time = time.time()
         router = ContentRouter()
@@ -265,8 +265,8 @@ class CompressionOnlyRunner:
             recall_threshold: Minimum answer recall for a case to pass.
             min_answer_chars: Answers shorter than this are skipped as un-probeable.
         """
-        from headroom.evals.metrics import compute_information_recall
-        from headroom.transforms.content_router import ContentRouter
+        from legroom.evals.metrics import compute_information_recall
+        from legroom.transforms.content_router import ContentRouter
 
         trivial = {"yes", "no", "true", "false"}
         start_time = time.time()
@@ -577,7 +577,7 @@ class CompressionOnlyRunner:
           (no dangling required entry pointing at a stripped property)
         - schema-level annotations ($schema, title at root level) ARE dropped
         """
-        from headroom.proxy.tool_schema_compaction import compact_tools
+        from legroom.proxy.tool_schema_compaction import compact_tools
 
         if cases is None:
             cases = self.generate_tool_schema_cases()

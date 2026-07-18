@@ -1,6 +1,6 @@
-"""Analyze headroom proxy logs for performance insights.
+"""Analyze legroom proxy logs for performance insights.
 
-Parses PERF log lines from ~/.headroom/logs/proxy.log* and produces
+Parses PERF log lines from ~/.legroom/logs/proxy.log* and produces
 actionable reports on token savings, cache efficiency, and transform impact.
 
 Cost accounting is **cache-aware**: saved tokens that would have been served
@@ -16,15 +16,15 @@ import re
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
 
-from headroom import paths as _paths
-from headroom.pricing.litellm_pricing import resolve_litellm_model
+from legroom import paths as _paths
+from legroom.pricing.litellm_pricing import resolve_litellm_model
 
 log = logging.getLogger(__name__)
 
 LOG_DIR = _paths.log_dir()
 DEFAULT_SLOW_OPTIMIZATION_MS = 500.0
 
-# Matches: 2026-03-07 13:38:31,009 - headroom.proxy - INFO - [hr_...] PERF model=... ...
+# Matches: 2026-03-07 13:38:31,009 - legroom.proxy - INFO - [hr_...] PERF model=... ...
 _PERF_RE = re.compile(
     r"^(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d+) .* \[(?P<rid>[^\]]+)\] PERF (?P<kv>.+)$"
 )
@@ -250,7 +250,7 @@ def parse_log_files(last_n_hours: float = 168.0) -> PerfReport:
     report.requested_hours = last_n_hours
     stages_by_rid: dict[str, dict[str, float]] = {}
 
-    log_dir = _paths.log_dir() if os.environ.get("HEADROOM_WORKSPACE_DIR") else LOG_DIR
+    log_dir = _paths.log_dir() if os.environ.get("LEGROOM_WORKSPACE_DIR") else LOG_DIR
     if not log_dir.exists():
         return report
 
@@ -268,7 +268,7 @@ def parse_log_files(last_n_hours: float = 168.0) -> PerfReport:
 
     def _within_window(ts_str: str | None) -> bool:
         # Fail-open: records without a parseable timestamp are kept. The
-        # alternative (silent drop) makes `headroom perf` lie about coverage.
+        # alternative (silent drop) makes `legroom perf` lie about coverage.
         if cutoff is None:
             return True
         ts = _parse_log_ts(ts_str)
@@ -446,7 +446,7 @@ def _context_tool_lifetime_savings() -> dict | None:
 
     ``perf`` reports a windowed view of the proxy's *compression* logs. The CLI
     context tool (RTK) keeps its own lifetime counter that never lands in
-    ``proxy.log``, so without this it stays invisible in ``headroom perf`` even
+    ``proxy.log``, so without this it stays invisible in ``legroom perf`` even
     when it dwarfs proxy-side savings. Lifetime (not session) is the right scope
     here: ``perf`` is a one-shot CLI, so the proxy-session baseline ``/stats``
     subtracts is meaningless out of process.
@@ -455,7 +455,7 @@ def _context_tool_lifetime_savings() -> dict | None:
     be read, so the report degrades to proxy-only rather than erroring.
     """
     try:
-        from headroom.proxy.helpers import _get_context_tool_stats
+        from legroom.proxy.helpers import _get_context_tool_stats
 
         stats = _get_context_tool_stats()
     except Exception:
@@ -499,18 +499,18 @@ def format_report(report: PerfReport) -> str:
         if cli_filtering_lines:
             # RTK savings are independent of proxy logs — surface them even when
             # there is no proxy traffic in the window.
-            lines.append("No proxy performance data in ~/.headroom/logs/ for this window.")
+            lines.append("No proxy performance data in ~/.legroom/logs/ for this window.")
             lines.append("")
             lines.extend(cli_filtering_lines)
         else:
-            lines.append("No performance data found in ~/.headroom/logs/")
+            lines.append("No performance data found in ~/.legroom/logs/")
             lines.append("")
             lines.append("Start the proxy to begin collecting data:")
-            lines.append("  headroom proxy")
+            lines.append("  legroom proxy")
         return "\n".join(lines)
 
     # Header
-    lines.append("Headroom Performance Report")
+    lines.append("Legroom Performance Report")
     lines.append("=" * 60)
     if report.requested_hours is not None:
         window_label = "all data" if report.window_all_data else f"last {report.requested_hours:g}h"
@@ -752,7 +752,7 @@ def format_report(report: PerfReport) -> str:
         lines.append("")
 
     # CLI context-tool (RTK) lifetime savings — its own counter never reaches
-    # proxy.log, so surface it here or it stays invisible in `headroom perf`.
+    # proxy.log, so surface it here or it stays invisible in `legroom perf`.
     lines.extend(cli_filtering_lines)
 
     # Footer
@@ -1121,7 +1121,7 @@ def _format_toin_highlights() -> list[str]:
     slices via ``avg_token_reduction``.
     """
     try:
-        from headroom.telemetry.toin import get_toin
+        from legroom.telemetry.toin import get_toin
     except ImportError:
         return []
 
@@ -1149,7 +1149,7 @@ def _format_toin_highlights() -> list[str]:
     # How many patterns have enough samples to drive a recommendation.
     # Falls back to 0 if the threshold attr isn't reachable.
     try:
-        from headroom.telemetry.toin import get_toin as _get
+        from legroom.telemetry.toin import get_toin as _get
 
         threshold = _get()._config.min_samples_for_recommendation
     except Exception:  # noqa: BLE001
@@ -1161,7 +1161,7 @@ def _format_toin_highlights() -> list[str]:
     lines.append("-" * 40)
     lines.append(
         f"  {qualified}/{len(pairs)} patterns have ≥{threshold} samples "
-        f"(eligible for `python -m headroom.cli.toin_publish`)"
+        f"(eligible for `python -m legroom.cli.toin_publish`)"
     )
     lines.append("")
     lines.append("  Strategy distribution:")
@@ -1231,7 +1231,7 @@ def _generate_recommendations(report: PerfReport) -> list[str]:
                 f"{slow_count} requests took >{overhead['slow_threshold_ms']:.0f}ms "
                 "for optimization"
                 f"{stage_hint} — consider reducing heavy transforms or lowering "
-                "HEADROOM_COMPRESSION_TIMEOUT_SECONDS"
+                "LEGROOM_COMPRESSION_TIMEOUT_SECONDS"
             )
 
     if report.router_records:

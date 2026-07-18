@@ -7,7 +7,7 @@
 //! original. This is the cornerstone of CCR: lossy on the wire, lossless
 //! end-to-end.
 //!
-//! Mirrors the semantics of Python's [`CompressionStore`] (`headroom/
+//! Mirrors the semantics of Python's [`CompressionStore`] (`legroom/
 //! cache/compression_store.py`) but stripped down to the contract that
 //! actually matters for retrieval — no BM25 search, no retrieval-event
 //! feedback, no per-tool metadata. Those live in the runtime layer; this
@@ -27,7 +27,7 @@
 //! [`backends::from_config`] selects one at startup and surfaces every
 //! init error to the caller (per `feedback_no_silent_fallbacks.md`).
 //!
-//! [`CompressionStore`]: https://github.com/ghaliba3/headroom/blob/main/headroom/cache/compression_store.py
+//! [`CompressionStore`]: https://github.com/legroom-ai/legroom-ai.github.io/blob/main/legroom/cache/compression_store.py
 
 pub mod backends;
 
@@ -73,13 +73,13 @@ pub fn compute_key(payload: &[u8]) -> String {
     let h = blake3::hash(payload);
     let hex = h.to_hex();
     // Stable 24-char prefix matches the Python tool-injection regex
-    // (`[a-f0-9]{24}`) — see `headroom/ccr/tool_injection.py:211`.
+    // (`[a-f0-9]{24}`) — see `legroom/ccr/tool_injection.py:211`.
     hex.as_str()[..24].to_string()
 }
 
 /// Standard `<<ccr:HASH>>` marker injected into compressed block content
 /// so the runtime can later look up the original bytes when the model
-/// calls `headroom_retrieve`. Format is intentionally fixed across
+/// calls `legroom_retrieve`. Format is intentionally fixed across
 /// proxy code-paths and tests.
 pub fn marker_for(hash: &str) -> String {
     format!("<<ccr:{hash}>>")

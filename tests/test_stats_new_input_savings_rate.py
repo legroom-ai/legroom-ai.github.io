@@ -13,11 +13,11 @@ import asyncio
 
 from fastapi.testclient import TestClient
 
-from headroom.proxy.server import ProxyConfig, create_app
+from legroom.proxy.server import ProxyConfig, create_app
 
 
 def _make_client(tmp_path, monkeypatch) -> TestClient:
-    monkeypatch.setenv("HEADROOM_SAVINGS_PATH", str(tmp_path / "proxy_savings.json"))
+    monkeypatch.setenv("LEGROOM_SAVINGS_PATH", str(tmp_path / "proxy_savings.json"))
     config = ProxyConfig(
         cache_enabled=False,
         rate_limit_enabled=False,

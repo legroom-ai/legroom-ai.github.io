@@ -31,7 +31,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from headroom.proxy.image_compression_policy import (
+from legroom.proxy.image_compression_policy import (
     apply_image_skip_reason,
     decide_image_compression,
 )
@@ -53,7 +53,7 @@ class ImageCompressionDecision:
     # When ``should_compress`` is False, the canonical reason surfaced
     # in ``RequestOutcome.tags["image_skip_reason"]`` so the dashboard
     # can slice image-skipped traffic by cause. One of:
-    #   * "bypass_header"           — user set x-headroom-bypass/mode
+    #   * "bypass_header"           — user set x-legroom-bypass/mode
     #   * "image_optimize_disabled" — operator config off
     #   * "no_messages"             — empty / missing messages
     # When ``should_compress`` is True, this is None.
@@ -80,9 +80,9 @@ class ImageCompressionDecision:
         headers
             Inbound request headers. Accepts any object with a
             ``.get(key)`` method (dict, starlette Headers, mapping).
-            Bypass detected via ``_headroom_bypass_enabled``.
+            Bypass detected via ``_legroom_bypass_enabled``.
         config
-            ``HeadroomConfig``-shaped object; only ``image_optimize``
+            ``LegroomConfig``-shaped object; only ``image_optimize``
             is read.
         messages
             Request messages. ``None`` and ``[]`` are equivalent.

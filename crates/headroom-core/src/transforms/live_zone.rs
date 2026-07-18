@@ -635,7 +635,7 @@ pub fn compress_anthropic_live_zone(
 /// 2. Stores the original block content in the backend under that hash.
 /// 3. Appends the marker `<<ccr:HASH>>` to the compressed block content
 ///    (newline-separated) so the model can later call
-///    `headroom_retrieve(hash="HASH")` to recover the original bytes.
+///    `legroom_retrieve(hash="HASH")` to recover the original bytes.
 ///
 /// When `ccr_store` is `None` (default for tests, default for the old
 /// `compress_anthropic_live_zone` shim), the dispatcher behaves
@@ -1277,7 +1277,7 @@ fn apply_replacements(original: &[u8], replacements: &mut [Replacement]) -> Vec<
 ///    even if that byte was a newline already (we only add one).
 /// 2. Markers are easy to detect in human-readable diffs / logs.
 /// 3. The Python `inject_ccr_retrieve_tool` regex in
-///    `headroom/ccr/tool_injection.py` keeps working — it matches
+///    `legroom/ccr/tool_injection.py` keeps working — it matches
 ///    `[a-f0-9]{24}` anywhere in the text.
 fn maybe_inject_ccr_marker(
     original: &str,
@@ -2295,7 +2295,7 @@ mod openai_chat_tests {
 /// Output-item floor below which the Responses dispatcher does not
 /// even attempt compression. Matches
 /// `responses_items::OUTPUT_ITEM_MIN_BYTES`; pinned here too because
-/// `headroom-core` is independent of the proxy crate.
+/// `legroom-core` is independent of the proxy crate.
 const RESPONSES_OUTPUT_MIN_BYTES: usize = 512;
 
 /// Compress live-zone blocks of an OpenAI Responses request.
@@ -2359,15 +2359,15 @@ pub fn compress_openai_responses_live_zone(
     // cached history. Codex often sends several sibling tool outputs
     // after parallel local commands; compressing only the last one
     // leaves large same-frame payloads untouched.
-    let mut headroom_retrieve_call_ids: HashSet<&str> = HashSet::new();
+    let mut legroom_retrieve_call_ids: HashSet<&str> = HashSet::new();
     for item in items {
         if item.get("type").and_then(Value::as_str) != Some("function_call") {
             continue;
         }
         let name = item.get("name").and_then(Value::as_str).unwrap_or("");
-        if name == "headroom_retrieve" || name.ends_with("__headroom_retrieve") {
+        if name == "legroom_retrieve" || name.ends_with("__legroom_retrieve") {
             if let Some(call_id) = item.get("call_id").and_then(Value::as_str) {
-                headroom_retrieve_call_ids.insert(call_id);
+                legroom_retrieve_call_ids.insert(call_id);
             }
         }
     }
@@ -2380,7 +2380,7 @@ pub fn compress_openai_responses_live_zone(
         match type_tag {
             "function_call_output" | "local_shell_call_output" | "apply_patch_call_output" => {
                 let call_id = item.get("call_id").and_then(Value::as_str);
-                if call_id.is_some_and(|id| headroom_retrieve_call_ids.contains(id)) {
+                if call_id.is_some_and(|id| legroom_retrieve_call_ids.contains(id)) {
                     continue;
                 }
                 output_candidates.push((idx, type_tag));
@@ -2886,7 +2886,7 @@ mod openai_responses_tests {
     }
 
     #[test]
-    fn headroom_retrieve_output_not_in_live_zone() {
+    fn legroom_retrieve_output_not_in_live_zone() {
         let retrieved = "retrieved original content ".repeat(100);
         let b = body(json!({
             "model": "gpt-4o",
@@ -2894,7 +2894,7 @@ mod openai_responses_tests {
                 {
                     "type": "function_call",
                     "call_id": "call_retrieve",
-                    "name": "mcp__headroom__headroom_retrieve",
+                    "name": "mcp__legroom__legroom_retrieve",
                     "arguments": "{}"
                 },
                 {

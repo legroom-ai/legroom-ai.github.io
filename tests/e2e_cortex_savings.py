@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Real end-to-end token-savings test for Cortex Code + Headroom.
+Real end-to-end token-savings test for Cortex Code + Legroom.
 
 Makes ACTUAL REST API calls to Snowflake Cortex (claude-sonnet-4-6) and
 measures the REAL token counts from the LLM's usage.prompt_tokens field.
@@ -9,7 +9,7 @@ Three test patterns:
 
   1. System-message context (Snowflake Cortex compatible)
      Large JSON blobs (query results, search results, schema) in the system
-     message → headroom's SmartCrusher compresses them.
+     message → legroom's SmartCrusher compresses them.
 
   2. OpenAI tool-result format  (if OPENAI_API_KEY is set)
      Standard role:"tool" messages compressed via SmartCrusher.
@@ -38,11 +38,11 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
-# ── Bootstrap: make headroom importable from the project venv ─────────────────
+# ── Bootstrap: make legroom importable from the project venv ─────────────────
 REPO_ROOT = Path(__file__).resolve().parent.parent
 _VENV_SITE = REPO_ROOT / ".venv" / "lib"
 try:
-    from headroom import compress as _hc_check  # noqa: F401
+    from legroom import compress as _hc_check  # noqa: F401
 except ImportError:
     sys.path.insert(0, str(REPO_ROOT))
     for _d in _VENV_SITE.glob("python*/site-packages"):
@@ -183,7 +183,7 @@ def _sf_call(messages: list[dict], token: str, host: str) -> dict:
         headers={
             "Authorization": f'Snowflake Token="{token}"',
             "Content-Type": "application/json",
-            "User-Agent": "headroom-bench/1.0",
+            "User-Agent": "legroom-bench/1.0",
         },
         method="POST",
     )
@@ -259,7 +259,7 @@ class R:
 
 
 def run(label: str, msgs: list[dict], call_fn, is_anthropic: bool = False) -> R:
-    from headroom import compress
+    from legroom import compress
 
     t0 = time.perf_counter()
     direct = call_fn(msgs)
@@ -312,7 +312,7 @@ def _show(r: R) -> None:
 def main() -> int:
     print()
     print("╔══════════════════════════════════════════════════════════╗")
-    print("║   Cortex Code × Headroom  —  Real REST API savings      ║")
+    print("║   Cortex Code × Legroom  —  Real REST API savings      ║")
     print("║   usage.prompt_tokens measured directly from the LLM    ║")
     print("╚══════════════════════════════════════════════════════════╝")
 

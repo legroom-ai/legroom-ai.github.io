@@ -4,9 +4,9 @@ import json
 
 import pytest
 
-from headroom.compression.detector import ContentType
-from headroom.compression.handlers.base import NoOpHandler
-from headroom.compression.universal import (
+from legroom.compression.detector import ContentType
+from legroom.compression.handlers.base import NoOpHandler
+from legroom.compression.universal import (
     CompressionResult,
     UniversalCompressor,
     UniversalCompressorConfig,

@@ -1,4 +1,4 @@
-from headroom.providers.codex.headers import drop_header, header_name
+from legroom.providers.codex.headers import drop_header, header_name
 
 
 def test_header_name_matches_case_insensitively() -> None:

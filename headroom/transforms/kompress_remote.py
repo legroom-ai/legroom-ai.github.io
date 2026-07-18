@@ -2,16 +2,16 @@
 
 Lets a sandboxed proxy — installed WITHOUT the ``[ml]`` extra (no torch/onnx) —
 still run Kompress by calling a remote endpoint over HTTP. The class mirrors
-:class:`~headroom.transforms.kompress_compressor.KompressCompressor`'s public
+:class:`~legroom.transforms.kompress_compressor.KompressCompressor`'s public
 surface (``is_ready`` / ``preload`` / ``ensure_background_load`` / ``compress``),
 so it is a drop-in at the ContentRouter seam.
 
 Only the model inference is remote. The CCR store + retrieval marker stay
 proxy-local (the endpoint is stateless, ``enable_ccr=False``), so
-``headroom_retrieve`` keeps working and original content never persists off-box.
+``legroom_retrieve`` keeps working and original content never persists off-box.
 
-Enabled by ``HEADROOM_KOMPRESS_ENDPOINT`` (+ optional
-``HEADROOM_KOMPRESS_ENDPOINT_TOKEN``) — see ``ContentRouter._get_kompress``.
+Enabled by ``LEGROOM_KOMPRESS_ENDPOINT`` (+ optional
+``LEGROOM_KOMPRESS_ENDPOINT_TOKEN``) — see ``ContentRouter._get_kompress``.
 """
 
 from __future__ import annotations

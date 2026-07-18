@@ -6,7 +6,7 @@
 //! The `input` array of a `/v1/responses` request carries items whose
 //! shapes diverge sharply by `type`. The Python proxy currently
 //! flattens these into Chat-Completions-shape via
-//! `headroom/proxy/responses_converter.py` — every new OpenAI item
+//! `legroom/proxy/responses_converter.py` — every new OpenAI item
 //! type (Codex `phase`, encrypted reasoning, MCP server-side tools,
 //! `apply_patch_call`, V4A diffs, …) silently breaks the converter
 //! until someone updates it.

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import Request
 
-from headroom.proxy.request_scope import normalize_request_path, normalize_scope_path
+from legroom.proxy.request_scope import normalize_request_path, normalize_scope_path
 
 
 def test_normalize_scope_path_updates_path_and_raw_path() -> None:

@@ -1,12 +1,12 @@
 /**
- * Example 02: withHeadroom — Vercel AI SDK One-Liner
+ * Example 02: withLegroom — Vercel AI SDK One-Liner
  *
  * Wrap any Vercel AI SDK model with automatic compression.
  * Zero config — just wrap and use.
  *
- * Run: npx tsx examples/02-with-headroom-vercel.ts
+ * Run: npx tsx examples/02-with-legroom-vercel.ts
  */
-import { withHeadroom } from "headroom-ai/vercel-ai";
+import { withLegroom } from "legroom-ai/vercel-ai";
 import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
 
@@ -23,7 +23,7 @@ const searchResults = Array.from({ length: 50 }, (_, i) => ({
 
 async function main() {
   // One-liner: wrap the model, compression happens automatically
-  const model = withHeadroom(openai("gpt-4o"));
+  const model = withLegroom(openai("gpt-4o"));
 
   const { text, usage } = await generateText({
     model,

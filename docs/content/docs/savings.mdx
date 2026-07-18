@@ -1,17 +1,17 @@
 ---
 title: Savings Tracking
-description: Durable, over-time compression savings — cost avoided plus Today / Last 7 days / All time and per-model / per-client breakdowns via `headroom savings`.
+description: Durable, over-time compression savings — cost avoided plus Today / Last 7 days / All time and per-model / per-client breakdowns via `legroom savings`.
 ---
 
-`headroom savings` shows how much Headroom has saved you over time — cost avoided, token counts, and breakdowns by model and client. Unlike `headroom_stats` (a single in-memory session snapshot), it reads a **durable ledger** that survives proxy and agent restarts.
+`legroom savings` shows how much Legroom has saved you over time — cost avoided, token counts, and breakdowns by model and client. Unlike `legroom_stats` (a single in-memory session snapshot), it reads a **durable ledger** that survives proxy and agent restarts.
 
 ## Usage
 
 ```bash
-headroom savings            # human-readable summary
-headroom savings --json     # machine-readable report
-headroom savings --days 30  # restrict the lookback/retention window
-headroom savings --reset    # delete the ledger and start fresh
+legroom savings            # human-readable summary
+legroom savings --json     # machine-readable report
+legroom savings --days 30  # restrict the lookback/retention window
+legroom savings --reset    # delete the ledger and start fresh
 ```
 
 ### Example
@@ -34,29 +34,29 @@ Savings by client:
 
 ## How it works
 
-Every compression appends one line to an **append-only, file-locked event ledger** at `~/.headroom/savings_events.jsonl`, and `headroom savings` aggregates it on read. This design is:
+Every compression appends one line to an **append-only, file-locked event ledger** at `~/.legroom/savings_events.jsonl`, and `legroom savings` aggregates it on read. This design is:
 
 - **Durable** — the ledger is on disk, so totals survive proxy and agent restarts.
-- **Accurate under concurrency** — Headroom's MCP server runs as multiple processes (the main agent plus each subagent), and the proxy is a separate process. An append-only, locked log lets every writer contribute without the lost-update races a single shared mutable file would suffer.
+- **Accurate under concurrency** — Legroom's MCP server runs as multiple processes (the main agent plus each subagent), and the proxy is a separate process. An append-only, locked log lets every writer contribute without the lost-update races a single shared mutable file would suffer.
 - **Self-pruning** — events older than the retention window (365 days by default) are dropped on read, and the file is compacted once it grows large.
 
 Both compression paths feed the same ledger:
 
-- **MCP tool** — each `headroom_compress` call records its client (the MCP client name) and tokens saved.
+- **MCP tool** — each `legroom_compress` call records its client (the MCP client name) and tokens saved.
 - **Proxy** — each request records its real upstream model, so cost is priced accurately.
 
 ### Cost basis
 
-Cost avoided is the dollar value of the saved **input** tokens. Headroom uses [litellm](https://headroom-docs.vercel.app/docs/litellm) list pricing where the model is known (proxy traffic). MCP-tool compressions don't know the agent's upstream model, so they record `model="unknown"` and fall back to a blended per-token rate rather than reporting `$0`.
+Cost avoided is the dollar value of the saved **input** tokens. Legroom uses [litellm](https://legroom-docs.vercel.app/docs/litellm) list pricing where the model is known (proxy traffic). MCP-tool compressions don't know the agent's upstream model, so they record `model="unknown"` and fall back to a blended per-token rate rather than reporting `$0`.
 
 ## Configuration
 
 | Variable | Purpose |
 | --- | --- |
-| `HEADROOM_SAVINGS_EVENTS_PATH` | Override the ledger location (default `~/.headroom/savings_events.jsonl`). |
-| `HEADROOM_MCP_CLIENT` | Override the client label recorded by the MCP tool path. |
-| `HEADROOM_MCP_MODEL` | Optional model hint so MCP-tool compressions price against a known model instead of the blended fallback. |
+| `LEGROOM_SAVINGS_EVENTS_PATH` | Override the ledger location (default `~/.legroom/savings_events.jsonl`). |
+| `LEGROOM_MCP_CLIENT` | Override the client label recorded by the MCP tool path. |
+| `LEGROOM_MCP_MODEL` | Optional model hint so MCP-tool compressions price against a known model instead of the blended fallback. |
 
 <Callout type="info">
-  `headroom savings` is distinct from `headroom_stats` (a per-session, in-memory snapshot) and from the proxy's live `/stats` endpoint (backed by `proxy_savings.json`). The savings ledger is the durable, cross-process source of truth.
+  `legroom savings` is distinct from `legroom_stats` (a per-session, in-memory snapshot) and from the proxy's live `/stats` endpoint (backed by `proxy_savings.json`). The savings ledger is the durable, cross-process source of truth.
 </Callout>

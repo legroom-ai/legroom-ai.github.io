@@ -12,8 +12,8 @@ use std::sync::Arc;
 
 use serde_json::{json, Value};
 
-use headroom_core::ccr::{CcrStore, InMemoryCcrStore};
-use headroom_core::transforms::smart_crusher::{
+use legroom_core::ccr::{CcrStore, InMemoryCcrStore};
+use legroom_core::transforms::smart_crusher::{
     SmartCrusher, SmartCrusherBuilder, SmartCrusherConfig,
 };
 
@@ -347,7 +347,7 @@ fn stringified_json_array_recurses_and_compacts() {
 #[test]
 fn document_walker_with_store_roundtrips_opaque_blob() {
     // Direct DocumentCompactor usage with the same store.
-    use headroom_core::transforms::smart_crusher::compaction::DocumentCompactor;
+    use legroom_core::transforms::smart_crusher::compaction::DocumentCompactor;
 
     let store: Arc<dyn CcrStore> = Arc::new(InMemoryCcrStore::new());
     let dc = DocumentCompactor::new().with_ccr_store(store.clone());

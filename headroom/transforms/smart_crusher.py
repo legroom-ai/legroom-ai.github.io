@@ -1,11 +1,11 @@
 """Smart JSON array crusher — Rust-backed via PyO3.
 
 The Python implementation has been retired (Stage 3c.1b, 2026-04-27).
-All array compression now goes through `headroom._core.SmartCrusher`
-(built from `crates/headroom-py`). Byte-equality of the two
+All array compression now goes through `legroom._core.SmartCrusher`
+(built from `crates/legroom-py`). Byte-equality of the two
 implementations was verified against 17 recorded fixtures
 (`tests/parity/fixtures/smart_crusher/`) before the Python source was
-removed; the Rust crate has its own coverage in `crates/headroom-core/`
+removed; the Rust crate has its own coverage in `crates/legroom-core/`
 (388 unit tests + property tests).
 
 This module retains the public surface — `SmartCrusherConfig`,
@@ -14,7 +14,7 @@ call sites keep working unchanged. The dataclasses are still pure
 Python because callers use `asdict()`, `__dict__`, and dataclass
 matching on them. Only the `SmartCrusher` class delegates to Rust.
 
-The `headroom._core` extension is a hard import: there is no Python
+The `legroom._core` extension is a hard import: there is no Python
 fallback. Build it locally with `scripts/build_rust_extension.sh`
 (wraps `maturin develop`) or install a prebuilt wheel.
 
@@ -63,7 +63,7 @@ logger = logging.getLogger(__name__)
 
 # Lossless-compaction renderers known to the Rust core — mirrors
 # `CompactionStage::SUPPORTED_FORMAT_NAMES` in
-# `crates/headroom-core/.../compaction/mod.rs`.
+# `crates/legroom-core/.../compaction/mod.rs`.
 _SUPPORTED_COMPACTION_FORMATS = ("csv-schema", "json", "markdown-kv")
 
 
@@ -200,7 +200,7 @@ class SmartCrusherConfig:
     lossless_only: bool = False
 
     # Compaction heuristics (mirror Rust CompactConfig; see
-    # crates/headroom-core/src/transforms/smart_crusher/compaction/compactor.rs).
+    # crates/legroom-core/src/transforms/smart_crusher/compaction/compactor.rs).
     # A field is "core" if present in at least this fraction of rows.
     compaction_core_field_fraction: float = 0.8
     # Below this fraction of core keys, treat the array as heterogeneous
@@ -240,7 +240,7 @@ class SmartCrusherConfig:
 
 
 class SmartCrusher(Transform):
-    """Rust-backed `SmartCrusher` (via PyO3 / `headroom._core`).
+    """Rust-backed `SmartCrusher` (via PyO3 / `legroom._core`).
 
     Same `__init__` and method shapes as the retired Python class —
     drop-in replacement. The `crush()` and `_smart_crush_content()`
@@ -267,10 +267,10 @@ class SmartCrusher(Transform):
         # caller must build it (scripts/build_rust_extension.sh) or
         # install a prebuilt one. Failing loudly is better than silent
         # degradation; see feedback memory `feedback_no_silent_fallbacks.md`.
-        from headroom._core import (
+        from legroom._core import (
             SmartCrusher as _RustSmartCrusher,
         )
-        from headroom._core import (
+        from legroom._core import (
             SmartCrusherConfig as _RustSmartCrusherConfig,
         )
 
@@ -279,7 +279,7 @@ class SmartCrusher(Transform):
         self._with_compaction = with_compaction
 
         # Audit-safe mode (#1705). getattr fallbacks: callers may pass
-        # the SDK-side `headroom.config.SmartCrusherConfig`, which
+        # the SDK-side `legroom.config.SmartCrusherConfig`, which
         # doesn't carry these fields — defaults to disabled, the safe
         # choice (no behavior change for callers who don't opt in).
         self._audit_safe = bool(getattr(cfg, "audit_safe", False))
@@ -293,13 +293,13 @@ class SmartCrusher(Transform):
         # over the config field, so callers can flip it without rebuilding
         # a whole config. `crush(..., lossless_only=...)` overrides again
         # per call. getattr fallback: callers may pass the SDK-side
-        # `headroom.config.SmartCrusherConfig`, which also carries it.
+        # `legroom.config.SmartCrusherConfig`, which also carries it.
         self._lossless_only = (
             bool(getattr(cfg, "lossless_only", False))
             if lossless_only is None
             else bool(lossless_only)
         )
-        # `observer`: see `headroom.transforms.observability`. The
+        # `observer`: see `legroom.transforms.observability`. The
         # legacy proxy pipeline uses SmartCrusher.apply() directly
         # (no ContentRouter); without an observer here, those
         # compressions would be invisible to per-strategy metrics —
@@ -307,7 +307,7 @@ class SmartCrusher(Transform):
         self._observer = observer
 
         # CCR config is preserved on `self` for callers that read it
-        # back (`headroom.proxy.server` does). Both `enabled=False` and
+        # back (`legroom.proxy.server` does). Both `enabled=False` and
         # `inject_retrieval_marker=False` collapse to the Rust crusher's
         # `enable_ccr_marker=False` gate — when either is off, the
         # lossy row-drop path skips marker emission AND the CCR store
@@ -399,7 +399,7 @@ class SmartCrusher(Transform):
             ),
             "lossless_only": self._lossless_only,
             # getattr fallbacks: callers may pass the structurally-similar
-            # `headroom.config.SmartCrusherConfig` (MCP server, SDK) or a
+            # `legroom.config.SmartCrusherConfig` (MCP server, SDK) or a
             # pre-existing config object that predates these fields.
             "lossless_min_savings_ratio": getattr(cfg, "lossless_min_savings_ratio", 0.15),
             "compaction_core_field_fraction": getattr(cfg, "compaction_core_field_fraction", 0.8),
@@ -422,10 +422,10 @@ class SmartCrusher(Transform):
         # `compaction_format` picks the lossless renderer:
         # "csv-schema" (default), "json", or "markdown-kv" (opt-in
         # trade of tokens for model read accuracy). Falls back to the
-        # HEADROOM_COMPACTION_FORMAT env var when the kwarg is None.
+        # LEGROOM_COMPACTION_FORMAT env var when the kwarg is None.
         # Ignored when with_compaction=False.
         resolved_format = compaction_format or os.environ.get(
-            "HEADROOM_COMPACTION_FORMAT", "csv-schema"
+            "LEGROOM_COMPACTION_FORMAT", "csv-schema"
         )
         # Validate even when with_compaction=False: an explicit bogus
         # format (kwarg or env var) is a misconfiguration that should be
@@ -1145,7 +1145,7 @@ class SmartCrusher(Transform):
             logger.debug("CCR mirror: cannot get compression_store (%s)", e)
             return
         # The TTL on the Python store defaults to 30 minutes — same as
-        # the Rust store's `DEFAULT_TTL` (see crates/headroom-core/src/
+        # the Rust store's `DEFAULT_TTL` (see crates/legroom-core/src/
         # ccr/mod.rs). No need to override.
         try:
             store.store(
@@ -1211,7 +1211,7 @@ class SmartCrusher(Transform):
 
     def _notify_observer(self, original_tokens: int, compressed_tokens: int) -> None:
         """Forward a compression event to the configured
-        `CompressionObserver` (see `headroom.transforms.observability`).
+        `CompressionObserver` (see `legroom.transforms.observability`).
         No-op when no observer is set; swallows observer exceptions at
         debug level so a buggy metrics impl doesn't break the
         compression that just succeeded.
@@ -1275,7 +1275,7 @@ class SmartCrusher(Transform):
 
             # OpenAI-style: top-level role=tool with string content.
             if msg.get("role") == "tool":
-                # #1077: never re-compress headroom_retrieve results — they ARE
+                # #1077: never re-compress legroom_retrieve results — they ARE
                 # already-retrieved CCR content; compressing them again creates an
                 # unresolvable retrieval loop.
                 # ponytail: ceiling is tool_call_id lookup; if the id is missing we
@@ -1306,7 +1306,7 @@ class SmartCrusher(Transform):
                 for i, block in enumerate(content):
                     if not isinstance(block, dict) or block.get("type") != "tool_result":
                         continue
-                    # #1077: skip headroom_retrieve results — compressing them
+                    # #1077: skip legroom_retrieve results — compressing them
                     # would produce a new <<ccr:hash>> marker the agent cannot
                     # redeem (infinite retrieval loop).
                     # ponytail: ceiling is tool_use_id lookup; unknown ids pass through.

@@ -1,4 +1,4 @@
-"""Canonical Headroom pipeline lifecycle and extension contracts."""
+"""Canonical Legroom pipeline lifecycle and extension contracts."""
 
 from __future__ import annotations
 
@@ -10,11 +10,11 @@ from typing import Any, Protocol
 
 log = logging.getLogger(__name__)
 
-ENTRY_POINT_GROUP = "headroom.pipeline_extension"
+ENTRY_POINT_GROUP = "legroom.pipeline_extension"
 
 
 class PipelineStage(str, Enum):
-    """Stable lifecycle stages for the canonical Headroom pipeline."""
+    """Stable lifecycle stages for the canonical Legroom pipeline."""
 
     SETUP = "setup"
     PRE_START = "pre_start"

@@ -7,7 +7,7 @@ Instead of auto-injecting memories, this wrapper:
 
 Usage:
     from openai import OpenAI
-    from headroom.memory import with_memory_tools, LocalBackend
+    from legroom.memory import with_memory_tools, LocalBackend
 
     client = with_memory_tools(
         OpenAI(),
@@ -45,9 +45,9 @@ import json
 import logging
 from typing import Any, TypeVar
 
-from headroom.memory.extraction import EXTRACTION_SYSTEM_PROMPT
-from headroom.memory.system import MemoryBackend, MemorySystem
-from headroom.memory.tools import get_memory_tools, get_memory_tools_optimized, get_tool_names
+from legroom.memory.extraction import EXTRACTION_SYSTEM_PROMPT
+from legroom.memory.system import MemoryBackend, MemorySystem
+from legroom.memory.tools import get_memory_tools, get_memory_tools_optimized, get_tool_names
 
 logger = logging.getLogger(__name__)
 
@@ -537,8 +537,8 @@ def with_memory_tools(
 
     Example:
         from openai import OpenAI
-        from headroom.memory import with_memory_tools
-        from headroom.memory.backends import LocalBackend
+        from legroom.memory import with_memory_tools
+        from legroom.memory.backends import LocalBackend
 
         # Standard mode - basic memory tools
         client = with_memory_tools(

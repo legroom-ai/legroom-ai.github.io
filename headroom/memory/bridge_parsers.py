@@ -1,7 +1,7 @@
 """Markdown memory file parsers for various foundational model formats.
 
 Parses markdown files into structured sections that can be imported into
-Headroom's semantic memory system. Supports:
+Legroom's semantic memory system. Supports:
 - Claude Code MEMORY.md format (## headers + bullet facts)
 - ChatGPT flat fact list (one fact per line)
 - Generic structured markdown (any # headers + content)
@@ -268,8 +268,8 @@ def parse_claude_code_memory(content: str, file_path: str = "") -> ParsedFile:
         # Project Memory
 
         ## Project Overview
-        - **Headroom**: Context optimization layer
-        - **Repos**: OSS at ~/claude-projects/headroom
+        - **Legroom**: Context optimization layer
+        - **Repos**: OSS at ~/claude-projects/legroom
 
         ## Key Architecture
         - 186 Python files, 34 packages

@@ -1,4 +1,4 @@
-"""OTEL tracing helpers for Headroom and Langfuse."""
+"""OTEL tracing helpers for Legroom and Langfuse."""
 
 from __future__ import annotations
 
@@ -11,27 +11,27 @@ from typing import Any
 
 from opentelemetry import trace
 
-from .metrics import _headroom_version, _parse_bool, _parse_key_value_pairs
+from .metrics import _legroom_version, _parse_bool, _parse_key_value_pairs
 
 logger = logging.getLogger(__name__)
 
-_SCOPE_NAME = "headroom"
+_SCOPE_NAME = "legroom"
 
 _tracing_lock = Lock()
-_global_tracer: HeadroomTracer | None = None
+_global_tracer: LegroomTracer | None = None
 _owned_tracer_provider: Any | None = None
 _owned_langfuse_config: LangfuseTracingConfig | None = None
 
 
 @dataclass(slots=True)
 class LangfuseTracingConfig:
-    """Configuration for Headroom-managed Langfuse OTLP trace export."""
+    """Configuration for Legroom-managed Langfuse OTLP trace export."""
 
     enabled: bool = False
     public_key: str = field(default="", repr=False)
     secret_key: str = field(default="", repr=False)
     base_url: str = "https://cloud.langfuse.com"
-    service_name: str = "headroom"
+    service_name: str = "legroom"
     resource_attributes: dict[str, str] = field(default_factory=dict)
 
     @property
@@ -51,13 +51,13 @@ class LangfuseTracingConfig:
         }
 
     @classmethod
-    def from_env(cls, *, default_service_name: str = "headroom") -> LangfuseTracingConfig:
+    def from_env(cls, *, default_service_name: str = "legroom") -> LangfuseTracingConfig:
         public_key = os.environ.get("LANGFUSE_PUBLIC_KEY", "").strip()
         secret_key = os.environ.get("LANGFUSE_SECRET_KEY", "").strip()
 
         return cls(
             enabled=_parse_bool(
-                os.environ.get("HEADROOM_LANGFUSE_ENABLED"),
+                os.environ.get("LEGROOM_LANGFUSE_ENABLED"),
                 default=False,
             ),
             public_key=public_key,
@@ -68,11 +68,11 @@ class LangfuseTracingConfig:
                 or "https://cloud.langfuse.com"
             ).strip(),
             service_name=os.environ.get(
-                "HEADROOM_LANGFUSE_SERVICE_NAME", default_service_name
+                "LEGROOM_LANGFUSE_SERVICE_NAME", default_service_name
             ).strip()
             or default_service_name,
             resource_attributes=_parse_key_value_pairs(
-                os.environ.get("HEADROOM_LANGFUSE_RESOURCE_ATTRIBUTES")
+                os.environ.get("LEGROOM_LANGFUSE_RESOURCE_ATTRIBUTES")
             ),
         )
 
@@ -89,14 +89,14 @@ class LangfuseTracingConfig:
         }
 
 
-class HeadroomTracer:
-    """Tracer facade used by shared Headroom compression paths."""
+class LegroomTracer:
+    """Tracer facade used by shared Legroom compression paths."""
 
     def __init__(self, tracer_provider: Any | None = None):
         if tracer_provider is None:
-            self._tracer = trace.get_tracer(_SCOPE_NAME, _headroom_version())
+            self._tracer = trace.get_tracer(_SCOPE_NAME, _legroom_version())
         else:
-            self._tracer = tracer_provider.get_tracer(_SCOPE_NAME, _headroom_version())
+            self._tracer = tracer_provider.get_tracer(_SCOPE_NAME, _legroom_version())
 
     def start_as_current_span(
         self,
@@ -112,39 +112,39 @@ class HeadroomTracer:
         )
 
 
-def get_headroom_tracer() -> HeadroomTracer:
+def get_legroom_tracer() -> LegroomTracer:
     global _global_tracer
 
     if _global_tracer is None:
         with _tracing_lock:
             if _global_tracer is None:
-                _global_tracer = HeadroomTracer()
+                _global_tracer = LegroomTracer()
 
     return _global_tracer
 
 
-def set_headroom_tracer(headroom_tracer: HeadroomTracer) -> HeadroomTracer:
+def set_legroom_tracer(legroom_tracer: LegroomTracer) -> LegroomTracer:
     global _global_tracer
     with _tracing_lock:
-        _global_tracer = headroom_tracer
-    return headroom_tracer
+        _global_tracer = legroom_tracer
+    return legroom_tracer
 
 
 def configure_langfuse_tracing(
     config: LangfuseTracingConfig | None = None,
-) -> HeadroomTracer:
+) -> LegroomTracer:
     global _global_tracer
     global _owned_tracer_provider
     global _owned_langfuse_config
 
     resolved = config or LangfuseTracingConfig()
     if not resolved.enabled:
-        return get_headroom_tracer()
+        return get_legroom_tracer()
     if not resolved.is_complete():
         logger.warning(
             "Langfuse tracing is enabled but LANGFUSE_PUBLIC_KEY/LANGFUSE_SECRET_KEY are missing."
         )
-        return get_headroom_tracer()
+        return get_legroom_tracer()
 
     try:
         from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
@@ -154,14 +154,14 @@ def configure_langfuse_tracing(
     except ImportError:
         logger.warning(
             "OpenTelemetry SDK/exporter packages are not installed. "
-            "Install headroom-ai[otel] to enable Langfuse OTLP tracing."
+            "Install legroom-ai[otel] to enable Langfuse OTLP tracing."
         )
-        return get_headroom_tracer()
+        return get_legroom_tracer()
 
     resource = Resource.create(
         {
             SERVICE_NAME: resolved.service_name,
-            SERVICE_VERSION: _headroom_version(),
+            SERVICE_VERSION: _legroom_version(),
             **resolved.resource_attributes,
         }
     )
@@ -174,14 +174,14 @@ def configure_langfuse_tracing(
             )
         )
     )
-    headroom_tracer = HeadroomTracer(tracer_provider=tracer_provider)
+    legroom_tracer = LegroomTracer(tracer_provider=tracer_provider)
 
     previous_provider = None
     with _tracing_lock:
         previous_provider = _owned_tracer_provider
         _owned_tracer_provider = tracer_provider
         _owned_langfuse_config = resolved
-        _global_tracer = headroom_tracer
+        _global_tracer = legroom_tracer
 
     if previous_provider is not None:
         try:
@@ -189,7 +189,7 @@ def configure_langfuse_tracing(
         except Exception:
             logger.debug("Failed to shut down previous Langfuse tracer provider", exc_info=True)
 
-    return headroom_tracer
+    return legroom_tracer
 
 
 def get_langfuse_tracing_status() -> dict[str, Any]:
@@ -199,7 +199,7 @@ def get_langfuse_tracing_status() -> dict[str, Any]:
     if not any(
         os.environ.get(name)
         for name in (
-            "HEADROOM_LANGFUSE_ENABLED",
+            "LEGROOM_LANGFUSE_ENABLED",
             "LANGFUSE_PUBLIC_KEY",
             "LANGFUSE_SECRET_KEY",
             "LANGFUSE_BASE_URL",
@@ -212,10 +212,10 @@ def get_langfuse_tracing_status() -> dict[str, Any]:
             "base_url": None,
             "endpoint": None,
         }
-    return LangfuseTracingConfig.from_env(default_service_name="headroom-proxy").status()
+    return LangfuseTracingConfig.from_env(default_service_name="legroom-proxy").status()
 
 
-def shutdown_headroom_tracing() -> None:
+def shutdown_legroom_tracing() -> None:
     global _global_tracer
     global _owned_tracer_provider
     global _owned_langfuse_config
@@ -234,5 +234,5 @@ def shutdown_headroom_tracing() -> None:
             logger.debug("Failed to shut down Langfuse tracer provider", exc_info=True)
 
 
-def reset_headroom_tracing() -> None:
-    shutdown_headroom_tracing()
+def reset_legroom_tracing() -> None:
+    shutdown_legroom_tracing()

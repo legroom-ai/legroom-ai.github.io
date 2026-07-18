@@ -7,12 +7,12 @@ Handlers don't compress - they only identify structure. The actual
 compression is done by Kompress on the non-structural parts.
 """
 
-from headroom.compression.handlers.base import (
+from legroom.compression.handlers.base import (
     HandlerResult,
     StructureHandler,
 )
-from headroom.compression.handlers.code_handler import CodeStructureHandler
-from headroom.compression.handlers.json_handler import JSONStructureHandler
+from legroom.compression.handlers.code_handler import CodeStructureHandler
+from legroom.compression.handlers.json_handler import JSONStructureHandler
 
 __all__ = [
     "StructureHandler",

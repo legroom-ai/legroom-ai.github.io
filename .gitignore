@@ -206,10 +206,10 @@ benchmark_results/
 # DeepEval cache
 .deepeval/
 
-# Headroom specific
-.headroom/
-headroom.db
-headroom_*.db
+# Legroom specific
+.legroom/
+legroom.db
+legroom_*.db
 *.jsonl
 !tests/fixtures/*.jsonl
 docker/differential-network-capture/captures/
@@ -244,7 +244,7 @@ CLAUDE.md
 .vitals/
 
 # Separate private repos — never commit here
-headroom-managed/
+legroom-managed/
 
 # Local act testing (never commit test tokens)
 /.env.act
@@ -257,12 +257,12 @@ headroom-managed/
 uv.lock
 
 # Rust extension `.so` symlinks placed by `scripts/build_rust_extension.sh`
-# into the `headroom/` package dir for local development. The real binary
-# lives in `crates/headroom-py/python/headroom/`; this is the dev overlay
-# that lets `import headroom._core` resolve when the source `headroom/`
+# into the `legroom/` package dir for local development. The real binary
+# lives in `crates/legroom-py/python/legroom/`; this is the dev overlay
+# that lets `import legroom._core` resolve when the source `legroom/`
 # package shadows the maturin overlay on sys.path.
-/headroom/_core.*.so
-/headroom/_core.so
+/legroom/_core.*.so
+/legroom/_core.so
 .tokensave
 
 .codebase-memory/

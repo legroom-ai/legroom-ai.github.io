@@ -12,7 +12,7 @@ from .main import main
 
 @main.group("capture")
 def capture_group() -> None:
-    """Capture and compare network traffic for Headroom investigations."""
+    """Capture and compare network traffic for Legroom investigations."""
 
 
 @capture_group.command("network-diff")
@@ -24,11 +24,11 @@ def capture_group() -> None:
     help="JSONL capture from the direct Claude Code lane.",
 )
 @click.option(
-    "--headroom",
-    "headroom_path",
+    "--legroom",
+    "legroom_path",
     required=True,
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
-    help="JSONL capture from the Headroom-proxied Claude Code lane.",
+    help="JSONL capture from the Legroom-proxied Claude Code lane.",
 )
 @click.option(
     "--output",
@@ -50,22 +50,22 @@ def capture_group() -> None:
 )
 def network_diff(
     direct_path: Path,
-    headroom_path: Path,
+    legroom_path: Path,
     markdown_output: Path | None,
     json_output: Path | None,
     pair_by: str,
 ) -> None:
-    """Compare direct and Headroom MITM capture JSONL files."""
+    """Compare direct and Legroom MITM capture JSONL files."""
 
-    from headroom.capture.network_diff import (
+    from legroom.capture.network_diff import (
         compare_captures,
         load_capture_file,
         render_markdown_report,
     )
 
     direct = load_capture_file(direct_path, fallback_lane="direct")
-    headroom = load_capture_file(headroom_path, fallback_lane="headroom")
-    diff = compare_captures(direct, headroom, pair_by=pair_by)
+    legroom = load_capture_file(legroom_path, fallback_lane="legroom")
+    diff = compare_captures(direct, legroom, pair_by=pair_by)
     markdown = render_markdown_report(diff)
 
     if markdown_output:

@@ -1,6 +1,6 @@
 """``MemoryRanker``: pluggable re-ranker for memory candidates.
 
-Pre-this-PR Headroom ranked memory candidates by pure cosine
+Pre-this-PR Legroom ranked memory candidates by pure cosine
 similarity. Every other memory system we surveyed
 (Letta / Mem0 / Cognee / Supermemory) re-ranks beyond cosine — recency,
 source weight, access count, and decay are table-stakes for not
@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Protocol
 
-from headroom.proxy.memory_rank_policy import (
+from legroom.proxy.memory_rank_policy import (
     boost_memory_score,
     memory_recency_factor,
     parse_memory_created_at,

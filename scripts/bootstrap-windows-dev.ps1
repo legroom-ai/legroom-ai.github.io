@@ -34,8 +34,8 @@ function Resolve-Python {
         return (Resolve-Path -LiteralPath $Requested).Path
     }
 
-    if ($env:HEADROOM_DEV_PYTHON -and (Test-Path -LiteralPath $env:HEADROOM_DEV_PYTHON)) {
-        return (Resolve-Path -LiteralPath $env:HEADROOM_DEV_PYTHON).Path
+    if ($env:LEGROOM_DEV_PYTHON -and (Test-Path -LiteralPath $env:LEGROOM_DEV_PYTHON)) {
+        return (Resolve-Path -LiteralPath $env:LEGROOM_DEV_PYTHON).Path
     }
 
     $repoVenv = Join-Path $script:RepoRoot ".venv\Scripts\python.exe"
@@ -144,9 +144,9 @@ Write-Step "Installing Python build/dev tools"
     openpyxl
 
 Write-Step "Building native extension with maturin ci profile"
-& $pythonExe -m maturin develop -m "crates\headroom-py\Cargo.toml" --profile ci
+& $pythonExe -m maturin develop -m "crates\legroom-py\Cargo.toml" --profile ci
 
-Write-Step "Installing runtime extras without rebuilding headroom-ai"
+Write-Step "Installing runtime extras without rebuilding legroom-ai"
 & $pythonExe -m pip install --upgrade `
     "tree-sitter-language-pack>=0.10.0,<1.0" `
     anthropic ollama langchain-ollama hnswlib `
@@ -160,8 +160,8 @@ if (-not $SkipDocs) {
 
 if (-not $SkipSmoke) {
     Write-Step "Smoke checks"
-    & $pythonExe -c "import importlib.util, headroom; assert importlib.util.find_spec('headroom._core'); print(headroom.__version__)"
-    & $pythonExe -m headroom.cli --version
+    & $pythonExe -c "import importlib.util, legroom; assert importlib.util.find_spec('legroom._core'); print(legroom.__version__)"
+    & $pythonExe -m legroom.cli --version
     & $pythonExe -m pip check
     Push-Location (Join-Path $script:RepoRoot "sdk\typescript")
     try { npm.cmd run build } finally { Pop-Location }
@@ -170,4 +170,4 @@ if (-not $SkipSmoke) {
 }
 
 Write-Host ""
-Write-Host "Headroom Windows dev environment is ready."
+Write-Host "Legroom Windows dev environment is ready."

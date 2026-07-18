@@ -6,7 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
 from fastapi.testclient import TestClient
 
-from headroom.providers.openai_images import (
+from legroom.providers.openai_images import (
     OPENAI_IMAGE_ENDPOINTS,
     OpenAIImageEndpoint,
     codex_image_subpath,
@@ -40,7 +40,7 @@ def test_handle_openai_image_endpoint_returns_codex_response_when_present(monkey
         return JSONResponse({"client": client, "sub_path": sub_path})
 
     monkeypatch.setattr(
-        "headroom.providers.openai_images.handle_chatgpt_codex_images",
+        "legroom.providers.openai_images.handle_chatgpt_codex_images",
         fake_codex_images,
     )
     proxy = type("Proxy", (), {"http_client_h1": "h1", "http_client": "h2"})()
@@ -81,7 +81,7 @@ def test_handle_openai_image_endpoint_falls_back_to_openai_passthrough(monkeypat
             return JSONResponse({"provider": provider_name, "sub_path": sub_path})
 
     monkeypatch.setattr(
-        "headroom.providers.openai_images.handle_chatgpt_codex_images",
+        "legroom.providers.openai_images.handle_chatgpt_codex_images",
         fake_codex_images,
     )
     app = FastAPI()

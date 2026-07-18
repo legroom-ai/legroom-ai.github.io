@@ -7,13 +7,13 @@ request has come through the proxy recently.
 
 Architecture:
 - Single asyncio.Task polling loop (started in start(), stopped via asyncio.Event)
-- Thread-safe state updates via threading.Lock (consistent with headroom patterns)
+- Thread-safe state updates via threading.Lock (consistent with legroom patterns)
 - Atomic JSON persistence via tempfile + os.replace()
 - Module-level singleton via get_subscription_tracker() / configure_subscription_tracker()
 
 Also reads Claude transcript JSONL files (via session_tracking module) to provide
 token breakdowns per window that enable:
-  - Headroom efficiency metrics (tokens saved = raw - what proxy sent)
+  - Legroom efficiency metrics (tokens saved = raw - what proxy sent)
   - Surge pricing detection (API utilization vs expected from weighted tokens)
   - Cache miss detection (low cache_reads despite high input tokens)
 """
@@ -31,11 +31,11 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Any, cast
 
-from headroom import paths as _paths
-from headroom.subscription.base import QuotaTracker
-from headroom.subscription.client import SubscriptionClient
-from headroom.subscription.models import (
-    HeadroomContribution,
+from legroom import paths as _paths
+from legroom.subscription.base import QuotaTracker
+from legroom.subscription.client import SubscriptionClient
+from legroom.subscription.models import (
+    LegroomContribution,
     RateLimitWindow,
     SubscriptionSnapshot,
     SubscriptionState,
@@ -49,20 +49,20 @@ logger = logging.getLogger(__name__)
 
 _DEFAULT_POLL_INTERVAL_S = 300
 _DEFAULT_ACTIVE_WINDOW_S = 60
-_PERSIST_FILE_ENV = _paths.HEADROOM_SUBSCRIPTION_STATE_PATH_ENV
-_DEFAULT_PERSIST_DIR = ".headroom"
+_PERSIST_FILE_ENV = _paths.LEGROOM_SUBSCRIPTION_STATE_PATH_ENV
+_DEFAULT_PERSIST_DIR = ".legroom"
 _DEFAULT_PERSIST_FILE = "subscription_state.json"
 
 # PR-G2 (Realignment) — RTK savings wiring.
 #
 # Operators can disable the RTK polling from inside ``update_contribution``
-# without uninstalling the binary or unsetting ``HEADROOM_CONTEXT_TOOL``.
+# without uninstalling the binary or unsetting ``LEGROOM_CONTEXT_TOOL``.
 # Used for diagnostics and for environments where RTK is intentionally
-# excluded from headroom accounting (e.g. shadow tests).
+# excluded from legroom accounting (e.g. shadow tests).
 #
 # Loud / configurable / no silent fallback: unknown values raise loudly via
 # the parser below — they do not silently default to ``enabled``.
-_RTK_WIRING_ENV = "HEADROOM_RTK_WIRING"
+_RTK_WIRING_ENV = "LEGROOM_RTK_WIRING"
 _RTK_WIRING_DEFAULT = "enabled"
 _RTK_WIRING_ALLOWED = ("enabled", "disabled")
 
@@ -75,15 +75,15 @@ _RTK_WIRING_ALLOWED = ("enabled", "disabled")
 # dashboard hitting a non-owner worker would see drifted values.
 #
 # The owner-election strategy mirrors the beacon's file-lock pattern in
-# ``headroom/proxy/server.py``: a non-blocking ``fcntl.flock`` on
-# ``HEADROOM_RTK_POLL_LOCK`` (default under the workspace dir). Only the
+# ``legroom/proxy/server.py``: a non-blocking ``fcntl.flock`` on
+# ``LEGROOM_RTK_POLL_LOCK`` (default under the workspace dir). Only the
 # lock holder polls; non-owners return 0 from ``_poll_rtk_delta`` and
 # delegate to whatever the owner writes to the shared state file.
 #
 # Loud / no silent fallback: when ``fcntl`` is unavailable (Windows), every
 # worker polls — but the explicit ``WindowsNoLockMode`` log line surfaces
 # the choice so operators see it in startup logs.
-_RTK_POLL_LOCK_ENV = "HEADROOM_RTK_POLL_LOCK"
+_RTK_POLL_LOCK_ENV = "LEGROOM_RTK_POLL_LOCK"
 
 
 def _rtk_wiring_mode() -> str:
@@ -102,7 +102,7 @@ def _rtk_wiring_mode() -> str:
 def _validate_rtk_env_at_startup() -> None:
     """Validate RTK env vars eagerly at proxy startup.
 
-    Raises ``ValueError`` loudly if ``HEADROOM_RTK_WIRING`` is set to an
+    Raises ``ValueError`` loudly if ``LEGROOM_RTK_WIRING`` is set to an
     invalid value. PR-G2 remediation (H1): previously a typo at startup
     would silently default to enabled but get swallowed at every
     ``update_contribution`` call — fail loudly here instead.
@@ -149,8 +149,8 @@ def _get_persist_path() -> Path:
 class SubscriptionTracker(QuotaTracker):
     """Background tracker for Anthropic Claude Code subscription windows.
 
-    Implements :class:`~headroom.subscription.base.QuotaTracker` so it can
-    be registered with :func:`~headroom.subscription.base.get_quota_registry`
+    Implements :class:`~legroom.subscription.base.QuotaTracker` so it can
+    be registered with :func:`~legroom.subscription.base.get_quota_registry`
     alongside the Codex and Copilot trackers.
 
     Args:
@@ -189,14 +189,14 @@ class SubscriptionTracker(QuotaTracker):
         # PR-G2 (Realignment) — most recent session-incremental ``tokens_saved``
         # observed in ``_get_rtk_stats()['session']['tokens_saved']``. This
         # field is de-baselined by the helper (see
-        # :func:`~headroom.proxy.helpers._get_context_tool_stats`) so it
+        # :func:`~legroom.proxy.helpers._get_context_tool_stats`) so it
         # already represents savings accumulated since the proxy session
         # baseline was pinned at startup.
         #
         # PR-G2 remediation (C1): previously we read
         # ``lifetime_tokens_saved`` (the raw monotonic counter from
         # ``rtk gain --project``), which on the very first poll emitted the
-        # entire pre-Headroom RTK history as one fake delta. Switching to
+        # entire pre-Legroom RTK history as one fake delta. Switching to
         # the session-incremental field dissolves both the first-poll
         # phantom and the post-restart phantom (the helper rebaselines
         # session counters at every proxy startup, so a fresh process sees
@@ -296,13 +296,13 @@ class SubscriptionTracker(QuotaTracker):
         compression_savings_usd: float = 0.0,
         cache_savings_usd: float = 0.0,
     ) -> None:
-        """Update headroom contribution counters for the current session window.
+        """Update legroom contribution counters for the current session window.
 
         Called after each proxy request completes with the actual token deltas.
 
         PR-G2 (Realignment) — ``tokens_saved_rtk`` is now sourced from RTK's
         own stats endpoint (``rtk gain --format json`` via
-        :func:`headroom.proxy.helpers._get_rtk_stats`) when the caller does
+        :func:`legroom.proxy.helpers._get_rtk_stats`) when the caller does
         not pass an explicit value. The tracker computes the delta against
         the last per-session ``tokens_saved`` it observed and feeds only the
         delta into the contribution counter.
@@ -311,7 +311,7 @@ class SubscriptionTracker(QuotaTracker):
         ``session.tokens_saved`` field of the helper payload, NOT the raw
         ``lifetime_tokens_saved`` counter. The helper de-baselines per
         proxy session, so the first poll after process startup correctly
-        reads 0 instead of the entire pre-Headroom RTK history.
+        reads 0 instead of the entire pre-Legroom RTK history.
 
         Args:
             tokens_saved_cli_filtering: Explicit per-call CLI-filtering
@@ -349,13 +349,13 @@ class SubscriptionTracker(QuotaTracker):
         """Return the delta of the session-scoped RTK ``tokens_saved`` since last poll.
 
         Implementation of PR-G2 data-plane wiring. Calls
-        :func:`headroom.proxy.helpers._get_rtk_stats` and reads the
+        :func:`legroom.proxy.helpers._get_rtk_stats` and reads the
         session-incremental ``session.tokens_saved`` field (de-baselined per
         proxy session by the helper), then diffs against
         ``self._last_rtk_tokens_saved``.
 
         Returns ``0`` (never negative) when:
-        - ``HEADROOM_RTK_WIRING=disabled`` — operator opt-out.
+        - ``LEGROOM_RTK_WIRING=disabled`` — operator opt-out.
         - ``_get_rtk_stats()`` returns ``None`` — RTK not selected, or the
           stat read failed this poll ("no data"); explicit zero contribution
           is the right answer and the high-water mark is preserved.
@@ -369,7 +369,7 @@ class SubscriptionTracker(QuotaTracker):
         Otherwise advances ``self._last_rtk_tokens_saved`` to the new
         session total and returns the positive delta.
 
-        PR-G2 remediation (H1): ``HEADROOM_RTK_WIRING`` is now validated at
+        PR-G2 remediation (H1): ``LEGROOM_RTK_WIRING`` is now validated at
         startup via :func:`_validate_rtk_env_at_startup`; an invalid value
         raises at proxy boot rather than being silently swallowed here.
         We still catch + structured-log per-call as a defence-in-depth so
@@ -400,7 +400,7 @@ class SubscriptionTracker(QuotaTracker):
         try:
             # Local import keeps the tracker module decoupled from the proxy
             # helper at import time (helpers.py imports many heavy deps).
-            from headroom.proxy.helpers import _get_rtk_stats
+            from legroom.proxy.helpers import _get_rtk_stats
         except Exception as exc:  # pragma: no cover — defensive
             logger.warning(
                 "event=subscription_rtk_helper_import_failed error=%s",
@@ -427,7 +427,7 @@ class SubscriptionTracker(QuotaTracker):
         # PR-G2 remediation (C1): read the SESSION-incremental field, not
         # the raw lifetime counter. The helper de-baselines per proxy
         # session at startup, so ``session.tokens_saved`` already excludes
-        # the pre-Headroom RTK history. Falls back to the top-level
+        # the pre-Legroom RTK history. Falls back to the top-level
         # ``tokens_saved`` (which is also session-scoped in the canonical
         # payload; see ``_get_context_tool_stats``) and finally to 0 for
         # not-installed zero payloads (failed reads arrive as ``None`` and
@@ -478,7 +478,7 @@ class SubscriptionTracker(QuotaTracker):
         :meth:`stop`.
 
         Mirrors the beacon's ``_try_acquire_beacon_lock`` pattern in
-        ``headroom/proxy/server.py`` (fcntl.flock, LOCK_EX | LOCK_NB).
+        ``legroom/proxy/server.py`` (fcntl.flock, LOCK_EX | LOCK_NB).
         """
         if self._rtk_poll_owner is not None:
             return self._rtk_poll_owner
@@ -651,7 +651,7 @@ class SubscriptionTracker(QuotaTracker):
         if now < window.resets_at:
             return None
         try:
-            from headroom.subscription import session_tracking
+            from legroom.subscription import session_tracking
 
             tokens = session_tracking.compute_window_tokens(
                 window.resets_at.timestamp(), now.timestamp()
@@ -727,7 +727,7 @@ class SubscriptionTracker(QuotaTracker):
 
         if not is_active:
             # Try background poll using credentials file token
-            from headroom.subscription.client import read_cached_oauth_token
+            from legroom.subscription.client import read_cached_oauth_token
 
             bg_token = read_cached_oauth_token()
             if not bg_token:
@@ -765,7 +765,7 @@ class SubscriptionTracker(QuotaTracker):
 
         # Update OTEL metrics if configured
         try:
-            from headroom.observability.metrics import get_otel_metrics
+            from legroom.observability.metrics import get_otel_metrics
 
             get_otel_metrics().record_subscription_window(self._state.to_dict())
         except Exception:
@@ -783,8 +783,8 @@ class SubscriptionTracker(QuotaTracker):
             and curr_resets_at is not None
             and curr_resets_at - prev_resets_at > _ROLLOVER_MIN_ADVANCE
         ):
-            logger.info("5h window rolled over; resetting headroom contribution counters")
-            self._state.contribution = HeadroomContribution()
+            logger.info("5h window rolled over; resetting legroom contribution counters")
+            self._state.contribution = LegroomContribution()
 
     # ------------------------------------------------------------------
     # Persistence
@@ -875,7 +875,7 @@ class SubscriptionTracker(QuotaTracker):
 def _compute_window_tokens_for_snapshot(snapshot: SubscriptionSnapshot) -> WindowTokens:
     """Read Claude transcript files and sum tokens for the current 5h window."""
     try:
-        from headroom.subscription import session_tracking
+        from legroom.subscription import session_tracking
 
         resets_at = snapshot.five_hour.resets_at
         if resets_at is None:
@@ -967,7 +967,7 @@ def configure_subscription_tracker(
     """Create (or return existing) global tracker singleton.
 
     PR-G2 remediation (H1): validates RTK-related env vars eagerly here so
-    a typo (``HEADROOM_RTK_WIRING=enabld``) crashes the proxy at startup
+    a typo (``LEGROOM_RTK_WIRING=enabld``) crashes the proxy at startup
     instead of being silently swallowed at every ``update_contribution``
     call.
     """

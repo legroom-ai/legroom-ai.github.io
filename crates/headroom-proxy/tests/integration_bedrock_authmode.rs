@@ -28,8 +28,8 @@ use axum::routing::post;
 use axum::Router;
 use bytes::Bytes;
 use common::start_proxy_with_state;
-use headroom_core::auth_mode::AuthMode;
-use headroom_proxy::AppState;
+use legroom_core::auth_mode::AuthMode;
+use legroom_proxy::AppState;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::net::SocketAddr;
@@ -76,7 +76,7 @@ async fn mount_capture_invoke(upstream: &MockServer, response_body: &str) -> Cap
 
 async fn bedrock_proxy(
     upstream: &MockServer,
-    customize: impl FnOnce(&mut headroom_proxy::Config),
+    customize: impl FnOnce(&mut legroom_proxy::Config),
 ) -> common::ProxyHandle {
     let endpoint: Url = upstream.uri().parse().unwrap();
     start_proxy_with_state(
@@ -98,7 +98,7 @@ async fn bedrock_proxy(
 /// "extension was set" assertion the spec asks for.
 #[tokio::test]
 async fn bedrock_classified_as_oauth() {
-    use headroom_proxy::bedrock::classify_and_attach_auth_mode;
+    use legroom_proxy::bedrock::classify_and_attach_auth_mode;
 
     async fn probe(Extension(auth_mode): Extension<AuthMode>) -> String {
         auth_mode.as_str().to_string()
@@ -159,7 +159,7 @@ async fn oauth_policy_passthrough_prefer() {
     let captured = mount_capture_invoke(&upstream, r#"{"id":"msg_x","content":[]}"#).await;
     let proxy = bedrock_proxy(&upstream, |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::Off;
+        c.compression_mode = legroom_proxy::config::CompressionMode::Off;
     })
     .await;
 

@@ -9,10 +9,10 @@ can't decode byte ...`` (seen in user proxy logs). These tests pin the
 
 import subprocess
 
-import headroom.lean_ctx
-import headroom.proxy.helpers as helpers
-import headroom.rtk
-from headroom.proxy.interceptors import astgrep
+import legroom.lean_ctx
+import legroom.proxy.helpers as helpers
+import legroom.rtk
+from legroom.proxy.interceptors import astgrep
 
 
 def _capture_run(captured, returncode=0, stdout='{"summary": {}}'):
@@ -26,7 +26,7 @@ def _capture_run(captured, returncode=0, stdout='{"summary": {}}'):
 def test_rtk_stats_subprocess_uses_utf8(monkeypatch):
     captured: dict = {}
     monkeypatch.setattr(helpers, "run", _capture_run(captured))
-    monkeypatch.setattr(headroom.rtk, "get_rtk_path", lambda: "/fake/rtk")
+    monkeypatch.setattr(legroom.rtk, "get_rtk_path", lambda: "/fake/rtk")
 
     helpers._read_rtk_lifetime_stats()
 
@@ -37,7 +37,7 @@ def test_rtk_stats_subprocess_uses_utf8(monkeypatch):
 def test_lean_ctx_stats_subprocess_uses_utf8(monkeypatch):
     captured: dict = {}
     monkeypatch.setattr(helpers, "run", _capture_run(captured))
-    monkeypatch.setattr(headroom.lean_ctx, "get_lean_ctx_path", lambda: "/fake/lean-ctx")
+    monkeypatch.setattr(legroom.lean_ctx, "get_lean_ctx_path", lambda: "/fake/lean-ctx")
 
     helpers._read_lean_ctx_lifetime_stats()
 

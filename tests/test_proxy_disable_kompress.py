@@ -6,8 +6,8 @@ import pytest
 
 pytest.importorskip("fastapi")
 
-from headroom.proxy.server import ProxyConfig, create_app
-from headroom.transforms import CompressionStrategy, ContentRouter
+from legroom.proxy.server import ProxyConfig, create_app
+from legroom.transforms import CompressionStrategy, ContentRouter
 
 
 def _proxy_router(config: ProxyConfig):
@@ -54,7 +54,7 @@ def test_disable_kompress_defaults_to_existing_kompress_behavior() -> None:
 def test_health_config_reports_disable_kompress_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
     from fastapi.testclient import TestClient
 
-    monkeypatch.setenv("HEADROOM_SKIP_UPSTREAM_CHECK", "1")
+    monkeypatch.setenv("LEGROOM_SKIP_UPSTREAM_CHECK", "1")
     app = create_app(
         ProxyConfig(
             optimize=True,

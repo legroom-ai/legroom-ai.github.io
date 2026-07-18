@@ -3,9 +3,9 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from headroom.proxy import server
-from headroom.proxy.models import ProxyConfig
-from headroom.proxy.server import create_app
+from legroom.proxy import server
+from legroom.proxy.models import ProxyConfig
+from legroom.proxy.server import create_app
 
 
 class FakeRequestLogger:
@@ -165,7 +165,7 @@ def test_stats_recent_requests_includes_token_incomplete_requests() -> None:
 
 
 def test_agent_usage_totals_use_proxy_only_savings(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("HEADROOM_REQUIRE_RUST_CORE", "false")
+    monkeypatch.setenv("LEGROOM_REQUIRE_RUST_CORE", "false")
     monkeypatch.setattr(
         server,
         "_get_context_tool_stats",

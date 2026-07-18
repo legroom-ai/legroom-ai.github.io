@@ -19,7 +19,7 @@ from unittest.mock import patch
 
 import pytest
 
-from headroom.proxy.memory_handler import (
+from legroom.proxy.memory_handler import (
     STARTUP_INIT_TIMEOUT_SECONDS,
     MemoryConfig,
     MemoryHandler,
@@ -68,7 +68,7 @@ async def test_concurrent_ensure_initialized_runs_init_once(tmp_path, monkeypatc
         async def close(self) -> None:
             pass
 
-    import headroom.memory.backends.local as local_mod
+    import legroom.memory.backends.local as local_mod
 
     monkeypatch.setattr(local_mod, "LocalBackend", FakeLocalBackend)
 
@@ -118,7 +118,7 @@ async def test_ensure_initialized_timeout_leaves_handler_unready(tmp_path, monke
         async def close(self) -> None:
             pass
 
-    import headroom.memory.backends.local as local_mod
+    import legroom.memory.backends.local as local_mod
 
     monkeypatch.setattr(local_mod, "LocalBackend", HangingBackend)
 
@@ -130,7 +130,7 @@ async def test_ensure_initialized_timeout_leaves_handler_unready(tmp_path, monke
     # when third-party conftest monkeys with propagation settings.
     import logging as _logging
 
-    mem_logger = _logging.getLogger("headroom.proxy.memory_handler")
+    mem_logger = _logging.getLogger("legroom.proxy.memory_handler")
     captured: list[_logging.LogRecord] = []
 
     class _ListHandler(_logging.Handler):
@@ -143,7 +143,7 @@ async def test_ensure_initialized_timeout_leaves_handler_unready(tmp_path, monke
     mem_logger.setLevel(_logging.DEBUG)
     try:
         # Shrink the module-level timeout to keep the test fast.
-        with patch("headroom.proxy.memory_handler.STARTUP_INIT_TIMEOUT_SECONDS", 0.1):
+        with patch("legroom.proxy.memory_handler.STARTUP_INIT_TIMEOUT_SECONDS", 0.1):
             await handler._ensure_initialized()
     finally:
         mem_logger.removeHandler(handler_log)
@@ -183,7 +183,7 @@ async def test_ensure_initialized_timeout_nulls_partially_initialized_backend(
         async def close(self) -> None:
             close_hits["n"] += 1
 
-    import headroom.memory.backends.local as local_mod
+    import legroom.memory.backends.local as local_mod
 
     monkeypatch.setattr(local_mod, "LocalBackend", SlowBackend)
 
@@ -191,7 +191,7 @@ async def test_ensure_initialized_timeout_nulls_partially_initialized_backend(
         MemoryConfig(enabled=True, backend="local", db_path=str(tmp_path / "mem.db"))
     )
 
-    with patch("headroom.proxy.memory_handler.STARTUP_INIT_TIMEOUT_SECONDS", 0.01):
+    with patch("legroom.proxy.memory_handler.STARTUP_INIT_TIMEOUT_SECONDS", 0.01):
         await handler._ensure_initialized()
 
     # Both must be consistent after timeout.
@@ -218,7 +218,7 @@ async def test_ensure_initialized_cancellation_propagates_and_resets_state(tmp_p
         async def close(self) -> None:
             close_hits["n"] += 1
 
-    import headroom.memory.backends.local as local_mod
+    import legroom.memory.backends.local as local_mod
 
     monkeypatch.setattr(local_mod, "LocalBackend", HangingBackend)
 

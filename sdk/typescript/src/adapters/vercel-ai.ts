@@ -26,17 +26,17 @@ type VercelMessage = any;
  *
  * @example
  * ```typescript
- * import { headroomMiddleware } from 'headroom-ai/vercel-ai';
+ * import { legroomMiddleware } from 'legroom-ai/vercel-ai';
  * import { wrapLanguageModel } from 'ai';
  * import { openai } from '@ai-sdk/openai';
  *
  * const model = wrapLanguageModel({
  *   model: openai('gpt-4o'),
- *   middleware: headroomMiddleware(),
+ *   middleware: legroomMiddleware(),
  * });
  * ```
  */
-export function headroomMiddleware(options: CompressOptions = {}) {
+export function legroomMiddleware(options: CompressOptions = {}) {
   return {
     transformParams: async ({
       params,
@@ -53,7 +53,7 @@ export function headroomMiddleware(options: CompressOptions = {}) {
       // Convert Vercel format → OpenAI format
       const openaiMessages = vercelToOpenAI(prompt);
 
-      // Compress via Headroom
+      // Compress via Legroom
       const result = await compress(openaiMessages, {
         stack: "adapter_ts_vercel_ai",
         ...options,
@@ -92,20 +92,20 @@ export async function compressVercelMessages(
 }
 
 /**
- * Wrap a Vercel AI SDK language model with Headroom compression.
- * Convenience wrapper around `wrapLanguageModel` + `headroomMiddleware`.
+ * Wrap a Vercel AI SDK language model with Legroom compression.
+ * Convenience wrapper around `wrapLanguageModel` + `legroomMiddleware`.
  *
  * @example
  * ```typescript
- * import { withHeadroom } from 'headroom-ai/vercel-ai';
+ * import { withLegroom } from 'legroom-ai/vercel-ai';
  * import { openai } from '@ai-sdk/openai';
  * import { generateText } from 'ai';
  *
- * const model = withHeadroom(openai('gpt-4o'));
+ * const model = withLegroom(openai('gpt-4o'));
  * const { text } = await generateText({ model, messages });
  * ```
  */
-export function withHeadroom<T extends LanguageModel>(
+export function withLegroom<T extends LanguageModel>(
   model: T,
   options: CompressOptions = {},
 ): T {
@@ -120,12 +120,12 @@ export function withHeadroom<T extends LanguageModel>(
     wrapLanguageModel = ai.wrapLanguageModel;
   } catch {
     throw new Error(
-      'withHeadroom() requires the "ai" package. Install it with: npm install ai',
+      'withLegroom() requires the "ai" package. Install it with: npm install ai',
     );
   }
 
   return wrapLanguageModel({
     model,
-    middleware: headroomMiddleware(options),
+    middleware: legroomMiddleware(options),
   });
 }

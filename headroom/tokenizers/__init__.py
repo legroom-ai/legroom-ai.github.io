@@ -9,7 +9,7 @@ multiple backends:
 4. Estimation - Fallback for unknown models
 
 Usage:
-    from headroom.tokenizers import TokenizerRegistry, get_tokenizer
+    from legroom.tokenizers import TokenizerRegistry, get_tokenizer
 
     # Auto-detect tokenizer from model name
     tokenizer = get_tokenizer("gpt-4o")

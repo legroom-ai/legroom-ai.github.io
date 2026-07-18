@@ -8,23 +8,23 @@ from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
 
-# Load the UTF-8-forcing subprocess wrapper WITHOUT importing the `headroom`
+# Load the UTF-8-forcing subprocess wrapper WITHOUT importing the `legroom`
 # package. The release workflow runs this file as a bare script
-# (`python headroom/release_version.py`), where `sys.path[0]` is `headroom/`
-# rather than the repo root, so `from headroom._subprocess import run` fails
-# with `ModuleNotFoundError: No module named 'headroom'` — and even when it
-# resolves, it drags in `headroom/__init__.py` (the Rust `_core` import), which
+# (`python legroom/release_version.py`), where `sys.path[0]` is `legroom/`
+# rather than the repo root, so `from legroom._subprocess import run` fails
+# with `ModuleNotFoundError: No module named 'legroom'` — and even when it
+# resolves, it drags in `legroom/__init__.py` (the Rust `_core` import), which
 # isn't built in the detect-version job (issue #1328). Loading `_subprocess.py`
 # by path sidesteps both while still routing every text-mode git call through
 # the shared wrapper (keeps the `test_text_mode_subprocess_calls_use_wrapper`
 # guard happy — no raw `subprocess.run(..., text=True)` here).
-try:  # normal package context (tests import `headroom.release_version`)
-    from headroom._subprocess import run
+try:  # normal package context (tests import `legroom.release_version`)
+    from legroom._subprocess import run
 except ModuleNotFoundError:  # bare-script context (the release workflow)
     import importlib.util as _ilu
 
     _spec = _ilu.spec_from_file_location(
-        "_headroom_subprocess", Path(__file__).resolve().parent / "_subprocess.py"
+        "_legroom_subprocess", Path(__file__).resolve().parent / "_subprocess.py"
     )
     assert _spec and _spec.loader  # for type checkers; spec is always present here
     _mod = _ilu.module_from_spec(_spec)

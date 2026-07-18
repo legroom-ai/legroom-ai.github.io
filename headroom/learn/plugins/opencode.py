@@ -1,4 +1,4 @@
-"""OpenCode plugin for headroom learn.
+"""OpenCode plugin for legroom learn.
 
 Reads conversation data from the OpenCode SQLite database at
 ``~/.local/share/opencode/opencode.db``.
@@ -20,7 +20,7 @@ A tool part looks like::
         }
     }
 
-``headroom learn opencode`` mines these for errors and writes corrections to
+``legroom learn opencode`` mines these for errors and writes corrections to
 the project's ``AGENTS.md`` file (OpenCode's native rules file).
 """
 

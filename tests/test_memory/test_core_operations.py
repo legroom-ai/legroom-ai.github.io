@@ -27,15 +27,15 @@ from pathlib import Path
 
 import pytest
 
-from headroom.memory.config import MemoryConfig
-from headroom.memory.core import HierarchicalMemory
-from headroom.memory.models import Memory, ScopeLevel
-from headroom.memory.ports import MemoryFilter
+from legroom.memory.config import MemoryConfig
+from legroom.memory.core import HierarchicalMemory
+from legroom.memory.models import Memory, ScopeLevel
+from legroom.memory.ports import MemoryFilter
 from tests._skip_helpers import external_model_skip_reason
 
 # Check if hnswlib is available (HierarchicalMemory requires it)
 try:
-    from headroom.memory.adapters.hnsw import _check_hnswlib_available
+    from legroom.memory.adapters.hnsw import _check_hnswlib_available
 
     HNSW_AVAILABLE = _check_hnswlib_available()
 except ImportError:

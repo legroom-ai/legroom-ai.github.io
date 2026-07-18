@@ -1,4 +1,4 @@
-"""LangChain Integration Evals: Comprehensive evaluation of Headroom with LangChain agents.
+"""LangChain Integration Evals: Comprehensive evaluation of Legroom with LangChain agents.
 
 These evals test real-world scenarios to ensure:
 1. 100% preservation of critical items (errors, anomalies)
@@ -15,10 +15,10 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from headroom.config import SmartCrusherConfig
-from headroom.providers import OpenAIProvider
-from headroom.transforms import SmartCrusher
-from headroom.transforms.smart_crusher import strip_ccr_sentinels
+from legroom.config import SmartCrusherConfig
+from legroom.providers import OpenAIProvider
+from legroom.transforms import SmartCrusher
+from legroom.transforms.smart_crusher import strip_ccr_sentinels
 
 
 # Test fixtures for realistic data

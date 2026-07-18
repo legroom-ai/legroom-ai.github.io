@@ -7,7 +7,7 @@ from .wrap import build_launch_env, resolve_provider_type
 
 def build_install_env(*, port: int, backend: str) -> dict[str, str]:
     """Build the persistent install environment for Copilot."""
-    provider_type = resolve_provider_type(backend, "auto", {"HEADROOM_BACKEND": backend})
+    provider_type = resolve_provider_type(backend, "auto", {"LEGROOM_BACKEND": backend})
     env, _lines = build_launch_env(
         port=port,
         provider_type=provider_type,

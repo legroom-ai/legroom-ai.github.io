@@ -6,15 +6,15 @@ import json
 import shutil
 from pathlib import Path
 
-from headroom import fsutil
-from headroom.install.models import ConfigScope, DeploymentManifest, ManagedMutation, ToolTarget
-from headroom.install.paths import opencode_config_path
+from legroom import fsutil
+from legroom.install.models import ConfigScope, DeploymentManifest, ManagedMutation, ToolTarget
+from legroom.install.paths import opencode_config_path
 
 from .config import (
     _inject_key_into_json,
     _parse_json_loose,
     snapshot_opencode_config_if_unwrapped,
-    strip_opencode_headroom_blocks,
+    strip_opencode_legroom_blocks,
 )
 from .runtime import proxy_base_url
 
@@ -35,7 +35,7 @@ def apply_provider_scope(manifest: DeploymentManifest) -> ManagedMutation | None
     config_file.parent.mkdir(parents=True, exist_ok=True)
 
     snapshot_opencode_config_if_unwrapped(
-        config_file, config_file.with_suffix(".json.headroom-backup")
+        config_file, config_file.with_suffix(".json.legroom-backup")
     )
 
     if config_file.exists():
@@ -45,9 +45,9 @@ def apply_provider_scope(manifest: DeploymentManifest) -> ManagedMutation | None
         data = {}
 
     provider = {
-        "headroom": {
+        "legroom": {
             "npm": "@ai-sdk/openai-compatible",
-            "name": "Headroom Proxy",
+            "name": "Legroom Proxy",
             "options": {"baseURL": proxy_base_url(manifest.port)},
         }
     }
@@ -65,13 +65,13 @@ def revert_provider_scope(mutation: ManagedMutation, manifest: DeploymentManifes
     """Revert OpenCode provider-scope configuration.
 
     Restores from pre-wrap backup when available, otherwise strips the
-    headroom provider from the config file.
+    legroom provider from the config file.
     """
     del manifest
     if not mutation.path:
         return
     path = Path(mutation.path)
-    backup_file = path.with_suffix(".json.headroom-backup")
+    backup_file = path.with_suffix(".json.legroom-backup")
     if backup_file.exists():
         try:
             shutil.copy2(backup_file, path)
@@ -82,7 +82,7 @@ def revert_provider_scope(mutation: ManagedMutation, manifest: DeploymentManifes
     if not path.exists():
         return
     content = fsutil.read_text(path)
-    cleaned = strip_opencode_headroom_blocks(content)
+    cleaned = strip_opencode_legroom_blocks(content)
     if cleaned:
         path.write_text(cleaned + "\n", encoding="utf-8")
     else:

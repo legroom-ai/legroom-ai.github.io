@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from headroom.proxy.output_verbosity_policy import (
+from legroom.proxy.output_verbosity_policy import (
     STEERING_SENTINEL as _STEERING_SENTINEL,
 )
-from headroom.proxy.output_verbosity_policy import (
+from legroom.proxy.output_verbosity_policy import (
     replace_or_append_steering_block,
     steering_text,
 )

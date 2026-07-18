@@ -1,5 +1,5 @@
 /**
- * HeadroomClient — HTTP client for the Headroom compression proxy.
+ * LegroomClient — HTTP client for the Legroom compression proxy.
  *
  * Supports:
  * - compress() — direct compression via /v1/compress
@@ -11,15 +11,15 @@
 import type {
   OpenAIMessage,
   CompressResult,
-  HeadroomClientOptions,
-  HeadroomClientInterface,
+  LegroomClientOptions,
+  LegroomClientInterface,
   ProxyCompressResponse,
   ProxyErrorResponse,
 } from "./types.js";
-import { mapProxyError, HeadroomConnectionError, HeadroomAuthError, HeadroomCompressError } from "./errors.js";
+import { mapProxyError, LegroomConnectionError, LegroomAuthError, LegroomCompressError } from "./errors.js";
 import { deepCamelCase, deepSnakeCase } from "./utils/case.js";
 import { parseSSE } from "./utils/stream.js";
-import type { HeadroomConfig, HeadroomMode } from "./types/config.js";
+import type { LegroomConfig, LegroomMode } from "./types/config.js";
 import type {
   SimulationResult,
   RequestMetrics,
@@ -65,32 +65,32 @@ function makeFallbackResult(messages: OpenAIMessage[]): CompressResult {
   };
 }
 
-// --- Headroom request params ---
+// --- Legroom request params ---
 
-export interface HeadroomParams {
-  headroomMode?: HeadroomMode;
-  headroomCachePrefixTokens?: number;
-  headroomOutputBufferTokens?: number;
-  headroomKeepTurns?: number;
-  headroomToolProfiles?: Record<string, Record<string, any>>;
+export interface LegroomParams {
+  legroomMode?: LegroomMode;
+  legroomCachePrefixTokens?: number;
+  legroomOutputBufferTokens?: number;
+  legroomKeepTurns?: number;
+  legroomToolProfiles?: Record<string, Record<string, any>>;
 }
 
 // --- Sub-clients ---
 
 class ChatCompletions {
-  constructor(private client: HeadroomClient) {}
+  constructor(private client: LegroomClient) {}
 
   /**
    * Create a chat completion with automatic compression.
    * Routes through proxy's POST /v1/chat/completions.
    */
   async create(
-    params: { model: string; messages: OpenAIMessage[]; stream?: boolean; [key: string]: any } & HeadroomParams,
+    params: { model: string; messages: OpenAIMessage[]; stream?: boolean; [key: string]: any } & LegroomParams,
   ): Promise<any> {
-    const { headroomMode, headroomCachePrefixTokens, headroomOutputBufferTokens, headroomKeepTurns, headroomToolProfiles, ...apiParams } = params;
+    const { legroomMode, legroomCachePrefixTokens, legroomOutputBufferTokens, legroomKeepTurns, legroomToolProfiles, ...apiParams } = params;
 
     const headers: Record<string, string> = {};
-    if (headroomMode) headers["x-headroom-mode"] = headroomMode;
+    if (legroomMode) headers["x-legroom-mode"] = legroomMode;
 
     const providerKey = this.client.providerApiKey ?? getEnv("OPENAI_API_KEY");
     if (providerKey) headers["Authorization"] = `Bearer ${providerKey}`;
@@ -113,7 +113,7 @@ class ChatCompletions {
    * Simulate compression without calling the LLM.
    */
   async simulate(
-    params: { model: string; messages: OpenAIMessage[] } & HeadroomParams,
+    params: { model: string; messages: OpenAIMessage[] } & LegroomParams,
   ): Promise<SimulationResult> {
     const body = {
       messages: params.messages,
@@ -126,21 +126,21 @@ class ChatCompletions {
 }
 
 class Messages {
-  constructor(private client: HeadroomClient) {}
+  constructor(private client: LegroomClient) {}
 
   /**
    * Create a message with automatic compression.
    * Routes through proxy's POST /v1/messages (Anthropic).
    */
   async create(
-    params: { model: string; messages: any[]; max_tokens?: number; system?: string | any[]; stream?: boolean; [key: string]: any } & HeadroomParams,
+    params: { model: string; messages: any[]; max_tokens?: number; system?: string | any[]; stream?: boolean; [key: string]: any } & LegroomParams,
   ): Promise<any> {
-    const { headroomMode, headroomCachePrefixTokens, headroomOutputBufferTokens, headroomKeepTurns, headroomToolProfiles, ...apiParams } = params;
+    const { legroomMode, legroomCachePrefixTokens, legroomOutputBufferTokens, legroomKeepTurns, legroomToolProfiles, ...apiParams } = params;
 
     const headers: Record<string, string> = {
       "anthropic-version": "2023-06-01",
     };
-    if (headroomMode) headers["x-headroom-mode"] = headroomMode;
+    if (legroomMode) headers["x-legroom-mode"] = legroomMode;
 
     const providerKey = this.client.providerApiKey ?? getEnv("ANTHROPIC_API_KEY");
     if (providerKey) headers["x-api-key"] = providerKey;
@@ -165,7 +165,7 @@ class Messages {
    * Stream a message with automatic compression.
    */
   stream(
-    params: { model: string; messages: any[]; max_tokens?: number; system?: string | any[]; [key: string]: any } & HeadroomParams,
+    params: { model: string; messages: any[]; max_tokens?: number; system?: string | any[]; [key: string]: any } & LegroomParams,
   ): Promise<AsyncGenerator<any>> {
     return this.create({ ...params, stream: true }) as Promise<AsyncGenerator<any>>;
   }
@@ -174,7 +174,7 @@ class Messages {
    * Simulate compression without calling the LLM.
    */
   async simulate(
-    params: { model: string; messages: any[] } & HeadroomParams,
+    params: { model: string; messages: any[] } & LegroomParams,
   ): Promise<SimulationResult> {
     const body = {
       messages: params.messages,
@@ -188,19 +188,19 @@ class Messages {
 
 // --- Main client ---
 
-export interface ExtendedClientOptions extends HeadroomClientOptions {
+export interface ExtendedClientOptions extends LegroomClientOptions {
   providerApiKey?: string;
-  defaultMode?: HeadroomMode;
-  config?: HeadroomConfig;
+  defaultMode?: LegroomMode;
+  config?: LegroomConfig;
 }
 
-export class HeadroomClient implements HeadroomClientInterface {
+export class LegroomClient implements LegroomClientInterface {
   private baseUrl: string;
   private apiKey: string | undefined;
   private timeout: number;
   private fallback: boolean;
   private retries: number;
-  private config: HeadroomConfig | undefined;
+  private config: LegroomConfig | undefined;
   private stack: string | undefined;
 
   /** @internal */ providerApiKey: string | undefined;
@@ -213,10 +213,10 @@ export class HeadroomClient implements HeadroomClientInterface {
   constructor(options: ExtendedClientOptions = {}) {
     this.baseUrl = (
       options.baseUrl ??
-      getEnv("HEADROOM_BASE_URL") ??
+      getEnv("LEGROOM_BASE_URL") ??
       DEFAULT_BASE_URL
     ).replace(/\/+$/, "");
-    this.apiKey = options.apiKey ?? getEnv("HEADROOM_API_KEY");
+    this.apiKey = options.apiKey ?? getEnv("LEGROOM_API_KEY");
     this.timeout = options.timeout ?? DEFAULT_TIMEOUT;
     this.fallback = options.fallback ?? true;
     this.retries = options.retries ?? DEFAULT_RETRIES;
@@ -246,9 +246,9 @@ export class HeadroomClient implements HeadroomClientInterface {
         return await this._doCompress(messages, model, options.tokenBudget);
       } catch (error) {
         lastError = error;
-        if (error instanceof HeadroomAuthError) throw error;
+        if (error instanceof LegroomAuthError) throw error;
         if (
-          error instanceof HeadroomCompressError &&
+          error instanceof LegroomCompressError &&
           error.statusCode < 500
         ) {
           throw error;
@@ -259,9 +259,9 @@ export class HeadroomClient implements HeadroomClientInterface {
     if (this.fallback) {
       return makeFallbackResult(messages);
     }
-    if (lastError instanceof HeadroomConnectionError) throw lastError;
-    if (lastError instanceof HeadroomCompressError) throw lastError;
-    throw new HeadroomConnectionError(
+    if (lastError instanceof LegroomConnectionError) throw lastError;
+    if (lastError instanceof LegroomCompressError) throw lastError;
+    throw new LegroomConnectionError(
       `Failed after ${maxAttempts} attempts: ${lastError}`,
     );
   }
@@ -414,7 +414,7 @@ export class HeadroomClient implements HeadroomClientInterface {
     return deepCamelCase<CCRStats>(await resp.json());
   }
 
-  /** Handle an LLM tool call for headroom_retrieve. */
+  /** Handle an LLM tool call for legroom_retrieve. */
   async handleToolCall(request: {
     toolCall: any;
     provider?: "anthropic" | "openai";
@@ -515,8 +515,8 @@ export class HeadroomClient implements HeadroomClientInterface {
         headers["Authorization"] = `Bearer ${this.apiKey}`;
       }
     }
-    if (this.stack && !headers["X-Headroom-Stack"]) {
-      headers["X-Headroom-Stack"] = this.stack;
+    if (this.stack && !headers["X-Legroom-Stack"]) {
+      headers["X-Legroom-Stack"] = this.stack;
     }
 
     let response: Response;
@@ -528,8 +528,8 @@ export class HeadroomClient implements HeadroomClientInterface {
         signal: AbortSignal.timeout(this.timeout),
       });
     } catch (error) {
-      throw new HeadroomConnectionError(
-        `Failed to connect to Headroom at ${this.baseUrl}: ${error}`,
+      throw new LegroomConnectionError(
+        `Failed to connect to Legroom at ${this.baseUrl}: ${error}`,
       );
     }
 
@@ -563,8 +563,8 @@ export class HeadroomClient implements HeadroomClientInterface {
     if (this.apiKey) {
       headers["Authorization"] = `Bearer ${this.apiKey}`;
     }
-    if (this.stack && !headers["X-Headroom-Stack"]) {
-      headers["X-Headroom-Stack"] = this.stack;
+    if (this.stack && !headers["X-Legroom-Stack"]) {
+      headers["X-Legroom-Stack"] = this.stack;
     }
 
     let response: Response;
@@ -576,8 +576,8 @@ export class HeadroomClient implements HeadroomClientInterface {
         signal: AbortSignal.timeout(this.timeout),
       });
     } catch (error) {
-      throw new HeadroomConnectionError(
-        `Failed to connect to Headroom at ${this.baseUrl}: ${error}`,
+      throw new LegroomConnectionError(
+        `Failed to connect to Legroom at ${this.baseUrl}: ${error}`,
       );
     }
 

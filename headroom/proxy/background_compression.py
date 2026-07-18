@@ -10,7 +10,7 @@ request-coupled deadline and stores the result in the session
 become (and stay) the compressed form.
 
 This is per-process by design: ``CompressionCache`` is already per-process
-(``HeadroomProxy._compression_caches``), and multi-worker deployments are
+(``LegroomProxy._compression_caches``), and multi-worker deployments are
 already warned to use ``--workers 1`` or sticky sessions, so a per-process
 drain matches the existing cache semantics without any new cross-process lock.
 
@@ -114,7 +114,7 @@ class BackgroundCompressor:
 
     async def start(self) -> None:
         if self._task is None or self._task.done():
-            self._task = asyncio.create_task(self._drain(), name="headroom-bg-compress")
+            self._task = asyncio.create_task(self._drain(), name="legroom-bg-compress")
 
     async def stop(self, *, drain: bool = True, timeout: float = 5.0) -> None:
         if self._task is None:

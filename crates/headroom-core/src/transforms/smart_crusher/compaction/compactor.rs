@@ -107,7 +107,7 @@ pub fn compact(items: &[Value], cfg: &CompactConfig) -> Compaction {
 
 /// Like [`compact`], but stash every opaque-blob payload in `store` under
 /// the same 12-char hash that ends up in its `<<ccr:HASH,...>>` marker, so
-/// the runtime can serve the original back on a `headroom_retrieve` call /
+/// the runtime can serve the original back on a `legroom_retrieve` call /
 /// `GET /v1/retrieve/{hash}`. Mirrors the contract already honored by the
 /// opaque-string path in [`super::walker::emit_opaque_ccr_marker`].
 ///
@@ -262,7 +262,7 @@ fn cell_from_value(v: &Value, cfg: &CompactConfig, store: Option<&Arc<dyn CcrSto
             };
             let ccr_hash = hash_opaque(s.as_bytes());
             // Stash the original so `GET /v1/retrieve/{hash}` and the
-            // `headroom_retrieve` tool can serve it back — mirrors
+            // `legroom_retrieve` tool can serve it back — mirrors
             // `walker::emit_opaque_ccr_marker`. Without this write the
             // marker points at a key that was never stored and retrieval
             // 404s (issue #1083).

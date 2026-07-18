@@ -1,15 +1,15 @@
 ---
 title: Benchmarks
-description: Compression performance, accuracy preservation, latency overhead, and real-world production telemetry from 250+ Headroom proxy instances.
+description: Compression performance, accuracy preservation, latency overhead, and real-world production telemetry from 250+ Legroom proxy instances.
 ---
 
-Headroom's core promise: compress context without losing accuracy. This page covers compression benchmarks, accuracy evaluations, latency overhead, and production telemetry.
+Legroom's core promise: compress context without losing accuracy. This page covers compression benchmarks, accuracy evaluations, latency overhead, and production telemetry.
 
 For local inference, the main benefit is often faster prompt processing rather than lower API spend. See [Local LLM prefill benchmarking](/docs/local-llm-prefill) for a reproducible passthrough-vs-optimized proxy workflow.
 
 ## Compression Performance
 
-Tested on Apple M-series (CPU), Headroom v0.5.18. Each test runs `compress()` on realistic tool outputs.
+Tested on Apple M-series (CPU), Legroom v0.5.18. Each test runs `compress()` on realistic tool outputs.
 
 | Content Type | Original | Compressed | Saved | Ratio | Latency |
 |---|---|---|---|---|---|
@@ -44,7 +44,7 @@ For LLM applications, recall is critical -- 98.2% means nearly all article conte
 
 **Test**: 100 production log entries with critical error at position 67. Task: find the error, error code, resolution, and affected count.
 
-| Metric | Baseline | Headroom |
+| Metric | Baseline | Legroom |
 |---|---|---|
 | Input tokens | 10,144 | 1,260 |
 | Correct answers | 4/4 | **4/4** |
@@ -109,7 +109,7 @@ ContentRouter accounts for 91--98% of pipeline cost on average. CacheAligner is 
 
 ## Production Telemetry
 
-Real-world data from **50,000+ proxy sessions** across 250+ unique instances (March--April 2026). Collected via anonymous telemetry (opt-in: `HEADROOM_TELEMETRY=on`; telemetry is off by default).
+Real-world data from **50,000+ proxy sessions** across 250+ unique instances (March--April 2026). Collected via anonymous telemetry (opt-in: `LEGROOM_TELEMETRY=on`; telemetry is off by default).
 
 ### Proxy Overhead
 
@@ -145,8 +145,8 @@ Median compression is modest because many requests are short conversational turn
 ## Reproducing Results
 
 ```bash
-git clone https://github.com/ghaliba3/headroom.git
-cd headroom
+git clone https://github.com/legroom-ai/legroom-ai.github.io.git
+cd legroom
 pip install -e ".[evals,html]"
 pytest tests/test_evals/ -v -s
 ```

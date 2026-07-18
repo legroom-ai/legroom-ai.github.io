@@ -1,6 +1,6 @@
 """Tests for SharedContext — compressed inter-agent context sharing."""
 
-from headroom.shared_context import SharedContext
+from legroom.shared_context import SharedContext
 
 
 class TestPutGet:
@@ -142,8 +142,8 @@ class TestClear:
 
 
 class TestImport:
-    def test_importable_from_headroom(self) -> None:
-        from headroom import SharedContext as SC
+    def test_importable_from_legroom(self) -> None:
+        from legroom import SharedContext as SC
 
         assert SC is not None
         ctx = SC()

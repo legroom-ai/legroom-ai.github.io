@@ -1,4 +1,4 @@
-"""Agent-native memory writers — export Headroom memories to each agent's format.
+"""Agent-native memory writers — export Legroom memories to each agent's format.
 
 Each writer knows how to produce memory files in the format that a specific
 coding agent reads on startup. Writers handle:
@@ -16,11 +16,11 @@ Supported agents:
 - Generic: Plain markdown (any agent)
 """
 
-from headroom.memory.writers.base import AgentWriter, ExportResult, MemoryEntry
-from headroom.memory.writers.claude_writer import ClaudeCodeMemoryWriter
-from headroom.memory.writers.codex_writer import CodexMemoryWriter
-from headroom.memory.writers.cursor_writer import CursorMemoryWriter
-from headroom.memory.writers.generic_writer import GenericMemoryWriter
+from legroom.memory.writers.base import AgentWriter, ExportResult, MemoryEntry
+from legroom.memory.writers.claude_writer import ClaudeCodeMemoryWriter
+from legroom.memory.writers.codex_writer import CodexMemoryWriter
+from legroom.memory.writers.cursor_writer import CursorMemoryWriter
+from legroom.memory.writers.generic_writer import GenericMemoryWriter
 
 __all__ = [
     "AgentWriter",

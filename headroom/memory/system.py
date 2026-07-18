@@ -11,9 +11,9 @@ from __future__ import annotations
 import logging
 from typing import Any, Protocol, runtime_checkable
 
-from headroom.memory.models import Memory
-from headroom.memory.ports import MemorySearchResult
-from headroom.memory.tools import MEMORY_TOOLS, MEMORY_TOOLS_OPTIMIZED
+from legroom.memory.models import Memory
+from legroom.memory.ports import MemorySearchResult
+from legroom.memory.tools import MEMORY_TOOLS, MEMORY_TOOLS_OPTIMIZED
 
 logger = logging.getLogger(__name__)
 

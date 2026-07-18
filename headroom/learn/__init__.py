@@ -1,4 +1,4 @@
-"""Headroom Learn — offline session learning for coding agents.
+"""Legroom Learn — offline session learning for coding agents.
 
 Analyzes conversation logs using an LLM to extract actionable patterns
 and generates context (CLAUDE.md, AGENTS.md, GEMINI.md, etc.) that
@@ -10,6 +10,6 @@ Plugin architecture:
     plugins/gemini.py  ─┤
     plugins/grok.py    ─┘
 
-Built-in plugins are auto-discovered from headroom.learn.plugins.*.
-External plugins register via the ``headroom.learn_plugin`` entry point.
+Built-in plugins are auto-discovered from legroom.learn.plugins.*.
+External plugins register via the ``legroom.learn_plugin`` entry point.
 """

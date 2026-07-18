@@ -13,7 +13,7 @@ import random
 
 import pytest
 
-from headroom.transforms.content_router import (
+from legroom.transforms.content_router import (
     ContentRouter,
     ContentRouterConfig,
     _estimate_tokens,
@@ -27,8 +27,8 @@ def test_estimate_tokens_monotone_on_compact_json() -> None:
 
 
 def test_compact_json_tool_result_compresses() -> None:
-    tokenizer = pytest.importorskip("headroom.tokenizers.estimator")
-    from headroom.tokenizer import Tokenizer
+    tokenizer = pytest.importorskip("legroom.tokenizers.estimator")
+    from legroom.tokenizer import Tokenizer
 
     tok = Tokenizer(tokenizer.EstimatingTokenCounter())
     random.seed(42)

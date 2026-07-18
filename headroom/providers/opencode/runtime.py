@@ -7,9 +7,9 @@ import os
 from collections.abc import Mapping
 from pathlib import Path
 
-from headroom.mcp_registry.install import DEFAULT_PROXY_URL
+from legroom.mcp_registry.install import DEFAULT_PROXY_URL
 
-from .config import HEADROOM_OPENCODE_PLUGIN, headroom_provider_entry
+from .config import LEGROOM_OPENCODE_PLUGIN, legroom_provider_entry
 
 
 def proxy_base_url(port: int) -> str:
@@ -17,7 +17,7 @@ def proxy_base_url(port: int) -> str:
     return f"http://127.0.0.1:{port}/v1"
 
 
-def headroom_opencode_plugin_path() -> str | None:
+def legroom_opencode_plugin_path() -> str | None:
     """Return the absolute path to the built OpenCode transport plugin, or None.
 
     OpenCode loads a plugin from an absolute file path (verified against
@@ -28,12 +28,12 @@ def headroom_opencode_plugin_path() -> str | None:
     ship ``plugins/``), in which case wrap falls back to the native-provider
     baseURL override, which already covers Anthropic/OpenAI.
 
-    ``HEADROOM_OPENCODE_PLUGIN_PATH`` overrides the resolved path.
+    ``LEGROOM_OPENCODE_PLUGIN_PATH`` overrides the resolved path.
     """
-    override = os.environ.get("HEADROOM_OPENCODE_PLUGIN_PATH", "").strip()
+    override = os.environ.get("LEGROOM_OPENCODE_PLUGIN_PATH", "").strip()
     if override:
         return override if Path(override).is_file() else None
-    # runtime.py → opencode → providers → headroom → <repo root>
+    # runtime.py → opencode → providers → legroom → <repo root>
     candidate = (
         Path(__file__).resolve().parents[3] / "plugins" / "opencode" / "dist" / "entry.opencode.js"
     )
@@ -61,9 +61,9 @@ def build_opencode_config_content(
     2. **Transparent transport plugin** — when the local plugin is built, it is
        loaded by absolute path and patches ``fetch``/``http`` to reroute *every*
        provider's traffic through the proxy, tagging the real upstream via
-       ``x-headroom-base-url``. This covers providers we don't name (Gemini,
+       ``x-legroom-base-url``. This covers providers we don't name (Gemini,
        Copilot, custom gateways) and providers added mid-session. The plugin
-       self-configures from ``HEADROOM_PROXY_URL`` (set in :func:`build_launch_env`).
+       self-configures from ``LEGROOM_PROXY_URL`` (set in :func:`build_launch_env`).
        Loopback URLs are not double-routed, so it coexists with layer 1.
 
     ponytail: config-level ``options.baseURL`` is reliable where the env-var
@@ -74,25 +74,25 @@ def build_opencode_config_content(
         "provider": {
             "anthropic": {"options": {"baseURL": base_url}},
             "openai": {"options": {"baseURL": base_url}},
-            "headroom": headroom_provider_entry(port),
+            "legroom": legroom_provider_entry(port),
         }
     }
     if include_mcp:
         proxy_url = f"http://127.0.0.1:{port}"
         mcp_entry: dict[str, object] = {
             "type": "local",
-            "command": ["headroom", "mcp", "serve"],
+            "command": ["legroom", "mcp", "serve"],
             "enabled": True,
         }
         if proxy_url != DEFAULT_PROXY_URL:
-            mcp_entry["environment"] = {"HEADROOM_PROXY_URL": proxy_url}
+            mcp_entry["environment"] = {"LEGROOM_PROXY_URL": proxy_url}
         config["mcp"] = {
-            "headroom": mcp_entry,
+            "legroom": mcp_entry,
         }
     if include_plugin:
-        plugin_path = headroom_opencode_plugin_path()
+        plugin_path = legroom_opencode_plugin_path()
         if plugin_path:
-            # Plain absolute-path string; the plugin reads HEADROOM_PROXY_URL
+            # Plain absolute-path string; the plugin reads LEGROOM_PROXY_URL
             # from the launch env (build_launch_env sets it).
             config["plugin"] = [plugin_path]
     return config
@@ -106,11 +106,11 @@ def build_launch_env(
     include_mcp: bool = True,
     include_plugin: bool = True,
 ) -> tuple[dict[str, str], list[str]]:
-    """Build environment variables for launching OpenCode through Headroom.
+    """Build environment variables for launching OpenCode through Legroom.
 
-    ``OPENCODE_CONFIG_CONTENT`` carries Headroom provider/MCP/plugin config.
+    ``OPENCODE_CONFIG_CONTENT`` carries Legroom provider/MCP/plugin config.
     Existing provider/base URL environment variables are preserved. When the
-    transport plugin is loaded, ``HEADROOM_PROXY_URL`` tells it which proxy to
+    transport plugin is loaded, ``LEGROOM_PROXY_URL`` tells it which proxy to
     route to.
     """
     env = dict(environ or os.environ)
@@ -122,12 +122,12 @@ def build_launch_env(
     )
     env["OPENCODE_CONFIG_CONTENT"] = json.dumps(config_content, separators=(",", ":"))
 
-    display = ["OPENCODE_CONFIG_CONTENT={provider: headroom}"]
+    display = ["OPENCODE_CONFIG_CONTENT={provider: legroom}"]
     if "plugin" in config_content:
-        env["HEADROOM_PROXY_URL"] = f"http://127.0.0.1:{port}"
-        display.append(f"plugin={HEADROOM_OPENCODE_PLUGIN}")
+        env["LEGROOM_PROXY_URL"] = f"http://127.0.0.1:{port}"
+        display.append(f"plugin={LEGROOM_OPENCODE_PLUGIN}")
 
-    if project and "HEADROOM_PROJECT" not in env:
-        env["HEADROOM_PROJECT"] = project
+    if project and "LEGROOM_PROJECT" not in env:
+        env["LEGROOM_PROJECT"] = project
 
     return env, display

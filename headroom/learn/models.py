@@ -1,4 +1,4 @@
-"""Data models for Headroom Learn — tool-agnostic abstractions.
+"""Data models for Legroom Learn — tool-agnostic abstractions.
 
 These models normalize tool call data from ANY agent system (Claude Code, Cursor,
 Codex, custom agents) into a common format that analyzers can work with.
@@ -158,7 +158,7 @@ class Recommendation:
     confidence: float = 0.0  # 0-1, based on evidence strength
     evidence_count: int = 0  # Number of failures supporting this
     estimated_tokens_saved: int = 0  # Projected savings if recommendation is followed
-    # Loop weighting (see headroom.learn.loops): set when this recommendation
+    # Loop weighting (see legroom.learn.loops): set when this recommendation
     # guards against a detected repeated pattern. Loop guardrails are ranked
     # above one-off rules because their waste scales with repetition.
     is_loop_guardrail: bool = False

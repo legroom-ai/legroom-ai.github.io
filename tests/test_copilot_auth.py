@@ -9,7 +9,7 @@ from urllib import error as urllib_error
 
 import pytest
 
-from headroom import copilot_auth
+from legroom import copilot_auth
 
 
 @pytest.fixture(autouse=True)
@@ -36,7 +36,7 @@ def _isolated_copilot_auth(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> N
     ):
         monkeypatch.delenv(var, raising=False)
     monkeypatch.setattr(copilot_auth, "_provider", None)
-    monkeypatch.setenv("HEADROOM_COPILOT_AUTH_FILE", str(tmp_path / "copilot_auth.json"))
+    monkeypatch.setenv("LEGROOM_COPILOT_AUTH_FILE", str(tmp_path / "copilot_auth.json"))
     monkeypatch.setattr(copilot_auth, "read_macos_keychain_token", lambda *, host: None)
     monkeypatch.setattr(copilot_auth, "read_linux_secret_token", lambda *, host: None)
 
@@ -46,13 +46,13 @@ def test_read_cached_oauth_token_prefers_env(monkeypatch: pytest.MonkeyPatch) ->
     assert copilot_auth.read_cached_oauth_token() == "gho-env"
 
 
-def test_read_cached_oauth_token_prefers_headroom_login(
+def test_read_cached_oauth_token_prefers_legroom_login(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("GITHUB_COPILOT_TOKEN", "gho-env")
-    copilot_auth.save_headroom_copilot_oauth_token("gho-headroom")
+    copilot_auth.save_legroom_copilot_oauth_token("gho-legroom")
 
-    assert copilot_auth.read_cached_oauth_token() == "gho-headroom"
+    assert copilot_auth.read_cached_oauth_token() == "gho-legroom"
 
 
 def test_default_oauth_domain_uses_enterprise_url_host(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -190,7 +190,7 @@ def test_resolve_subscription_bearer_token_details_exchanges_oauth_candidate(
         lambda: [
             copilot_auth.CopilotTokenCandidate(
                 token="gho-oauth",
-                source="headroom-copilot-auth:/tmp/copilot_auth.json",
+                source="legroom-copilot-auth:/tmp/copilot_auth.json",
                 confidence="copilot-oauth",
             ),
         ],
@@ -215,7 +215,7 @@ def test_resolve_subscription_bearer_token_details_exchanges_oauth_candidate(
 
     assert resolution is not None
     assert resolution.token == "copilot-api"
-    assert resolution.source == "headroom-copilot-auth:/tmp/copilot_auth.json:token-exchange"
+    assert resolution.source == "legroom-copilot-auth:/tmp/copilot_auth.json:token-exchange"
     assert resolution.confidence == "copilot-token-exchange"
     assert resolution.api_url == "https://api.business.githubcopilot.com"
     assert resolution.token_fingerprint == copilot_auth.token_fingerprint("copilot-api")
@@ -738,13 +738,13 @@ def test_apply_copilot_api_auth_passes_through_github_oauth_bearer(
     """A caller-supplied GitHub OAuth (gho_/ghs_/ghp_/github_pat_) bearer
     token must be forwarded unchanged, not replaced.
 
-    Regression test for headroomlabs-ai/headroom#1813: this function used
+    Regression test for legroom-ai/legroom#1813: this function used
     to treat any gho_-prefixed token as "not a suitable Copilot API
-    token" and silently replace it with Headroom's own independently
+    token" and silently replace it with Legroom's own independently
     fetched/exchanged credential. That broke both:
     - a live Copilot CLI session (its own gho_ token worked directly for
       model "claude-sonnet-5", but got 400 model_not_supported once
-      Headroom substituted a differently-entitled token), and
+      Legroom substituted a differently-entitled token), and
     - OpenCode's native GitHub Copilot integration (#1813): replacing its
       gho_ token changed the effective client/integrator lane Copilot's
       backend sees, breaking model discovery/inference parity with
@@ -814,7 +814,7 @@ def test_is_forwardable_copilot_bearer_token_matches_expected_prefixes() -> None
     short-lived Copilot API tokens (tid_) AND GitHub OAuth tokens
     (gho_/ghs_/ghp_/github_pat_) as forwardable -- see
     _is_forwardable_copilot_bearer_token()'s docstring and
-    headroomlabs-ai/headroom#1813 for why GitHub OAuth tokens must be
+    legroom-ai/legroom#1813 for why GitHub OAuth tokens must be
     forwardable for chat-completion/inference requests.
     """
     assert copilot_auth._is_forwardable_copilot_bearer_token("tid_session_token") is True

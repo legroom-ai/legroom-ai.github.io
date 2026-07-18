@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from headroom.proxy.helpers import hash_query_for_log as helper_hash_query_for_log
-from headroom.proxy.query_log_policy import QUERY_LOG_HASH_BYTES, hash_query_for_log
+from legroom.proxy.helpers import hash_query_for_log as helper_hash_query_for_log
+from legroom.proxy.query_log_policy import QUERY_LOG_HASH_BYTES, hash_query_for_log
 
 
 def test_hash_query_for_log_is_stable_short_hex() -> None:

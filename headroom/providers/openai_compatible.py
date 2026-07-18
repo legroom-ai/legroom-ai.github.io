@@ -23,7 +23,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 
-from headroom.tokenizers import get_tokenizer
+from legroom.tokenizers import get_tokenizer
 
 from .base import Provider
 

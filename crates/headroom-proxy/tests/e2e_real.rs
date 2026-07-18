@@ -1,11 +1,11 @@
-//! Real end-to-end tests: Rust proxy → Python Headroom proxy → real LLM API.
+//! Real end-to-end tests: Rust proxy → Python Legroom proxy → real LLM API.
 //!
 //! These spawn the actual Python proxy as a subprocess and route real requests
-//! to Anthropic / OpenAI through the full chain. Skipped unless HEADROOM_E2E=1
+//! to Anthropic / OpenAI through the full chain. Skipped unless LEGROOM_E2E=1
 //! to keep `cargo test` fast and free.
 //!
 //! Run with:
-//!     HEADROOM_E2E=1 cargo test -p headroom-proxy --test e2e_real -- --nocapture
+//!     LEGROOM_E2E=1 cargo test -p legroom-proxy --test e2e_real -- --nocapture
 //!
 //! Reads API keys from .env at the repo root. No keys → individual tests skip.
 
@@ -21,7 +21,7 @@ use serde_json::{json, Value};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::{Child, Command};
 
-const E2E_GUARD: &str = "HEADROOM_E2E";
+const E2E_GUARD: &str = "LEGROOM_E2E";
 
 fn e2e_enabled() -> bool {
     std::env::var(E2E_GUARD).ok().as_deref() == Some("1")
@@ -76,7 +76,7 @@ struct PythonProxy {
 }
 
 impl PythonProxy {
-    /// Spawn `headroom proxy --port <ephemeral> --no-optimize` in passthrough
+    /// Spawn `legroom proxy --port <ephemeral> --no-optimize` in passthrough
     /// mode and wait until /livez returns 200. Inherits the env including
     /// API keys loaded from .env.
     async fn spawn() -> Self {
@@ -88,7 +88,7 @@ impl PythonProxy {
             p
         };
         let root = repo_root();
-        let venv_python = root.join(".venv/bin/headroom");
+        let venv_python = root.join(".venv/bin/legroom");
         assert!(
             venv_python.exists(),
             "expected venv at {} — run `make e2e-venv` or activate venv first",
@@ -184,7 +184,7 @@ async fn e2e_health_through_full_chain() {
         .unwrap();
     assert_eq!(r.status(), 200);
     let json: Value = r.json().await.unwrap();
-    assert_eq!(json["service"], "headroom-proxy");
+    assert_eq!(json["service"], "legroom-proxy");
 
     // Rust /healthz/upstream pings Python /healthz.
     let r = reqwest::get(format!("{}/healthz/upstream", proxy.url()))

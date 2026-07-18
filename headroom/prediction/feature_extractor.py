@@ -22,7 +22,7 @@ Usage:
     feature_vector = extractor.to_vector(features)
 
 Install full dependencies:
-    pip install headroom[prediction]
+    pip install legroom[prediction]
 """
 
 from __future__ import annotations
@@ -39,7 +39,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any, ClassVar
 
-from headroom.models.config import ML_MODEL_DEFAULTS
+from legroom.models.config import ML_MODEL_DEFAULTS
 
 if TYPE_CHECKING:
     from sentence_transformers import SentenceTransformer
@@ -1744,7 +1744,7 @@ class SemanticExtractor(BaseFeatureExtractor):
         try:
             if self._nlp is None:
                 # Use centralized registry for shared model instances
-                from headroom.models.ml_models import MLModelRegistry
+                from legroom.models.ml_models import MLModelRegistry
 
                 self._nlp = MLModelRegistry.get_spacy()
 
@@ -1992,7 +1992,7 @@ class EmbeddingExtractor(BaseFeatureExtractor):
             )
 
         # Use centralized registry for shared model instances
-        from headroom.models.ml_models import MLModelRegistry
+        from legroom.models.ml_models import MLModelRegistry
 
         self._model = MLModelRegistry.get_sentence_transformer(self.model_name, self.device)
         return self._model

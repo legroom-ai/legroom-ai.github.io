@@ -1,4 +1,4 @@
-"""Tests for the `headroom inspect` command (issue #1267).
+"""Tests for the `legroom inspect` command (issue #1267).
 
 The command reads the proxy's loopback ``/transformations/feed`` endpoint and
 renders original-vs-compressed content. Tests stub ``probe_json`` so no proxy
@@ -15,11 +15,11 @@ from unittest.mock import patch
 
 from click.testing import CliRunner
 
-from headroom.cli.inspect import _extract_text, _role
+from legroom.cli.inspect import _extract_text, _role
 
 
 def _run(args: list[str]):
-    from headroom.cli.main import main
+    from legroom.cli.main import main
 
     return CliRunner().invoke(main, ["inspect", *args])
 
@@ -40,7 +40,7 @@ def test_role_extraction() -> None:
 
 
 def test_no_proxy_errors_cleanly() -> None:
-    with patch("headroom.install.health.probe_json", return_value=None):
+    with patch("legroom.install.health.probe_json", return_value=None):
         result = _run([])
     assert result.exit_code != 0
     assert "No reachable proxy" in result.output
@@ -48,7 +48,7 @@ def test_no_proxy_errors_cleanly() -> None:
 
 def test_log_messages_disabled_hint() -> None:
     payload = {"transformations": [], "log_full_messages": False}
-    with patch("headroom.install.health.probe_json", return_value=payload):
+    with patch("legroom.install.health.probe_json", return_value=payload):
         result = _run([])
     assert result.exit_code != 0
     assert "--log-messages" in result.output
@@ -56,7 +56,7 @@ def test_log_messages_disabled_hint() -> None:
 
 def test_empty_feed_message() -> None:
     payload = {"transformations": [], "log_full_messages": True}
-    with patch("headroom.install.health.probe_json", return_value=payload):
+    with patch("legroom.install.health.probe_json", return_value=payload):
         result = _run([])
     assert result.exit_code == 0
     assert "No requests recorded" in result.output
@@ -86,7 +86,7 @@ def _feed_payload() -> dict:
 
 
 def test_text_render_shows_diff_and_header() -> None:
-    with patch("headroom.install.health.probe_json", return_value=_feed_payload()):
+    with patch("legroom.install.health.probe_json", return_value=_feed_payload()):
         result = _run([])
     assert result.exit_code == 0
     out = result.output
@@ -98,7 +98,7 @@ def test_text_render_shows_diff_and_header() -> None:
 
 
 def test_json_format_emits_raw_feed() -> None:
-    with patch("headroom.install.health.probe_json", return_value=_feed_payload()):
+    with patch("legroom.install.health.probe_json", return_value=_feed_payload()):
         result = _run(["--format", "json"])
     assert result.exit_code == 0
     parsed = json.loads(result.output)

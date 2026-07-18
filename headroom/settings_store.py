@@ -1,11 +1,11 @@
-"""File-backed store for a curated subset of Headroom's runtime knobs (mostly ``HEADROOM_*``,
+"""File-backed store for a curated subset of Legroom's runtime knobs (mostly ``LEGROOM_*``,
 
 The dashboard settings GUI persists these knobs to ``settings.json`` in the
 workspace dir and this module applies them to ``os.environ`` at CLI startup
 with ``os.environ.setdefault`` — so an explicit shell export always wins over
 the stored file. Precedence: ``export > settings.json > code default``.
 
-Deliberately dependency-light (stdlib + ``headroom.paths`` only, no FastAPI or
+Deliberately dependency-light (stdlib + ``legroom.paths`` only, no FastAPI or
 proxy imports) so the early CLI apply hook — which must run
 before Click parses ``envvar=`` options — stays cheap and import-safe.
 
@@ -25,7 +25,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from headroom import paths
+from legroom import paths
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ _MASK = "••••••"  # ●●●●●● for masked secret values
 class SettingField:
     """One curated, GUI-editable env knob.
 
-    ``env`` is the ``HEADROOM_*`` variable the knob maps to; ``key`` is the
+    ``env`` is the ``LEGROOM_*`` variable the knob maps to; ``key`` is the
     JSON/API key. ``type`` drives coercion, validation and the UI control.
     ``manifest_managed`` marks a knob baked into the install manifest on
     supervised (docker/service) deploys — ``settings.json`` cannot change it
@@ -59,12 +59,12 @@ class SettingField:
 
 
 # Curated registry. Env formats verified against each knob's Click option in
-# headroom/cli/proxy.py (bools serialize to "1"/"0", which Click's BOOL type and
-# the body-resolved HEADROOM_CODE_AWARE_ENABLED reader both accept).
+# legroom/cli/proxy.py (bools serialize to "1"/"0", which Click's BOOL type and
+# the body-resolved LEGROOM_CODE_AWARE_ENABLED reader both accept).
 SETTINGS: tuple[SettingField, ...] = (
     # --- Compression ---
     SettingField(
-        "HEADROOM_SAVINGS_PROFILE",
+        "LEGROOM_SAVINGS_PROFILE",
         "savings_profile",
         "Savings profile",
         "Compression",
@@ -75,7 +75,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="basic",
     ),
     SettingField(
-        "HEADROOM_TARGET_RATIO",
+        "LEGROOM_TARGET_RATIO",
         "target_ratio",
         "Target keep-ratio",
         "Compression",
@@ -87,7 +87,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="basic",
     ),
     SettingField(
-        "HEADROOM_DISABLE_KOMPRESS",
+        "LEGROOM_DISABLE_KOMPRESS",
         "disable_kompress",
         "Disable Kompress",
         "Compression",
@@ -97,7 +97,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="basic",
     ),
     SettingField(
-        "HEADROOM_LOSSLESS",
+        "LEGROOM_LOSSLESS",
         "lossless",
         "Lossless mode",
         "Compression",
@@ -107,7 +107,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="basic",
     ),
     SettingField(
-        "HEADROOM_CODE_AWARE_ENABLED",
+        "LEGROOM_CODE_AWARE_ENABLED",
         "code_aware_enabled",
         "Code-aware compression",
         "Compression",
@@ -117,7 +117,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="basic",
     ),
     SettingField(
-        "HEADROOM_PROTECT_TOOL_RESULTS",
+        "LEGROOM_PROTECT_TOOL_RESULTS",
         "protect_tool_results",
         "Protect tool results",
         "Compression",
@@ -127,7 +127,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_NO_CCR",
+        "LEGROOM_NO_CCR",
         "no_ccr",
         "Disable CCR",
         "Compression",
@@ -138,7 +138,7 @@ SETTINGS: tuple[SettingField, ...] = (
     ),
     # --- Limits ---
     SettingField(
-        "HEADROOM_RPM",
+        "LEGROOM_RPM",
         "rpm",
         "Requests / min",
         "Limits",
@@ -149,7 +149,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="basic",
     ),
     SettingField(
-        "HEADROOM_TPM",
+        "LEGROOM_TPM",
         "tpm",
         "Tokens / min",
         "Limits",
@@ -160,7 +160,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="basic",
     ),
     SettingField(
-        "HEADROOM_LIMIT_CONCURRENCY",
+        "LEGROOM_LIMIT_CONCURRENCY",
         "limit_concurrency",
         "Concurrency limit",
         "Limits",
@@ -171,7 +171,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_WORKERS",
+        "LEGROOM_WORKERS",
         "workers",
         "Worker processes",
         "Limits",
@@ -183,7 +183,7 @@ SETTINGS: tuple[SettingField, ...] = (
     ),
     # --- Budget ---
     SettingField(
-        "HEADROOM_BUDGET",
+        "LEGROOM_BUDGET",
         "budget",
         "Budget (USD)",
         "Budget",
@@ -194,7 +194,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="basic",
     ),
     SettingField(
-        "HEADROOM_BUDGET_PERIOD",
+        "LEGROOM_BUDGET_PERIOD",
         "budget_period",
         "Budget period",
         "Budget",
@@ -206,7 +206,7 @@ SETTINGS: tuple[SettingField, ...] = (
     ),
     # --- Networking (baked into the install manifest on supervised deploys) ---
     SettingField(
-        "HEADROOM_HOST",
+        "LEGROOM_HOST",
         "host",
         "Host",
         "Networking",
@@ -217,7 +217,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_PORT",
+        "LEGROOM_PORT",
         "port",
         "Port",
         "Networking",
@@ -231,7 +231,7 @@ SETTINGS: tuple[SettingField, ...] = (
     ),
     # --- Logging ---
     SettingField(
-        "HEADROOM_LOG_MESSAGES",
+        "LEGROOM_LOG_MESSAGES",
         "log_messages",
         "Log message content",
         "Logging",
@@ -241,7 +241,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="basic",
     ),
     SettingField(
-        "HEADROOM_LOG_FILE",
+        "LEGROOM_LOG_FILE",
         "log_file",
         "Log file path",
         "Logging",
@@ -252,7 +252,7 @@ SETTINGS: tuple[SettingField, ...] = (
     ),
     # --- Networking (upstream connection pool tuning) ---
     SettingField(
-        "HEADROOM_MAX_CONNECTIONS",
+        "LEGROOM_MAX_CONNECTIONS",
         "max_connections",
         "Max upstream connections",
         "Networking",
@@ -263,7 +263,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_MAX_KEEPALIVE",
+        "LEGROOM_MAX_KEEPALIVE",
         "max_keepalive_connections",
         "Max keep-alive connections",
         "Networking",
@@ -274,7 +274,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_HTTP2",
+        "LEGROOM_HTTP2",
         "http2",
         "HTTP/2 upstream",
         "Networking",
@@ -284,7 +284,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_HTTP_PROXY",
+        "LEGROOM_HTTP_PROXY",
         "http_proxy",
         "Outbound HTTP proxy",
         "Networking",
@@ -294,7 +294,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_KEEPALIVE_EXPIRY",
+        "LEGROOM_KEEPALIVE_EXPIRY",
         "keepalive_expiry",
         "Keep-alive expiry (s)",
         "Networking",
@@ -306,7 +306,7 @@ SETTINGS: tuple[SettingField, ...] = (
     ),
     # --- Compression (additional internals) ---
     SettingField(
-        "HEADROOM_NO_CCR_PROACTIVE_EXPANSION",
+        "LEGROOM_NO_CCR_PROACTIVE_EXPANSION",
         "no_ccr_proactive_expansion",
         "Disable CCR proactive expansion",
         "Compression",
@@ -316,7 +316,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_COMPRESSION_MAX_WORKERS",
+        "LEGROOM_COMPRESSION_MAX_WORKERS",
         "compression_max_workers",
         "Compression worker pool size",
         "Compression",
@@ -326,7 +326,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_DISABLE_KOMPRESS_FALLBACK",
+        "LEGROOM_DISABLE_KOMPRESS_FALLBACK",
         "disable_kompress_fallback",
         "Disable Kompress fallback",
         "Compression",
@@ -336,7 +336,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_DISABLE_KOMPRESS_ANTHROPIC",
+        "LEGROOM_DISABLE_KOMPRESS_ANTHROPIC",
         "disable_kompress_anthropic",
         "Disable Kompress (Anthropic)",
         "Compression",
@@ -346,7 +346,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_DISABLE_KOMPRESS_OPENAI",
+        "LEGROOM_DISABLE_KOMPRESS_OPENAI",
         "disable_kompress_openai",
         "Disable Kompress (OpenAI)",
         "Compression",
@@ -357,7 +357,7 @@ SETTINGS: tuple[SettingField, ...] = (
     ),
     # --- CCR (experimental read-maturation) ---
     SettingField(
-        "HEADROOM_READ_MATURATION",
+        "LEGROOM_READ_MATURATION",
         "read_maturation",
         "Read maturation",
         "CCR",
@@ -367,7 +367,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_READ_MATURATION_QUIESCE_TURNS",
+        "LEGROOM_READ_MATURATION_QUIESCE_TURNS",
         "read_maturation_quiesce_turns",
         "Maturation quiesce turns",
         "CCR",
@@ -378,7 +378,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_READ_MATURATION_MAX_HOLD_TURNS",
+        "LEGROOM_READ_MATURATION_MAX_HOLD_TURNS",
         "read_maturation_max_hold_turns",
         "Maturation max hold turns",
         "CCR",
@@ -389,7 +389,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_READ_MATURATION_MIN_SIZE_BYTES",
+        "LEGROOM_READ_MATURATION_MIN_SIZE_BYTES",
         "read_maturation_min_size_bytes",
         "Maturation min size (bytes)",
         "CCR",
@@ -401,7 +401,7 @@ SETTINGS: tuple[SettingField, ...] = (
     ),
     # --- Extensions ---
     SettingField(
-        "HEADROOM_PROXY_EXTENSIONS",
+        "LEGROOM_PROXY_EXTENSIONS",
         "proxy_extensions",
         "Enabled proxy extensions",
         "Extensions",
@@ -412,7 +412,7 @@ SETTINGS: tuple[SettingField, ...] = (
     ),
     # --- Backend ---
     SettingField(
-        "HEADROOM_NO_SUBSCRIPTION_TRACKING",
+        "LEGROOM_NO_SUBSCRIPTION_TRACKING",
         "no_subscription_tracking",
         "Disable subscription tracking",
         "Backend",
@@ -422,7 +422,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_SUBSCRIPTION_POLL_INTERVAL",
+        "LEGROOM_SUBSCRIPTION_POLL_INTERVAL",
         "subscription_poll_interval",
         "Subscription poll interval (s)",
         "Backend",
@@ -434,7 +434,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_BACKEND",
+        "LEGROOM_BACKEND",
         "backend",
         "Upstream backend",
         "Backend",
@@ -444,7 +444,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="basic",
     ),
     SettingField(
-        "HEADROOM_ANYLLM_PROVIDER",
+        "LEGROOM_ANYLLM_PROVIDER",
         "anyllm_provider",
         "any-llm provider",
         "Backend",
@@ -454,7 +454,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_REGION",
+        "LEGROOM_REGION",
         "region",
         "Cloud region",
         "Backend",
@@ -465,7 +465,7 @@ SETTINGS: tuple[SettingField, ...] = (
     ),
     # --- Timeouts ---
     SettingField(
-        "HEADROOM_RETRY_MAX_ATTEMPTS",
+        "LEGROOM_RETRY_MAX_ATTEMPTS",
         "retry_max_attempts",
         "Upstream retry attempts",
         "Timeouts",
@@ -477,7 +477,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_RETRY_BASE_DELAY_MS",
+        "LEGROOM_RETRY_BASE_DELAY_MS",
         "retry_base_delay_ms",
         "Retry base delay (ms)",
         "Timeouts",
@@ -488,7 +488,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_RETRY_MAX_DELAY_MS",
+        "LEGROOM_RETRY_MAX_DELAY_MS",
         "retry_max_delay_ms",
         "Retry max delay (ms)",
         "Timeouts",
@@ -499,7 +499,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_REQUEST_TIMEOUT",
+        "LEGROOM_REQUEST_TIMEOUT",
         "request_timeout",
         "Request timeout (s)",
         "Timeouts",
@@ -509,7 +509,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_CONNECT_TIMEOUT_SECONDS",
+        "LEGROOM_CONNECT_TIMEOUT_SECONDS",
         "connect_timeout_seconds",
         "Connect timeout (s)",
         "Timeouts",
@@ -521,7 +521,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_ANTHROPIC_BUFFERED_REQUEST_TIMEOUT_SECONDS",
+        "LEGROOM_ANTHROPIC_BUFFERED_REQUEST_TIMEOUT_SECONDS",
         "anthropic_buffered_request_timeout_seconds",
         "Anthropic buffered timeout (s)",
         "Timeouts",
@@ -532,7 +532,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_ANTHROPIC_PRE_UPSTREAM_CONCURRENCY",
+        "LEGROOM_ANTHROPIC_PRE_UPSTREAM_CONCURRENCY",
         "anthropic_pre_upstream_concurrency",
         "Pre-upstream concurrency gate",
         "Timeouts",
@@ -542,7 +542,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_ANTHROPIC_PRE_UPSTREAM_ACQUIRE_TIMEOUT_SECONDS",
+        "LEGROOM_ANTHROPIC_PRE_UPSTREAM_ACQUIRE_TIMEOUT_SECONDS",
         "anthropic_pre_upstream_acquire_timeout_seconds",
         "Pre-upstream acquire timeout (s)",
         "Timeouts",
@@ -552,7 +552,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_ANTHROPIC_PRE_UPSTREAM_MEMORY_CONTEXT_TIMEOUT_SECONDS",
+        "LEGROOM_ANTHROPIC_PRE_UPSTREAM_MEMORY_CONTEXT_TIMEOUT_SECONDS",
         "anthropic_pre_upstream_memory_context_timeout_seconds",
         "Pre-upstream memory-context timeout (s)",
         "Timeouts",
@@ -563,17 +563,17 @@ SETTINGS: tuple[SettingField, ...] = (
     ),
     # --- Memory ---
     SettingField(
-        "HEADROOM_MEMORY_DB_PATH",
+        "LEGROOM_MEMORY_DB_PATH",
         "memory_db_path",
         "Memory DB path",
         "Memory",
         "str",
         default="",
-        help="Path to the legacy single-file memory SQLite DB. Default: {cwd}/.headroom/memory.db.",
+        help="Path to the legacy single-file memory SQLite DB. Default: {cwd}/.legroom/memory.db.",
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_MEMORY_PROJECT_ROOT",
+        "LEGROOM_MEMORY_PROJECT_ROOT",
         "memory_project_root",
         "Memory project root",
         "Memory",
@@ -583,7 +583,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_NO_MEMORY_TOOLS",
+        "LEGROOM_NO_MEMORY_TOOLS",
         "no_memory_tools",
         "Disable memory tools",
         "Memory",
@@ -593,7 +593,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="basic",
     ),
     SettingField(
-        "HEADROOM_NO_MEMORY_CONTEXT",
+        "LEGROOM_NO_MEMORY_CONTEXT",
         "no_memory_context",
         "Disable memory context injection",
         "Memory",
@@ -603,7 +603,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="basic",
     ),
     SettingField(
-        "HEADROOM_MEMORY_TOP_K",
+        "LEGROOM_MEMORY_TOP_K",
         "memory_top_k",
         "Memory retrieval top-K",
         "Memory",
@@ -615,7 +615,7 @@ SETTINGS: tuple[SettingField, ...] = (
         tier="advanced",
     ),
     SettingField(
-        "HEADROOM_MIN_EVIDENCE",
+        "LEGROOM_MIN_EVIDENCE",
         "min_evidence",
         "Minimum evidence count",
         "Memory",

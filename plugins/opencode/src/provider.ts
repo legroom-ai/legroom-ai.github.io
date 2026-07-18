@@ -1,4 +1,4 @@
-export interface HeadroomModelMapping {
+export interface LegroomModelMapping {
   name: string;
   limit: {
     context: number;
@@ -6,14 +6,14 @@ export interface HeadroomModelMapping {
   };
 }
 
-export interface HeadroomProviderOptions {
+export interface LegroomProviderOptions {
   proxyBaseUrl?: string;
   proxyPort?: number;
   defaultModel?: string;
-  models?: Record<string, HeadroomModelMapping>;
+  models?: Record<string, LegroomModelMapping>;
 }
 
-export const DEFAULT_MODELS: Record<string, HeadroomModelMapping> = {
+export const DEFAULT_MODELS: Record<string, LegroomModelMapping> = {
   "claude-sonnet-4-6": {
     name: "Claude Sonnet 4.6",
     limit: { context: 200000, output: 16384 },
@@ -38,52 +38,52 @@ export const DEFAULT_MODELS: Record<string, HeadroomModelMapping> = {
 
 export const DEFAULT_MODEL = "claude-sonnet-4-6";
 
-function resolveBaseUrl(options: HeadroomProviderOptions): string {
+function resolveBaseUrl(options: LegroomProviderOptions): string {
   if (options.proxyBaseUrl) return options.proxyBaseUrl.replace(/\/+$/, "");
   const port = options.proxyPort ?? 8787;
   return `http://127.0.0.1:${port}`;
 }
 
-export interface HeadroomProvider {
+export interface LegroomProvider {
   npm: string;
   name: string;
   options: {
     baseURL: string;
     apiKey?: string;
   };
-  models: Record<string, HeadroomModelMapping>;
+  models: Record<string, LegroomModelMapping>;
 }
 
-export function createHeadroomProvider(
-  options: HeadroomProviderOptions = {},
-): HeadroomProvider {
+export function createLegroomProvider(
+  options: LegroomProviderOptions = {},
+): LegroomProvider {
   const baseUrl = resolveBaseUrl(options);
   const models = options.models ?? DEFAULT_MODELS;
 
   return {
     npm: "@ai-sdk/openai-compatible",
-    name: "Headroom Proxy",
+    name: "Legroom Proxy",
     options: { baseURL: `${baseUrl}/v1` },
     // OpenCode namespaces model ids by provider key, so entries must be bare
-    // ids ("claude-sonnet-4-6"), referenced as "headroom/<id>".
+    // ids ("claude-sonnet-4-6"), referenced as "legroom/<id>".
     models: { ...models },
   };
 }
 
 export function buildOpencodeConfigContent(
-  options: HeadroomProviderOptions = {},
+  options: LegroomProviderOptions = {},
 ): Record<string, unknown> {
   const defaultModel = options.defaultModel ?? DEFAULT_MODEL;
-  const provider = createHeadroomProvider(options);
+  const provider = createLegroomProvider(options);
 
   return {
-    provider: { headroom: provider },
-    model: `headroom/${defaultModel}`,
+    provider: { legroom: provider },
+    model: `legroom/${defaultModel}`,
   };
 }
 
 export function buildOpencodeConfigContentJson(
-  options: HeadroomProviderOptions = {},
+  options: LegroomProviderOptions = {},
 ): string {
   return JSON.stringify(buildOpencodeConfigContent(options));
 }

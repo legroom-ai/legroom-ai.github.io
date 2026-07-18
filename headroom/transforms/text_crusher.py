@@ -1,8 +1,8 @@
 """TextCrusher — fast deterministic extractive prose compressor (Phase 2, #1171).
 
-Thin Python wrapper over the native ``headroom._core.TextCrusher``. The
+Thin Python wrapper over the native ``legroom._core.TextCrusher``. The
 algorithm (sentence scoring with the SHARED BM25 relevance scorer + global
-word-shingle near-dup suppression) lives in Rust (``crates/headroom-core``),
+word-shingle near-dup suppression) lives in Rust (``crates/legroom-core``),
 reusing the same scorer SmartCrusher uses rather than reimplementing it. This
 wrapper only keeps the Python-facing interface stable for ContentRouter + tests.
 
@@ -17,8 +17,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from headroom._core import TextCrusher as _RustTextCrusher
-from headroom._core import TextCrusherConfig as _RustTextCrusherConfig
+from legroom._core import TextCrusher as _RustTextCrusher
+from legroom._core import TextCrusherConfig as _RustTextCrusherConfig
 
 
 @dataclass

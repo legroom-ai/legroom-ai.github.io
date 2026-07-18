@@ -2,7 +2,7 @@
 
 Covers the two halves of the fix:
 
-* ``headroom wrap claude`` injects ``ENABLE_TOOL_SEARCH`` into the launched
+* ``legroom wrap claude`` injects ``ENABLE_TOOL_SEARCH`` into the launched
   Claude Code environment (with correct precedence / validation), and
 * the proxy detects a Claude Code request that is *not* deferring tools and
   emits a single actionable hint for users who run ``claude`` manually.
@@ -12,13 +12,13 @@ from __future__ import annotations
 
 import pytest
 
-from headroom.cli.wrap import (
+from legroom.cli.wrap import (
     _TOOL_SEARCH_DEFAULT,
     _TOOL_SEARCH_ENV,
     _configure_tool_search_env,
     _normalize_tool_search_mode,
 )
-from headroom.proxy.helpers import (
+from legroom.proxy.helpers import (
     claude_code_tool_search_inactive,
     format_tool_search_disabled_hint,
     reset_tool_search_hint_state,
@@ -172,7 +172,7 @@ def test_hint_slot_fires_once() -> None:
 # Server-side Tool Search injection for plain-API clients (opencode)
 # ---------------------------------------------------------------------------
 
-from headroom.proxy.helpers import (  # noqa: E402
+from legroom.proxy.helpers import (  # noqa: E402
     _TOOL_SEARCH_DEFAULT_NAME,
     _TOOL_SEARCH_DEFAULT_TYPE,
     _TOOL_SEARCH_MIN_TOOLS,

@@ -13,7 +13,7 @@ from __future__ import annotations
 from collections import defaultdict
 from pathlib import Path
 
-from headroom.memory.writers.base import (
+from legroom.memory.writers.base import (
     MARKER_END,
     MARKER_PATTERN,
     MARKER_START,
@@ -53,8 +53,8 @@ class CursorMemoryWriter(AgentWriter):
         return "\n".join(lines)
 
     def default_path(self) -> Path:
-        """Default: .cursor/rules/headroom-memory.mdc in project root."""
-        return self._project_path / ".cursor" / "rules" / "headroom-memory.mdc"
+        """Default: .cursor/rules/legroom-memory.mdc in project root."""
+        return self._project_path / ".cursor" / "rules" / "legroom-memory.mdc"
 
     def export(
         self,
@@ -112,11 +112,11 @@ class CursorMemoryWriter(AgentWriter):
             # Create new .mdc file with frontmatter
             full_content = (
                 "---\n"
-                "description: Headroom-learned patterns from proxy traffic\n"
+                "description: Legroom-learned patterns from proxy traffic\n"
                 "alwaysApply: true\n"
                 "---\n"
                 "\n"
-                "# Headroom Learned Context\n"
+                "# Legroom Learned Context\n"
                 "\n"
                 f"{MARKER_START}\n{body}\n{MARKER_END}\n"
             )

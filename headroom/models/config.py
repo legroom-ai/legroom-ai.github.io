@@ -1,17 +1,17 @@
-"""Central configuration for all ML models used in Headroom.
+"""Central configuration for all ML models used in Legroom.
 
 This is the SINGLE SOURCE OF TRUTH for model defaults. Change values here
 to switch model variants across the entire codebase.
 
 Usage:
-    from headroom.models.config import ML_MODEL_DEFAULTS
+    from legroom.models.config import ML_MODEL_DEFAULTS
 
     # Get default model name
     model = ML_MODEL_DEFAULTS.sentence_transformer
 
     # Or use environment variables to override at runtime:
-    # HEADROOM_SENTENCE_TRANSFORMER=intfloat/e5-small-v2
-    # HEADROOM_SIGLIP=google/siglip-base-patch16-224
+    # LEGROOM_SENTENCE_TRANSFORMER=intfloat/e5-small-v2
+    # LEGROOM_SIGLIP=google/siglip-base-patch16-224
 """
 
 from __future__ import annotations
@@ -24,14 +24,14 @@ from dataclasses import dataclass, field
 class MLModelConfig:
     """Central configuration for all ML model defaults.
 
-    All model names are defined here. Components throughout Headroom
+    All model names are defined here. Components throughout Legroom
     import these defaults, so changing a value here changes it everywhere.
 
     Environment variables can override any default:
-    - HEADROOM_SENTENCE_TRANSFORMER
-    - HEADROOM_SIGLIP
-    - HEADROOM_SPACY
-    - HEADROOM_TECHNIQUE_ROUTER
+    - LEGROOM_SENTENCE_TRANSFORMER
+    - LEGROOM_SIGLIP
+    - LEGROOM_SPACY
+    - LEGROOM_TECHNIQUE_ROUTER
 
     Attributes:
         sentence_transformer: Model for text embeddings (semantic similarity, memory).
@@ -55,22 +55,22 @@ class MLModelConfig:
 
     # Text Embeddings (SentenceTransformer)
     sentence_transformer: str = field(
-        default_factory=lambda: os.environ.get("HEADROOM_SENTENCE_TRANSFORMER", "all-MiniLM-L6-v2")
+        default_factory=lambda: os.environ.get("LEGROOM_SENTENCE_TRANSFORMER", "all-MiniLM-L6-v2")
     )
     sentence_transformer_dim: int = 384
 
     # Image Embeddings (SIGLIP)
     siglip: str = field(
-        default_factory=lambda: os.environ.get("HEADROOM_SIGLIP", "google/siglip-base-patch16-224")
+        default_factory=lambda: os.environ.get("LEGROOM_SIGLIP", "google/siglip-base-patch16-224")
     )
 
     # Named Entity Recognition (spaCy)
-    spacy: str = field(default_factory=lambda: os.environ.get("HEADROOM_SPACY", "en_core_web_sm"))
+    spacy: str = field(default_factory=lambda: os.environ.get("LEGROOM_SPACY", "en_core_web_sm"))
 
     # Image Technique Router
     technique_router: str = field(
         default_factory=lambda: os.environ.get(
-            "HEADROOM_TECHNIQUE_ROUTER", "ghaliba3/technique-router"
+            "LEGROOM_TECHNIQUE_ROUTER", "ghaliba3/technique-router"
         )
     )
 

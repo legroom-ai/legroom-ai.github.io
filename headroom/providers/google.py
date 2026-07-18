@@ -1,7 +1,7 @@
-"""Google Gemini provider for Headroom SDK.
+"""Google Gemini provider for Legroom SDK.
 
 Supports Google's Gemini models through two interfaces:
-1. OpenAI-compatible endpoint (recommended for Headroom)
+1. OpenAI-compatible endpoint (recommended for Legroom)
 2. Native Google AI SDK (for advanced features)
 
 Token counting uses Google's official countTokens API when a client
@@ -9,7 +9,7 @@ is provided. This gives accurate counts for all content types.
 
 Usage:
     import google.generativeai as genai
-    from headroom import GoogleProvider
+    from legroom import GoogleProvider
 
     genai.configure(api_key="your-api-key")
     provider = GoogleProvider(client=genai)  # Accurate counting via API
@@ -25,8 +25,8 @@ import warnings
 from datetime import date
 from typing import Any
 
-from headroom.models.registry import ModelRegistry
-from headroom.tokenizers import EstimatingTokenCounter
+from legroom.models.registry import ModelRegistry
+from legroom.tokenizers import EstimatingTokenCounter
 
 from .base import Provider, TokenCounter
 

@@ -1,7 +1,7 @@
 """Report card generator for evaluation suite results.
 
 Produces publishable Markdown, JSON, and HTML reports showing
-baseline vs Headroom accuracy + token savings.
+baseline vs Legroom accuracy + token savings.
 """
 
 from __future__ import annotations
@@ -21,9 +21,9 @@ class BenchmarkRunResult:
     category: str  # "reasoning", "factual", "knowledge", "code", "qa", "tool_use", "lossless"
     tier: int
 
-    # For lm-eval (standard benchmarks): baseline vs headroom scores
+    # For lm-eval (standard benchmarks): baseline vs legroom scores
     baseline_score: float | None = None
-    headroom_score: float | None = None
+    legroom_score: float | None = None
     delta: float | None = None
 
     # For before-after / compression-only: accuracy preservation rate
@@ -56,8 +56,8 @@ class BenchmarkRunResult:
         }
         if self.baseline_score is not None:
             d["baseline_score"] = round(self.baseline_score, 4)
-        if self.headroom_score is not None:
-            d["headroom_score"] = round(self.headroom_score, 4)
+        if self.legroom_score is not None:
+            d["legroom_score"] = round(self.legroom_score, 4)
         if self.delta is not None:
             d["delta"] = round(self.delta, 4)
         if self.accuracy_rate is not None:
@@ -80,7 +80,7 @@ class SuiteResult:
 
     @property
     def standard_benchmarks(self) -> list[BenchmarkRunResult]:
-        """Benchmarks with baseline vs headroom comparison."""
+        """Benchmarks with baseline vs legroom comparison."""
         return [b for b in self.benchmarks if b.baseline_score is not None]
 
     @property
@@ -136,7 +136,7 @@ class SuiteResult:
 def generate_markdown(result: SuiteResult) -> str:
     """Generate publishable Markdown report card."""
     lines = [
-        "## Headroom Accuracy Report Card",
+        "## Legroom Accuracy Report Card",
         "",
         f"Model: `{result.model}` | Date: {result.timestamp[:10]} "
         f"| Suite Cost: ${result.total_cost_usd:.2f} "
@@ -151,19 +151,19 @@ def generate_markdown(result: SuiteResult) -> str:
             [
                 '### Standard Benchmarks -- "No Accuracy Loss"',
                 "",
-                "| Benchmark | Category | N | Baseline | Headroom | Delta | Tokens Saved | Status |",
+                "| Benchmark | Category | N | Baseline | Legroom | Delta | Tokens Saved | Status |",
                 "|-----------|----------|---|----------|----------|-------|--------------|--------|",
             ]
         )
         for b in standard:
             delta_str = f"{b.delta:+.3f}" if b.delta is not None else "N/A"
             baseline_str = f"{b.baseline_score:.3f}" if b.baseline_score is not None else "N/A"
-            headroom_str = f"{b.headroom_score:.3f}" if b.headroom_score is not None else "N/A"
+            legroom_str = f"{b.legroom_score:.3f}" if b.legroom_score is not None else "N/A"
             comp_str = f"{b.avg_compression_ratio:.0%}" if b.avg_compression_ratio > 0 else "--"
             status = "PASS" if b.passed else "FAIL"
             lines.append(
                 f"| {b.name} | {b.category} | {b.n_samples} | {baseline_str} | "
-                f"{headroom_str} | {delta_str} | {comp_str} | {status} |"
+                f"{legroom_str} | {delta_str} | {comp_str} | {status} |"
             )
         lines.append("")
 
@@ -219,13 +219,13 @@ def generate_html(result: SuiteResult) -> str:
     for b in standard:
         delta_str = f"{b.delta:+.3f}" if b.delta is not None else "N/A"
         baseline_str = f"{b.baseline_score:.3f}" if b.baseline_score is not None else "N/A"
-        headroom_str = f"{b.headroom_score:.3f}" if b.headroom_score is not None else "N/A"
+        legroom_str = f"{b.legroom_score:.3f}" if b.legroom_score is not None else "N/A"
         comp_str = f"{b.avg_compression_ratio:.0%}" if b.avg_compression_ratio > 0 else "--"
         status = "PASS" if b.passed else "FAIL"
         status_class = "pass" if b.passed else "fail"
         standard_rows += f"""        <tr>
             <td>{b.name}</td><td>{b.category}</td><td>{b.n_samples}</td>
-            <td>{baseline_str}</td><td>{headroom_str}</td><td>{delta_str}</td>
+            <td>{baseline_str}</td><td>{legroom_str}</td><td>{delta_str}</td>
             <td>{comp_str}</td>
             <td><span class="badge {status_class}">{status}</span></td>
         </tr>\n"""
@@ -245,7 +245,7 @@ def generate_html(result: SuiteResult) -> str:
     return f"""<!DOCTYPE html>
 <html>
 <head>
-    <title>Headroom Accuracy Report Card</title>
+    <title>Legroom Accuracy Report Card</title>
     <style>
         body {{
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -289,7 +289,7 @@ def generate_html(result: SuiteResult) -> str:
     </style>
 </head>
 <body>
-    <h1>Headroom Accuracy Report Card</h1>
+    <h1>Legroom Accuracy Report Card</h1>
     <div class="meta">
         Model: <code>{result.model}</code> |
         Date: {result.timestamp[:10]} |
@@ -312,7 +312,7 @@ def generate_html(result: SuiteResult) -> str:
     </div>
 
     {"<h2>Standard Benchmarks</h2>" if standard else ""}
-    {"<table><tr><th>Benchmark</th><th>Category</th><th>N</th><th>Baseline</th><th>Headroom</th><th>Delta</th><th>Saved</th><th>Status</th></tr>" if standard else ""}
+    {"<table><tr><th>Benchmark</th><th>Category</th><th>N</th><th>Baseline</th><th>Legroom</th><th>Delta</th><th>Saved</th><th>Status</th></tr>" if standard else ""}
     {standard_rows}
     {"</table>" if standard else ""}
 
@@ -321,7 +321,7 @@ def generate_html(result: SuiteResult) -> str:
     {compression_rows}
     {"</table>" if compression else ""}
 
-    <footer>Generated by <strong>Headroom Evaluation Framework</strong> | <code>pip install headroom-ai[evals]</code></footer>
+    <footer>Generated by <strong>Legroom Evaluation Framework</strong> | <code>pip install legroom-ai[evals]</code></footer>
 </body>
 </html>"""
 

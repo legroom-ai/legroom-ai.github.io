@@ -1,10 +1,10 @@
 """
-Headroom Worst-Case Benchmark: Where Compression Hurts
+Legroom Worst-Case Benchmark: Where Compression Hurts
 
-This benchmark tests scenarios where Headroom's statistical compression
+This benchmark tests scenarios where Legroom's statistical compression
 may NOT be beneficial - to understand the limits of the approach.
 
-Worst cases for Headroom:
+Worst cases for Legroom:
 1. Highly unique data (no patterns to compress)
 2. Data where every item is equally important
 3. Data where subtle differences matter
@@ -28,11 +28,11 @@ except ImportError:
     OPENAI_AVAILABLE = False
 
 try:
-    from headroom import HeadroomClient, OpenAIProvider
+    from legroom import LegroomClient, OpenAIProvider
 
-    HEADROOM_AVAILABLE = True
+    LEGROOM_AVAILABLE = True
 except ImportError:
-    HEADROOM_AVAILABLE = False
+    LEGROOM_AVAILABLE = False
 
 
 # =============================================================================
@@ -45,7 +45,7 @@ def generate_unique_support_tickets(num_tickets: int = 50) -> dict:
     Customer support tickets where EVERY ticket is unique and important.
     No redundancy - each customer has a different problem.
 
-    This is hard for Headroom because:
+    This is hard for Legroom because:
     - No repeated patterns to compress
     - Every ticket needs attention
     - Can't safely remove any ticket
@@ -137,7 +137,7 @@ def generate_unique_error_traces(num_traces: int = 30) -> dict:
     """
     Unique stack traces where each error is different.
 
-    This is hard for Headroom because:
+    This is hard for Legroom because:
     - Each stack trace has different functions, line numbers
     - Each error message is unique
     - All errors need investigation
@@ -301,7 +301,7 @@ def generate_medical_records(num_patients: int = 25) -> dict:
     """
     Medical records where EVERY detail matters.
 
-    This is hard for Headroom because:
+    This is hard for Legroom because:
     - Similar symptoms can have different diagnoses
     - Missing any detail could be dangerous
     - "Repetitive" info (vitals) is actually critical data
@@ -394,7 +394,7 @@ def generate_legal_discovery_docs(num_docs: int = 40) -> dict:
     """
     Legal discovery documents where EVERY document must be reviewed.
 
-    This is hard for Headroom because:
+    This is hard for Legroom because:
     - Can't skip any document - legal requirement
     - "Similar" emails might have crucial differences
     - Need exact quotes, not summaries
@@ -462,7 +462,7 @@ def generate_legal_discovery_docs(num_docs: int = 40) -> dict:
 
 @dataclass
 class WorstCaseScenario:
-    """A scenario where Headroom might struggle."""
+    """A scenario where Legroom might struggle."""
 
     name: str
     description: str
@@ -708,7 +708,7 @@ def run_worst_case_benchmark(api_key: str = None) -> dict:
         raise ValueError("OPENAI_API_KEY required")
 
     print("=" * 70)
-    print("HEADROOM WORST-CASE BENCHMARK")
+    print("LEGROOM WORST-CASE BENCHMARK")
     print("Testing scenarios where compression may hurt performance")
     print("=" * 70)
 
@@ -719,17 +719,17 @@ def run_worst_case_benchmark(api_key: str = None) -> dict:
 
     baseline_client = OpenAI(api_key=api_key)
 
-    if HEADROOM_AVAILABLE:
-        db_path = os.path.join(tempfile.gettempdir(), "headroom_worst_case.db")
-        headroom_client = HeadroomClient(
+    if LEGROOM_AVAILABLE:
+        db_path = os.path.join(tempfile.gettempdir(), "legroom_worst_case.db")
+        legroom_client = LegroomClient(
             original_client=OpenAI(api_key=api_key),
             provider=OpenAIProvider(),
             store_url=f"sqlite:///{db_path}",
             default_mode="optimize",
         )
     else:
-        print("WARNING: Headroom not available, running baseline only")
-        headroom_client = None
+        print("WARNING: Legroom not available, running baseline only")
+        legroom_client = None
 
     scenarios = [
         create_support_triage_scenario(),
@@ -768,30 +768,30 @@ def run_worst_case_benchmark(api_key: str = None) -> dict:
 
         results.append(baseline_result)
 
-        # Run Headroom
-        if headroom_client:
-            print("\n[2/2] Running HEADROOM...")
-            headroom_result = run_scenario(headroom_client, scenario, "headroom")
-            print(f"   Input tokens: {headroom_result.input_tokens:,}")
-            print(f"   Output tokens: {headroom_result.output_tokens:,}")
-            print(f"   Cost: ${headroom_result.cost_usd:.4f}")
+        # Run Legroom
+        if legroom_client:
+            print("\n[2/2] Running LEGROOM...")
+            legroom_result = run_scenario(legroom_client, scenario, "legroom")
+            print(f"   Input tokens: {legroom_result.input_tokens:,}")
+            print(f"   Output tokens: {legroom_result.output_tokens:,}")
+            print(f"   Cost: ${legroom_result.cost_usd:.4f}")
 
-            avg_headroom_score = (
-                sum(v["score"] for v in headroom_result.validation_scores.values())
-                / len(headroom_result.validation_scores)
-                if headroom_result.validation_scores
+            avg_legroom_score = (
+                sum(v["score"] for v in legroom_result.validation_scores.values())
+                / len(legroom_result.validation_scores)
+                if legroom_result.validation_scores
                 else 0
             )
-            print(f"   Validation score: {avg_headroom_score:.1%}")
+            print(f"   Validation score: {avg_legroom_score:.1%}")
 
-            results.append(headroom_result)
+            results.append(legroom_result)
 
             # Compare
             if baseline_result.input_tokens > 0:
                 token_change = (
-                    headroom_result.input_tokens - baseline_result.input_tokens
+                    legroom_result.input_tokens - baseline_result.input_tokens
                 ) / baseline_result.input_tokens
-                quality_change = avg_headroom_score - avg_baseline_score
+                quality_change = avg_legroom_score - avg_baseline_score
 
                 print("\n   📊 COMPARISON:")
                 print(
@@ -810,13 +810,13 @@ def run_worst_case_benchmark(api_key: str = None) -> dict:
     print("=" * 70)
 
     baseline_results = [r for r in results if r.mode == "baseline"]
-    headroom_results = [r for r in results if r.mode == "headroom"]
+    legroom_results = [r for r in results if r.mode == "legroom"]
 
-    print(f"\n{'Scenario':<30} {'Baseline Tokens':>15} {'Headroom Tokens':>15} {'Quality Δ':>12}")
+    print(f"\n{'Scenario':<30} {'Baseline Tokens':>15} {'Legroom Tokens':>15} {'Quality Δ':>12}")
     print("-" * 72)
 
     for br in baseline_results:
-        hr = next((r for r in headroom_results if r.scenario_name == br.scenario_name), None)
+        hr = next((r for r in legroom_results if r.scenario_name == br.scenario_name), None)
         if hr:
             b_score = (
                 sum(v["score"] for v in br.validation_scores.values()) / len(br.validation_scores)
@@ -843,14 +843,14 @@ def run_worst_case_benchmark(api_key: str = None) -> dict:
             }
             for r in baseline_results
         ],
-        "headroom": [
+        "legroom": [
             {
                 "scenario": r.scenario_name,
                 "tokens": r.input_tokens,
                 "cost": r.cost_usd,
                 "validation": r.validation_scores,
             }
-            for r in headroom_results
+            for r in legroom_results
         ],
     }
 

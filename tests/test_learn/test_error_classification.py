@@ -3,8 +3,8 @@ the generic RUNTIME_ERROR catch-all."""
 
 from __future__ import annotations
 
-from headroom.learn._shared import classify_error
-from headroom.learn.models import ErrorCategory
+from legroom.learn._shared import classify_error
+from legroom.learn.models import ErrorCategory
 
 
 def test_timeout_repr_is_not_shadowed_by_runtime_error() -> None:

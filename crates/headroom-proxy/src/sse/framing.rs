@@ -7,7 +7,7 @@
 //! codepoint (any emoji, any non-ASCII character) straddled a chunk
 //! boundary. Production telemetry logged 1946 parse failures over 9
 //! days from this single quirk — see
-//! `~/Desktop/HEADROOM_PROXY_LOG_FINDINGS_2026_05_03.md` (P1-15).
+//! `~/Desktop/LEGROOM_PROXY_LOG_FINDINGS_2026_05_03.md` (P1-15).
 //!
 //! The Rust framer accumulates raw bytes into a `BytesMut` buffer and
 //! finds event terminators (`\n\n`) in **bytes**. UTF-8 is decoded

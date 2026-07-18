@@ -25,9 +25,9 @@ import click
 import pytest
 from click.testing import CliRunner
 
-from headroom import paths as paths_mod
-from headroom.cli import wrap as wrap_mod
-from headroom.cli.main import main
+from legroom import paths as paths_mod
+from legroom.cli import wrap as wrap_mod
+from legroom.cli.main import main
 
 # ---------------------------------------------------------------------------
 # _print_wrap_banner — centering math + box drawing.
@@ -73,7 +73,7 @@ def test_print_wrap_banner_box_is_inner_width_chars_wide(agent: str) -> None:
     # The middle line has the centered title.
     assert title_line.startswith("  ║")
     assert title_line.endswith("║")
-    assert f"HEADROOM WRAP: {agent.upper()}" in title_line
+    assert f"LEGROOM WRAP: {agent.upper()}" in title_line
 
 
 def test_print_wrap_banner_title_is_centered_or_near_centered() -> None:
@@ -87,7 +87,7 @@ def test_print_wrap_banner_title_is_centered_or_near_centered() -> None:
     inner = title_line[3:-1]
     assert len(inner) == wrap_mod._WRAP_BANNER_INNER_WIDTH
 
-    title = "HEADROOM WRAP: CLINE"
+    title = "LEGROOM WRAP: CLINE"
     pad_left = len(inner) - len(inner.lstrip(" "))
     pad_right = len(inner) - len(inner.rstrip(" "))
     assert inner.strip() == title
@@ -110,7 +110,7 @@ def test_claude_context_tool_is_opt_in_for_prepare_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Claude skips context-tool setup unless the positive flag is passed."""
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
     runner = CliRunner()
 
     with patch.object(wrap_mod, "_prepare_wrap_rtk") as prepare_rtk:
@@ -136,7 +136,7 @@ def test_claude_context_tool_opt_in_preserves_lean_ctx_selection(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The positive flag enables the configured lean-ctx installer."""
-    monkeypatch.setenv("HEADROOM_CONTEXT_TOOL", "lean-ctx")
+    monkeypatch.setenv("LEGROOM_CONTEXT_TOOL", "lean-ctx")
     runner = CliRunner()
 
     with patch.object(wrap_mod, "_setup_lean_ctx_agent") as setup_lean_ctx:
@@ -183,8 +183,8 @@ def test_non_claude_context_tool_setup_remains_default(
 
 
 def test_setup_context_tool_lean_ctx_calls_lean_ctx_setup(monkeypatch: pytest.MonkeyPatch) -> None:
-    """When HEADROOM_CONTEXT_TOOL=lean-ctx, helper calls _setup_lean_ctx_agent."""
-    monkeypatch.setenv("HEADROOM_CONTEXT_TOOL", "lean-ctx")
+    """When LEGROOM_CONTEXT_TOOL=lean-ctx, helper calls _setup_lean_ctx_agent."""
+    monkeypatch.setenv("LEGROOM_CONTEXT_TOOL", "lean-ctx")
     called_with: dict[str, Any] = {}
 
     def fake_lean_ctx(agent: str, verbose: bool = False) -> Path | None:
@@ -214,7 +214,7 @@ def test_setup_context_tool_rtk_success_calls_on_rtk_ready(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """rtk install success → on_rtk_ready receives the rtk binary path."""
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
     fake_rtk = Path("/tmp/rtk-fake")
     received: list[Path] = []
 
@@ -241,7 +241,7 @@ def test_setup_context_tool_rtk_failure_with_not_required_returns_none(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """rtk install failure + rtk_required=False → silent fall-through, None."""
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
     monkeypatch.setattr(wrap_mod, "_ensure_rtk_binary", lambda verbose=False: None)
 
     on_rtk_called = False
@@ -272,7 +272,7 @@ def test_setup_context_tool_rtk_failure_with_required_exits_1(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """rtk install failure + rtk_required=True → SystemExit(1) with refusal message."""
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
     monkeypatch.setattr(wrap_mod, "_ensure_rtk_binary", lambda verbose=False: None)
 
     runner = CliRunner()
@@ -296,7 +296,7 @@ def test_setup_context_tool_keyboardinterrupt_emits_interrupted_and_exits_130(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """KeyboardInterrupt during setup → _emit_wrap_interrupted, SystemExit(130)."""
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
 
     marker = tmp_path / ".clinerules"
     marker.write_text("pre-existing")
@@ -379,7 +379,7 @@ def test_run_proxy_only_watcher_calls_setup_lines_callback(
     assert inv.exit_code == 1
     assert callback_calls == [None]
     # Banner is part of the helper's contract.
-    assert "HEADROOM WRAP: CLINE" in inv.output
+    assert "LEGROOM WRAP: CLINE" in inv.output
     # The "proxy exited unexpectedly" message is the documented exit branch.
     assert "Proxy process exited unexpectedly." in inv.output
 
@@ -493,12 +493,12 @@ def test_run_proxy_only_watcher_calls_cleanup_on_finally(
 
 # ---------------------------------------------------------------------------
 # _project_name_from_cwd / _apply_project_header_env — per-project savings
-# header injection for `headroom wrap claude` (issue: per-project savings).
+# header injection for `legroom wrap claude` (issue: per-project savings).
 # ---------------------------------------------------------------------------
 
 
 class TestApplyProjectHeaderEnv:
-    """X-Headroom-Project injection into ANTHROPIC_CUSTOM_HEADERS."""
+    """X-Legroom-Project injection into ANTHROPIC_CUSTOM_HEADERS."""
 
     def test_sets_header_from_cwd_basename(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
@@ -510,7 +510,7 @@ class TestApplyProjectHeaderEnv:
         env: dict[str, str] = {}
         wrap_mod._apply_project_header_env(env)
 
-        assert env["ANTHROPIC_CUSTOM_HEADERS"] == "X-Headroom-Project: my-project"
+        assert env["ANTHROPIC_CUSTOM_HEADERS"] == "X-Legroom-Project: my-project"
 
     def test_appends_to_existing_custom_headers(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
@@ -524,16 +524,16 @@ class TestApplyProjectHeaderEnv:
 
         # User header preserved verbatim, ours appended on a new line.
         assert env["ANTHROPIC_CUSTOM_HEADERS"] == (
-            "X-Custom-Trace: abc123\nX-Headroom-Project: proj"
+            "X-Custom-Trace: abc123\nX-Legroom-Project: proj"
         )
 
     @pytest.mark.parametrize(
         "user_value",
         [
-            "X-Headroom-Project: their-name",
-            "x-headroom-project: their-name",
-            "X-HEADROOM-PROJECT: their-name",
-            "X-Other: 1\nx-Headroom-Project: their-name",
+            "X-Legroom-Project: their-name",
+            "x-legroom-project: their-name",
+            "X-LEGROOM-PROJECT: their-name",
+            "X-Other: 1\nx-Legroom-Project: their-name",
         ],
     )
     def test_existing_project_header_wins_case_insensitive(
@@ -555,8 +555,8 @@ class TestApplyProjectHeaderEnv:
     @pytest.mark.parametrize(
         "user_value",
         [
-            "X-Headroom-Project-Id: other",
-            "X-Trace: mentions x-headroom-project in the value",
+            "X-Legroom-Project-Id: other",
+            "X-Trace: mentions x-legroom-project in the value",
         ],
     )
     def test_similar_header_names_do_not_suppress_injection(
@@ -573,7 +573,7 @@ class TestApplyProjectHeaderEnv:
         wrap_mod._apply_project_header_env(env)
 
         # Only an exact header-name match counts as a user override.
-        assert env["ANTHROPIC_CUSTOM_HEADERS"] == (f"{user_value}\nX-Headroom-Project: proj")
+        assert env["ANTHROPIC_CUSTOM_HEADERS"] == (f"{user_value}\nX-Legroom-Project: proj")
 
     def test_empty_cwd_name_sets_nothing(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """A degenerate cwd (e.g. filesystem root → empty basename) is a no-op."""
@@ -595,11 +595,11 @@ class TestApplyProjectHeaderEnv:
     def test_project_name_from_cwd_returns_basename(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        project_dir = tmp_path / "vibe-headroom"
+        project_dir = tmp_path / "vibe-legroom"
         project_dir.mkdir()
         monkeypatch.chdir(project_dir)
 
-        assert wrap_mod._project_name_from_cwd() == "vibe-headroom"
+        assert wrap_mod._project_name_from_cwd() == "vibe-legroom"
 
     def test_non_ascii_cwd_name_is_percent_encoded(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
@@ -621,7 +621,7 @@ class TestApplyProjectHeaderEnv:
     def test_non_ascii_cwd_header_is_ascii_safe(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        """X-Headroom-Project header value must be ASCII when cwd has non-ASCII chars."""
+        """X-Legroom-Project header value must be ASCII when cwd has non-ASCII chars."""
         project_dir = tmp_path / "test-中文-项目"
         project_dir.mkdir()
         monkeypatch.chdir(project_dir)
@@ -630,7 +630,7 @@ class TestApplyProjectHeaderEnv:
         wrap_mod._apply_project_header_env(env)
 
         header_value = env["ANTHROPIC_CUSTOM_HEADERS"]
-        assert header_value.startswith("X-Headroom-Project: ")
+        assert header_value.startswith("X-Legroom-Project: ")
         header_value.encode("ascii")  # raises UnicodeEncodeError if non-ASCII
 
 

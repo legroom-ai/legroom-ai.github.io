@@ -1,13 +1,13 @@
-"""CLI entry point for Headroom evaluation framework.
+"""CLI entry point for Legroom evaluation framework.
 
 Usage:
-    python -m headroom.evals quick              # Quick sanity check (5 samples)
-    python -m headroom.evals benchmark          # Full benchmark suite
-    python -m headroom.evals list               # List available datasets
-    python -m headroom.evals --help             # Show help
+    python -m legroom.evals quick              # Quick sanity check (5 samples)
+    python -m legroom.evals benchmark          # Full benchmark suite
+    python -m legroom.evals list               # List available datasets
+    python -m legroom.evals --help             # Show help
 
 Install dependencies:
-    pip install headroom-ai[evals]
+    pip install legroom-ai[evals]
 """
 
 from __future__ import annotations
@@ -18,12 +18,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from headroom.evals.core import EvalResult
+    from legroom.evals.core import EvalResult
 
 
 def cmd_quick(args: argparse.Namespace) -> None:
     """Run quick sanity check."""
-    from headroom.evals.runners.before_after import run_quick_eval
+    from legroom.evals.runners.before_after import run_quick_eval
 
     results = run_quick_eval(
         n_samples=args.n,
@@ -43,7 +43,7 @@ def cmd_quick(args: argparse.Namespace) -> None:
 
 def cmd_list(args: argparse.Namespace) -> None:
     """List available datasets."""
-    from headroom.evals.datasets import DATASET_REGISTRY, list_available_datasets
+    from legroom.evals.datasets import DATASET_REGISTRY, list_available_datasets
 
     print("\n" + "=" * 60)
     print("AVAILABLE EVALUATION DATASETS")
@@ -62,21 +62,21 @@ def cmd_list(args: argparse.Namespace) -> None:
             print(f"    {info['description']}")
 
     print("\n" + "=" * 60)
-    print("Usage: python -m headroom.evals benchmark --dataset <name> -n <samples>")
+    print("Usage: python -m legroom.evals benchmark --dataset <name> -n <samples>")
     print("=" * 60 + "\n")
 
 
 def cmd_benchmark(args: argparse.Namespace) -> None:
     """Run full benchmark suite."""
-    from headroom.evals.datasets import (
+    from legroom.evals.datasets import (
         DATASET_REGISTRY,
         load_dataset_by_name,
         load_tool_output_samples,
     )
-    from headroom.evals.runners.before_after import BeforeAfterRunner, LLMConfig
+    from legroom.evals.runners.before_after import BeforeAfterRunner, LLMConfig
 
     print("=" * 60)
-    print("HEADROOM COMPRESSION ACCURACY BENCHMARK")
+    print("LEGROOM COMPRESSION ACCURACY BENCHMARK")
     print("=" * 60)
 
     runner = BeforeAfterRunner(
@@ -97,7 +97,7 @@ def cmd_benchmark(args: argparse.Namespace) -> None:
         dataset_names = [args.dataset]
     else:
         # Check if it's a category
-        from headroom.evals.datasets import list_available_datasets
+        from legroom.evals.datasets import list_available_datasets
 
         by_category = list_available_datasets()
         if args.dataset in by_category:
@@ -129,7 +129,7 @@ def cmd_benchmark(args: argparse.Namespace) -> None:
 
         except ImportError as e:
             print(f"Skipping {name}: {e}")
-            print("  (Install with: pip install headroom-ai[evals])")
+            print("  (Install with: pip install legroom-ai[evals])")
         except Exception as e:
             print(f"Error loading {name}: {e}")
 
@@ -178,13 +178,13 @@ Tokens Saved:           {total_original - total_compressed:,} ({(total_original 
 
 def cmd_suite(args: argparse.Namespace) -> None:
     """Run tiered evaluation suite."""
-    from headroom.evals.reports.report_card import save_reports
-    from headroom.evals.suite_runner import SuiteRunner
+    from legroom.evals.reports.report_card import save_reports
+    from legroom.evals.suite_runner import SuiteRunner
 
     tiers = list(range(1, args.tier + 1))
 
     print("=" * 60)
-    print("HEADROOM EVALUATION SUITE")
+    print("LEGROOM EVALUATION SUITE")
     print("=" * 60)
     print(f"Model: {args.model}")
     print(f"Tiers: {tiers}")
@@ -196,7 +196,7 @@ def cmd_suite(args: argparse.Namespace) -> None:
         model=args.model,
         tiers=tiers,
         budget_usd=args.budget,
-        headroom_port=args.port,
+        legroom_port=args.port,
         auto_start_proxy=not args.no_proxy,
     )
 
@@ -238,7 +238,7 @@ def cmd_report(args: argparse.Namespace) -> None:
     html = f"""<!DOCTYPE html>
 <html>
 <head>
-    <title>Headroom Evaluation Report</title>
+    <title>Legroom Evaluation Report</title>
     <style>
         body {{
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -303,7 +303,7 @@ def cmd_report(args: argparse.Namespace) -> None:
     </style>
 </head>
 <body>
-    <h1>Headroom Compression Accuracy Report</h1>
+    <h1>Legroom Compression Accuracy Report</h1>
     <p>Proving compression preserves LLM accuracy through before/after comparison.</p>
 
     <div class="summary">
@@ -354,8 +354,8 @@ def cmd_report(args: argparse.Namespace) -> None:
 
     html += """
     <footer>
-        <p>Generated by <strong>Headroom Evaluation Framework</strong></p>
-        <p>Install: <code>pip install headroom-ai[evals]</code></p>
+        <p>Generated by <strong>Legroom Evaluation Framework</strong></p>
+        <p>Install: <code>pip install legroom-ai[evals]</code></p>
     </footer>
 </body>
 </html>
@@ -377,21 +377,21 @@ def main() -> None:
         pass
 
     parser = argparse.ArgumentParser(
-        description="Headroom Evaluation Framework - Prove compression preserves accuracy",
+        description="Legroom Evaluation Framework - Prove compression preserves accuracy",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python -m headroom.evals quick                        # Quick 5-sample check
-  python -m headroom.evals quick -n 10                  # Quick 10-sample check
-  python -m headroom.evals list                         # List available datasets
-  python -m headroom.evals benchmark                    # Run tool_outputs benchmark
-  python -m headroom.evals benchmark --dataset hotpotqa -n 50
-  python -m headroom.evals benchmark --dataset rag      # Run all RAG datasets
-  python -m headroom.evals benchmark --dataset all      # Run ALL datasets
-  python -m headroom.evals suite --tier 1               # Run Tier 1 suite (~$3)
-  python -m headroom.evals suite --tier 2               # Run Tiers 1+2 (~$8)
-  python -m headroom.evals suite --tier 1 --ci          # CI mode (exit 1 on fail)
-  python -m headroom.evals report -i results.json       # Generate HTML report
+  python -m legroom.evals quick                        # Quick 5-sample check
+  python -m legroom.evals quick -n 10                  # Quick 10-sample check
+  python -m legroom.evals list                         # List available datasets
+  python -m legroom.evals benchmark                    # Run tool_outputs benchmark
+  python -m legroom.evals benchmark --dataset hotpotqa -n 50
+  python -m legroom.evals benchmark --dataset rag      # Run all RAG datasets
+  python -m legroom.evals benchmark --dataset all      # Run ALL datasets
+  python -m legroom.evals suite --tier 1               # Run Tier 1 suite (~$3)
+  python -m legroom.evals suite --tier 2               # Run Tiers 1+2 (~$8)
+  python -m legroom.evals suite --tier 1 --ci          # CI mode (exit 1 on fail)
+  python -m legroom.evals report -i results.json       # Generate HTML report
 
 Available datasets by category:
   RAG:          hotpotqa, natural_questions, triviaqa, msmarco, squad
@@ -400,7 +400,7 @@ Available datasets by category:
   Code:         codesearchnet, humaneval
 
 Install dependencies:
-  pip install headroom-ai[all]
+  pip install legroom-ai[all]
 """,
     )
 
@@ -447,7 +447,7 @@ Install dependencies:
     suite_parser.add_argument(
         "--budget", type=float, default=20.0, help="Budget in USD (default: $20)"
     )
-    suite_parser.add_argument("--port", type=int, default=8787, help="Headroom proxy port")
+    suite_parser.add_argument("--port", type=int, default=8787, help="Legroom proxy port")
     suite_parser.add_argument("--ci", action="store_true", help="CI mode: exit 1 on any failure")
     suite_parser.add_argument("--no-proxy", action="store_true", help="Don't auto-start proxy")
     suite_parser.add_argument("-o", "--output", help="Output directory for reports")

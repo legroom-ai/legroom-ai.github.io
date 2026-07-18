@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import re
 
-from headroom.transforms.compression_batches import (
+from legroom.transforms.compression_batches import (
     CompressionBatchEntry,
     build_compression_batches,
     compress_batch_with_router,
 )
-from headroom.transforms.compression_units import CompressionUnit, RoutedCompressionUnit
-from headroom.transforms.content_router import CompressionStrategy, RouterCompressionResult
+from legroom.transforms.compression_units import CompressionUnit, RoutedCompressionUnit
+from legroom.transforms.content_router import CompressionStrategy, RouterCompressionResult
 
 
 def _entry(index: int, text: str) -> CompressionBatchEntry:
@@ -179,7 +179,7 @@ def test_batch_preserves_ccr_markers_when_router_would_remove_them():
 
 class _MarkerMovingRouter:
     def compress(self, content: str, **_kwargs) -> RouterCompressionResult:
-        placeholders = re.findall(r"\[\[HEADROOM_BATCH_CCR_[^]]+\]\]", content)
+        placeholders = re.findall(r"\[\[LEGROOM_BATCH_CCR_[^]]+\]\]", content)
         moved = content.replace(placeholders[0], "", 1).replace(
             placeholders[1], f"{placeholders[1]}{placeholders[0]}", 1
         )

@@ -12,22 +12,22 @@ from importlib.metadata import PackageNotFoundError
 from pathlib import Path
 from unittest.mock import patch
 
-import headroom._version as version_module
+import legroom._version as version_module
 
 
-def test_headroom_import_stays_lazy() -> None:
+def test_legroom_import_stays_lazy() -> None:
     script = textwrap.dedent(
         """
         import json
         import sys
 
-        import headroom
+        import legroom
 
         print(json.dumps({
-            "version": headroom.__version__,
-            "cache_loaded": "headroom.cache" in sys.modules,
-            "models_registry_loaded": "headroom.models.registry" in sys.modules,
-            "memory_loaded": "headroom.memory" in sys.modules,
+            "version": legroom.__version__,
+            "cache_loaded": "legroom.cache" in sys.modules,
+            "models_registry_loaded": "legroom.models.registry" in sys.modules,
+            "memory_loaded": "legroom.memory" in sys.modules,
         }))
         """
     )
@@ -54,7 +54,7 @@ def test_version_prefers_installed_distribution_metadata() -> None:
     ):
         assert version_module.get_version() == "9.8.7"
 
-    package_version.assert_called_once_with("headroom-ai")
+    package_version.assert_called_once_with("legroom-ai")
 
 
 def test_version_reports_unknown_when_distribution_metadata_is_missing() -> None:
@@ -66,7 +66,7 @@ def test_version_reports_unknown_when_distribution_metadata_is_missing() -> None
 
 
 def test_version_prefers_explicit_build_env(monkeypatch) -> None:
-    monkeypatch.setenv("HEADROOM_BUILD_VERSION", "source-build")
+    monkeypatch.setenv("LEGROOM_BUILD_VERSION", "source-build")
 
     with patch.object(version_module, "version", return_value="9.8.7") as package_version:
         assert version_module.get_version() == "source-build"
@@ -100,9 +100,9 @@ def test_version_label_helpers_only_prefix_release_versions() -> None:
 def test_version_uses_packaged_build_metadata(
     monkeypatch,
 ) -> None:
-    build_info = types.ModuleType("headroom._build_info")
+    build_info = types.ModuleType("legroom._build_info")
     build_info.BUILD_VERSION = "0.29.0+gabcdef0"
-    monkeypatch.setitem(sys.modules, "headroom._build_info", build_info)
+    monkeypatch.setitem(sys.modules, "legroom._build_info", build_info)
 
     with (
         patch.object(version_module, "_source_root", return_value=None),
@@ -114,7 +114,7 @@ def test_version_uses_packaged_build_metadata(
 
 
 def test_observability_version_uses_runtime_version(monkeypatch) -> None:
-    from headroom.observability import metrics as metrics_module
+    from legroom.observability import metrics as metrics_module
 
     monkeypatch.setattr(
         metrics_module,
@@ -122,7 +122,7 @@ def test_observability_version_uses_runtime_version(monkeypatch) -> None:
         lambda: "source-build+sha.abcdef123456",
     )
 
-    assert metrics_module._headroom_version() == "source-build+sha.abcdef123456"
+    assert metrics_module._legroom_version() == "source-build+sha.abcdef123456"
 
 
 def test_version_prefers_source_tree_release_history() -> None:
@@ -144,10 +144,10 @@ def test_proxy_package_import_does_not_eagerly_load_server() -> None:
         import json
         import sys
 
-        import headroom.proxy
+        import legroom.proxy
 
         print(json.dumps({
-            "server_loaded": "headroom.proxy.server" in sys.modules,
+            "server_loaded": "legroom.proxy.server" in sys.modules,
         }))
         """
     )
@@ -169,12 +169,12 @@ def test_codex_package_import_stays_runtime_only() -> None:
         import json
         import sys
 
-        import headroom.providers.codex
+        import legroom.providers.codex
 
         print(json.dumps({
-            "images_loaded": "headroom.providers.codex.images" in sys.modules,
-            "model_metadata_loaded": "headroom.providers.codex.model_metadata" in sys.modules,
-            "responses_loaded": "headroom.providers.codex.responses" in sys.modules,
+            "images_loaded": "legroom.providers.codex.images" in sys.modules,
+            "model_metadata_loaded": "legroom.providers.codex.model_metadata" in sys.modules,
+            "responses_loaded": "legroom.providers.codex.responses" in sys.modules,
         }))
         """
     )
@@ -200,11 +200,11 @@ def test_proxy_server_import_skips_litellm_backend() -> None:
         import json
         import sys
 
-        import headroom.proxy.server
+        import legroom.proxy.server
 
         print(json.dumps({
-            "litellm_backend_loaded": "headroom.backends.litellm" in sys.modules,
-            "anyllm_backend_loaded": "headroom.backends.anyllm" in sys.modules,
+            "litellm_backend_loaded": "legroom.backends.litellm" in sys.modules,
+            "anyllm_backend_loaded": "legroom.backends.anyllm" in sys.modules,
             "litellm_loaded": "litellm" in sys.modules,
         }))
         """
@@ -239,7 +239,7 @@ def test_dynamic_detector_import_skips_optional_ml_dependencies(tmp_path: Path) 
         import json
         import sys
 
-        import headroom.cache.dynamic_detector
+        import legroom.cache.dynamic_detector
 
         print(json.dumps({
             "spacy_loaded": "spacy" in sys.modules,
@@ -268,7 +268,7 @@ def test_dynamic_detector_import_skips_optional_ml_dependencies(tmp_path: Path) 
 
 
 def test_compress_spreadsheet_public_import_survives_ort_pin() -> None:
-    """`from headroom import compress_spreadsheet` stays eagerly exported, and the
+    """`from legroom import compress_spreadsheet` stays eagerly exported, and the
     Windows ORT dylib pin still runs before the `.compress` import.
 
     The pin (`ensure_ort_dylib_pinned`) was inserted above the eager `.compress`
@@ -280,11 +280,11 @@ def test_compress_spreadsheet_public_import_survives_ort_pin() -> None:
         """
         import json
 
-        import headroom
-        from headroom import compress_spreadsheet
+        import legroom
+        from legroom import compress_spreadsheet
 
         print(json.dumps({
-            "eager": "compress_spreadsheet" in headroom.__dict__,
+            "eager": "compress_spreadsheet" in legroom.__dict__,
             "callable": callable(compress_spreadsheet),
         }))
         """

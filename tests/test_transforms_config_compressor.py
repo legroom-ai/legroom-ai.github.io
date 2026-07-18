@@ -9,22 +9,22 @@ from __future__ import annotations
 
 import pytest
 
-from headroom.parser import CCR_RETRIEVAL_MARKER_RE
-from headroom.transforms.config_compressor import (
+from legroom.parser import CCR_RETRIEVAL_MARKER_RE
+from legroom.transforms.config_compressor import (
     ConfigCompressor,
     ConfigCompressorConfig,
 )
-from headroom.transforms.content_detector import (
+from legroom.transforms.content_detector import (
     ContentType,
     _try_detect_structured_config,
     detect_content_type,
 )
-from headroom.transforms.content_router import (
+from legroom.transforms.content_router import (
     CompressionStrategy,
     ContentRouter,
     ContentRouterConfig,
 )
-from headroom.transforms.lossless_compaction import (
+from legroom.transforms.lossless_compaction import (
     compact_lossless,
     expand_runs,
     fold_repeated_blocks,
@@ -258,10 +258,10 @@ def test_tier1_lossless_only_no_marker() -> None:
 
 
 def test_tier2_elides_comments_behind_ccr_marker(monkeypatch) -> None:
-    from headroom.cache.compression_store import CompressionStore
+    from legroom.cache.compression_store import CompressionStore
 
     store = CompressionStore()
-    monkeypatch.setattr("headroom.cache.compression_store.get_compression_store", lambda: store)
+    monkeypatch.setattr("legroom.cache.compression_store.get_compression_store", lambda: store)
     commented = PYPROJECT_TOML.replace(
         'serde = "1.0"',
         "# pinned for CVE-2024-0001; do not bump without checking the advisory\n"
@@ -281,10 +281,10 @@ def test_tier2_elides_comments_behind_ccr_marker(monkeypatch) -> None:
 
 
 def test_tier2_skipped_for_yaml_block_scalars(monkeypatch) -> None:
-    from headroom.cache.compression_store import CompressionStore
+    from legroom.cache.compression_store import CompressionStore
 
     monkeypatch.setattr(
-        "headroom.cache.compression_store.get_compression_store",
+        "legroom.cache.compression_store.get_compression_store",
         lambda: CompressionStore(),
     )
     doc = (
@@ -304,10 +304,10 @@ def test_tier2_skipped_for_yaml_block_scalars(monkeypatch) -> None:
 
 
 def test_tier2_skipped_for_toml_multiline_strings(monkeypatch) -> None:
-    from headroom.cache.compression_store import CompressionStore
+    from legroom.cache.compression_store import CompressionStore
 
     monkeypatch.setattr(
-        "headroom.cache.compression_store.get_compression_store",
+        "legroom.cache.compression_store.get_compression_store",
         lambda: CompressionStore(),
     )
     doc = '[a]\ntext = """\n# not a comment\n"""\nx = "1"\ny = "2"\n'
@@ -317,10 +317,10 @@ def test_tier2_skipped_for_toml_multiline_strings(monkeypatch) -> None:
 
 
 def test_tier2_ini_keeps_blank_lines(monkeypatch) -> None:
-    from headroom.cache.compression_store import CompressionStore
+    from legroom.cache.compression_store import CompressionStore
 
     monkeypatch.setattr(
-        "headroom.cache.compression_store.get_compression_store",
+        "legroom.cache.compression_store.get_compression_store",
         lambda: CompressionStore(),
     )
     comp = ConfigCompressor(ConfigCompressorConfig(enable_ccr=True))
@@ -337,7 +337,7 @@ def test_store_failure_degrades_to_tier1(monkeypatch) -> None:
             raise RuntimeError("disk full")
 
     monkeypatch.setattr(
-        "headroom.cache.compression_store.get_compression_store",
+        "legroom.cache.compression_store.get_compression_store",
         lambda: _BrokenStore(),
     )
     comp = ConfigCompressor(ConfigCompressorConfig(enable_ccr=True))
@@ -365,7 +365,7 @@ def test_no_savings_returns_original() -> None:
 
 
 def test_compression_ratio_zero_for_empty_original() -> None:
-    from headroom.transforms.config_compressor import ConfigCompressionResult
+    from legroom.transforms.config_compressor import ConfigCompressionResult
 
     result = ConfigCompressionResult(
         compressed="", original="", was_modified=False, flavor="unknown"
@@ -389,10 +389,10 @@ def _mypy_overrides_toml(n: int) -> str:
 
 
 def _use_fresh_store(monkeypatch):  # noqa: ANN001, ANN201
-    from headroom.cache.compression_store import CompressionStore
+    from legroom.cache.compression_store import CompressionStore
 
     store = CompressionStore()
-    monkeypatch.setattr("headroom.cache.compression_store.get_compression_store", lambda: store)
+    monkeypatch.setattr("legroom.cache.compression_store.get_compression_store", lambda: store)
     return store
 
 
@@ -466,7 +466,7 @@ def test_tier3_store_failure_keeps_text_tiers(monkeypatch) -> None:
             raise RuntimeError("disk full")
 
     monkeypatch.setattr(
-        "headroom.cache.compression_store.get_compression_store",
+        "legroom.cache.compression_store.get_compression_store",
         lambda: _BrokenStore(),
     )
     comp = ConfigCompressor(ConfigCompressorConfig(enable_ccr=True))
@@ -487,7 +487,7 @@ def test_tier3_rejected_when_marker_overhead_exceeds_savings(monkeypatch) -> Non
 
 def test_schema_fold_bails_on_unparseable_toml(monkeypatch) -> None:
     _use_fresh_store(monkeypatch)
-    import headroom.transforms.config_compressor as mod
+    import legroom.transforms.config_compressor as mod
 
     monkeypatch.setattr(mod, "_load_toml", lambda _content: None)
     comp = ConfigCompressor(ConfigCompressorConfig(enable_ccr=True))
@@ -497,7 +497,7 @@ def test_schema_fold_bails_on_unparseable_toml(monkeypatch) -> None:
 
 def test_schema_fold_bails_on_non_serializable_value(monkeypatch) -> None:
     _use_fresh_store(monkeypatch)
-    import headroom.transforms.config_compressor as mod
+    import legroom.transforms.config_compressor as mod
 
     monkeypatch.setattr(mod, "_load_toml", lambda _content: {"t": [{"v": {1, 2}}, {"v": {3, 4}}]})
     comp = ConfigCompressor(ConfigCompressorConfig(enable_ccr=True))
@@ -506,7 +506,7 @@ def test_schema_fold_bails_on_non_serializable_value(monkeypatch) -> None:
 
 
 def test_load_toml_returns_none_on_invalid() -> None:
-    from headroom.transforms.config_compressor import _load_toml
+    from legroom.transforms.config_compressor import _load_toml
 
     assert _load_toml('[[x]]\nk = "unterminated') is None
     assert _load_toml('[[x]]\nk = "ok"') == {"x": [{"k": "ok"}]}
@@ -515,7 +515,7 @@ def test_load_toml_returns_none_on_invalid() -> None:
 def test_json_default_renders_dates_and_rejects_others() -> None:
     import datetime as dt
 
-    from headroom.transforms.config_compressor import _json_default
+    from legroom.transforms.config_compressor import _json_default
 
     assert _json_default(dt.date(2026, 7, 4)) == "2026-07-04"
     assert _json_default(dt.datetime(2026, 7, 4, 9, 30)) == "2026-07-04T09:30:00"

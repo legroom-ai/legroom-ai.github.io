@@ -1,4 +1,4 @@
-# Headroom
+# Legroom
 
 <div class="hero" markdown>
 
@@ -10,9 +10,9 @@ Compress everything your AI agent reads. Same answers, fraction of the tokens.
 
 <div class="badges" markdown>
 
-[![PyPI](https://img.shields.io/pypi/v/headroom-ai.svg)](https://pypi.org/project/headroom-ai/)
-[![Python](https://img.shields.io/pypi/pyversions/headroom-ai.svg)](https://pypi.org/project/headroom-ai/)
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/ghaliba3/headroom/blob/main/LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/legroom-ai.svg)](https://pypi.org/project/legroom-ai/)
+[![Python](https://img.shields.io/pypi/pyversions/legroom-ai.svg)](https://pypi.org/project/legroom-ai/)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/legroom-ai/legroom-ai.github.io/blob/main/LICENSE)
 [![Discord](https://img.shields.io/badge/Discord-Join%20us-5865F2?logo=discord&logoColor=white)](https://discord.gg/yRmaUNpsPJ)
 
 </div>
@@ -42,20 +42,20 @@ Compress everything your AI agent reads. Same answers, fraction of the tokens.
 
 ## What It Does
 
-Every tool call, DB query, file read, and RAG retrieval your agent makes is 70-95% boilerplate. Headroom compresses it away before it hits the model. The LLM sees less noise, responds faster, and costs less.
+Every tool call, DB query, file read, and RAG retrieval your agent makes is 70-95% boilerplate. Legroom compresses it away before it hits the model. The LLM sees less noise, responds faster, and costs less.
 
 ```
 Your Agent / App
     │
     │  tool outputs, logs, DB reads, RAG results, file reads, API responses
     ▼
- Headroom  ← proxy, Python library, or framework integration
+ Legroom  ← proxy, Python library, or framework integration
     │
     ▼
  LLM Provider  (OpenAI, Anthropic, Google, Bedrock, 100+ via LiteLLM)
 ```
 
-Headroom works as a **transparent proxy** (zero code changes), a **Python function** (`compress()`), or a **framework integration** (LangChain, Agno, Strands, LiteLLM, MCP).
+Legroom works as a **transparent proxy** (zero code changes), a **Python function** (`compress()`), or a **framework integration** (LangChain, Agno, Strands, LiteLLM, MCP).
 
 ---
 
@@ -64,8 +64,8 @@ Headroom works as a **transparent proxy** (zero code changes), a **Python functi
 === "Proxy (Zero Code Changes)"
 
     ```bash
-    uv tool install --python 3.13 "headroom-ai[all]"
-    headroom proxy
+    uv tool install --python 3.13 "legroom-ai[all]"
+    legroom proxy
     ```
 
     ```bash
@@ -81,7 +81,7 @@ Headroom works as a **transparent proxy** (zero code changes), a **Python functi
 === "Python SDK"
 
     ```python
-    from headroom import compress
+    from legroom import compress
 
     result = compress(messages, model="claude-sonnet-4-5-20250929")
     response = client.messages.create(
@@ -96,12 +96,12 @@ Headroom works as a **transparent proxy** (zero code changes), a **Python functi
 === "Coding Agents"
 
     ```bash
-    headroom wrap claude       # Claude Code
-    headroom wrap copilot -- --model claude-sonnet-4-20250514
-    headroom wrap codex        # OpenAI Codex CLI
-    headroom wrap aider        # Aider
-    headroom wrap cursor       # Cursor
-    headroom wrap openclaw     # OpenClaw plugin bootstrap
+    legroom wrap claude       # Claude Code
+    legroom wrap copilot -- --model claude-sonnet-4-20250514
+    legroom wrap codex        # OpenAI Codex CLI
+    legroom wrap aider        # Aider
+    legroom wrap cursor       # Cursor
+    legroom wrap openclaw     # OpenClaw plugin bootstrap
     ```
 
     Starts the proxy, points your tool at it, compresses everything automatically.
@@ -111,7 +111,7 @@ Headroom works as a **transparent proxy** (zero code changes), a **Python functi
 === "TypeScript SDK"
 
     ```typescript
-    import { compress } from 'headroom-ai';
+    import { compress } from 'legroom-ai';
 
     const result = await compress(messages, { model: 'claude-sonnet-4-5-20250929' });
     // Use result.messages with any LLM client
@@ -124,9 +124,9 @@ Headroom works as a **transparent proxy** (zero code changes), a **Python functi
 
     ```python
     import litellm
-    from headroom.integrations.litellm_callback import HeadroomCallback
+    from legroom.integrations.litellm_callback import LegroomCallback
 
-    litellm.callbacks = [HeadroomCallback()]
+    litellm.callbacks = [LegroomCallback()]
     # All 100+ providers now compressed automatically
     ```
 
@@ -143,9 +143,9 @@ Headroom works as a **transparent proxy** (zero code changes), a **Python functi
 Wrap any chat model. Supports memory, retrievers, tools, streaming, async.
 
 ```python
-from headroom.integrations import HeadroomChatModel
+from legroom.integrations import LegroomChatModel
 
-llm = HeadroomChatModel(ChatOpenAI(model="gpt-4o"))
+llm = LegroomChatModel(ChatOpenAI(model="gpt-4o"))
 ```
 
 [LangChain Guide &rarr;](langchain.md)
@@ -159,9 +159,9 @@ llm = HeadroomChatModel(ChatOpenAI(model="gpt-4o"))
 Full agent framework integration with observability hooks.
 
 ```python
-from headroom.integrations.agno import HeadroomAgnoModel
+from legroom.integrations.agno import LegroomAgnoModel
 
-model = HeadroomAgnoModel(Claude(id="claude-sonnet-4-20250514"))
+model = LegroomAgnoModel(Claude(id="claude-sonnet-4-20250514"))
 agent = Agent(model=model)
 ```
 
@@ -176,9 +176,9 @@ agent = Agent(model=model)
 Model wrapping + tool output hook provider for Strands Agents.
 
 ```python
-from headroom.integrations.strands import HeadroomStrandsModel
+from legroom.integrations.strands import LegroomStrandsModel
 
-model = HeadroomStrandsModel(wrapped_model=bedrock_model)
+model = LegroomStrandsModel(wrapped_model=bedrock_model)
 agent = Agent(model=model)
 ```
 
@@ -190,10 +190,10 @@ agent = Agent(model=model)
 
 ### MCP Tools
 
-Three tools for Claude Code, Cursor, or any MCP client: `headroom_compress`, `headroom_retrieve`, `headroom_stats`.
+Three tools for Claude Code, Cursor, or any MCP client: `legroom_compress`, `legroom_retrieve`, `legroom_stats`.
 
 ```bash
-headroom mcp install && claude
+legroom mcp install && claude
 ```
 
 [MCP Guide &rarr;](mcp.md)
@@ -207,7 +207,7 @@ headroom mcp install && claude
 `compress()`, Vercel AI SDK middleware, OpenAI and Anthropic client wrappers.
 
 ```bash
-npm install headroom-ai
+npm install legroom-ai
 ```
 
 [TypeScript SDK Guide &rarr;](typescript-sdk.md)
@@ -221,10 +221,10 @@ npm install headroom-ai
 ContextEngine plugin for OpenClaw agents. Auto-compresses context in `assemble()`.
 
 ```bash
-headroom wrap openclaw
+legroom wrap openclaw
 ```
 
-[OpenClaw Plugin &rarr;](https://github.com/ghaliba3/headroom/tree/main/plugins/openclaw)
+[OpenClaw Plugin &rarr;](https://github.com/legroom-ai/legroom-ai.github.io/tree/main/plugins/openclaw)
 
 </div>
 
@@ -236,7 +236,7 @@ headroom wrap openclaw
 
 ## How It Works
 
-Headroom runs a two-stage pipeline on every request:
+Legroom runs a two-stage pipeline on every request:
 
 ```mermaid
 graph LR
@@ -269,9 +269,9 @@ graph LR
 | Git diffs | **DiffCompressor** | Preserves change hunks, drops unchanged context. |
 | HTML | **HTMLExtractor** | Strips markup, extracts readable content. |
 
-Context management is handled automatically inside the pipeline (live-zone-only compression): Headroom compresses only the newest content blocks (the latest user message and tool results) and never drops messages from history. The system prompt, tool definitions, and older turns — the provider cache hot zone — are left untouched so prompt caching keeps working.
+Context management is handled automatically inside the pipeline (live-zone-only compression): Legroom compresses only the newest content blocks (the latest user message and tool results) and never drops messages from history. The system prompt, tool definitions, and older turns — the provider cache hot zone — are left untouched so prompt caching keeps working.
 
-**Nothing is lost.** Compressed content goes into the CCR store (Compress-Cache-Retrieve). The LLM gets a `headroom_retrieve` tool and can fetch full originals when it needs more detail.
+**Nothing is lost.** Compressed content goes into the CCR store (Compress-Cache-Retrieve). The LLM gets a `legroom_retrieve` tool and can fetch full originals when it needs more detail.
 
 [Full architecture deep dive &rarr;](ARCHITECTURE.md)
 
@@ -281,7 +281,7 @@ Context management is handled automatically inside the pipeline (live-zone-only 
 
 **100 production log entries. One critical error buried at position 67.**
 
-| Metric | Baseline | Headroom |
+| Metric | Baseline | Legroom |
 |--------|----------|----------|
 | Input tokens | 10,144 | 1,260 |
 | Correct answers | **4/4** | **4/4** |
@@ -377,11 +377,11 @@ Prometheus endpoint, per-request logging, cost tracking, budget limits, pipeline
 Works with any LLM provider out of the box:
 
 ```bash
-headroom proxy                                          # Direct Anthropic/OpenAI
-headroom proxy --backend bedrock --region us-east-1     # AWS Bedrock
-headroom proxy --backend vertex_ai --region us-central1 # Google Vertex AI
-headroom proxy --backend azure                          # Azure OpenAI
-headroom proxy --backend openrouter                     # OpenRouter (400+ models)
+legroom proxy                                          # Direct Anthropic/OpenAI
+legroom proxy --backend bedrock --region us-east-1     # AWS Bedrock
+legroom proxy --backend vertex_ai --region us-central1 # Google Vertex AI
+legroom proxy --backend azure                          # Azure OpenAI
+legroom proxy --backend openrouter                     # OpenRouter (400+ models)
 ```
 
 Or via LiteLLM for 100+ providers (Together, Groq, Fireworks, Ollama, vLLM, etc.).
@@ -391,15 +391,15 @@ Or via LiteLLM for 100+ providers (Together, Groq, Fireworks, Ollama, vLLM, etc.
 ## Installation
 
 ```bash
-uv tool install --python 3.13 "headroom-ai[all]"  # CLI on macOS Apple Silicon/Linux
-pip install headroom-ai                # Core library (Python)
-pip install "headroom-ai[all]"         # Everything (recommended)
-npm install headroom-ai                # TypeScript / Node.js
-pip install "headroom-ai[proxy]"       # Proxy server + MCP tools
-pip install "headroom-ai[ml]"          # ML compression (Kompress, requires torch)
-pip install "headroom-ai[langchain]"   # LangChain integration
-pip install "headroom-ai[agno]"        # Agno integration
-pip install "headroom-ai[evals]"       # Evaluation framework
+uv tool install --python 3.13 "legroom-ai[all]"  # CLI on macOS Apple Silicon/Linux
+pip install legroom-ai                # Core library (Python)
+pip install "legroom-ai[all]"         # Everything (recommended)
+npm install legroom-ai                # TypeScript / Node.js
+pip install "legroom-ai[proxy]"       # Proxy server + MCP tools
+pip install "legroom-ai[ml]"          # ML compression (Kompress, requires torch)
+pip install "legroom-ai[langchain]"   # LangChain integration
+pip install "legroom-ai[agno]"        # Agno integration
+pip install "legroom-ai[evals]"       # Evaluation framework
 ```
 
 Requires Python 3.10+. On macOS, use Python 3.13 for the uv/pipx CLI path if
@@ -410,7 +410,7 @@ your default `python3` is newer than the current wheel set.
 ## Next Steps
 
 - **[Quickstart](quickstart.md)** — Running in 5 minutes
-- **[Integration Guide](integration-guide.md)** — Every way to add Headroom to your stack
+- **[Integration Guide](integration-guide.md)** — Every way to add Legroom to your stack
 - **[Architecture](ARCHITECTURE.md)** — How the pipeline works under the hood
 - **[Benchmarks](benchmarks.md)** — Accuracy and latency data
 - **[Limitations](LIMITATIONS.md)** — When compression helps and when it doesn't
@@ -418,4 +418,4 @@ your default `python3` is newer than the current wheel set.
 
 ---
 
-Apache 2.0 — Free for commercial use. [GitHub](https://github.com/ghaliba3/headroom) | [PyPI](https://pypi.org/project/headroom-ai/) | [Discord](https://discord.gg/yRmaUNpsPJ)
+Apache 2.0 — Free for commercial use. [GitHub](https://github.com/legroom-ai/legroom-ai.github.io) | [PyPI](https://pypi.org/project/legroom-ai/) | [Discord](https://discord.gg/yRmaUNpsPJ)

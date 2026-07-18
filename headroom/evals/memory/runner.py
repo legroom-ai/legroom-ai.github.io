@@ -22,14 +22,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from headroom.evals.memory.locomo import (
+from legroom.evals.memory.locomo import (
     LOCOMO_CATEGORIES,
     LoCoMoCase,
     LoCoMoConversation,
     load_locomo,
 )
-from headroom.evals.metrics import compute_exact_match, compute_f1
-from headroom.memory import HierarchicalMemory, MemoryConfig
+from legroom.evals.metrics import compute_exact_match, compute_f1
+from legroom.memory import HierarchicalMemory, MemoryConfig
 
 logger = logging.getLogger(__name__)
 

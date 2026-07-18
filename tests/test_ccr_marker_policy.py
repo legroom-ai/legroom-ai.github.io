@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from headroom.ccr.tool_injection import CCRToolInjector
-from headroom.proxy.ccr_marker_policy import has_new_ccr_markers, should_inject_ccr_tool
+from legroom.ccr.tool_injection import CCRToolInjector
+from legroom.proxy.ccr_marker_policy import has_new_ccr_markers, should_inject_ccr_tool
 
 
 def _hashes(*contents: str) -> list[str]:

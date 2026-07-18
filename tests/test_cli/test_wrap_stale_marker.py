@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from headroom.cli import doctor as doctor_cli
-from headroom.cli import wrap as wrap_cli
+from legroom.cli import doctor as doctor_cli
+from legroom.cli import wrap as wrap_cli
 
 
 def _settings(tmp_path: Path) -> Path:
@@ -34,7 +34,7 @@ def test_doctor_flags_stale_wrap_marker(tmp_path: Path) -> None:
     result = doctor_cli.check_wrap_marker_staleness(path)
     assert result.status == doctor_cli.WARN
     assert "999999999" in result.summary
-    assert "headroom unwrap claude" in result.summary
+    assert "legroom unwrap claude" in result.summary
 
 
 def test_claude_command_registers_sighup_next_to_sigterm() -> None:

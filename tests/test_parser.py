@@ -14,7 +14,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from headroom.parser import (
+from legroom.parser import (
     _coerce_tool_call_to_dict,
     compute_hash,
     detect_waste_signals,
@@ -615,7 +615,7 @@ class TestRereadDetection:
 
     def test_reread_in_total_and_dict(self):
         """reread_tokens participates in total() and to_dict()."""
-        from headroom.config import WasteSignals
+        from legroom.config import WasteSignals
 
         ws = WasteSignals(reread_tokens=42)
         assert ws.total() == 42
@@ -920,7 +920,7 @@ def sample_messages_with_tools():
     ]
 
 
-# --- Anthropic tool_result content blocks (ghaliba3/headroom#813) ---
+# --- Anthropic tool_result content blocks (ghaliba3/legroom#813) ---
 
 
 @pytest.fixture
@@ -1178,7 +1178,7 @@ class TestCallArgMatchReread:
 
     def test_canonical_call_key_normalizes_serialization(self):
         """Reordered JSON-string args, dict args, and spaced JSON hash equal."""
-        from headroom.parser import _canonical_call_key
+        from legroom.parser import _canonical_call_key
 
         k1 = _canonical_call_key("read_file", '{"path": "a.py", "lines": 100}')
         k2 = _canonical_call_key("read_file", '{"lines":100,"path":"a.py"}')

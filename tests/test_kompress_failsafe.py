@@ -15,8 +15,8 @@ import time
 
 import pytest
 
-import headroom.transforms.kompress_compressor as kc
-from headroom.transforms.kompress_compressor import (
+import legroom.transforms.kompress_compressor as kc
+from legroom.transforms.kompress_compressor import (
     KOMPRESS_ACQUIRE_TIMEOUT_ENV,
     KOMPRESS_CANARY_THRESHOLD_ENV,
     KOMPRESS_TIME_BUDGET_ENV,

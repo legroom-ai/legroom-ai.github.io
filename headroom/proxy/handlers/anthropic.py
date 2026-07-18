@@ -1,4 +1,4 @@
-"""Anthropic handler mixin for HeadroomProxy.
+"""Anthropic handler mixin for LegroomProxy.
 
 Contains all Anthropic Messages API handlers including batch operations.
 """
@@ -15,7 +15,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-from headroom.proxy.stage_timer import StageTimer, emit_stage_timings_log
+from legroom.proxy.stage_timer import StageTimer, emit_stage_timings_log
 
 if TYPE_CHECKING:
     from fastapi import Request
@@ -23,22 +23,22 @@ if TYPE_CHECKING:
 
 import httpx
 
-from headroom.agent_savings import proxy_pipeline_kwargs
-from headroom.ccr.context_tracker import looks_like_claude_code_compact_summary
-from headroom.copilot_auth import build_copilot_upstream_url
-from headroom.pipeline import PipelineStage, summarize_routing_markers
-from headroom.proxy.auth_mode import classify_auth_mode, classify_client
-from headroom.proxy.compression_decision import CompressionDecision
-from headroom.proxy.forwarded_headers import resolve_client_ip
-from headroom.proxy.handlers._debug_dump import _debug_dump_mode, _redact_debug_value
-from headroom.proxy.helpers import extract_tags
-from headroom.proxy.image_isolation import run_image_compression_isolated
-from headroom.proxy.memory_decision import MemoryDecision
-from headroom.proxy.memory_query import MemoryQuery
-from headroom.proxy.model_router import estimate_input_tokens
-from headroom.proxy.outcome import RequestOutcome
+from legroom.agent_savings import proxy_pipeline_kwargs
+from legroom.ccr.context_tracker import looks_like_claude_code_compact_summary
+from legroom.copilot_auth import build_copilot_upstream_url
+from legroom.pipeline import PipelineStage, summarize_routing_markers
+from legroom.proxy.auth_mode import classify_auth_mode, classify_client
+from legroom.proxy.compression_decision import CompressionDecision
+from legroom.proxy.forwarded_headers import resolve_client_ip
+from legroom.proxy.handlers._debug_dump import _debug_dump_mode, _redact_debug_value
+from legroom.proxy.helpers import extract_tags
+from legroom.proxy.image_isolation import run_image_compression_isolated
+from legroom.proxy.memory_decision import MemoryDecision
+from legroom.proxy.memory_query import MemoryQuery
+from legroom.proxy.model_router import estimate_input_tokens
+from legroom.proxy.outcome import RequestOutcome
 
-logger = logging.getLogger("headroom.proxy")
+logger = logging.getLogger("legroom.proxy")
 
 
 def _strip_streaming_only_content_fields(messages: Any) -> None:
@@ -69,7 +69,7 @@ def _strip_index_from_content_blocks(content: Any) -> None:
 
 
 class AnthropicHandlerMixin:
-    """Mixin providing Anthropic API handler methods for HeadroomProxy."""
+    """Mixin providing Anthropic API handler methods for LegroomProxy."""
 
     async def _count_tokens_offloaded(self, model, messages):  # noqa: ANN001, ANN201
         """Resolve a tokenizer and count messages off the event loop.
@@ -86,8 +86,8 @@ class AnthropicHandlerMixin:
             initialized, so later ``count_messages`` calls on it are pure
             CPU work.
         """
-        from headroom.proxy.helpers import COMPRESSION_TIMEOUT_SECONDS
-        from headroom.tokenizers import EstimatingTokenCounter, get_tokenizer
+        from legroom.proxy.helpers import COMPRESSION_TIMEOUT_SECONDS
+        from legroom.tokenizers import EstimatingTokenCounter, get_tokenizer
 
         def _resolve_and_count():  # noqa: ANN202
             tokenizer = get_tokenizer(model)
@@ -121,9 +121,9 @@ class AnthropicHandlerMixin:
         """Resolve (workspace_key, workspace_label) for CCR scoping.
 
         Uses the same ``ProjectResolver`` the memory subsystem uses
-        (``headroom/memory/storage_router.py``) so CCR and memory always
+        (``legroom/memory/storage_router.py``) so CCR and memory always
         agree on which project a request belongs to. Tier order matches:
-        ``x-headroom-project-id`` → ``x-headroom-cwd`` → CLI override →
+        ``x-legroom-project-id`` → ``x-legroom-cwd`` → CLI override →
         ``cwd:`` line in the system prompt.
 
         Returns:
@@ -138,13 +138,13 @@ class AnthropicHandlerMixin:
         motivated this scoping (Python content from project ``tamag0``
         surfaced inside a Ruby ``daphni-rails`` session).
         """
-        from headroom.memory.storage_router import (
+        from legroom.memory.storage_router import (
             ProjectResolver,
         )
-        from headroom.memory.storage_router import (
+        from legroom.memory.storage_router import (
             RequestContext as _CtxFor,
         )
-        from headroom.memory.storage_router import (
+        from legroom.memory.storage_router import (
             extract_system_prompt as _extract_sys_prompt,
         )
 
@@ -152,7 +152,7 @@ class AnthropicHandlerMixin:
             ctx = _CtxFor(
                 headers=dict(request.headers),
                 system_prompt=_extract_sys_prompt(body),
-                base_user_id=request.headers.get("x-headroom-user-id", ""),
+                base_user_id=request.headers.get("x-legroom-user-id", ""),
                 project_root_override=None,
             )
             ident = ProjectResolver().resolve(ctx)
@@ -186,17 +186,17 @@ class AnthropicHandlerMixin:
         return (name, canonical)
 
     @staticmethod
-    def _has_headroom_retrieve_tool(tools: Any) -> bool:
+    def _has_legroom_retrieve_tool(tools: Any) -> bool:
         """Return True when the final Anthropic tool list includes CCR retrieve."""
         if not isinstance(tools, list):
             return False
         for tool in tools:
             if not isinstance(tool, dict):
                 continue
-            if tool.get("name") == "headroom_retrieve":
+            if tool.get("name") == "legroom_retrieve":
                 return True
             function = tool.get("function")
-            if isinstance(function, dict) and function.get("name") == "headroom_retrieve":
+            if isinstance(function, dict) and function.get("name") == "legroom_retrieve":
                 return True
         return False
 
@@ -204,7 +204,7 @@ class AnthropicHandlerMixin:
     def _extract_anthropic_cache_ttl_metrics(usage: dict[str, Any] | None) -> tuple[int, int]:
         """Extract observed Anthropic cache-write TTL bucket usage.
 
-        HeadroomProxy also inherits StreamingMixin, which exposes the same
+        LegroomProxy also inherits StreamingMixin, which exposes the same
         helper for SSE usage parsing. Keep this local copy so the Anthropic
         handler remains safe when tested or embedded without StreamingMixin.
         """
@@ -400,7 +400,7 @@ class AnthropicHandlerMixin:
         forwarding. Delegates to the provider-agnostic engine in prefix_tracker so
         OpenAI / Bedrock share one implementation.
         """
-        from headroom.cache.prefix_tracker import extract_cache_stable_delta
+        from legroom.cache.prefix_tracker import extract_cache_stable_delta
 
         return extract_cache_stable_delta(
             current_messages,
@@ -526,7 +526,7 @@ class AnthropicHandlerMixin:
         """Apply cost-aware model routing (#1706), returning the model to forward.
 
         Fails closed to disabled when no ``model_router`` is present: alternate
-        mixin hosts and test doubles that do not run ``HeadroomProxy.__init__``
+        mixin hosts and test doubles that do not run ``LegroomProxy.__init__``
         never set the attribute, and reading it unconditionally would crash them
         even when routing is off. Also skipped under bypass/passthrough so a
         byte-faithful request is never model-rewritten.
@@ -556,26 +556,26 @@ class AnthropicHandlerMixin:
     ) -> Response | StreamingResponse:
         """Handle Anthropic /v1/messages endpoint."""
         if not hasattr(self, "pipeline_extensions"):
-            from headroom.pipeline import PipelineExtensionManager
+            from legroom.pipeline import PipelineExtensionManager
 
             self.pipeline_extensions = PipelineExtensionManager(discover=False)
 
         from fastapi import HTTPException
         from fastapi.responses import JSONResponse, Response, StreamingResponse
 
-        from headroom.cache.compression_store import get_compression_store
-        from headroom.ccr import CCRToolInjector
-        from headroom.providers.anthropic import sanitize_anthropic_model_id
-        from headroom.proxy.body_forwarding import BodyMutationTracker
-        from headroom.proxy.helpers import (
+        from legroom.cache.compression_store import get_compression_store
+        from legroom.ccr import CCRToolInjector
+        from legroom.providers.anthropic import sanitize_anthropic_model_id
+        from legroom.proxy.body_forwarding import BodyMutationTracker
+        from legroom.proxy.helpers import (
             MAX_MESSAGE_ARRAY_LENGTH,
             MAX_REQUEST_BODY_SIZE,
             _get_image_compressor,
             compute_turn_id,
             read_request_json_with_bytes,
         )
-        from headroom.proxy.modes import is_cache_mode, is_token_mode
-        from headroom.utils import extract_user_query
+        from legroom.proxy.modes import is_cache_mode, is_token_mode
+        from legroom.utils import extract_user_query
 
         start_time = time.time()
         request_id = await self._next_request_id()
@@ -792,11 +792,11 @@ class AnthropicHandlerMixin:
 
             # Bypass: skip ALL compression, TOIN learning, and CCR injection
             # when the caller explicitly opts out via header.
-            # Prevents Headroom from corrupting sub-agent API calls
+            # Prevents Legroom from corrupting sub-agent API calls
             # (e.g., Claude Code sub-agents that inherit ANTHROPIC_BASE_URL).
             _bypass = (
-                request.headers.get("x-headroom-bypass", "").lower() == "true"
-                or request.headers.get("x-headroom-mode", "").lower() == "passthrough"
+                request.headers.get("x-legroom-bypass", "").lower() == "true"
+                or request.headers.get("x-legroom-mode", "").lower() == "passthrough"
             )
             preserve_tool_order = _bypass or not self.config.optimize
             if _bypass:
@@ -835,24 +835,24 @@ class AnthropicHandlerMixin:
             # from User-Agent or X-Client. Surfaced via the funnel into
             # PERF logs and RequestLog.tags — see RequestOutcome.client.
             client = classify_client(headers, default="claude")
-            # PR-A5 (P5-49): strip internal x-headroom-* from upstream-bound
+            # PR-A5 (P5-49): strip internal x-legroom-* from upstream-bound
             # headers AFTER `_extract_tags` reads them. Inbound bypass gating
             # uses `request.headers.get(...)` directly above; memory user-id
             # is read from `request.headers` below if needed. From this
             # point on, `headers` is the upstream-bound copy.
-            from headroom.proxy.helpers import (
+            from legroom.proxy.helpers import (
                 _strip_internal_headers,
                 log_outbound_headers,
                 merge_extra_headers,
             )
 
-            _pre_strip_count = sum(1 for k in headers if k.lower().startswith("x-headroom-"))
+            _pre_strip_count = sum(1 for k in headers if k.lower().startswith("x-legroom-"))
             headers = _strip_internal_headers(headers)
             headers = merge_extra_headers(headers, self.config.anthropic_extra_headers)
             log_outbound_headers(
                 forwarder="anthropic_messages",
                 stripped_count=_pre_strip_count
-                - sum(1 for k in headers if k.lower().startswith("x-headroom-")),
+                - sum(1 for k in headers if k.lower().startswith("x-legroom-")),
                 request_id=request_id,
             )
 
@@ -861,7 +861,7 @@ class AnthropicHandlerMixin:
             if _auth_header.startswith("Bearer ") and not _auth_header.startswith(
                 "Bearer sk-ant-api"
             ):
-                from headroom.subscription.tracker import (
+                from legroom.subscription.tracker import (
                     get_subscription_tracker as _get_sub_tracker,
                 )
 
@@ -878,7 +878,7 @@ class AnthropicHandlerMixin:
                         api_key = auth[7:]
                 # Phase F PR-F4: trust ``X-Forwarded-For`` for the rate-limit
                 # key only when the connecting peer is in
-                # ``HEADROOM_PROXY_TRUSTED_GATEWAY_CIDRS``; otherwise we use
+                # ``LEGROOM_PROXY_TRUSTED_GATEWAY_CIDRS``; otherwise we use
                 # the direct peer IP and a malicious client cannot rotate
                 # rate-limit buckets by forging headers.
                 client_ip = resolve_client_ip(request) or "unknown"
@@ -910,22 +910,22 @@ class AnthropicHandlerMixin:
 
             # Memory: Get user ID when memory is enabled (fallback to "default" for simple DevEx).
             # Reads `request.headers` directly because the local `headers` dict was
-            # stripped of `x-headroom-*` above for the upstream-bound copy (PR-A5).
+            # stripped of `x-legroom-*` above for the upstream-bound copy (PR-A5).
             memory_user_id: str | None = None
             memory_request_ctx = None
             if self.memory_handler:
                 memory_user_id = request.headers.get(
-                    "x-headroom-user-id",
+                    "x-legroom-user-id",
                     os.environ.get("USER", os.environ.get("USERNAME", "default")),
                 )
                 # Per-project memory routing (GH #462). Build the context
                 # once here so save / search / inject all resolve against
                 # the same workspace. Tier order: explicit project-id /
                 # cwd headers → CLI override → system prompt env block.
-                from headroom.memory.storage_router import (
+                from legroom.memory.storage_router import (
                     RequestContext as _MemRequestContext,
                 )
-                from headroom.memory.storage_router import (
+                from legroom.memory.storage_router import (
                     extract_system_prompt as _extract_sys_prompt,
                 )
 
@@ -940,12 +940,12 @@ class AnthropicHandlerMixin:
 
             # Canonical memory-injection gate. Reads `request.headers`
             # so bypass detection sees the original inbound (the local
-            # `headers` dict was stripped of x-headroom-* above).
+            # `headers` dict was stripped of x-legroom-* above).
             # Replaces the pre-PR-this raw `if self.memory_handler and
             # memory_user_id:` conjunction that silently ignored
-            # `x-headroom-bypass: true` and mutated request bytes
+            # `x-legroom-bypass: true` and mutated request bytes
             # under the user's "don't touch my bytes" signal.
-            from headroom.proxy.helpers import get_memory_injection_mode
+            from legroom.proxy.helpers import get_memory_injection_mode
 
             memory_decision = MemoryDecision.decide(
                 headers=request.headers,
@@ -1004,7 +1004,7 @@ class AnthropicHandlerMixin:
                     optimization_latency = (time.time() - start_time) * 1000
 
                     # Response-cache hit: response body came from
-                    # Headroom's semantic cache, not the upstream
+                    # Legroom's semantic cache, not the upstream
                     # provider. ``from_response_cache=True`` is a
                     # distinct signal from `cache_read_tokens > 0`
                     # (which means upstream-prompt-cache hit). Dashboards
@@ -1083,7 +1083,7 @@ class AnthropicHandlerMixin:
             # Hook: pre_compress — let hooks modify messages before compression
 
             if self.config.hooks and not is_cache_mode(self.config.mode):
-                from headroom.hooks import CompressContext
+                from legroom.hooks import CompressContext
 
                 _hook_ctx = CompressContext(
                     model=model,
@@ -1140,7 +1140,7 @@ class AnthropicHandlerMixin:
             frozen_message_count = prefix_tracker.get_frozen_message_count()
             # Idle gap since the previous turn's response, snapshotted at fetch
             # (before get_or_create bumped the access clock). Forwarded to the
-            # pipeline so the net-cost/TTL gate (HEADROOM_NET_COST_POLICY=1) can
+            # pipeline so the net-cost/TTL gate (LEGROOM_NET_COST_POLICY=1) can
             # decay P_alive as the ~300s prompt-cache lapse nears and admit
             # otherwise-frozen compaction as a free rewrite. Harmless when the
             # policy is off (router ignores idle_seconds unless enabled) and near
@@ -1154,14 +1154,14 @@ class AnthropicHandlerMixin:
 
             # PR-A6 (P5-50, preps P0-6): session-sticky `anthropic-beta` merge.
             # Read the client's beta value (note: anthropic-beta is NOT
-            # an x-headroom-* header so it survived the A5 strip), union
+            # an x-legroom-* header so it survived the A5 strip), union
             # with previously-seen tokens for this session, and update
             # the tracker. Memory-injection (below at line ~1244) uses
             # `merge_anthropic_beta` to add `context-management-2025-06-27`
             # on top of the sticky baseline. Order matters: session-sticky
             # FIRST so we have the canonical baseline; memory injection
-            # adds Headroom-required tokens AFTER.
-            from headroom.proxy.helpers import (
+            # adds Legroom-required tokens AFTER.
+            from legroom.proxy.helpers import (
                 get_session_beta_tracker,
                 log_beta_header_merge,
             )
@@ -1193,10 +1193,10 @@ class AnthropicHandlerMixin:
                 session_id=session_id,
                 client_betas_count=_client_beta_count,
                 sticky_betas_count=_sticky_beta_count,
-                headroom_added=[],
+                legroom_added=[],
                 request_id=request_id,
             )
-            _headroom_beta_added = False
+            _legroom_beta_added = False
 
             # In cache mode, avoid rewriting any message body bytes. The latest user
             # turn becomes historical on the next request, so even "latest turn only"
@@ -1207,14 +1207,14 @@ class AnthropicHandlerMixin:
             # ImageCompressionDecision for uniformity with CompressionDecision +
             # MemoryDecision. The cache_mode check stays inline because it's
             # Anthropic-specific (sites in openai.py / gemini.py don't have it).
-            from headroom.proxy.image_compression_decision import ImageCompressionDecision
+            from legroom.proxy.image_compression_decision import ImageCompressionDecision
 
             _image_decision = ImageCompressionDecision.decide(
                 headers=request.headers, config=self.config, messages=messages
             )
             _image_decision.apply_to_tags(tags)
             if _image_decision.should_compress and not is_cache_mode(self.config.mode):
-                from headroom.proxy.helpers import COMPRESSION_TIMEOUT_SECONDS
+                from legroom.proxy.helpers import COMPRESSION_TIMEOUT_SECONDS
 
                 compressor = None
                 try:
@@ -1265,7 +1265,7 @@ class AnthropicHandlerMixin:
                 )
             if _decision.should_compress and not _skip_compression_for_backpressure:
                 try:
-                    from headroom.proxy.helpers import COMPRESSION_TIMEOUT_SECONDS
+                    from legroom.proxy.helpers import COMPRESSION_TIMEOUT_SECONDS
 
                     context_limit = self.anthropic_provider.get_context_limit(model)
                     result = None
@@ -1283,7 +1283,7 @@ class AnthropicHandlerMixin:
                     # policy collapses to PAYG so behaviour is unchanged.
                     # Hoisted here so all three pipeline.apply call sites
                     # (token / non-cache / cache-delta) see the same policy.
-                    from headroom.transforms.compression_policy import resolve_policy
+                    from legroom.transforms.compression_policy import resolve_policy
 
                     compression_policy = resolve_policy(getattr(request.state, "auth_mode", None))
                     if is_token_mode(self.config.mode):
@@ -1362,7 +1362,7 @@ class AnthropicHandlerMixin:
                             # rather than unbounded. The pass is also bounded by
                             # routing + statistical crushers (observed seconds even
                             # on multi-M-token counts).
-                            from headroom.proxy.helpers import (
+                            from legroom.proxy.helpers import (
                                 COLD_START_FAST_PASS_TIMEOUT_SECONDS,
                             )
 
@@ -1517,7 +1517,7 @@ class AnthropicHandlerMixin:
                                 #   the compression loop only touches indices >= frozen count,
                                 #   so ONLY the delta is compressed. Splice the compressed delta
                                 #   onto the byte-stable forwarded prefix.
-                                from headroom.cache.prefix_tracker import _strip_cache_control
+                                from legroom.cache.prefix_tracker import _strip_cache_control
 
                                 # Compression context = the EXACT forwarded (cached) prefix
                                 # + the stripped delta, with the prefix frozen. Using the
@@ -1589,7 +1589,7 @@ class AnthropicHandlerMixin:
             # previously-forwarded prefix keeps it byte-identical → cache hits.
             # Append-only-guarded and idempotent (cache mode already replays), so
             # it is safe to run unconditionally here.
-            from headroom.cache.prefix_tracker import (
+            from legroom.cache.prefix_tracker import (
                 normalize_message_cache_control,
                 overlay_cached_prefix,
             )
@@ -1693,8 +1693,8 @@ class AnthropicHandlerMixin:
             # freeze state. Advisory: must never fail the request.
             if self.config.read_maturation and not _bypass:
                 try:
-                    from headroom.config import ReadMaturationConfig
-                    from headroom.transforms.read_maturation import (
+                    from legroom.config import ReadMaturationConfig
+                    from legroom.transforms.read_maturation import (
                         ReadMaturationManager,
                         relocate_cache_breakpoint,
                     )
@@ -1736,7 +1736,7 @@ class AnthropicHandlerMixin:
 
             # Hook: post_compress — let hooks observe compression results
             if self.config.hooks and tokens_saved > 0:
-                from headroom.hooks import CompressEvent
+                from legroom.hooks import CompressEvent
 
                 try:
                     self.config.hooks.post_compress(
@@ -1776,11 +1776,11 @@ class AnthropicHandlerMixin:
             # users who launch `claude` manually (the wrap path sets the env var).
             # Gate on the cheap one-time flag first so the detection scan stops
             # running once the hint has fired; never let it break a request.
-            from headroom.proxy.helpers import tool_search_hint_pending
+            from legroom.proxy.helpers import tool_search_hint_pending
 
             if tool_search_hint_pending():
                 try:
-                    from headroom.proxy.helpers import (
+                    from legroom.proxy.helpers import (
                         claude_code_tool_search_inactive,
                         format_tool_search_disabled_hint,
                         take_tool_search_hint_slot,
@@ -1846,7 +1846,7 @@ class AnthropicHandlerMixin:
                 # no-op and the cache is unaffected.
                 # ponytail: ceiling is one extra cache miss on the first CCR
                 # turn in a frozen-prefix session.
-                from headroom.proxy.helpers import (
+                from legroom.proxy.helpers import (
                     has_new_ccr_markers,
                     should_inject_ccr_tool,
                 )
@@ -1872,11 +1872,11 @@ class AnthropicHandlerMixin:
                     if is_marker_override:
                         logger.info(
                             f"[{request_id}] CCR: overriding injection deferral — "
-                            f"new markers emitted but headroom_retrieve unavailable "
+                            f"new markers emitted but legroom_retrieve unavailable "
                             f"(frozen_message_count={frozen_message_count}); injecting to "
                             "prevent unredeemable markers (#1006)"
                         )
-                    from headroom.proxy.helpers import apply_session_sticky_ccr_tool
+                    from legroom.proxy.helpers import apply_session_sticky_ccr_tool
 
                     tools, ccr_tool_injected = apply_session_sticky_ccr_tool(
                         provider="anthropic",
@@ -1899,7 +1899,7 @@ class AnthropicHandlerMixin:
                 # this proxy; without this gate, Project A's compressed
                 # sample content keyword-matches Project B's later query
                 # and gets surfaced as "relevant" — see
-                # `headroom/ccr/context_tracker.py` module docstring for
+                # `legroom/ccr/context_tracker.py` module docstring for
                 # the 2026-05-26 leak report (Python from tamag0
                 # injected into a daphni-rails Ruby session).
                 ccr_workspace_key, ccr_workspace_label = self._resolve_ccr_workspace(request, body)
@@ -1940,8 +1940,8 @@ class AnthropicHandlerMixin:
                     elif self.ccr_context_tracker and not ccr_workspace_key:
                         logger.info(
                             f"[{request_id}] CCR: workspace unresolved; skipping "
-                            "track_compression (fail-closed — no x-headroom-cwd / "
-                            "x-headroom-project-id header and no cwd: in system prompt)"
+                            "track_compression (fail-closed — no x-legroom-cwd / "
+                            "x-legroom-project-id header and no cwd: in system prompt)"
                         )
 
             # CCR Proactive Expansion: Check if current query needs expanded context.
@@ -2030,7 +2030,7 @@ class AnthropicHandlerMixin:
 
             # Memory: Inject context and tools — gated on MemoryDecision.
             # ``inject`` is False under bypass, missing handler, missing
-            # user_id, or HEADROOM_MEMORY_INJECTION_MODE in disabled/tool.
+            # user_id, or LEGROOM_MEMORY_INJECTION_MODE in disabled/tool.
             # Pre-PR-this the gate was a raw conjunction that silently
             # ignored bypass; now bypass is honoured here on Anthropic
             # /v1/messages just as on /v1/responses.
@@ -2061,7 +2061,7 @@ class AnthropicHandlerMixin:
                         )
                     try:
                         if memory_context:
-                            from headroom.proxy.helpers import (
+                            from legroom.proxy.helpers import (
                                 get_memory_injection_mode,
                                 log_memory_injection,
                             )
@@ -2127,7 +2127,7 @@ class AnthropicHandlerMixin:
                 # turn (i.e. memory_handler.config.inject_tools and we
                 # have a memory_user_id, which the outer guard at line
                 # 1192 already enforces).
-                from headroom.proxy.helpers import (
+                from legroom.proxy.helpers import (
                     apply_session_sticky_memory_tools,
                 )
 
@@ -2158,16 +2158,16 @@ class AnthropicHandlerMixin:
                     # (P5-50): use the deterministic `merge_anthropic_beta`
                     # helper instead of ad-hoc string concat. Order:
                     # client tokens first (preserved from session-sticky
-                    # baseline above), then Headroom-required tokens.
+                    # baseline above), then Legroom-required tokens.
                     # The session tracker already recorded the client
-                    # value; we append Headroom-required tokens here so
+                    # value; we append Legroom-required tokens here so
                     # the next turn re-applies them deterministically.
                     beta_headers = self.memory_handler.get_beta_headers()
                     if beta_headers:
-                        from headroom.proxy.helpers import (
+                        from legroom.proxy.helpers import (
                             log_beta_header_merge as _log_beta_header_merge_mem,
                         )
-                        from headroom.proxy.helpers import (
+                        from legroom.proxy.helpers import (
                             merge_anthropic_beta,
                         )
 
@@ -2181,7 +2181,7 @@ class AnthropicHandlerMixin:
                                 continue
                             existing_value = headers.get(key, "")
                             required_tokens = [t.strip() for t in value.split(",") if t.strip()]
-                            _headroom_beta_added = True
+                            _legroom_beta_added = True
                             merged = merge_anthropic_beta(existing_value, required_tokens)
                             _existing_count = (
                                 len([t for t in existing_value.split(",") if t.strip()])
@@ -2197,7 +2197,7 @@ class AnthropicHandlerMixin:
                                 session_id=session_id,
                                 client_betas_count=_existing_count,
                                 sticky_betas_count=_merged_count,
-                                headroom_added=required_tokens,
+                                legroom_added=required_tokens,
                                 request_id=request_id,
                             )
                             logger.info(f"[{request_id}] Memory: Added beta header: {key}={merged}")
@@ -2226,7 +2226,7 @@ class AnthropicHandlerMixin:
 
             # Final sanitization of the FORWARDED body: strip streaming-only "index"
             # keys from content blocks. In cache mode the forwarded prefix is replayed
-            # from Headroom's own recorded/reconstructed messages (streaming.py tags
+            # from Legroom's own recorded/reconstructed messages (streaming.py tags
             # blocks with "index"), so the inbound-side strip above doesn't cover it —
             # this catches both the client-echoed and the cache-replayed forms. Applied
             # deterministically to the exact bytes forwarded (and thus recorded as the
@@ -2251,7 +2251,7 @@ class AnthropicHandlerMixin:
             # schema.  Mirrors the same pass that the OpenAI handler applies.
             _tools_compaction_started = time.time()
             try:
-                from headroom.proxy.tool_schema_compaction import compact_tools
+                from legroom.proxy.tool_schema_compaction import compact_tools
 
                 body, _tools_modified, _tools_before_bytes, _tools_after_bytes = compact_tools(body)
                 if _tools_modified:
@@ -2273,10 +2273,10 @@ class AnthropicHandlerMixin:
                 )
 
             # Layer 2: Tool description truncation (opt-in via
-            # HEADROOM_TOOL_DESC_MAX_CHARS).  Preserves first sentence
+            # LEGROOM_TOOL_DESC_MAX_CHARS).  Preserves first sentence
             # of each description so tool selection still works.
             try:
-                from headroom.proxy.tool_schema_compaction import (
+                from legroom.proxy.tool_schema_compaction import (
                     compact_tool_descriptions,
                     tool_desc_max_chars,
                 )
@@ -2304,15 +2304,15 @@ class AnthropicHandlerMixin:
                 )
 
             # Layer 3: System prompt compaction (opt-in via
-            # HEADROOM_SYSTEM_COMPACT).  Uses CCR to compress large
+            # LEGROOM_SYSTEM_COMPACT).  Uses CCR to compress large
             # system content blocks (CLAUDE.md, rules, hooks, etc.)
             # while preserving cache_control and short instruction blocks.
             try:
-                from headroom.proxy.system_compaction import (
+                from legroom.proxy.system_compaction import (
                     compact_system_prompt,
                     system_compact_enabled,
                 )
-                from headroom.transforms.compression_units import find_content_router
+                from legroom.transforms.compression_units import find_content_router
 
                 if system_compact_enabled():
                     _sys_router = find_content_router(self.anthropic_pipeline)
@@ -2367,7 +2367,7 @@ class AnthropicHandlerMixin:
                 optimized_tokens = tokenizer.count_messages(body["messages"])
                 tokens_saved = max(0, original_tokens - optimized_tokens)
 
-            # Server-side Tool Search (opt-in HEADROOM_TOOL_SEARCH): defer the
+            # Server-side Tool Search (opt-in LEGROOM_TOOL_SEARCH): defer the
             # non-core tool schemas behind a tool_search tool so Anthropic excludes
             # them from the context window — they stop counting as input tokens until
             # the model searches for one — while every tool stays callable.
@@ -2386,10 +2386,10 @@ class AnthropicHandlerMixin:
             if (
                 provider_name == "anthropic"
                 and getattr(self, "anthropic_backend", None) is None
-                and os.environ.get("HEADROOM_TOOL_SEARCH", "").strip().lower()
+                and os.environ.get("LEGROOM_TOOL_SEARCH", "").strip().lower()
                 in ("1", "true", "yes", "on", "auto")
             ):
-                from headroom.proxy.helpers import inject_tool_search_deferral
+                from legroom.proxy.helpers import inject_tool_search_deferral
 
                 _ts_before = body.get("tools")
                 _ts_after = inject_tool_search_deferral(_ts_before)
@@ -2416,7 +2416,7 @@ class AnthropicHandlerMixin:
             # rewrite the outbound tools/messages before we send upstream — the
             # extensible counterpart to the built-in deferral above. A single
             # registry check keeps this a no-op when no hook is registered.
-            from headroom.proxy.turn_hooks import (
+            from legroom.proxy.turn_hooks import (
                 TurnContext,
                 registered_turn_hooks,
                 run_request_hooks,
@@ -2438,19 +2438,19 @@ class AnthropicHandlerMixin:
                     tools = _req_ctx.tools
                     body["tools"] = tools
 
-            # Output shaping (opt-in via HEADROOM_OUTPUT_SHAPER): verbosity
+            # Output shaping (opt-in via LEGROOM_OUTPUT_SHAPER): verbosity
             # steering appended to the system-prompt tail + effort routing on
             # mechanical tool_result continuations. Runs after every other
             # body mutation so the turn classifier sees the final messages,
             # and respects the same bypass header as compression.
             if not _bypass:
-                from headroom.proxy.output_savings import (
+                from legroom.proxy.output_savings import (
                     assign_arm,
                     conversation_key_from_body,
                     stratum_key,
                     stratum_label,
                 )
-                from headroom.proxy.output_shaper import (
+                from legroom.proxy.output_shaper import (
                     OutputShaperSettings,
                     classify_turn,
                     resolve_verbosity_level,
@@ -2463,11 +2463,11 @@ class AnthropicHandlerMixin:
                     # conversation is treatment or control. This keeps the A/B
                     # comparison clean AND keeps the prefix cache stable (we
                     # never flip a conversation's system-prompt tail mid-stream).
-                    from headroom.proxy import runtime_env
+                    from legroom.proxy import runtime_env
 
                     _holdout = 0.0
                     try:
-                        _holdout = float(runtime_env.getenv("HEADROOM_OUTPUT_HOLDOUT", "0") or "0")
+                        _holdout = float(runtime_env.getenv("LEGROOM_OUTPUT_HOLDOUT", "0") or "0")
                     except ValueError:
                         _holdout = 0.0
                     _arm = assign_arm(conversation_key_from_body(body), _holdout)
@@ -2525,7 +2525,7 @@ class AnthropicHandlerMixin:
                 and _sticky_beta_value
                 and _sticky_beta_value != _client_beta_value
                 and not body_mutation_tracker.mutated
-                and not _headroom_beta_added
+                and not _legroom_beta_added
             ):
                 headers["anthropic-beta"] = _client_beta_value
 
@@ -2757,7 +2757,7 @@ class AnthropicHandlerMixin:
                 buffered_stream_ccr = bool(
                     stream
                     and ccr_response_handler_enabled
-                    and self._has_headroom_retrieve_tool(
+                    and self._has_legroom_retrieve_tool(
                         tools if tools is not None else body.get("tools")
                     )
                 )
@@ -2769,7 +2769,7 @@ class AnthropicHandlerMixin:
                         )
                     logger.info(
                         f"[{request_id}] CCR: stream:true request has "
-                        "headroom_retrieve available; using buffered stream:false "
+                        "legroom_retrieve available; using buffered stream:false "
                         "upstream request for server-side retrieval handling"
                     )
 
@@ -2785,7 +2785,7 @@ class AnthropicHandlerMixin:
                         metadata={"path": pipeline_path, "stream": True},
                     )
                     await _finalize_pre_upstream()
-                    explicit_session_header = request.headers.get("x-headroom-session-id")
+                    explicit_session_header = request.headers.get("x-legroom-session-id")
                     session_key = self._get_session_key(
                         body,
                         session_header=explicit_session_header,
@@ -2881,7 +2881,7 @@ class AnthropicHandlerMixin:
                     await _finalize_pre_upstream()
                     # Full diagnostic dump on upstream errors.
                     # Writes pre/post compression messages, tools, and error
-                    # to ~/.headroom/logs/debug_400/ for offline analysis.
+                    # to ~/.legroom/logs/debug_400/ for offline analysis.
                     if response.status_code >= 400:
                         try:
                             err_body = response.json()
@@ -2908,13 +2908,13 @@ class AnthropicHandlerMixin:
 
                         # Diagnostic dump of the full upstream-error request.
                         # OFF by default: it can contain cleartext prompt / tool /
-                        # system content. Opt in with HEADROOM_DEBUG_DUMP=1
+                        # system content. Opt in with LEGROOM_DEBUG_DUMP=1
                         # (redacted: structure + lengths only) or =full (content).
                         # Never written in stateless mode.
                         dump_mode = _debug_dump_mode(self.config)
                         if dump_mode != "off":
                             try:
-                                from headroom import paths as _hr_paths
+                                from legroom import paths as _hr_paths
 
                                 debug_dir = _hr_paths.debug_400_dir()
                                 debug_dir.mkdir(parents=True, exist_ok=True)
@@ -2997,7 +2997,7 @@ class AnthropicHandlerMixin:
                             f"[{request_id}] Failed to parse response JSON for CCR handling: {e}"
                         )
 
-                    # CCR Response Handling: Handle headroom_retrieve tool calls automatically
+                    # CCR Response Handling: Handle legroom_retrieve tool calls automatically
                     if (
                         self.ccr_response_handler
                         and resp_json
@@ -3039,13 +3039,13 @@ class AnthropicHandlerMixin:
                             )
                             assert self.http_client is not None, "HTTP client not initialized"
                             # Byte-faithful (PR-A3, fixes P0-2). The CCR
-                            # continuation body is synthesized by Headroom
+                            # continuation body is synthesized by Legroom
                             # so it is treated as mutated and goes through
                             # the canonical serializer.
-                            from headroom.proxy.body_forwarding import (
+                            from legroom.proxy.body_forwarding import (
                                 prepare_outbound_body_bytes,
                             )
-                            from headroom.proxy.helpers import log_outbound_request
+                            from legroom.proxy.helpers import log_outbound_request
 
                             ccr_outbound_bytes, ccr_outbound_source = prepare_outbound_body_bytes(
                                 body=continuation_body,
@@ -3105,7 +3105,7 @@ class AnthropicHandlerMixin:
                             # Turn hooks (opt-in extensions) may inspect the turn or
                             # re-drive the model before we hand back the response.
                             # Inert when no hook is registered.
-                            from headroom.proxy.turn_hooks import (
+                            from legroom.proxy.turn_hooks import (
                                 TurnContext,
                                 run_response_hooks,
                             )
@@ -3140,13 +3140,13 @@ class AnthropicHandlerMixin:
                                 content=ccr_content,
                                 headers=ccr_response_headers,
                             )
-                            # Only claim success when no headroom_retrieve remains.
+                            # Only claim success when no legroom_retrieve remains.
                             # On an intentional mixed-tool skip (#839) the response
-                            # still carries headroom_retrieve for the client to
+                            # still carries legroom_retrieve for the client to
                             # resolve — logging "handled successfully" there is
                             # misleading. Classify via the shared, provider-generic
                             # residual-CCR signal.
-                            from headroom.ccr.response_handler import (
+                            from legroom.ccr.response_handler import (
                                 RESIDUAL_CCR_SKIPPED_MIXED,
                             )
 
@@ -3156,7 +3156,7 @@ class AnthropicHandlerMixin:
                             if residual_status == RESIDUAL_CCR_SKIPPED_MIXED:
                                 logger.info(
                                     f"[{request_id}] CCR: Skipped retrieval — "
-                                    "headroom_retrieve returned alongside a client "
+                                    "legroom_retrieve returned alongside a client "
                                     "tool for the client to resolve"
                                 )
                             else:
@@ -3320,14 +3320,14 @@ class AnthropicHandlerMixin:
                             **cache_key_fields,
                         )
 
-                    # Subscription tracker: update headroom contribution
+                    # Subscription tracker: update legroom contribution
                     # counters. Provider-specific OAuth/subscription
                     # accounting — stays outside the funnel (different
                     # concern, only fires for Bearer-not-sk-ant tokens).
                     if _auth_header.startswith("Bearer ") and not _auth_header.startswith(
                         "Bearer sk-ant-api"
                     ):
-                        from headroom.subscription.tracker import (
+                        from legroom.subscription.tracker import (
                             get_subscription_tracker as _get_sub_tracker,
                         )
 
@@ -3406,21 +3406,21 @@ class AnthropicHandlerMixin:
                         "content-length", None
                     )  # Length changed after decompression
 
-                    # Inject Headroom compression metrics (for SaaS metering)
-                    response_headers["x-headroom-tokens-before"] = str(original_tokens)
-                    response_headers["x-headroom-tokens-after"] = str(optimized_tokens)
-                    response_headers["x-headroom-tokens-saved"] = str(tokens_saved)
-                    response_headers["x-headroom-model"] = model
+                    # Inject Legroom compression metrics (for SaaS metering)
+                    response_headers["x-legroom-tokens-before"] = str(original_tokens)
+                    response_headers["x-legroom-tokens-after"] = str(optimized_tokens)
+                    response_headers["x-legroom-tokens-saved"] = str(tokens_saved)
+                    response_headers["x-legroom-model"] = model
                     if transforms_applied:
-                        from headroom.proxy.cost import header_safe_transforms
+                        from legroom.proxy.cost import header_safe_transforms
 
-                        response_headers["x-headroom-transforms"] = ",".join(
+                        response_headers["x-legroom-transforms"] = ",".join(
                             header_safe_transforms(transforms_applied)
                         )
                     if cache_hit:
-                        response_headers["x-headroom-cached"] = "true"
+                        response_headers["x-legroom-cached"] = "true"
                     if _compression_failed:
-                        response_headers["x-headroom-compression-failed"] = "true"
+                        response_headers["x-legroom-compression-failed"] = "true"
 
                     # Enterprise Security: scan response + de-anonymize.
                     # Gate on a 200 upstream like the sibling CCR/cache/buffered
@@ -3473,16 +3473,16 @@ class AnthropicHandlerMixin:
                             }
                             return f"event: error\ndata: {json.dumps(error_event)}\n\n".encode()
 
-                        # Residual headroom_retrieve is only a hard failure when it
+                        # Residual legroom_retrieve is only a hard failure when it
                         # is NOT an intentional mixed-tool skip. When the model
-                        # emitted headroom_retrieve alongside a client tool (#839),
+                        # emitted legroom_retrieve alongside a client tool (#839),
                         # the handler deliberately leaves both tool_use blocks in
                         # place for the client to resolve — a legal turn that the
                         # non-streaming path returns as 200. Fall through to the
                         # SSE resynthesis below so the stream:true path matches it
                         # and preserves both blocks. Use the shared, provider-generic
                         # residual-CCR signal (not an Anthropic-only branch).
-                        from headroom.ccr.response_handler import RESIDUAL_CCR_ERROR
+                        from legroom.ccr.response_handler import RESIDUAL_CCR_ERROR
 
                         if (
                             self.ccr_response_handler
@@ -3493,7 +3493,7 @@ class AnthropicHandlerMixin:
                         ):
                             logger.warning(
                                 f"[{request_id}] CCR: Buffered streaming response still "
-                                "contains an unresolved headroom_retrieve after handling; "
+                                "contains an unresolved legroom_retrieve after handling; "
                                 "failing closed"
                             )
 
@@ -3612,10 +3612,10 @@ class AnthropicHandlerMixin:
         """
         from fastapi.responses import JSONResponse, Response
 
-        from headroom.ccr import CCRToolInjector
-        from headroom.proxy.helpers import MAX_REQUEST_BODY_SIZE, _read_request_json
-        from headroom.proxy.modes import is_cache_mode
-        from headroom.utils import extract_user_query
+        from legroom.ccr import CCRToolInjector
+        from legroom.proxy.helpers import MAX_REQUEST_BODY_SIZE, _read_request_json
+        from legroom.proxy.modes import is_cache_mode
+        from legroom.utils import extract_user_query
 
         start_time = time.time()
         request_id = await self._next_request_id()
@@ -3668,14 +3668,14 @@ class AnthropicHandlerMixin:
         headers.pop("content-length", None)
         client = classify_client(headers, default="claude")
         tags = extract_tags(headers)
-        # PR-A5 (P5-49): strip internal x-headroom-* before forwarding upstream.
-        from headroom.proxy.helpers import (
+        # PR-A5 (P5-49): strip internal x-legroom-* before forwarding upstream.
+        from legroom.proxy.helpers import (
             _strip_internal_headers,
             log_outbound_headers,
             merge_extra_headers,
         )
 
-        _pre_strip_count = sum(1 for k in headers if k.lower().startswith("x-headroom-"))
+        _pre_strip_count = sum(1 for k in headers if k.lower().startswith("x-legroom-"))
         headers = _strip_internal_headers(headers)
         headers = merge_extra_headers(headers, self.config.anthropic_extra_headers)
         log_outbound_headers(
@@ -3730,7 +3730,7 @@ class AnthropicHandlerMixin:
                     _, original_tokens = await self._count_tokens_offloaded(model, messages)
                     optimized_tokens = original_tokens
                 else:
-                    from headroom.proxy.helpers import COMPRESSION_TIMEOUT_SECONDS
+                    from legroom.proxy.helpers import COMPRESSION_TIMEOUT_SECONDS
 
                     # Offload off the event loop (#1701): an inline apply()
                     # blocks every other request for the duration; a timeout
@@ -3952,14 +3952,14 @@ class AnthropicHandlerMixin:
         headers.pop("host", None)
         client = classify_client(headers, default="claude")
         tags = extract_tags(headers)
-        # PR-A5 (P5-49): strip internal x-headroom-* before forwarding upstream.
-        from headroom.proxy.helpers import (
+        # PR-A5 (P5-49): strip internal x-legroom-* before forwarding upstream.
+        from legroom.proxy.helpers import (
             _strip_internal_headers,
             log_outbound_headers,
             merge_extra_headers,
         )
 
-        _pre_strip_count = sum(1 for k in headers if k.lower().startswith("x-headroom-"))
+        _pre_strip_count = sum(1 for k in headers if k.lower().startswith("x-legroom-"))
         headers = _strip_internal_headers(headers)
         headers = merge_extra_headers(headers, self.config.anthropic_extra_headers)
         log_outbound_headers(
@@ -4029,7 +4029,7 @@ class AnthropicHandlerMixin:
             requests_list: The original batch requests.
             api_key: The API key for continuation calls.
         """
-        from headroom.ccr import BatchContext, BatchRequestContext, get_batch_context_store
+        from legroom.ccr import BatchContext, BatchRequestContext, get_batch_context_store
 
         store = get_batch_context_store()
         context = BatchContext(
@@ -4073,7 +4073,7 @@ class AnthropicHandlerMixin:
         """
         from fastapi.responses import Response
 
-        from headroom.ccr import BatchResultProcessor, get_batch_context_store
+        from legroom.ccr import BatchResultProcessor, get_batch_context_store
 
         request_id = await self._next_request_id()
         start_time = time.time()
@@ -4088,14 +4088,14 @@ class AnthropicHandlerMixin:
         headers.pop("host", None)
         client = classify_client(headers, default="claude")
         tags = extract_tags(headers)
-        # PR-A5 (P5-49): strip internal x-headroom-* before forwarding upstream.
-        from headroom.proxy.helpers import (
+        # PR-A5 (P5-49): strip internal x-legroom-* before forwarding upstream.
+        from legroom.proxy.helpers import (
             _strip_internal_headers,
             log_outbound_headers,
             merge_extra_headers,
         )
 
-        _pre_strip_count = sum(1 for k in headers if k.lower().startswith("x-headroom-"))
+        _pre_strip_count = sum(1 for k in headers if k.lower().startswith("x-legroom-"))
         headers = _strip_internal_headers(headers)
         headers = merge_extra_headers(headers, self.config.anthropic_extra_headers)
         log_outbound_headers(
@@ -4175,7 +4175,7 @@ class AnthropicHandlerMixin:
 
         # Batch results, post-CCR processing. Like the other batch
         # sites, no token accounting but we record the request so it's
-        # visible in dashboards + headroom perf.
+        # visible in dashboards + legroom perf.
         latency_ms = (time.time() - start_time) * 1000
         await self._record_request_outcome(
             RequestOutcome(

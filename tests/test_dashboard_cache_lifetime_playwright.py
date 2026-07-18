@@ -16,7 +16,7 @@ from urllib.parse import urlsplit
 
 import pytest
 
-from headroom.dashboard import get_dashboard_html
+from legroom.dashboard import get_dashboard_html
 from tests.test_dashboard_cache_ttl_playwright import _sample_history, _sample_stats
 
 playwright = pytest.importorskip("playwright.sync_api")
@@ -68,7 +68,7 @@ def _install_dashboard_routes(page: Page, stats: dict) -> None:
 
 def _open_dashboard(page: Page, stats: dict) -> None:
     _install_dashboard_routes(page, stats)
-    page.goto("http://headroom.local/dashboard")
+    page.goto("http://legroom.local/dashboard")
     page.wait_for_load_state("networkidle")
 
 

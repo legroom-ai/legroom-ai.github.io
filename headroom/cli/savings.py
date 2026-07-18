@@ -1,6 +1,6 @@
 """CLI: show durable compression savings over time.
 
-Reads the append-only savings ledger (``~/.headroom/savings_events.jsonl``,
+Reads the append-only savings ledger (``~/.legroom/savings_events.jsonl``,
 written by both the MCP tool path and the proxy) and renders a cost-avoided
 summary with Today / Last 7 days / All time bars plus per-model and
 per-client breakdowns. Durable across restarts; aggregated on read.
@@ -13,7 +13,7 @@ from typing import Any
 
 import click
 
-from headroom import savings_ledger
+from legroom import savings_ledger
 
 from .main import main
 
@@ -78,8 +78,8 @@ def savings(as_json: bool, days: int, reset: bool) -> None:
     if calls == 0:
         click.echo("No savings recorded yet.")
         click.echo(
-            "Compress via the Headroom MCP tool or route traffic through the "
-            "proxy, then re-run `headroom savings`."
+            "Compress via the Legroom MCP tool or route traffic through the "
+            "proxy, then re-run `legroom savings`."
         )
         click.echo(f"Ledger: {report.path}")
         return

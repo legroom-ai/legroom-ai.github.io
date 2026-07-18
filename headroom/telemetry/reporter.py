@@ -1,7 +1,7 @@
 """License validation and usage reporting for managed/enterprise deployments.
 
 Phone-home module that validates license keys and reports aggregate usage
-statistics to the Headroom cloud for billing. Designed to be non-intrusive:
+statistics to the Legroom cloud for billing. Designed to be non-intrusive:
 the proxy works normally even if the cloud API is completely unreachable.
 
 Privacy guarantees:
@@ -29,17 +29,17 @@ from typing import TYPE_CHECKING, Any
 
 import httpx
 
-from headroom import paths as _paths
+from legroom import paths as _paths
 
 if TYPE_CHECKING:
-    from headroom.proxy.server import HeadroomProxy
+    from legroom.proxy.server import LegroomProxy
 
-logger = logging.getLogger("headroom.telemetry.reporter")
+logger = logging.getLogger("legroom.telemetry.reporter")
 
 # Grace period: if the cloud API is unreachable, use cached license for up to 7 days
 GRACE_PERIOD_SECONDS = 7 * 24 * 3600  # 7 days
 
-# Default cache location (workspace bucket, respects HEADROOM_WORKSPACE_DIR).
+# Default cache location (workspace bucket, respects LEGROOM_WORKSPACE_DIR).
 LICENSE_CACHE_PATH = _paths.license_cache_path()
 
 
@@ -89,7 +89,7 @@ class UsageReporter:
     """Background license validator and aggregate usage reporter.
 
     Validates the license key on startup, then periodically sends aggregate
-    usage stats to the Headroom cloud. If the cloud is unreachable, the proxy
+    usage stats to the Legroom cloud. If the cloud is unreachable, the proxy
     continues to operate using cached license info (grace period: 7 days).
 
     Never sends: message content, API keys, prompts, tool results, user data.
@@ -98,7 +98,7 @@ class UsageReporter:
     def __init__(
         self,
         license_key: str,
-        cloud_url: str = "https://app.headroomlabs.ai",
+        cloud_url: str = "https://app.legroom.ai",
         report_interval: int = 300,
         cache_path: Path | None = None,
     ):
@@ -107,7 +107,7 @@ class UsageReporter:
         self._report_interval = report_interval
         self._cache_path = cache_path or LICENSE_CACHE_PATH
         self._license_info: LicenseInfo | None = None
-        self._proxy: HeadroomProxy | None = None
+        self._proxy: LegroomProxy | None = None
         self._task: asyncio.Task[None] | None = None
         self._http_client: httpx.AsyncClient | None = None
         self._stopped = False
@@ -168,7 +168,7 @@ class UsageReporter:
         # Fallback to cache
         return self._load_cache_or_default()
 
-    async def start(self, proxy: HeadroomProxy) -> None:
+    async def start(self, proxy: LegroomProxy) -> None:
         """Start the background reporting loop. Called during proxy startup."""
         self._proxy = proxy
         self._stopped = False
@@ -236,7 +236,7 @@ class UsageReporter:
         if self._http_client is None:
             self._http_client = httpx.AsyncClient(
                 timeout=httpx.Timeout(10.0),
-                headers={"User-Agent": "headroom-proxy"},
+                headers={"User-Agent": "legroom-proxy"},
             )
         return self._http_client
 

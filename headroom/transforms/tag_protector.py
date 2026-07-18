@@ -1,7 +1,7 @@
 """Rust-backed tag protector — keep custom XML tags away from compressors.
 
 Phase 3e.4 ported the implementation to
-``crates/headroom-core/src/transforms/tag_protector.rs``. This module
+``crates/legroom-core/src/transforms/tag_protector.rs``. This module
 is now a thin shim that:
 
 1. Routes ``protect_tags`` / ``restore_tags`` through PyO3 so callers
@@ -28,7 +28,7 @@ is now a thin shim that:
   second loop with the same first-occurrence-replace bug for
   self-closers. Rust handles them in the same single pass.
 * **#5: Placeholder collision.** If the input contained a literal
-  ``{{HEADROOM_TAG_…}}`` substring, Python silently let the collision
+  ``{{LEGROOM_TAG_…}}`` substring, Python silently let the collision
   stand. Rust detects it and salts the prefix.
 """
 
@@ -37,16 +37,16 @@ from __future__ import annotations
 import logging
 from typing import cast
 
-from headroom._core import (
+from legroom._core import (
     is_html_tag as _rust_is_html_tag,
 )
-from headroom._core import (
+from legroom._core import (
     known_html_tag_names as _rust_known_html_tag_names,
 )
-from headroom._core import (
+from legroom._core import (
     protect_tags as _rust_protect_tags,
 )
-from headroom._core import (
+from legroom._core import (
     restore_tags as _rust_restore_tags,
 )
 

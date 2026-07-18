@@ -4,20 +4,20 @@ from unittest.mock import AsyncMock, MagicMock
 import httpx
 import pytest
 
-from headroom.proxy.server import HeadroomProxy
+from legroom.proxy.server import LegroomProxy
 
 
 class TestMidTurnSteering:
     def test_mid_turn_queue_exists_on_streaming_mixin(self):
         """StreamingMixin has _mid_turn_queues class attribute after the fix."""
-        from headroom.proxy.handlers.streaming import StreamingMixin
+        from legroom.proxy.handlers.streaming import StreamingMixin
 
         assert hasattr(StreamingMixin, "_mid_turn_queues")
         assert hasattr(StreamingMixin, "_active_streams")
 
     def test_mid_turn_message_queued_when_stream_active(self):
         """When a session has an active stream, mid-turn messages are queued."""
-        from headroom.proxy.handlers.streaming import StreamingMixin
+        from legroom.proxy.handlers.streaming import StreamingMixin
 
         mixin = StreamingMixin()
         session_key = "test-session-123"
@@ -25,7 +25,7 @@ class TestMidTurnSteering:
         body = {"messages": [{"role": "user", "content": "follow-up"}]}
         result = mixin._queue_mid_turn_message(session_key, body)
         assert result["status"] == 202
-        assert result["event"] == "headroom_queued"
+        assert result["event"] == "legroom_queued"
         assert not mixin._mid_turn_queues[session_key].empty()
         queued = mixin._mid_turn_queues[session_key].get_nowait()
         assert queued == body
@@ -35,7 +35,7 @@ class TestMidTurnSteering:
 
     def test_no_queue_when_no_prior_stream(self):
         """When no stream is active, _mid_turn_queues stays empty for the session."""
-        from headroom.proxy.handlers.streaming import StreamingMixin
+        from legroom.proxy.handlers.streaming import StreamingMixin
 
         mixin = StreamingMixin()
         session_key = "inactive-session"
@@ -45,14 +45,14 @@ class TestMidTurnSteering:
     def test_should_queue_only_with_explicit_session_header(self):
         """Regression: mid-turn queuing must require an explicit session header.
 
-        Without ``x-headroom-session-id`` the session key is a coarse
+        Without ``x-legroom-session-id`` the session key is a coarse
         ``md5(model + system[:500])`` shared by concurrent independent streams
         (e.g. a main conversation plus background/parallel requests). Queuing
         those wrongly returns a 202 to a streaming caller, whose SDK stream
         parser then fails on an empty (non-SSE) stream. Only opt-in callers
         that send the header may be queued.
         """
-        from headroom.proxy.handlers.streaming import StreamingMixin
+        from legroom.proxy.handlers.streaming import StreamingMixin
 
         mixin = StreamingMixin()
         session_key = "shared-md5-key"
@@ -71,7 +71,7 @@ class TestMidTurnSteering:
             mixin._active_streams.discard(session_key)
 
     def _create_mock_proxy(self):
-        proxy = object.__new__(HeadroomProxy)
+        proxy = object.__new__(LegroomProxy)
         proxy.http_client = MagicMock(spec=httpx.AsyncClient)
         proxy._config = MagicMock()
         proxy._config.memory_enabled = False
@@ -119,7 +119,7 @@ class TestMidTurnSteering:
 
         result = await proxy._stream_response(
             url="https://api.anthropic.com/v1/messages",
-            headers={"x-api-key": "sk-test", "x-headroom-session-id": session_key},
+            headers={"x-api-key": "sk-test", "x-legroom-session-id": session_key},
             body={
                 "model": "claude-sonnet-4-20250514",
                 "max_tokens": 100,
@@ -169,7 +169,7 @@ class TestMidTurnSteering:
 
         result = await proxy._stream_response(
             url="https://api.anthropic.com/v1/messages",
-            headers={"x-api-key": "sk-test", "x-headroom-session-id": session_key},
+            headers={"x-api-key": "sk-test", "x-legroom-session-id": session_key},
             body={
                 "model": "claude-sonnet-4-20250514",
                 "max_tokens": 100,

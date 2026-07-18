@@ -13,7 +13,7 @@ import zipfile
 from pathlib import Path
 from urllib.request import urlopen
 
-from headroom._subprocess import run
+from legroom._subprocess import run
 
 from . import LEAN_CTX_BIN_DIR, LEAN_CTX_VERSION
 
@@ -62,7 +62,7 @@ def _get_target_triple() -> str:
 def _get_explicit_target_triple() -> str:
     """Return the explicitly requested lean-ctx target triple, if any."""
     return (
-        os.environ.get("HEADROOM_LEAN_CTX_TARGET", "").strip()
+        os.environ.get("LEGROOM_LEAN_CTX_TARGET", "").strip()
         or os.environ.get("LEAN_CTX_TARGET", "").strip()
     )
 

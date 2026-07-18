@@ -13,8 +13,8 @@ Tests covering:
 
 import json
 
-from headroom.config import ReadLifecycleConfig
-from headroom.transforms.read_lifecycle import (
+from legroom.config import ReadLifecycleConfig
+from legroom.transforms.read_lifecycle import (
     ReadLifecycleManager,
 )
 
@@ -614,16 +614,16 @@ class TestNoFilePathHandling:
 
 class TestContentRouterIntegration:
     """Regression: ContentRouter.transform must wire a real CCR store into
-    ReadLifecycleManager so STALE Read markers resolve via headroom_retrieve."""
+    ReadLifecycleManager so STALE Read markers resolve via legroom_retrieve."""
 
     def test_stale_read_marker_retrievable_via_compress(self, monkeypatch):
         import re
 
         # Force an in-memory backend so the test is hermetic.
-        monkeypatch.setenv("HEADROOM_CCR_BACKEND", "memory")
+        monkeypatch.setenv("LEGROOM_CCR_BACKEND", "memory")
 
-        from headroom import compress
-        from headroom.cache.compression_store import (
+        from legroom import compress
+        from legroom.cache.compression_store import (
             get_compression_store,
             reset_compression_store,
         )

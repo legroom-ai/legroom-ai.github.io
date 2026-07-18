@@ -1,24 +1,24 @@
-# Testing: GitHub Copilot subscription mode (`headroom wrap copilot --subscription`)
+# Testing: GitHub Copilot subscription mode (`legroom wrap copilot --subscription`)
 
 This is an **experimental** feature and we need help verifying it on **Linux and
 Windows**. It already works on macOS; the cross-platform gap is small and
 specific (see [Status](#status)). If you have a GitHub Copilot subscription and
 10 minutes, please run one of the flows below and
-[file a report](https://github.com/ghaliba3/headroom/issues/new?template=copilot-subscription-test-report.md).
+[file a report](https://github.com/legroom-ai/legroom-ai.github.io/issues/new?template=copilot-subscription-test-report.md).
 
 > ⚠️ This is experimental, and it reads your Copilot login token + routes your
-> Copilot CLI traffic through a local Headroom proxy. Only run it if you're
+> Copilot CLI traffic through a local Legroom proxy. Only run it if you're
 > comfortable with that. The branch is open for inspection.
 
 ## What it does (and what "subscription" means here)
 
-Normally `headroom wrap copilot` is **BYOK** — you bring an Anthropic/OpenAI API
+Normally `legroom wrap copilot` is **BYOK** — you bring an Anthropic/OpenAI API
 key and pay that vendor. `--subscription` is different: it lets you use the
 **Copilot seat you already pay GitHub for**, with **no separate API key**, while
-still routing through Headroom so your context gets compressed.
+still routing through Legroom so your context gets compressed.
 
 Mechanically: the Copilot CLI's only interposition hook is its provider-override
-(the "BYOK transport"), so Headroom uses that knob but supplies **your
+(the "BYOK transport"), so Legroom uses that knob but supplies **your
 subscription token** and points back at **GitHub's own Copilot API**. So the CLI
 may print "BYOK" and require an explicit `--model`, but you are **not** paying a
 third party — it's your subscription, just compressed. (Proof it's working: the
@@ -27,17 +27,17 @@ default — with your token.)
 
 ## API host & Enterprise / data-residency
 
-Headroom routes wrapped Copilot traffic to GitHub's **generic public host**,
+Legroom routes wrapped Copilot traffic to GitHub's **generic public host**,
 `https://api.githubcopilot.com`, for both `--subscription` and the implicit
 OAuth path. That host serves the full model set (including newer models on the
 responses API) and matches the routing that worked before 0.23.
 
-Headroom deliberately does **not** auto-select a per-account host from
+Legroom deliberately does **not** auto-select a per-account host from
 `/copilot_internal/user`. That endpoint advertises a segmented host (e.g.
 `api.individual.githubcopilot.com`) that does **not** serve newer models on the
 responses API and is not the host the official Copilot client routes with — using
-it regressed `headroom wrap copilot` after 0.22.4
-([#610](https://github.com/ghaliba3/headroom/issues/610)).
+it regressed `legroom wrap copilot` after 0.22.4
+([#610](https://github.com/legroom-ai/legroom-ai.github.io/issues/610)).
 
 **Enterprise / data-residency:** if your organization is provisioned on a
 dedicated Copilot API host (GitHub Enterprise Cloud with data residency, or an
@@ -46,11 +46,11 @@ egress proxy), pin it explicitly — the override flows through both
 
 ```bash
 export GITHUB_COPILOT_API_URL=https://api.<your-host>.githubcopilot.com
-headroom wrap copilot --subscription -- --model gpt-5.4
+legroom wrap copilot --subscription -- --model gpt-5.4
 ```
 
-If you operate such an environment and would like Headroom to **auto-detect** the
-correct host instead of pinning it, please [open an issue](https://github.com/ghaliba3/headroom/issues/new) —
+If you operate such an environment and would like Legroom to **auto-detect** the
+correct host instead of pinning it, please [open an issue](https://github.com/legroom-ai/legroom-ai.github.io/issues/new) —
 the intended path is to resolve it from GitHub's token-exchange endpoint (the
 source the official Copilot client uses), and we'd want to validate it against a
 real enterprise tenant.
@@ -85,17 +85,17 @@ Auto-discovery only works with a **host-native** install (a container can't read
 your host secret store). Linux has prebuilt wheels, so:
 
 ```bash
-pipx install --pip-args='--pre' headroom-ai     # or: pip install --pre headroom-ai
+pipx install --pip-args='--pre' legroom-ai     # or: pip install --pre legroom-ai
 # (no separate API key needed — that's the point)
-headroom wrap copilot --subscription -- --model gpt-4o -p "Reply with exactly: HEADROOM_OK"
+legroom wrap copilot --subscription -- --model gpt-4o -p "Reply with exactly: LEGROOM_OK"
 ```
 
-- **If it prints `HEADROOM_OK`** → auto-discovery works on your Linux. 🎉 Report success.
+- **If it prints `LEGROOM_OK`** → auto-discovery works on your Linux. 🎉 Report success.
 - **If it errors with "no reusable bearer token"** → discovery missed your token. Please grab the **schema** so we can fix it (redact the secret), then confirm the mechanism works via the env var:
   ```bash
   secret-tool search --all 2>/dev/null | sed -E 's/^secret = .*/secret = <redacted>/'
   # then retry, supplying the token explicitly:
-  GITHUB_COPILOT_TOKEN='<your-token>' headroom wrap copilot --subscription -- --model gpt-4o -p "Reply with: HEADROOM_OK"
+  GITHUB_COPILOT_TOKEN='<your-token>' legroom wrap copilot --subscription -- --model gpt-4o -p "Reply with: LEGROOM_OK"
   ```
   Report the `attribute.*` lines from `secret-tool` and whether the env-var retry worked.
 
@@ -107,12 +107,12 @@ There is **no native Windows wheel yet**, so pick one:
 
 **A. Mechanism test (easiest — Docker Desktop or WSL2):**
 ```powershell
-$env:HEADROOM_DOCKER_IMAGE = "ghcr.io/ghaliba3/headroom:<branch-tag>"   # ask the maintainer for the tag
+$env:LEGROOM_DOCKER_IMAGE = "ghcr.io/ghaliba3/legroom:<branch-tag>"   # ask the maintainer for the tag
 # run the Docker-native installer (scripts/install.ps1), then:
 $env:GITHUB_COPILOT_TOKEN = "<your-token>"
-headroom wrap copilot --subscription -- --model gpt-4o -p "Reply with: HEADROOM_OK"
+legroom wrap copilot --subscription -- --model gpt-4o -p "Reply with: LEGROOM_OK"
 ```
-Report whether it prints `HEADROOM_OK`.
+Report whether it prints `LEGROOM_OK`.
 
 **B. Native auto-discovery schema (even without a working install):** after
 `copilot` login, tell us where Windows stored the token:
@@ -130,8 +130,8 @@ not the secret). That single fact lets us make native Windows discovery work.
 ## macOS (already proven — a second data point still helps)
 
 ```bash
-pipx install --pip-args='--pre' headroom-ai
-headroom wrap copilot --subscription -- --model gpt-4o -p "Reply with exactly: HEADROOM_OK"
+pipx install --pip-args='--pre' legroom-ai
+legroom wrap copilot --subscription -- --model gpt-4o -p "Reply with exactly: LEGROOM_OK"
 ```
 Schema, for reference: Keychain generic password, service `copilot-cli`
 (`security find-generic-password -s copilot-cli -w`).
@@ -141,12 +141,12 @@ Schema, for reference: Keychain generic password, service `copilot-cli`
 ## What to report
 
 Please open a
-[Copilot subscription test report](https://github.com/ghaliba3/headroom/issues/new?template=copilot-subscription-test-report.md)
+[Copilot subscription test report](https://github.com/legroom-ai/legroom-ai.github.io/issues/new?template=copilot-subscription-test-report.md)
 with:
 
 - **OS + version** and **how you installed** (pipx/pip wheel, Docker, source).
 - Was plain `copilot` logged in?
-- Did `wrap copilot --subscription` print **`HEADROOM_OK`**? Paste any error.
+- Did `wrap copilot --subscription` print **`LEGROOM_OK`**? Paste any error.
 - Did it work **without** setting `GITHUB_COPILOT_TOKEN` (auto-discovery), or
   only **with** it?
 - The **storage schema** if discovery failed (`secret-tool search --all` /

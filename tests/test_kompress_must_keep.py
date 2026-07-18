@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import os
 
-from headroom.transforms import kompress_compressor as kc
-from headroom.transforms.kompress_compressor import (
+from legroom.transforms import kompress_compressor as kc
+from legroom.transforms.kompress_compressor import (
     _KOMPRESS_MUST_KEEP_ENV,
     _KOMPRESS_MUST_KEEP_RE,
     KompressCompressor,
@@ -84,7 +84,7 @@ class TestMustKeepRegex:
 
 class TestMustKeepEnvVar:
     def test_env_var_name(self):
-        assert _KOMPRESS_MUST_KEEP_ENV == "HEADROOM_KOMPRESS_MUST_KEEP"
+        assert _KOMPRESS_MUST_KEEP_ENV == "LEGROOM_KOMPRESS_MUST_KEEP"
 
     def test_env_var_default_is_enabled(self, monkeypatch):
         monkeypatch.delenv(_KOMPRESS_MUST_KEEP_ENV, raising=False)

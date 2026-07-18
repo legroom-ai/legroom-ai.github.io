@@ -1,4 +1,4 @@
-"""Headroom Evaluation Framework.
+"""Legroom Evaluation Framework.
 
 Prove that compression doesn't impact LLM accuracy through:
 1. Before/After comparisons on identical queries
@@ -7,15 +7,15 @@ Prove that compression doesn't impact LLM accuracy through:
 4. Statistical significance testing
 5. Batch API compression accuracy testing
 
-Install with: pip install headroom-ai[evals]
+Install with: pip install legroom-ai[evals]
 
 Quick start:
-    from headroom.evals import run_quick_eval
+    from legroom.evals import run_quick_eval
     results = run_quick_eval(n_samples=5)
     print(results.summary())
 
 Batch compression eval:
-    from headroom.evals import run_batch_compression_eval
+    from legroom.evals import run_batch_compression_eval
     results = run_batch_compression_eval(provider="anthropic", n_samples=10)
     print(results.summary())
 
@@ -26,7 +26,7 @@ Available datasets:
     - Code: codesearchnet, humaneval
 """
 
-from headroom.evals.batch_compression_eval import (
+from legroom.evals.batch_compression_eval import (
     BatchCompressionEvaluator,
     BatchEvalResult,
     BatchEvalSuiteResult,
@@ -39,7 +39,7 @@ from headroom.evals.batch_compression_eval import (
     run_batch_compression_eval,
     run_quick_batch_eval,
 )
-from headroom.evals.core import (
+from legroom.evals.core import (
     CompressionEvaluator,
     EvalCase,
     EvalMode,
@@ -47,7 +47,7 @@ from headroom.evals.core import (
     EvalSuite,
     EvalSuiteResult,
 )
-from headroom.evals.datasets import (
+from legroom.evals.datasets import (
     DATASET_REGISTRY,
     list_available_datasets,
     load_bfcl,
@@ -65,7 +65,7 @@ from headroom.evals.datasets import (
     load_toolbench,
     load_triviaqa,
 )
-from headroom.evals.metrics import (
+from legroom.evals.metrics import (
     compute_answer_equivalence,
     compute_exact_match,
     compute_f1,
@@ -73,12 +73,12 @@ from headroom.evals.metrics import (
     compute_rouge_l,
     compute_semantic_similarity,
 )
-from headroom.evals.runners.before_after import (
+from legroom.evals.runners.before_after import (
     BeforeAfterRunner,
     LLMConfig,
     run_quick_eval,
 )
-from headroom.transforms.content_router import ContentRouterConfig
+from legroom.transforms.content_router import ContentRouterConfig
 
 __all__ = [
     # Core classes

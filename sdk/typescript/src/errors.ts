@@ -1,86 +1,86 @@
 /**
- * Error hierarchy matching Python headroom.exceptions.
+ * Error hierarchy matching Python legroom.exceptions.
  */
 
-export class HeadroomError extends Error {
+export class LegroomError extends Error {
   details?: Record<string, any>;
 
   constructor(message: string, details?: Record<string, any>) {
     super(message);
-    this.name = "HeadroomError";
+    this.name = "LegroomError";
     this.details = details;
   }
 }
 
-export class HeadroomConnectionError extends HeadroomError {
+export class LegroomConnectionError extends LegroomError {
   constructor(message: string, details?: Record<string, any>) {
     super(message, details);
-    this.name = "HeadroomConnectionError";
+    this.name = "LegroomConnectionError";
   }
 }
 
-export class HeadroomAuthError extends HeadroomError {
+export class LegroomAuthError extends LegroomError {
   constructor(message: string, details?: Record<string, any>) {
     super(message, details);
-    this.name = "HeadroomAuthError";
+    this.name = "LegroomAuthError";
   }
 }
 
-export class HeadroomCompressError extends HeadroomError {
+export class LegroomCompressError extends LegroomError {
   statusCode: number;
   errorType: string;
 
   constructor(statusCode: number, errorType: string, message: string, details?: Record<string, any>) {
     super(message, details);
-    this.name = "HeadroomCompressError";
+    this.name = "LegroomCompressError";
     this.statusCode = statusCode;
     this.errorType = errorType;
   }
 }
 
-export class ConfigurationError extends HeadroomError {
+export class ConfigurationError extends LegroomError {
   constructor(message: string, details?: Record<string, any>) {
     super(message, details);
     this.name = "ConfigurationError";
   }
 }
 
-export class ProviderError extends HeadroomError {
+export class ProviderError extends LegroomError {
   constructor(message: string, details?: Record<string, any>) {
     super(message, details);
     this.name = "ProviderError";
   }
 }
 
-export class StorageError extends HeadroomError {
+export class StorageError extends LegroomError {
   constructor(message: string, details?: Record<string, any>) {
     super(message, details);
     this.name = "StorageError";
   }
 }
 
-export class TokenizationError extends HeadroomError {
+export class TokenizationError extends LegroomError {
   constructor(message: string, details?: Record<string, any>) {
     super(message, details);
     this.name = "TokenizationError";
   }
 }
 
-export class CacheError extends HeadroomError {
+export class CacheError extends LegroomError {
   constructor(message: string, details?: Record<string, any>) {
     super(message, details);
     this.name = "CacheError";
   }
 }
 
-export class ValidationError extends HeadroomError {
+export class ValidationError extends LegroomError {
   constructor(message: string, details?: Record<string, any>) {
     super(message, details);
     this.name = "ValidationError";
   }
 }
 
-export class TransformError extends HeadroomError {
+export class TransformError extends LegroomError {
   constructor(message: string, details?: Record<string, any>) {
     super(message, details);
     this.name = "TransformError";
@@ -89,7 +89,7 @@ export class TransformError extends HeadroomError {
 
 // --- Proxy error mapping ---
 
-const ERROR_TYPE_MAP: Record<string, new (message: string, details?: Record<string, any>) => HeadroomError> = {
+const ERROR_TYPE_MAP: Record<string, new (message: string, details?: Record<string, any>) => LegroomError> = {
   configuration_error: ConfigurationError,
   provider_error: ProviderError,
   storage_error: StorageError,
@@ -100,15 +100,15 @@ const ERROR_TYPE_MAP: Record<string, new (message: string, details?: Record<stri
 };
 
 /**
- * Map a proxy error response to the correct HeadroomError subclass.
+ * Map a proxy error response to the correct LegroomError subclass.
  */
 export function mapProxyError(
   status: number,
   type: string,
   message: string,
-): HeadroomError {
-  if (status === 401) return new HeadroomAuthError(message);
+): LegroomError {
+  if (status === 401) return new LegroomAuthError(message);
   const ErrorClass = ERROR_TYPE_MAP[type];
   if (ErrorClass) return new ErrorClass(message, { statusCode: status, errorType: type });
-  return new HeadroomCompressError(status, type, message);
+  return new LegroomCompressError(status, type, message);
 }

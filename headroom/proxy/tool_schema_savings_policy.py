@@ -9,9 +9,9 @@ TOOL_SCHEMA_SAVINGS_TAGS: tuple[str, ...] = (
 
 
 def tool_schema_saved_from_tags(tags: object) -> int:
-    """Return tool-definition tokens Headroom kept out of context for one request.
+    """Return tool-definition tokens Legroom kept out of context for one request.
 
-    The summed tags are set only on paths where Headroom performed the deferral,
+    The summed tags are set only on paths where Legroom performed the deferral,
     so clients that already had tool search enabled contribute zero here.
     """
     if not isinstance(tags, dict):

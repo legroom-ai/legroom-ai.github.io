@@ -1,9 +1,9 @@
-"""Plugin registry for headroom learn.
+"""Plugin registry for legroom learn.
 
-Discovers built-in plugins from headroom.learn.plugins.* and external
-plugins registered via the ``headroom.learn_plugin`` entry point group.
+Discovers built-in plugins from legroom.learn.plugins.* and external
+plugins registered via the ``legroom.learn_plugin`` entry point group.
 
-Follows the same pattern as headroom.storage_backend (storage/__init__.py).
+Follows the same pattern as legroom.storage_backend (storage/__init__.py).
 """
 
 from __future__ import annotations
@@ -23,12 +23,12 @@ def _discover() -> dict[str, LearnPlugin]:
     """Discover all built-in and external plugins."""
     plugins: dict[str, LearnPlugin] = {}
 
-    # 1. Built-in: scan headroom.learn.plugins.* submodules
-    from headroom.learn import plugins as plugins_pkg
+    # 1. Built-in: scan legroom.learn.plugins.* submodules
+    from legroom.learn import plugins as plugins_pkg
 
     for _, mod_name, _ in pkgutil.iter_modules(plugins_pkg.__path__):
         try:
-            mod = importlib.import_module(f"headroom.learn.plugins.{mod_name}")
+            mod = importlib.import_module(f"legroom.learn.plugins.{mod_name}")
             if hasattr(mod, "plugin"):
                 p = mod.plugin
                 if isinstance(p, LearnPlugin):
@@ -37,11 +37,11 @@ def _discover() -> dict[str, LearnPlugin]:
         except Exception:
             logger.debug("Failed to load built-in plugin: %s", mod_name, exc_info=True)
 
-    # 2. External: entry_points(group="headroom.learn_plugin")
+    # 2. External: entry_points(group="legroom.learn_plugin")
     try:
         from importlib.metadata import entry_points
 
-        for ep in entry_points(group="headroom.learn_plugin"):
+        for ep in entry_points(group="legroom.learn_plugin"):
             try:
                 obj = ep.load()
                 # Support both instances and factory callables

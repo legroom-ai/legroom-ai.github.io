@@ -12,8 +12,8 @@ from __future__ import annotations
 from collections import defaultdict
 from pathlib import Path
 
-from headroom.memory.sync_adapters.claude_code import encode_claude_project_path
-from headroom.memory.writers.base import AgentWriter, MemoryEntry
+from legroom.memory.sync_adapters.claude_code import encode_claude_project_path
+from legroom.memory.writers.base import AgentWriter, MemoryEntry
 
 
 class ClaudeCodeMemoryWriter(AgentWriter):
@@ -34,8 +34,8 @@ class ClaudeCodeMemoryWriter(AgentWriter):
     def format_memories(self, memories: list[MemoryEntry]) -> str:
         """Format as Claude Code MEMORY.md section."""
         lines = [
-            "## Headroom Learned Context",
-            "*Auto-maintained by Headroom — do not edit manually*",
+            "## Legroom Learned Context",
+            "*Auto-maintained by Legroom — do not edit manually*",
             "",
         ]
 
@@ -96,11 +96,11 @@ class ClaudeCodeMemoryWriter(AgentWriter):
             if len(entries) < 2:
                 continue  # Not enough for a dedicated topic file
 
-            filename = f"headroom_{category}.md"
+            filename = f"legroom_{category}.md"
             lines = [
                 "---",
-                f"name: headroom-{category}",
-                f"description: Headroom-learned {category.replace('_', ' ')} patterns",
+                f"name: legroom-{category}",
+                f"description: Legroom-learned {category.replace('_', ' ')} patterns",
                 "type: reference",
                 "---",
                 "",

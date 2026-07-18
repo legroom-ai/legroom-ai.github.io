@@ -9,8 +9,8 @@ its byte-exact fold — the lossless floor is never discarded by a later lossy
 stage.
 """
 
-from headroom.transforms.content_router import ContentRouter, ContentRouterConfig
-from headroom.transforms.lossless_compaction import search_unheading
+from legroom.transforms.content_router import ContentRouter, ContentRouterConfig
+from legroom.transforms.lossless_compaction import search_unheading
 
 
 def _grep_block() -> str:

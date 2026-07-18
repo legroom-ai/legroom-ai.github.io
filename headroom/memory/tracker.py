@@ -1,4 +1,4 @@
-"""Memory tracking infrastructure for headroom.
+"""Memory tracking infrastructure for legroom.
 
 This module provides centralized memory tracking across all components,
 enabling observability into memory usage patterns and budget enforcement.

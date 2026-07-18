@@ -16,7 +16,7 @@ import urllib.parse
 import urllib.request
 from urllib.error import HTTPError, URLError
 
-log = logging.getLogger("headroom_oauth2")
+log = logging.getLogger("legroom_oauth2")
 
 
 def _https_or_local(url: str) -> bool:
@@ -62,7 +62,7 @@ class OAuth2ClientCredentials:
         if not allow_insecure and not _https_or_local(token_url):
             raise ValueError(
                 "token_url must be https (loopback http allowed for tests; set "
-                "allow_insecure=True / HEADROOM_OAUTH2_ALLOW_INSECURE=1 to override)"
+                "allow_insecure=True / LEGROOM_OAUTH2_ALLOW_INSECURE=1 to override)"
             )
         self.token_url = token_url
         self.client_id = client_id

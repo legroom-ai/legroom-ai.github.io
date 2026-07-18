@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from headroom.proxy.rate_limit_policy import (
+from legroom.proxy.rate_limit_policy import (
     consume_from_bucket,
     refilled_tokens,
     stale_bucket_keys,

@@ -36,7 +36,7 @@
 //!   never reaches 80% with K ≤ 5 → skip. Correctly identifies as
 //!   non-categorical.
 //!
-//! The same fix lands in `headroom/transforms/smart_crusher.py` later
+//! The same fix lands in `legroom/transforms/smart_crusher.py` later
 //! in this PR so the parity fixtures continue to byte-match.
 
 use serde_json::Value;

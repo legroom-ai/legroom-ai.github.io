@@ -3,13 +3,13 @@ name: Wrap E2E
 on:
   pull_request:
     branches: [main]
-    # Scoped to what the `headroom wrap` flow actually exercises (mirrors
-    # wrap-native-e2e), not all of headroom/** — a pure-Python logic change
+    # Scoped to what the `legroom wrap` flow actually exercises (mirrors
+    # wrap-native-e2e), not all of legroom/** — a pure-Python logic change
     # elsewhere shouldn't spin up a docker wrap E2E.
     paths:
-      - 'headroom/cli/**'
-      - 'headroom/providers/**'
-      - 'headroom/rtk/**'
+      - 'legroom/cli/**'
+      - 'legroom/providers/**'
+      - 'legroom/rtk/**'
       - 'crates/**'
       - 'docker/**'
       - 'Dockerfile'
@@ -40,7 +40,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Build wrap e2e image
-        run: docker build -f e2e/wrap/Dockerfile -t headroom-wrap-e2e .
+        run: docker build -f e2e/wrap/Dockerfile -t legroom-wrap-e2e .
 
       - name: Run wrap e2e container
-        run: docker run --rm headroom-wrap-e2e
+        run: docker run --rm legroom-wrap-e2e

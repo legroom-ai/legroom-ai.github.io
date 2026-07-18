@@ -1,6 +1,6 @@
 """Auth-mode classifier — Phase F PR-F1 (Python port).
 
-Direct port of ``crates/headroom-core/src/auth_mode.rs``. The two
+Direct port of ``crates/legroom-core/src/auth_mode.rs``. The two
 implementations MUST agree on the classification of every header set
 the parity tests cover (``tests/test_auth_mode.py``).
 
@@ -22,7 +22,7 @@ import logging
 from collections.abc import Mapping
 from typing import Any
 
-from headroom.proxy.auth_policy import (
+from legroom.proxy.auth_policy import (
     CLIENT_UA_MAP,
     CODEX_RESPONSES_PATH,
     SUBSCRIPTION_UA_PREFIXES,
@@ -127,7 +127,7 @@ def classify_client(headers: Mapping[str, Any] | Any, *, default: str | None = N
     Decision order:
 
     1. **``X-Client`` header** (explicit override) — clients that
-       know they're talking to Headroom can self-identify with a
+       know they're talking to Legroom can self-identify with a
        short name. Trimmed, lowercased. Wins over UA matching.
     2. **User-Agent substring match** against :data:`CLIENT_UA_MAP`
        — covers the unmodified-client case. Substring, not prefix,

@@ -12,8 +12,8 @@ from __future__ import annotations
 
 import asyncio
 
-from headroom.cache.compression_cache import CompressionCache
-from headroom.proxy.background_compression import BackgroundCompressor
+from legroom.cache.compression_cache import CompressionCache
+from legroom.proxy.background_compression import BackgroundCompressor
 
 
 def _tool(content: str) -> dict:

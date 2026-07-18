@@ -1,11 +1,11 @@
 """Durable append-only savings event ledger.
 
-Every compression — interactive ``headroom_compress`` MCP calls *and* proxy
+Every compression — interactive ``legroom_compress`` MCP calls *and* proxy
 requests — appends a single JSON line to a file-locked JSONL ledger. Unlike the
 in-memory ``SessionStats`` and the 2-hour ``session_stats.jsonl`` window, this
 ledger survives proxy/agent restarts and is safe across concurrent writers
 (the main MCP server, each subagent's MCP server, and the proxy all append to
-the same file under an advisory lock). ``headroom savings`` aggregates it on
+the same file under an advisory lock). ``legroom savings`` aggregates it on
 read, so there is no shared mutable state to clobber and totals stay accurate.
 
 Cost is computed and stored at write time so historical numbers do not drift if
@@ -24,11 +24,11 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-from headroom import paths as _paths
+from legroom import paths as _paths
 
 # Reuse the proxy tracker's pricing + normalization so MCP and proxy events
 # bucket models identically and price them through one implementation.
-from headroom.proxy.savings_tracker import (
+from legroom.proxy.savings_tracker import (
     _estimate_compression_savings_usd,
     _normalize_model,
     _parse_timestamp,

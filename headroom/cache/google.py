@@ -720,11 +720,11 @@ class GoogleCacheOptimizer(BaseCacheOptimizer):
         return {
             "contents": cacheable_content,
             "ttl": timedelta(seconds=min(ttl_seconds, GOOGLE_MAX_TTL_SECONDS)),
-            "display_name": f"headroom-cache-{analysis.content_hash[:8]}",
-            "_headroom_metadata": {
+            "display_name": f"legroom-cache-{analysis.content_hash[:8]}",
+            "_legroom_metadata": {
                 "content_hash": analysis.content_hash,
                 "token_count": analysis.cacheable_tokens,
-                "created_by": "headroom",
+                "created_by": "legroom",
             },
         }
 
@@ -752,7 +752,7 @@ class GoogleCacheOptimizer(BaseCacheOptimizer):
         return {
             "cached_content": cache_id,
             "contents": dynamic_messages,
-            "_headroom_note": (
+            "_legroom_note": (
                 "Use cached_content parameter with GenerativeModel to leverage the cache"
             ),
         }

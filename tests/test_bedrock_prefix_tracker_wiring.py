@@ -34,8 +34,8 @@ httpx = pytest.importorskip("httpx")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from headroom.backends.base import BackendResponse, StreamEvent  # noqa: E402
-from headroom.proxy.server import ProxyConfig, create_app  # noqa: E402
+from legroom.backends.base import BackendResponse, StreamEvent  # noqa: E402
+from legroom.proxy.server import ProxyConfig, create_app  # noqa: E402
 
 
 def _make_anthropic_backend(body: dict[str, Any]) -> MagicMock:
@@ -117,7 +117,7 @@ def test_bedrock_nonstreaming_advances_prefix_tracker_turn() -> None:
     config = _cache_config()
     backend = _make_anthropic_backend(_anthropic_body(cache_read=500, cache_write=200))
 
-    with patch("headroom.proxy.server.AnyLLMBackend", return_value=backend):
+    with patch("legroom.proxy.server.AnyLLMBackend", return_value=backend):
         app = create_app(config)
         proxy = app.state.proxy
         with TestClient(app) as client:
@@ -131,7 +131,7 @@ def test_bedrock_nonstreaming_advances_prefix_tracker_turn() -> None:
                 headers={
                     "x-api-key": "sk-ant-test",
                     "anthropic-version": "2023-06-01",
-                    "x-headroom-session-id": "bedrock-nonstream-session",
+                    "x-legroom-session-id": "bedrock-nonstream-session",
                 },
             )
             assert resp.status_code == 200, resp.text[:200]
@@ -167,7 +167,7 @@ def test_bedrock_nonstreaming_second_turn_sees_frozen_prefix() -> None:
     # 1200 total cached tokens clears the default min_cached_tokens=1024.
     backend = _make_anthropic_backend(_anthropic_body(cache_read=1000, cache_write=200))
 
-    with patch("headroom.proxy.server.AnyLLMBackend", return_value=backend):
+    with patch("legroom.proxy.server.AnyLLMBackend", return_value=backend):
         app = create_app(config)
         proxy = app.state.proxy
         with TestClient(app) as client:
@@ -181,7 +181,7 @@ def test_bedrock_nonstreaming_second_turn_sees_frozen_prefix() -> None:
                 headers={
                     "x-api-key": "sk-ant-test",
                     "anthropic-version": "2023-06-01",
-                    "x-headroom-session-id": "bedrock-nonstream-2turn",
+                    "x-legroom-session-id": "bedrock-nonstream-2turn",
                 },
             )
             assert turn1.status_code == 200, turn1.text[:200]
@@ -200,7 +200,7 @@ def test_bedrock_nonstreaming_second_turn_sees_frozen_prefix() -> None:
                 headers={
                     "x-api-key": "sk-ant-test",
                     "anthropic-version": "2023-06-01",
-                    "x-headroom-session-id": "bedrock-nonstream-2turn",
+                    "x-legroom-session-id": "bedrock-nonstream-2turn",
                 },
             )
             assert turn2.status_code == 200, turn2.text[:200]
@@ -266,7 +266,7 @@ def test_bedrock_streaming_advances_prefix_tracker_turn() -> None:
     ]
     backend = _make_bedrock_streaming_backend(events)
 
-    with patch("headroom.proxy.server.AnyLLMBackend", return_value=backend):
+    with patch("legroom.proxy.server.AnyLLMBackend", return_value=backend):
         app = create_app(config)
         proxy = app.state.proxy
         with TestClient(app) as client:
@@ -281,7 +281,7 @@ def test_bedrock_streaming_advances_prefix_tracker_turn() -> None:
                 headers={
                     "x-api-key": "sk-ant-test",
                     "anthropic-version": "2023-06-01",
-                    "x-headroom-session-id": "bedrock-stream-session",
+                    "x-legroom-session-id": "bedrock-stream-session",
                 },
             )
             assert resp.status_code == 200, resp.text[:200]

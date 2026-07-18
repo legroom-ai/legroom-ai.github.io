@@ -1,4 +1,4 @@
-"""Regression tests for #1126 — `headroom wrap` instruction injection must read
+"""Regression tests for #1126 — `legroom wrap` instruction injection must read
 and write user instruction files as UTF-8, so non-ASCII prose (typographic
 quotes, em-dashes) does not crash on a cp1252 (Windows) locale.
 
@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from headroom.cli.wrap import (
+from legroom.cli.wrap import (
     _MEMORY_AGENTS_MARKER,
     _RTK_MARKER,
     _inject_memory_agents_md,
@@ -35,7 +35,7 @@ def test_inject_appends_into_file_with_non_ascii_and_stray_byte(
     inject, marker, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     if marker == _RTK_MARKER:
-        monkeypatch.setenv("HEADROOM_RTK", "1")
+        monkeypatch.setenv("LEGROOM_RTK", "1")
     target = tmp_path / "AGENTS.md"
     target.write_bytes(_EXISTING)
 
@@ -53,7 +53,7 @@ def test_inject_creates_file_when_absent(
     inject, marker, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     if marker == _RTK_MARKER:
-        monkeypatch.setenv("HEADROOM_RTK", "1")
+        monkeypatch.setenv("LEGROOM_RTK", "1")
     target = tmp_path / "nested" / "AGENTS.md"
 
     assert inject(target) is True
@@ -63,7 +63,7 @@ def test_inject_creates_file_when_absent(
 @pytest.mark.parametrize("inject, marker", INJECTORS)
 def test_inject_is_idempotent(inject, marker, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     if marker == _RTK_MARKER:
-        monkeypatch.setenv("HEADROOM_RTK", "1")
+        monkeypatch.setenv("LEGROOM_RTK", "1")
     target = tmp_path / "AGENTS.md"
     target.write_bytes(_EXISTING)
 

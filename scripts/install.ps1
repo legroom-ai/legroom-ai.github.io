@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
-$ImageDefault = 'ghcr.io/headroomlabs-ai/headroom:latest'
-$InstallImage = if ($env:HEADROOM_DOCKER_IMAGE) { $env:HEADROOM_DOCKER_IMAGE } else { $ImageDefault }
+$ImageDefault = 'ghcr.io/legroom-ai/legroom:latest'
+$InstallImage = if ($env:LEGROOM_DOCKER_IMAGE) { $env:LEGROOM_DOCKER_IMAGE } else { $ImageDefault }
 $InstallDir = Join-Path $HOME '.local\bin'
 if (-not (Test-Path (Join-Path $HOME '.local'))) {
     $InstallDir = Join-Path $HOME 'bin'
@@ -36,8 +36,8 @@ function Ensure-PathEntry {
 function Ensure-ProfileBlock {
     param([string]$PathEntry)
 
-    $markerStart = '# >>> headroom docker-native >>>'
-    $markerEnd = '# <<< headroom docker-native <<<'
+    $markerStart = '# >>> legroom docker-native >>>'
+    $markerEnd = '# <<< legroom docker-native <<<'
     $escapedPathEntry = $PathEntry.Replace("'", "''")
     $block = @"
 $markerStart
@@ -64,15 +64,15 @@ $markerEnd
 function Write-Wrapper {
     param([string]$TargetDir)
 
-    $wrapperPath = Join-Path $TargetDir 'headroom.ps1'
-    $cmdPath = Join-Path $TargetDir 'headroom.cmd'
+    $wrapperPath = Join-Path $TargetDir 'legroom.ps1'
+    $cmdPath = Join-Path $TargetDir 'legroom.cmd'
     $resolvedInstallImage = $InstallImage.Replace("'", "''")
 
     $wrapper = @'
 $ErrorActionPreference = 'Stop'
 
-$HeadroomImage = if ($env:HEADROOM_DOCKER_IMAGE) { $env:HEADROOM_DOCKER_IMAGE } else { '__HEADROOM_INSTALL_IMAGE__' }
-$ContainerHome = if ($env:HEADROOM_CONTAINER_HOME) { $env:HEADROOM_CONTAINER_HOME } else { '/tmp/headroom-home' }
+$LegroomImage = if ($env:LEGROOM_DOCKER_IMAGE) { $env:LEGROOM_DOCKER_IMAGE } else { '__LEGROOM_INSTALL_IMAGE__' }
+$ContainerHome = if ($env:LEGROOM_CONTAINER_HOME) { $env:LEGROOM_CONTAINER_HOME } else { '/tmp/legroom-home' }
 $HostHome = $HOME
 
 function Fail {
@@ -94,7 +94,7 @@ function Get-RtkTarget {
 
 function Ensure-HostDirs {
     foreach ($dir in @(
-        (Join-Path $HostHome '.headroom'),
+        (Join-Path $HostHome '.legroom'),
         (Join-Path $HostHome '.claude'),
         (Join-Path $HostHome '.codex'),
         (Join-Path $HostHome '.gemini')
@@ -108,7 +108,7 @@ function Ensure-HostDirs {
 function Get-PassthroughEnvArgs {
     $args = New-Object System.Collections.Generic.List[string]
     $prefixes = @(
-        'HEADROOM_','ANTHROPIC_','OPENAI_','GEMINI_','AWS_','AZURE_','VERTEX_',
+        'LEGROOM_','ANTHROPIC_','OPENAI_','GEMINI_','AWS_','AZURE_','VERTEX_',
         'GOOGLE_','GOOGLE_CLOUD_','MISTRAL_','GROQ_','OPENROUTER_','XAI_',
         'TOGETHER_','COHERE_','OLLAMA_','LITELLM_','OTEL_','SUPABASE_',
         'QDRANT_','NEO4J_','LANGSMITH_'
@@ -136,15 +136,15 @@ function Get-SharedDockerArgs {
     $args.Add("HOME=$ContainerHome")
     $args.Add('--env')
     $args.Add('PYTHONUNBUFFERED=1')
-    # Canonical Headroom filesystem contract (issue #175).
+    # Canonical Legroom filesystem contract (issue #175).
     $args.Add('--env')
-    $args.Add("HEADROOM_WORKSPACE_DIR=$ContainerHome/.headroom")
+    $args.Add("LEGROOM_WORKSPACE_DIR=$ContainerHome/.legroom")
     $args.Add('--env')
-    $args.Add("HEADROOM_CONFIG_DIR=$ContainerHome/.headroom/config")
+    $args.Add("LEGROOM_CONFIG_DIR=$ContainerHome/.legroom/config")
     $args.Add('--volume')
     $args.Add("${PWD}:/workspace")
     $args.Add('--volume')
-    $args.Add((Join-Path $HostHome '.headroom') + ":$ContainerHome/.headroom")
+    $args.Add((Join-Path $HostHome '.legroom') + ":$ContainerHome/.legroom")
     $args.Add('--volume')
     $args.Add((Join-Path $HostHome '.claude') + ":$ContainerHome/.claude")
     $args.Add('--volume')
@@ -174,7 +174,7 @@ function Add-TtyArgs {
     }
 }
 
-function Invoke-HeadroomDocker {
+function Invoke-LegroomDocker {
     param([string[]]$Arguments)
 
     $dockerArgs = New-Object System.Collections.Generic.List[string]
@@ -182,8 +182,8 @@ function Invoke-HeadroomDocker {
     Add-TtyArgs -ArgsList $dockerArgs
     $dockerArgs.AddRange((Get-SharedDockerArgs))
     $dockerArgs.Add('--entrypoint')
-    $dockerArgs.Add('headroom')
-    $dockerArgs.Add($HeadroomImage)
+    $dockerArgs.Add('legroom')
+    $dockerArgs.Add($LegroomImage)
     foreach ($arg in $Arguments) {
         $dockerArgs.Add($arg)
     }
@@ -214,7 +214,7 @@ function Wait-Proxy {
     }
 
     docker logs $ContainerName | Write-Error
-    throw "Headroom proxy failed to start on port $Port"
+    throw "Legroom proxy failed to start on port $Port"
 }
 
 function Start-ProxyContainer {
@@ -223,11 +223,11 @@ function Start-ProxyContainer {
         [string[]]$ProxyArgs
     )
 
-    $containerName = "headroom-proxy-$Port-$PID"
+    $containerName = "legroom-proxy-$Port-$PID"
     $dockerArgs = New-Object System.Collections.Generic.List[string]
     $dockerArgs.AddRange([string[]]@('run','-d','--rm','--name',$containerName,'-p',"$Port`:$Port"))
     $dockerArgs.AddRange((Get-SharedDockerArgs))
-    $dockerArgs.Add($HeadroomImage)
+    $dockerArgs.Add($LegroomImage)
     $dockerArgs.Add('--host')
     $dockerArgs.Add('0.0.0.0')
     $dockerArgs.Add('--port')
@@ -238,7 +238,7 @@ function Start-ProxyContainer {
 
     & docker @dockerArgs | Out-Null
     if ($LASTEXITCODE -ne 0) {
-        throw "Failed to start Headroom proxy container"
+        throw "Failed to start Legroom proxy container"
     }
 
     Wait-Proxy -ContainerName $containerName -Port $Port
@@ -255,7 +255,7 @@ function Stop-ProxyContainer {
 function Get-PersistentProfileRoot {
     param([string]$Profile)
     Assert-ValidProfileName -Profile $Profile
-    return Join-Path (Join-Path $HostHome '.headroom\deploy') $Profile
+    return Join-Path (Join-Path $HostHome '.legroom\deploy') $Profile
 }
 
 function Get-PersistentStatePath {
@@ -270,7 +270,7 @@ function Get-PersistentManifestPath {
 
 function Get-PersistentContainerName {
     param([string]$Profile)
-    return "headroom-$Profile"
+    return "legroom-$Profile"
 }
 
 function Assert-ValidProfileName {
@@ -330,13 +330,13 @@ function Get-PersistentDockerArgs {
     $args.Add("HOME=$ContainerHome")
     $args.Add('--env')
     $args.Add('PYTHONUNBUFFERED=1')
-    # Canonical Headroom filesystem contract (issue #175).
+    # Canonical Legroom filesystem contract (issue #175).
     $args.Add('--env')
-    $args.Add("HEADROOM_WORKSPACE_DIR=$ContainerHome/.headroom")
+    $args.Add("LEGROOM_WORKSPACE_DIR=$ContainerHome/.legroom")
     $args.Add('--env')
-    $args.Add("HEADROOM_CONFIG_DIR=$ContainerHome/.headroom/config")
+    $args.Add("LEGROOM_CONFIG_DIR=$ContainerHome/.legroom/config")
     $args.Add('--volume')
-    $args.Add((Join-Path $HostHome '.headroom') + ":$ContainerHome/.headroom")
+    $args.Add((Join-Path $HostHome '.legroom') + ":$ContainerHome/.legroom")
     $args.Add('--volume')
     $args.Add((Join-Path $HostHome '.claude') + ":$ContainerHome/.claude")
     $args.Add('--volume')
@@ -368,7 +368,7 @@ function Get-ManifestProxyArgs {
         $args.Add('--no-telemetry')
     }
     if ($Memory) {
-        $args.AddRange([string[]]@('--memory','--memory-db-path',"$ContainerHome/.headroom/memory.db"))
+        $args.AddRange([string[]]@('--memory','--memory-db-path',"$ContainerHome/.legroom/memory.db"))
     }
     if ($AnyllmProvider) {
         $args.AddRange([string[]]@('--anyllm-provider', $AnyllmProvider))
@@ -429,10 +429,10 @@ function Write-PersistentManifest {
     New-Item -ItemType Directory -Force -Path $root | Out-Null
 
     $baseEnv = [ordered]@{
-        HEADROOM_PORT = "$Port"
-        HEADROOM_HOST = '127.0.0.1'
-        HEADROOM_MODE = $Mode
-        HEADROOM_BACKEND = $Backend
+        LEGROOM_PORT = "$Port"
+        LEGROOM_HOST = '127.0.0.1'
+        LEGROOM_MODE = $Mode
+        LEGROOM_BACKEND = $Backend
     }
 
     $manifest = [ordered]@{
@@ -450,10 +450,10 @@ function Write-PersistentManifest {
         region = if ($Region) { $Region } else { $null }
         proxy_mode = $Mode
         memory_enabled = $Memory
-        memory_db_path = "$ContainerHome/.headroom/memory.db"
+        memory_db_path = "$ContainerHome/.legroom/memory.db"
         telemetry_enabled = $TelemetryEnabled
         image = $Image
-        service_name = "headroom-$Profile"
+        service_name = "legroom-$Profile"
         container_name = Get-PersistentContainerName -Profile $Profile
         health_url = "http://127.0.0.1:$Port/readyz"
         base_env = $baseEnv
@@ -500,11 +500,11 @@ function Start-PersistentDockerInstall {
     $dockerArgs.AddRange([string[]]@('run','-d','--restart','unless-stopped','--name',$containerName,'-p',"$Port`:$Port"))
     $dockerArgs.AddRange((Get-PersistentDockerArgs))
     $dockerArgs.AddRange([string[]]@(
-        '--env',"HEADROOM_DEPLOYMENT_PROFILE=$Profile",
-        '--env','HEADROOM_DEPLOYMENT_PRESET=persistent-docker',
-        '--env','HEADROOM_DEPLOYMENT_RUNTIME=docker',
-        '--env','HEADROOM_DEPLOYMENT_SUPERVISOR=none',
-        '--env','HEADROOM_DEPLOYMENT_SCOPE=user'
+        '--env',"LEGROOM_DEPLOYMENT_PROFILE=$Profile",
+        '--env','LEGROOM_DEPLOYMENT_PRESET=persistent-docker',
+        '--env','LEGROOM_DEPLOYMENT_RUNTIME=docker',
+        '--env','LEGROOM_DEPLOYMENT_SUPERVISOR=none',
+        '--env','LEGROOM_DEPLOYMENT_SCOPE=user'
     ))
     $dockerArgs.Add($Image)
     $dockerArgs.Add('--host')
@@ -577,12 +577,12 @@ function Show-PersistentDockerInstallStatus {
 
 function Show-InstallHelp {
     $lines = @(
-        'Usage: headroom install [OPTIONS] COMMAND [ARGS]...',
+        'Usage: legroom install [OPTIONS] COMMAND [ARGS]...',
         '',
-        '  Manage persistent Docker-native Headroom deployments.',
+        '  Manage persistent Docker-native Legroom deployments.',
         '',
         '  The Docker-native wrapper currently supports the persistent-docker preset only.',
-        '  Use the Python-native `headroom install` command for persistent-service and',
+        '  Use the Python-native `legroom install` command for persistent-service and',
         '  persistent-task installs, or when you need provider/user/system config mutation.',
         '',
         'Options:',
@@ -601,7 +601,7 @@ function Show-InstallHelp {
 
 function Show-InstallApplyHelp {
     $lines = @(
-        'Usage: headroom install apply [OPTIONS]',
+        'Usage: legroom install apply [OPTIONS]',
         '',
         '  Install a persistent Docker deployment.',
         '',
@@ -616,7 +616,7 @@ function Show-InstallApplyHelp {
         '  --mode TEXT                   Proxy optimization mode.  [default: token]',
         '  --memory                      Enable persistent memory in the runtime.',
         '  --no-telemetry                Disable anonymous telemetry in the runtime.',
-        '  --image TEXT                  Docker image to use.  [default: HEADROOM_DOCKER_IMAGE or ghcr.io/headroomlabs-ai/headroom:latest]',
+        '  --image TEXT                  Docker image to use.  [default: LEGROOM_DOCKER_IMAGE or ghcr.io/legroom-ai/legroom:latest]',
         '  -?, --help                    Show this message and exit.'
     )
     Write-Host ($lines -join [Environment]::NewLine)
@@ -624,9 +624,9 @@ function Show-InstallApplyHelp {
 
 function Show-WrapHelp {
     $lines = @(
-        'Usage: headroom wrap <COMMAND> [OPTIONS] [-- ARGS...]',
+        'Usage: legroom wrap <COMMAND> [OPTIONS] [-- ARGS...]',
         '',
-        '  Launch supported host tools through a Docker-native Headroom proxy.',
+        '  Launch supported host tools through a Docker-native Legroom proxy.',
         '',
         'Supported commands:',
         '  claude',
@@ -653,7 +653,7 @@ function Parse-InstallApplyArgs {
     $mode = 'token'
     $memory = $false
     $telemetryEnabled = $true
-    $image = $HeadroomImage
+    $image = $LegroomImage
 
     $i = 0
     while ($i -lt $Arguments.Count) {
@@ -775,7 +775,7 @@ function Parse-InstallApplyArgs {
                 exit 0
             }
             default {
-                Fail "Unsupported option for 'headroom install apply': $arg"
+                Fail "Unsupported option for 'legroom install apply': $arg"
             }
         }
     }
@@ -817,7 +817,7 @@ function Parse-InstallProfileArgs {
                 exit 0
             }
             default {
-                Fail "Unsupported option for 'headroom install': $arg"
+                Fail "Unsupported option for 'legroom install': $arg"
             }
         }
     }
@@ -826,7 +826,7 @@ function Parse-InstallProfileArgs {
 }
 
 function Invoke-ClaudeRtkInit {
-    $rtkPath = Join-Path $HostHome '.headroom\bin\rtk.exe'
+    $rtkPath = Join-Path $HostHome '.legroom\bin\rtk.exe'
     if (-not (Test-Path $rtkPath)) {
         Write-Warning "rtk was not installed at $rtkPath; Claude hooks were not registered"
         return
@@ -840,7 +840,7 @@ function Invoke-ClaudeRtkInit {
 }
 
 function Get-ContextTool {
-    $value = $env:HEADROOM_CONTEXT_TOOL
+    $value = $env:LEGROOM_CONTEXT_TOOL
     if ([string]::IsNullOrWhiteSpace($value)) {
         return 'rtk'
     }
@@ -850,7 +850,7 @@ function Get-ContextTool {
         return 'lean-ctx'
     }
     if ($value -ne 'rtk' -and $value -ne 'lean-ctx') {
-        Fail 'HEADROOM_CONTEXT_TOOL must be one of: lean-ctx, rtk'
+        Fail 'LEGROOM_CONTEXT_TOOL must be one of: lean-ctx, rtk'
     }
     return $value
 }
@@ -914,7 +914,7 @@ function Parse-OpenClawWrapArgs {
 
     $gatewayProviderIds = New-Object System.Collections.Generic.List[string]
     $pluginPath = $null
-    $pluginSpec = 'headroom-ai/openclaw'
+    $pluginSpec = 'legroom-ai/openclaw'
     $skipBuild = $false
     $copy = $false
     $proxyPort = 8787
@@ -1020,7 +1020,7 @@ function Parse-OpenClawWrapArgs {
                 continue
             }
             default {
-                Fail "Unsupported option for 'headroom wrap openclaw': $arg"
+                Fail "Unsupported option for 'legroom wrap openclaw': $arg"
             }
         }
     }
@@ -1060,7 +1060,7 @@ function Parse-OpenClawUnwrapArgs {
                 continue
             }
             default {
-                Fail "Unsupported option for 'headroom unwrap openclaw': $arg"
+                Fail "Unsupported option for 'legroom unwrap openclaw': $arg"
             }
         }
     }
@@ -1105,7 +1105,7 @@ function Invoke-CapturedCommand {
 }
 
 function Get-OpenClawExistingEntryJson {
-    $output = (& openclaw config get plugins.entries.headroom 2>$null | Out-String).Trim()
+    $output = (& openclaw config get plugins.entries.legroom 2>$null | Out-String).Trim()
     if ($LASTEXITCODE -ne 0) {
         return $null
     }
@@ -1122,8 +1122,8 @@ function Invoke-OpenClawPrepareEntryJson {
     $dockerArgs.AddRange([string[]]@('run','--rm'))
     $dockerArgs.AddRange((Get-SharedDockerArgs))
     $dockerArgs.Add('--entrypoint')
-    $dockerArgs.Add('headroom')
-    $dockerArgs.Add($HeadroomImage)
+    $dockerArgs.Add('legroom')
+    $dockerArgs.Add($LegroomImage)
     $dockerArgs.AddRange([string[]]@('wrap','openclaw','--prepare-only','--proxy-port',"$($Parsed.ProxyPort)",'--startup-timeout-ms',"$($Parsed.StartupTimeoutMs)"))
     if ($ExistingEntryJson) {
         $dockerArgs.Add('--existing-entry-json')
@@ -1156,8 +1156,8 @@ function Invoke-OpenClawPrepareUnwrapEntryJson {
     $dockerArgs.AddRange([string[]]@('run','--rm'))
     $dockerArgs.AddRange((Get-SharedDockerArgs))
     $dockerArgs.Add('--entrypoint')
-    $dockerArgs.Add('headroom')
-    $dockerArgs.Add($HeadroomImage)
+    $dockerArgs.Add('legroom')
+    $dockerArgs.Add($LegroomImage)
     $dockerArgs.AddRange([string[]]@('unwrap','openclaw','--prepare-only'))
     if ($ExistingEntryJson) {
         $dockerArgs.Add('--existing-entry-json')
@@ -1194,7 +1194,7 @@ function Copy-OpenClawPluginIntoExtensions {
     }
 
     $extensionsDir = Resolve-OpenClawExtensionsDir
-    $targetDir = Join-Path $extensionsDir 'headroom'
+    $targetDir = Join-Path $extensionsDir 'legroom'
     $targetDist = Join-Path $targetDir 'dist'
     $targetHookShim = Join-Path $targetDir 'hook-shim'
     New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
@@ -1308,7 +1308,7 @@ function Invoke-OpenClawWrap {
 
     Write-Host ""
     Write-Host "  ╔═══════════════════════════════════════════════╗"
-    Write-Host "  ║           HEADROOM WRAP: OPENCLAW             ║"
+    Write-Host "  ║           LEGROOM WRAP: OPENCLAW             ║"
     Write-Host "  ╚═══════════════════════════════════════════════╝"
     Write-Host ""
     if ($parsed.PluginPath) {
@@ -1318,10 +1318,10 @@ function Invoke-OpenClawWrap {
     }
 
     Write-Host '  Writing plugin configuration...'
-    [void](Invoke-CapturedCommand -Action 'openclaw config set plugins.entries.headroom' -Command 'openclaw' -Arguments @('config','set','plugins.entries.headroom',$entryJson,'--strict-json'))
+    [void](Invoke-CapturedCommand -Action 'openclaw config set plugins.entries.legroom' -Command 'openclaw' -Arguments @('config','set','plugins.entries.legroom',$entryJson,'--strict-json'))
     Write-Host '  Installing OpenClaw plugin with required unsafe-install flag...'
     Install-OpenClawPlugin -Parsed $parsed
-    [void](Invoke-CapturedCommand -Action 'openclaw config set plugins.slots.contextEngine' -Command 'openclaw' -Arguments @('config','set','plugins.slots.contextEngine','"headroom"','--strict-json'))
+    [void](Invoke-CapturedCommand -Action 'openclaw config set plugins.slots.contextEngine' -Command 'openclaw' -Arguments @('config','set','plugins.slots.contextEngine','"legroom"','--strict-json'))
     [void](Invoke-CapturedCommand -Action 'openclaw config validate' -Command 'openclaw' -Arguments @('config','validate'))
 
     if ($parsed.NoRestart) {
@@ -1336,15 +1336,15 @@ function Invoke-OpenClawWrap {
         }
     }
 
-    $inspectOutput = Invoke-CapturedCommand -Action 'openclaw plugins inspect headroom' -Command 'openclaw' -Arguments @('plugins','inspect','headroom')
+    $inspectOutput = Invoke-CapturedCommand -Action 'openclaw plugins inspect legroom' -Command 'openclaw' -Arguments @('plugins','inspect','legroom')
     if ($parsed.Verbose -and $inspectOutput) {
         Write-Host $inspectOutput
     }
 
     Write-Host ""
-    Write-Host "✓ OpenClaw is configured to use Headroom context compression."
-    Write-Host "  Plugin: headroom"
-    Write-Host "  Slot:   plugins.slots.contextEngine = headroom"
+    Write-Host "✓ OpenClaw is configured to use Legroom context compression."
+    Write-Host "  Plugin: legroom"
+    Write-Host "  Slot:   plugins.slots.contextEngine = legroom"
     Write-Host ""
 }
 
@@ -1358,12 +1358,12 @@ function Invoke-OpenClawUnwrap {
 
     Write-Host ""
     Write-Host "  ╔═══════════════════════════════════════════════╗"
-    Write-Host "  ║          HEADROOM UNWRAP: OPENCLAW            ║"
+    Write-Host "  ║          LEGROOM UNWRAP: OPENCLAW            ║"
     Write-Host "  ╚═══════════════════════════════════════════════╝"
     Write-Host ""
-    Write-Host '  Disabling Headroom plugin and removing engine mapping...'
+    Write-Host '  Disabling Legroom plugin and removing engine mapping...'
 
-    [void](Invoke-CapturedCommand -Action 'openclaw config set plugins.entries.headroom' -Command 'openclaw' -Arguments @('config','set','plugins.entries.headroom',$entryJson,'--strict-json'))
+    [void](Invoke-CapturedCommand -Action 'openclaw config set plugins.entries.legroom' -Command 'openclaw' -Arguments @('config','set','plugins.entries.legroom',$entryJson,'--strict-json'))
     [void](Invoke-CapturedCommand -Action 'openclaw config set plugins.slots.contextEngine' -Command 'openclaw' -Arguments @('config','set','plugins.slots.contextEngine','"legacy"','--strict-json'))
     [void](Invoke-CapturedCommand -Action 'openclaw config validate' -Command 'openclaw' -Arguments @('config','validate'))
 
@@ -1380,15 +1380,15 @@ function Invoke-OpenClawUnwrap {
     }
 
     if ($parsed.Verbose) {
-        $inspectOutput = Invoke-CapturedCommand -Action 'openclaw plugins inspect headroom' -Command 'openclaw' -Arguments @('plugins','inspect','headroom')
+        $inspectOutput = Invoke-CapturedCommand -Action 'openclaw plugins inspect legroom' -Command 'openclaw' -Arguments @('plugins','inspect','legroom')
         if ($inspectOutput) {
             Write-Host $inspectOutput
         }
     }
 
     Write-Host ""
-    Write-Host "✓ OpenClaw Headroom wrap removed."
-    Write-Host "  Plugin: headroom (installed, disabled)"
+    Write-Host "✓ OpenClaw Legroom wrap removed."
+    Write-Host "  Plugin: legroom (installed, disabled)"
     Write-Host "  Slot:   plugins.slots.contextEngine = legacy"
     Write-Host ""
 }
@@ -1529,10 +1529,10 @@ function Invoke-PrepareOnly {
     Add-TtyArgs -ArgsList $dockerArgs
     $dockerArgs.AddRange((Get-SharedDockerArgs))
     $dockerArgs.Add('--env')
-    $dockerArgs.Add("HEADROOM_RTK_TARGET=$(Get-RtkTarget)")
+    $dockerArgs.Add("LEGROOM_RTK_TARGET=$(Get-RtkTarget)")
     $dockerArgs.Add('--entrypoint')
-    $dockerArgs.Add('headroom')
-    $dockerArgs.Add($HeadroomImage)
+    $dockerArgs.Add('legroom')
+    $dockerArgs.Add($LegroomImage)
     $dockerArgs.AddRange([string[]]@('wrap',$Tool,'--prepare-only'))
     foreach ($arg in $KnownArgs) {
         $dockerArgs.Add($arg)
@@ -1547,7 +1547,7 @@ function Invoke-PrepareOnly {
 Require-Command docker
 
 if ($args.Count -eq 0) {
-    Invoke-HeadroomDocker -Arguments @('--help')
+    Invoke-LegroomDocker -Arguments @('--help')
     exit 0
 }
 
@@ -1611,7 +1611,7 @@ switch ($args[0]) {
         }
 
         if ($args.Count -lt 2) {
-            Fail 'Usage: headroom wrap <claude|codex|aider|cursor|openclaw|opencode> [...]'
+            Fail 'Usage: legroom wrap <claude|codex|aider|cursor|openclaw|opencode> [...]'
         }
 
         $tool = $args[1]
@@ -1632,7 +1632,7 @@ switch ($args[0]) {
         if ($tool -eq 'openclaw') {
             if (Test-HelpFlag -Arguments $wrapArgs) {
                 $helpArgs = @('wrap','openclaw') + $wrapArgs
-                Invoke-HeadroomDocker -Arguments $helpArgs
+                Invoke-LegroomDocker -Arguments $helpArgs
                 exit 0
             }
 
@@ -1642,7 +1642,7 @@ switch ($args[0]) {
 
         if (Test-HelpFlag -Arguments $wrapArgs) {
             $helpArgs = @('wrap', $tool) + $wrapArgs
-            Invoke-HeadroomDocker -Arguments $helpArgs
+            Invoke-LegroomDocker -Arguments $helpArgs
             exit 0
         }
 
@@ -1696,7 +1696,7 @@ switch ($args[0]) {
                     exit $exitCode
                 }
                 'cursor' {
-                    Write-Host "Headroom proxy is running for Cursor."
+                    Write-Host "Legroom proxy is running for Cursor."
                     Write-Host ""
                     Write-Host "OpenAI base URL:     http://127.0.0.1:$($parsed.Port)/v1"
                     Write-Host "Anthropic base URL:  http://127.0.0.1:$($parsed.Port)"
@@ -1711,7 +1711,7 @@ switch ($args[0]) {
     }
     'unwrap' {
         if ($args.Count -eq 1 -or $args[1] -eq '--help' -or $args[1] -eq '-?') {
-            Invoke-HeadroomDocker -Arguments @('unwrap','--help')
+            Invoke-LegroomDocker -Arguments @('unwrap','--help')
             exit 0
         }
 
@@ -1719,14 +1719,14 @@ switch ($args[0]) {
             $unwrapArgs = if ($args.Count -gt 2) { $args[2..($args.Count - 1)] } else { @() }
             if (Test-HelpFlag -Arguments $unwrapArgs) {
                 $helpArgs = @('unwrap','openclaw') + $unwrapArgs
-                Invoke-HeadroomDocker -Arguments $helpArgs
+                Invoke-LegroomDocker -Arguments $helpArgs
                 exit 0
             }
 
             Invoke-OpenClawUnwrap -Arguments $unwrapArgs
             exit 0
         }
-        Invoke-HeadroomDocker -Arguments $args
+        Invoke-LegroomDocker -Arguments $args
     }
     'proxy' {
         $port = 8787
@@ -1750,8 +1750,8 @@ switch ($args[0]) {
         $dockerArgs.AddRange([string[]]@('-p',"$port`:$port"))
         $dockerArgs.AddRange((Get-SharedDockerArgs))
         $dockerArgs.Add('--entrypoint')
-        $dockerArgs.Add('headroom')
-        $dockerArgs.Add($HeadroomImage)
+        $dockerArgs.Add('legroom')
+        $dockerArgs.Add($LegroomImage)
         foreach ($arg in $forwardArgs) {
             $dockerArgs.Add($arg)
         }
@@ -1760,14 +1760,14 @@ switch ($args[0]) {
         exit $LASTEXITCODE
     }
     default {
-        Invoke-HeadroomDocker -Arguments $args
+        Invoke-LegroomDocker -Arguments $args
     }
 }
 '@
 
-    $wrapper = $wrapper.Replace('__HEADROOM_INSTALL_IMAGE__', $resolvedInstallImage)
+    $wrapper = $wrapper.Replace('__LEGROOM_INSTALL_IMAGE__', $resolvedInstallImage)
 
-    $cmdWrapper = ([string][char]64) + "echo off`r`npowershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File ""%~dp0headroom.ps1"" %*`r`n"
+    $cmdWrapper = ([string][char]64) + "echo off`r`npowershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File ""%~dp0legroom.ps1"" %*`r`n"
 
     Set-Content -Path $wrapperPath -Value $wrapper -Encoding utf8
     Set-Content -Path $cmdPath -Value $cmdWrapper -Encoding ascii
@@ -1784,10 +1784,10 @@ Write-Wrapper -TargetDir $InstallDir
 Ensure-PathEntry -PathEntry $InstallDir
 Ensure-ProfileBlock -PathEntry $InstallDir
 
-if ($env:HEADROOM_DOCKER_IMAGE) {
+if ($env:LEGROOM_DOCKER_IMAGE) {
     $null = docker image inspect $InstallImage 2>$null
     if ($LASTEXITCODE -eq 0) {
-        Write-Info "Using existing HEADROOM_DOCKER_IMAGE=$InstallImage"
+        Write-Info "Using existing LEGROOM_DOCKER_IMAGE=$InstallImage"
     } else {
         Write-Info "Pulling $InstallImage"
         docker pull $InstallImage | Out-Null
@@ -1798,13 +1798,13 @@ if ($env:HEADROOM_DOCKER_IMAGE) {
 }
 
 Write-Host ""
-Write-Host "Headroom Docker-native install complete."
+Write-Host "Legroom Docker-native install complete."
 Write-Host ""
 Write-Host "Installed wrappers:"
-Write-Host "  $InstallDir\headroom.ps1"
-Write-Host "  $InstallDir\headroom.cmd"
+Write-Host "  $InstallDir\legroom.ps1"
+Write-Host "  $InstallDir\legroom.cmd"
 Write-Host ""
 Write-Host "Next steps:"
 Write-Host "  1. Restart PowerShell"
-Write-Host "  2. Try: headroom proxy"
-Write-Host "  3. Docs: https://github.com/ghaliba3/headroom/blob/main/docs/docker-install.md"
+Write-Host "  2. Try: legroom proxy"
+Write-Host "  3. Docs: https://github.com/legroom-ai/legroom-ai.github.io/blob/main/docs/docker-install.md"

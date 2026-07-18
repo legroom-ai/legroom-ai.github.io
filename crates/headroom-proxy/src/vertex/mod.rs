@@ -27,7 +27,7 @@
 //!
 //! # Why a native module (vs LiteLLM)
 //!
-//! The Python LiteLLM converter at `headroom/backends/litellm.py:486-628`
+//! The Python LiteLLM converter at `legroom/backends/litellm.py:486-628`
 //! lossy-converts Anthropic ↔ OpenAI shapes for Vertex, dropping
 //! `thinking`, `redacted_thinking`, `document`, `search_result`,
 //! `image`, `server_tool_use`, `mcp_tool_use` block kinds. The bug

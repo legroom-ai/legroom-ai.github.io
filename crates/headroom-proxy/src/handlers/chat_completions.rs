@@ -23,7 +23,7 @@
 //!    [`crate::compression::compress_openai_chat_request`].
 //!
 //! Re-using `forward_http` keeps the SSE state-machine wiring
-//! (PR-C1), header-stripping (PR-A5), `x-headroom-*` policy, and
+//! (PR-C1), header-stripping (PR-A5), `x-legroom-*` policy, and
 //! request-id plumbing single-source. The alternative — duplicating
 //! the forwarder body inside this handler — would diverge over time.
 //!

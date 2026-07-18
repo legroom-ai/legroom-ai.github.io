@@ -1,4 +1,4 @@
-//! headroom-proxy: transparent reverse proxy binary.
+//! legroom-proxy: transparent reverse proxy binary.
 //!
 //! Drops in front of the existing Python proxy. End-users hit the public
 //! port; this binary forwards every HTTP/SSE/WebSocket request verbatim to
@@ -7,8 +7,8 @@
 use std::net::SocketAddr;
 
 use clap::Parser;
-use headroom_proxy::config::CliArgs;
-use headroom_proxy::{build_app, AppState, Config};
+use legroom_proxy::config::CliArgs;
+use legroom_proxy::{build_app, AppState, Config};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
@@ -28,7 +28,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         max_body_bytes = config.max_body_bytes,
         rewrite_host = config.rewrite_host,
         graceful_shutdown_timeout_s = config.graceful_shutdown_timeout.as_secs(),
-        "headroom-proxy starting"
+        "legroom-proxy starting"
     );
 
     let mut state = AppState::new(config.clone())?;

@@ -12,7 +12,7 @@ import asyncio
 
 import pytest
 
-from headroom.proxy.outcome import RequestOutcome, emit_request_outcome
+from legroom.proxy.outcome import RequestOutcome, emit_request_outcome
 
 
 class _Metrics:
@@ -132,7 +132,7 @@ def _count_tokens_request(body_bytes: bytes):
 def test_gemini_count_tokens_handler_threads_real_529_onto_outcome():
     import json
 
-    from headroom.proxy.server import ProxyConfig, create_app
+    from legroom.proxy.server import ProxyConfig, create_app
 
     config = ProxyConfig(
         optimize=False,

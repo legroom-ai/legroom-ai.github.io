@@ -6,9 +6,9 @@
 //!   3. Leaves bytes outside the live zone byte-identical (cache safety).
 //!   4. Is byte-equivalent to PR-B4 behaviour when no CCR store is wired.
 
-use headroom_core::ccr::backends::InMemoryCcrStore;
-use headroom_core::ccr::{compute_key, CcrStore};
-use headroom_core::transforms::live_zone::{
+use legroom_core::ccr::backends::InMemoryCcrStore;
+use legroom_core::ccr::{compute_key, CcrStore};
+use legroom_core::transforms::live_zone::{
     compress_anthropic_live_zone, compress_anthropic_live_zone_with_ccr, AuthMode, LiveZoneOutcome,
     DEFAULT_MODEL,
 };

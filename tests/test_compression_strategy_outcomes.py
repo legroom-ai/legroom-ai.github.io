@@ -1,4 +1,4 @@
-from headroom.cache.compression_strategy_outcomes import CompressionStrategyOutcomes
+from legroom.cache.compression_strategy_outcomes import CompressionStrategyOutcomes
 
 
 def test_retrieval_rate_is_zero_without_strategy_compressions():

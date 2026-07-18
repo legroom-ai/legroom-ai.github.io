@@ -2,7 +2,7 @@
 
 Compresses vendored golden tool-output fixtures through SmartCrusher's lossy
 path and asserts that the evidence a model needs to answer each case's question
-survives compression. Scoring is pure stdlib (``headroom.evals.metrics``) — no
+survives compression. Scoring is pure stdlib (``legroom.evals.metrics``) — no
 ML model, no network, no API keys — so this runs in the standard ``[dev]`` CI
 shard as a blocking PR check.
 
@@ -18,8 +18,8 @@ from pathlib import Path
 
 import pytest
 
-from headroom.evals.metrics import compute_information_recall
-from headroom.transforms.smart_crusher import SmartCrusherConfig, smart_crush_tool_output
+from legroom.evals.metrics import compute_information_recall
+from legroom.transforms.smart_crusher import SmartCrusherConfig, smart_crush_tool_output
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "fidelity_golden"
 CASES: list[dict] = json.loads((FIXTURE_DIR / "cases.json").read_text())

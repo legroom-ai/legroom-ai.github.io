@@ -1,11 +1,11 @@
 from fastapi.testclient import TestClient
 
-from headroom.proxy.models import ProxyConfig
-from headroom.proxy.server import create_app
+from legroom.proxy.models import ProxyConfig
+from legroom.proxy.server import create_app
 
 
 def test_readyz_excludes_kompress_from_aggregate_readiness(monkeypatch):
-    monkeypatch.setenv("HEADROOM_SKIP_UPSTREAM_CHECK", "1")
+    monkeypatch.setenv("LEGROOM_SKIP_UPSTREAM_CHECK", "1")
 
     app = create_app(
         ProxyConfig(

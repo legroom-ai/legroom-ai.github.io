@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import click
 
-from headroom.cli.main import main
-from headroom.copilot_auth import (
+from legroom.cli.main import main
+from legroom.copilot_auth import (
     default_oauth_domain,
-    headroom_copilot_auth_path,
+    legroom_copilot_auth_path,
     poll_copilot_device_authorization,
-    read_headroom_copilot_oauth_token,
-    save_headroom_copilot_oauth_token,
+    read_legroom_copilot_oauth_token,
+    save_legroom_copilot_oauth_token,
     start_copilot_device_authorization,
     token_fingerprint,
 )
@@ -18,7 +18,7 @@ from headroom.copilot_auth import (
 
 @main.group("copilot-auth")
 def copilot_auth() -> None:
-    """Manage Headroom's GitHub Copilot OAuth token."""
+    """Manage Legroom's GitHub Copilot OAuth token."""
 
 
 @copilot_auth.command("login")
@@ -63,17 +63,17 @@ def login(domain: str | None) -> None:
     except Exception as exc:
         raise click.ClickException(f"GitHub device login failed: {exc}") from exc
 
-    path = save_headroom_copilot_oauth_token(token, domain=domain)
+    path = save_legroom_copilot_oauth_token(token, domain=domain)
     click.echo(f"  Saved: {path}")
     click.echo(f"  Token fingerprint: {token_fingerprint(token)}")
 
 
 @copilot_auth.command("status")
 def status() -> None:
-    """Show whether Headroom has a saved Copilot OAuth token."""
+    """Show whether Legroom has a saved Copilot OAuth token."""
 
-    token = read_headroom_copilot_oauth_token()
-    path = headroom_copilot_auth_path()
+    token = read_legroom_copilot_oauth_token()
+    path = legroom_copilot_auth_path()
     click.echo(f"Auth file: {path}")
     if not token:
         click.echo("Status: not logged in")

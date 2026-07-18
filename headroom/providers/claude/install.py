@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from headroom.install.models import ConfigScope, DeploymentManifest, ManagedMutation, ToolTarget
-from headroom.install.paths import claude_settings_path
+from legroom.install.models import ConfigScope, DeploymentManifest, ManagedMutation, ToolTarget
+from legroom.install.paths import claude_settings_path
 
 from .runtime import TOOL_SEARCH_DEFAULT, TOOL_SEARCH_ENV, proxy_base_url
 
@@ -18,7 +18,7 @@ def build_install_env(*, port: int, backend: str) -> dict[str, str]:
     # the server-side Tool Search Tool when pointed at the proxy's custom
     # ANTHROPIC_BASE_URL; without it Claude Code materializes every schema into
     # its context window (GH #746) — breaking sub-agents and forcing compaction.
-    # The install env is headroom-managed and reverted on uninstall, so it is
+    # The install env is legroom-managed and reverted on uninstall, so it is
     # authoritative — unlike `init`, it always writes the default rather than
     # deferring to a pre-existing user value.
     return {

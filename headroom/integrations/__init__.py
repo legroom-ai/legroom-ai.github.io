@@ -1,47 +1,47 @@
-"""Headroom integrations with popular LLM frameworks.
+"""Legroom integrations with popular LLM frameworks.
 
 Available integrations:
 
-LangChain (pip install headroom[langchain]):
-    - HeadroomChatModel: Drop-in wrapper for any LangChain chat model
-    - HeadroomChatMessageHistory: Automatic conversation compression
-    - HeadroomDocumentCompressor: Relevance-based document filtering
-    - HeadroomToolWrapper: Tool output compression for agents
+LangChain (pip install legroom[langchain]):
+    - LegroomChatModel: Drop-in wrapper for any LangChain chat model
+    - LegroomChatMessageHistory: Automatic conversation compression
+    - LegroomDocumentCompressor: Relevance-based document filtering
+    - LegroomToolWrapper: Tool output compression for agents
     - StreamingMetricsTracker: Token counting during streaming
-    - HeadroomLangSmithCallbackHandler: LangSmith trace enrichment
+    - LegroomLangSmithCallbackHandler: LangSmith trace enrichment
 
 Agno (pip install agno):
-    - HeadroomAgnoModel: Drop-in wrapper for any Agno model
-    - HeadroomPreHook/HeadroomPostHook: Agent-level hooks for tracking
-    - create_headroom_hooks: Convenience function to create hook pairs
+    - LegroomAgnoModel: Drop-in wrapper for any Agno model
+    - LegroomPreHook/LegroomPostHook: Agent-level hooks for tracking
+    - create_legroom_hooks: Convenience function to create hook pairs
 
-CrewAI (pip install headroom[crewai]):
-    - HeadroomToolWrapper: Tool output compression for CrewAI agents
-    - wrap_tools_with_headroom: Batch wrapper for CrewAI tools
+CrewAI (pip install legroom[crewai]):
+    - LegroomToolWrapper: Tool output compression for CrewAI agents
+    - wrap_tools_with_legroom: Batch wrapper for CrewAI tools
 
-AutoGen (pip install headroom[autogen]):
-    - HeadroomToolWrapper: Tool output compression for AutoGen agents
-    - wrap_tools_with_headroom: Batch wrapper for AutoGen tools
+AutoGen (pip install legroom[autogen]):
+    - LegroomToolWrapper: Tool output compression for AutoGen agents
+    - wrap_tools_with_legroom: Batch wrapper for AutoGen tools
 
 MCP (Model Context Protocol):
-    - HeadroomMCPCompressor: Compress MCP tool results
+    - LegroomMCPCompressor: Compress MCP tool results
     - compress_tool_result: Simple function for tool compression
 
 Example:
     # LangChain integration
-    from headroom.integrations import HeadroomChatModel
+    from legroom.integrations import LegroomChatModel
     # or explicitly:
-    from headroom.integrations.langchain import HeadroomChatModel
+    from legroom.integrations.langchain import LegroomChatModel
 
     # Agno integration
-    from headroom.integrations.agno import HeadroomAgnoModel
+    from legroom.integrations.agno import LegroomAgnoModel
     # or explicitly:
-    from headroom.integrations.agno import HeadroomAgnoModel
+    from legroom.integrations.agno import LegroomAgnoModel
 
     # MCP integration
-    from headroom.integrations import compress_tool_result
+    from legroom.integrations import compress_tool_result
     # or explicitly:
-    from headroom.integrations.mcp import compress_tool_result
+    from legroom.integrations.mcp import compress_tool_result
 """
 
 # Re-export from langchain subpackage for backwards compatibility
@@ -49,16 +49,16 @@ from .langchain import (
     # Retrievers
     CompressionMetrics,
     # Core
-    HeadroomCallbackHandler,
+    LegroomCallbackHandler,
     # Memory
-    HeadroomChatMessageHistory,
-    HeadroomChatModel,
-    HeadroomDocumentCompressor,
+    LegroomChatMessageHistory,
+    LegroomChatModel,
+    LegroomDocumentCompressor,
     # LangSmith
-    HeadroomLangSmithCallbackHandler,
-    HeadroomRunnable,
+    LegroomLangSmithCallbackHandler,
+    LegroomRunnable,
     # Agents
-    HeadroomToolWrapper,
+    LegroomToolWrapper,
     OptimizationMetrics,
     # Streaming
     StreamingMetrics,
@@ -68,7 +68,7 @@ from .langchain import (
     ToolMetricsCollector,
     # Provider Detection
     detect_provider,
-    get_headroom_provider,
+    get_legroom_provider,
     get_model_name_from_langchain,
     get_tool_metrics,
     is_langsmith_available,
@@ -78,33 +78,33 @@ from .langchain import (
     reset_tool_metrics,
     track_async_streaming_response,
     track_streaming_response,
-    wrap_tools_with_headroom,
+    wrap_tools_with_legroom,
 )
 
 # Re-export from mcp subpackage for backwards compatibility
 from .mcp import (
     DEFAULT_MCP_PROFILES,
-    HeadroomMCPClientWrapper,
-    HeadroomMCPCompressor,
+    LegroomMCPClientWrapper,
+    LegroomMCPCompressor,
     MCPCompressionResult,
     MCPToolProfile,
     compress_tool_result,
     compress_tool_result_with_metrics,
-    create_headroom_mcp_proxy,
+    create_legroom_mcp_proxy,
 )
 
 # Re-export from agno subpackage (optional dependency)
 try:
     from .agno import (
-        HeadroomAgnoModel,
-        HeadroomPostHook,
-        HeadroomPreHook,
+        LegroomAgnoModel,
+        LegroomPostHook,
+        LegroomPreHook,
         agno_available,
-        create_headroom_hooks,
+        create_legroom_hooks,
         get_model_name_from_agno,
     )
     from .agno import OptimizationMetrics as AgnoOptimizationMetrics
-    from .agno import get_headroom_provider as get_agno_provider
+    from .agno import get_legroom_provider as get_agno_provider
     from .agno import optimize_messages as optimize_agno_messages
 
     _AGNO_AVAILABLE = True
@@ -114,7 +114,7 @@ except ImportError:
 # Re-export from crewai subpackage (optional dependency)
 try:
     from .crewai import (
-        HeadroomToolWrapper as CrewAIToolWrapper,
+        LegroomToolWrapper as CrewAIToolWrapper,
     )
     from .crewai import (
         ToolCompressionMetrics as CrewAIToolCompressionMetrics,
@@ -129,7 +129,7 @@ try:
         reset_tool_metrics as reset_crewai_tool_metrics,
     )
     from .crewai import (
-        wrap_tools_with_headroom as wrap_crewai_tools,
+        wrap_tools_with_legroom as wrap_crewai_tools,
     )
 
     _CREWAI_AVAILABLE = True
@@ -139,7 +139,7 @@ except ImportError:
 # Re-export from autogen subpackage (optional dependency)
 try:
     from .autogen import (
-        HeadroomToolWrapper as AutoGenToolWrapper,
+        LegroomToolWrapper as AutoGenToolWrapper,
     )
     from .autogen import (
         ToolCompressionMetrics as AutoGenToolCompressionMetrics,
@@ -154,7 +154,7 @@ try:
         reset_tool_metrics as reset_autogen_tool_metrics,
     )
     from .autogen import (
-        wrap_tools_with_headroom as wrap_autogen_tools,
+        wrap_tools_with_legroom as wrap_autogen_tools,
     )
 
     _AUTOGEN_AVAILABLE = True
@@ -163,30 +163,30 @@ except ImportError:
 
 __all__ = [
     # LangChain Core
-    "HeadroomChatModel",
-    "HeadroomCallbackHandler",
-    "HeadroomRunnable",
+    "LegroomChatModel",
+    "LegroomCallbackHandler",
+    "LegroomRunnable",
     "OptimizationMetrics",
     "optimize_messages",
     "langchain_available",
     # Provider Detection
     "detect_provider",
-    "get_headroom_provider",
+    "get_legroom_provider",
     "get_model_name_from_langchain",
     # Memory
-    "HeadroomChatMessageHistory",
+    "LegroomChatMessageHistory",
     # Retrievers
-    "HeadroomDocumentCompressor",
+    "LegroomDocumentCompressor",
     "CompressionMetrics",
     # Agents
-    "HeadroomToolWrapper",
+    "LegroomToolWrapper",
     "ToolCompressionMetrics",
     "ToolMetricsCollector",
-    "wrap_tools_with_headroom",
+    "wrap_tools_with_legroom",
     "get_tool_metrics",
     "reset_tool_metrics",
     # LangSmith
-    "HeadroomLangSmithCallbackHandler",
+    "LegroomLangSmithCallbackHandler",
     "is_langsmith_available",
     "is_langsmith_tracing_enabled",
     # Streaming
@@ -196,20 +196,20 @@ __all__ = [
     "track_streaming_response",
     "track_async_streaming_response",
     # MCP
-    "HeadroomMCPCompressor",
-    "HeadroomMCPClientWrapper",
+    "LegroomMCPCompressor",
+    "LegroomMCPClientWrapper",
     "MCPCompressionResult",
     "MCPToolProfile",
     "compress_tool_result",
     "compress_tool_result_with_metrics",
-    "create_headroom_mcp_proxy",
+    "create_legroom_mcp_proxy",
     "DEFAULT_MCP_PROFILES",
     # Agno
-    "HeadroomAgnoModel",
-    "HeadroomPreHook",
-    "HeadroomPostHook",
+    "LegroomAgnoModel",
+    "LegroomPreHook",
+    "LegroomPostHook",
     "agno_available",
-    "create_headroom_hooks",
+    "create_legroom_hooks",
     "get_agno_provider",
     "get_model_name_from_agno",
     "AgnoOptimizationMetrics",

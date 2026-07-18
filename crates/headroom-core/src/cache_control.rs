@@ -9,7 +9,7 @@
 //! that prefix on subsequent requests; that's the customer's primary
 //! lever for cost reduction.
 //!
-//! Headroom's compressor must **never** modify any byte that's part
+//! Legroom's compressor must **never** modify any byte that's part
 //! of that prefix — doing so changes the cache key, drops the hit
 //! rate to 0, and silently torches the customer's bill. Phase A
 //! lockdown PR-A1 made `/v1/messages` a passthrough so we couldn't
@@ -58,7 +58,7 @@
 //!
 //! Configurable on/off via `Config::cache_control_auto_frozen`
 //! (CLI flag `--cache-control-auto-frozen` / env var
-//! `HEADROOM_PROXY_CACHE_CONTROL_AUTO_FROZEN`). When `disabled`, the
+//! `LEGROOM_PROXY_CACHE_CONTROL_AUTO_FROZEN`). When `disabled`, the
 //! caller bypasses [`compute_frozen_count`] entirely and treats every
 //! message as live-zone. The function itself is config-agnostic; the
 //! gate lives in the caller (the live-zone dispatcher in Phase B).

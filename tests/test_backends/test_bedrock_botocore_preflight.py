@@ -13,8 +13,8 @@ from unittest.mock import patch
 
 import pytest
 
-from headroom.backends import litellm as litellm_mod
-from headroom.backends.litellm import LiteLLMBackend
+from legroom.backends import litellm as litellm_mod
+from legroom.backends.litellm import LiteLLMBackend
 
 
 def test_bedrock_session_token_without_botocore_raises_actionable(
@@ -29,7 +29,7 @@ def test_bedrock_session_token_without_botocore_raises_actionable(
             LiteLLMBackend(provider="bedrock", region="us-west-2")
 
     # The message must point at the fix, not just name the missing module.
-    assert "headroom-ai[bedrock]" in str(exc.value)
+    assert "legroom-ai[bedrock]" in str(exc.value)
 
 
 def test_bedrock_without_session_token_does_not_trip_botocore_guard(

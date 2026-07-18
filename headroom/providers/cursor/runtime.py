@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from headroom.providers.claude import proxy_base_url as claude_proxy_base_url
-from headroom.providers.codex import proxy_base_url as codex_proxy_base_url
-from headroom.proxy.project_context import with_project_prefix
+from legroom.providers.claude import proxy_base_url as claude_proxy_base_url
+from legroom.providers.codex import proxy_base_url as codex_proxy_base_url
+from legroom.proxy.project_context import with_project_prefix
 
 
 @dataclass(frozen=True)
@@ -34,7 +34,7 @@ def render_setup_lines(port: int, project: str | None = None) -> list[str]:
     """Render the Cursor setup instructions for the local proxy."""
     targets = build_proxy_targets(port, project)
     lines = [
-        "  Headroom proxy is running. Configure Cursor:",
+        "  Legroom proxy is running. Configure Cursor:",
         "",
         "  For OpenAI models:",
         f"    Base URL:  {targets.openai_base_url}",

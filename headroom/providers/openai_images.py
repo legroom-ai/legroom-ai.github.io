@@ -8,7 +8,7 @@ from typing import Any, cast
 from fastapi import Request
 from fastapi.responses import Response
 
-from headroom.providers.codex.images import handle_chatgpt_codex_images
+from legroom.providers.codex.images import handle_chatgpt_codex_images
 
 
 @dataclass(frozen=True, slots=True)

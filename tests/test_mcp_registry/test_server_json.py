@@ -5,9 +5,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from headroom.mcp_registry import build_server_json, render_server_json
-from headroom.mcp_registry.install import build_headroom_spec
-from headroom.mcp_registry.server_json import (
+from legroom.mcp_registry import build_server_json, render_server_json
+from legroom.mcp_registry.install import build_legroom_spec
+from legroom.mcp_registry.server_json import (
     PYPI_OWNERSHIP_MARKER,
     REPOSITORY_ID,
     REPOSITORY_URL,
@@ -53,7 +53,7 @@ def test_build_server_json_uses_project_metadata() -> None:
 
 def test_build_server_json_matches_runtime_contract() -> None:
     descriptor = build_server_json()
-    runtime = build_headroom_spec()
+    runtime = build_legroom_spec()
     package = descriptor["packages"][0]
 
     assert package["runtimeHint"] == "uvx"
@@ -83,4 +83,4 @@ def test_docs_point_to_canonical_server_json() -> None:
 
     assert PYPI_OWNERSHIP_MARKER in readme
     assert "`server.json`" in readme
-    assert "https://github.com/headroomlabs-ai/headroom/blob/main/server.json" in mcp_docs
+    assert "https://github.com/legroom-ai/legroom/blob/main/server.json" in mcp_docs

@@ -13,9 +13,9 @@ httpx = pytest.importorskip("httpx")
 from fastapi.responses import StreamingResponse  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
-from headroom.cache.compression_store import get_compression_store  # noqa: E402
-from headroom.ccr.tool_injection import create_ccr_tool_definition  # noqa: E402
-from headroom.proxy.server import ProxyConfig, create_app  # noqa: E402
+from legroom.cache.compression_store import get_compression_store  # noqa: E402
+from legroom.ccr.tool_injection import create_ccr_tool_definition  # noqa: E402
+from legroom.proxy.server import ProxyConfig, create_app  # noqa: E402
 
 
 def _make_config() -> ProxyConfig:
@@ -69,7 +69,7 @@ class _ContinuationClient:
         return None
 
 
-def test_streaming_headroom_retrieve_is_intercepted_and_returned_as_sse() -> None:
+def test_streaming_legroom_retrieve_is_intercepted_and_returned_as_sse() -> None:
     config = _make_config()
     store = get_compression_store()
     hash_key = store.store(
@@ -82,7 +82,7 @@ def test_streaming_headroom_retrieve_is_intercepted_and_returned_as_sse() -> Non
             {
                 "type": "tool_use",
                 "id": "toolu_ccr",
-                "name": "headroom_retrieve",
+                "name": "legroom_retrieve",
                 "input": {"hash": hash_key},
             }
         ],
@@ -92,7 +92,7 @@ def test_streaming_headroom_retrieve_is_intercepted_and_returned_as_sse() -> Non
         [{"type": "text", "text": "retrieved answer is now available"}]
     )
 
-    with patch("headroom.proxy.server.AnyLLMBackend"):
+    with patch("legroom.proxy.server.AnyLLMBackend"):
         app = create_app(config)
         with TestClient(app) as client:
             proxy = client.app.state.proxy
@@ -131,7 +131,7 @@ def test_streaming_headroom_retrieve_is_intercepted_and_returned_as_sse() -> Non
     assert resp.status_code == 200, resp.text
     assert "text/event-stream" in resp.headers["content-type"]
     assert "retrieved answer is now available" in resp.text
-    assert "headroom_retrieve" not in resp.text
+    assert "legroom_retrieve" not in resp.text
     assert initial_bodies and initial_bodies[0]["stream"] is False
     assert len(continuation_client.post_calls) == 1
     continuation_body = json.loads(continuation_client.post_calls[0]["content"].decode())
@@ -145,10 +145,10 @@ def test_streaming_headroom_retrieve_is_intercepted_and_returned_as_sse() -> Non
     assert "accept-encoding" not in continuation_headers
 
 
-def test_streaming_without_headroom_retrieve_uses_normal_streaming_path() -> None:
+def test_streaming_without_legroom_retrieve_uses_normal_streaming_path() -> None:
     config = _make_config()
 
-    with patch("headroom.proxy.server.AnyLLMBackend"):
+    with patch("legroom.proxy.server.AnyLLMBackend"):
         app = create_app(config)
         with TestClient(app) as client:
             proxy = client.app.state.proxy
@@ -179,11 +179,11 @@ def test_streaming_without_headroom_retrieve_uses_normal_streaming_path() -> Non
     proxy._stream_response.assert_awaited_once()
 
 
-def test_streaming_with_headroom_retrieve_available_but_unused_returns_sse() -> None:
+def test_streaming_with_legroom_retrieve_available_but_unused_returns_sse() -> None:
     config = _make_config()
     text_response = _message_response([{"type": "text", "text": "plain answer"}])
 
-    with patch("headroom.proxy.server.AnyLLMBackend"):
+    with patch("legroom.proxy.server.AnyLLMBackend"):
         app = create_app(config)
         with TestClient(app) as client:
             proxy = client.app.state.proxy
@@ -217,14 +217,14 @@ def test_streaming_with_headroom_retrieve_available_but_unused_returns_sse() -> 
     assert resp.status_code == 200, resp.text
     assert "text/event-stream" in resp.headers["content-type"]
     assert "plain answer" in resp.text
-    assert "headroom_retrieve" not in resp.text
+    assert "legroom_retrieve" not in resp.text
     assert initial_bodies and initial_bodies[0]["stream"] is False
     assert continuation_client.post_calls == []
     proxy._stream_response.assert_not_awaited()
 
 
 def test_mixed_ccr_and_client_tool_streams_both_blocks_as_sse() -> None:
-    """LEGAL mixed turn (#839, #2089): headroom_retrieve emitted alongside a
+    """LEGAL mixed turn (#839, #2089): legroom_retrieve emitted alongside a
     client tool. The proxy cannot synthesize the client tool_result, so it must
     hand the turn back for the client to resolve — a 200 SSE stream preserving
     BOTH tool_use blocks, matching the non-streaming path. It must NOT 502 and
@@ -235,7 +235,7 @@ def test_mixed_ccr_and_client_tool_streams_both_blocks_as_sse() -> None:
             {
                 "type": "tool_use",
                 "id": "toolu_ccr",
-                "name": "headroom_retrieve",
+                "name": "legroom_retrieve",
                 "input": {"hash": "abc123"},
             },
             {
@@ -248,7 +248,7 @@ def test_mixed_ccr_and_client_tool_streams_both_blocks_as_sse() -> None:
         stop_reason="tool_use",
     )
 
-    with patch("headroom.proxy.server.AnyLLMBackend"):
+    with patch("legroom.proxy.server.AnyLLMBackend"):
         app = create_app(config)
         with TestClient(app) as client:
             proxy = client.app.state.proxy
@@ -286,7 +286,7 @@ def test_mixed_ccr_and_client_tool_streams_both_blocks_as_sse() -> None:
     assert resp.status_code == 200, resp.text
     assert "text/event-stream" in resp.headers["content-type"]
     # Both tool_use blocks are preserved for the client to resolve.
-    assert "headroom_retrieve" in resp.text
+    assert "legroom_retrieve" in resp.text
     assert "client_tool" in resp.text
     assert "toolu_ccr" in resp.text
     assert "toolu_client" in resp.text
@@ -297,9 +297,9 @@ def test_mixed_ccr_and_client_tool_streams_both_blocks_as_sse() -> None:
 
 def test_unresolved_ccr_only_streams_through_as_200() -> None:
     """CCR-only turn that never resolves: the model keeps re-emitting
-    headroom_retrieve so the continuation exhausts its retrieval rounds with a
+    legroom_retrieve so the continuation exhausts its retrieval rounds with a
     residual marker and no accompanying client tool. Per #2089 the streaming
-    path no longer hard-502s here — it streams the residual headroom_retrieve
+    path no longer hard-502s here — it streams the residual legroom_retrieve
     back as a 200 SSE so the client (which owns the tool) can resolve or retry
     it, matching the non-streaming path. It must NOT 502."""
     config = _make_config()
@@ -308,21 +308,21 @@ def test_unresolved_ccr_only_streams_through_as_200() -> None:
             {
                 "type": "tool_use",
                 "id": "toolu_ccr",
-                "name": "headroom_retrieve",
+                "name": "legroom_retrieve",
                 "input": {"hash": "deadbeef"},
             },
         ],
         stop_reason="tool_use",
     )
 
-    with patch("headroom.proxy.server.AnyLLMBackend"):
+    with patch("legroom.proxy.server.AnyLLMBackend"):
         app = create_app(config)
         with TestClient(app) as client:
             proxy = client.app.state.proxy
             proxy._stream_response = AsyncMock(
                 side_effect=AssertionError("live streaming path should not be used")
             )
-            # Every continuation re-emits headroom_retrieve, so it never resolves.
+            # Every continuation re-emits legroom_retrieve, so it never resolves.
             continuation_client = _ContinuationClient(persistent_ccr)
             proxy.http_client = continuation_client
 
@@ -346,5 +346,5 @@ def test_unresolved_ccr_only_streams_through_as_200() -> None:
     # Fails closed no longer: residual CCR is handed back to the client as 200 SSE.
     assert resp.status_code == 200, resp.text
     assert "text/event-stream" in resp.headers["content-type"]
-    assert "headroom_retrieve" in resp.text
+    assert "legroom_retrieve" in resp.text
     assert "Unable to safely complete streamed CCR retrieval" not in resp.text

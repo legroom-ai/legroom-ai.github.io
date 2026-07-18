@@ -6,8 +6,8 @@ these run fast and pin the segmentation + partition logic, not the ML model.
 
 from __future__ import annotations
 
-from headroom.relevance.base import RelevanceScore, RelevanceScorer
-from headroom.transforms.relevance_split import (
+from legroom.relevance.base import RelevanceScore, RelevanceScorer
+from legroom.transforms.relevance_split import (
     adaptive_threshold,
     build_relevance_query,
     plan_relevance_split,
@@ -120,8 +120,8 @@ def test_adaptive_threshold_moves_with_distribution():
 # --- Router integration (real _apply_strategy_to_content path) -----------------
 # Fake scorer + stubbed Kompress tail → deterministic and offline (no model).
 
-from headroom.config import RelevanceScorerConfig  # noqa: E402
-from headroom.transforms.content_router import (  # noqa: E402
+from legroom.config import RelevanceScorerConfig  # noqa: E402
+from legroom.transforms.content_router import (  # noqa: E402
     CompressionStrategy,
     ContentRouter,
     ContentRouterConfig,
@@ -192,7 +192,7 @@ def test_router_split_can_be_disabled():
 
 
 def test_relevance_split_on_by_default_and_non_blocking(monkeypatch):
-    from headroom.relevance.bm25 import BM25Scorer
+    from legroom.relevance.bm25 import BM25Scorer
 
     r = ContentRouter(ContentRouterConfig())
     assert r.config.relevance_split is True

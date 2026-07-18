@@ -264,7 +264,7 @@ class ConfigCompressor:
         """Persist the original to the CompressionStore; returns its hash."""
         try:
             from ..cache.compression_store import get_compression_store
-        except ImportError as e:  # pragma: no cover - store ships with headroom
+        except ImportError as e:  # pragma: no cover - store ships with legroom
             logger.warning("CCR store import failed; config elision skipped: %s", e)
             return None
         try:

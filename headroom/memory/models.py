@@ -1,4 +1,4 @@
-"""Hierarchical memory data models for Headroom."""
+"""Hierarchical memory data models for Legroom."""
 
 from __future__ import annotations
 

@@ -11,13 +11,13 @@ from fastapi import Request
 from fastapi.responses import Response
 from starlette.requests import ClientDisconnect
 
-from headroom.proxy.helpers import _strip_internal_headers
+from legroom.proxy.helpers import _strip_internal_headers
 
 from .endpoints import codex_backend_url
 from .headers import drop_header
 from .runtime import resolve_codex_routing
 
-logger = logging.getLogger("headroom.providers.codex.images")
+logger = logging.getLogger("legroom.providers.codex.images")
 
 
 class CodexImageForwardResponse(Protocol):

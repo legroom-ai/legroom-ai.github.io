@@ -1,4 +1,4 @@
-"""Memory evaluation framework for Headroom.
+"""Memory evaluation framework for Legroom.
 
 Benchmarks for evaluating memory system quality using industry-standard
 datasets like LoCoMo.
@@ -11,7 +11,7 @@ Evaluates:
 - Temporal versioning
 
 Example:
-    from headroom.evals.memory import LoCoMoEvaluator, MemoryEvalConfig
+    from legroom.evals.memory import LoCoMoEvaluator, MemoryEvalConfig
 
     async def my_answer_fn(question: str, memories: list[str]) -> str:
         # Your LLM-based answerer here
@@ -25,13 +25,13 @@ Example:
     print(result.summary())
 """
 
-from headroom.evals.memory.judge import (
+from legroom.evals.memory.judge import (
     create_anthropic_judge,
     create_litellm_judge,
     create_openai_judge,
     simple_judge,
 )
-from headroom.evals.memory.locomo import (
+from legroom.evals.memory.locomo import (
     CATEGORY_DESCRIPTIONS,
     LOCOMO_CATEGORIES,
     LoCoMoCase,
@@ -40,7 +40,7 @@ from headroom.evals.memory.locomo import (
     get_locomo_stats,
     load_locomo,
 )
-from headroom.evals.memory.runner import (
+from legroom.evals.memory.runner import (
     LoCoMoEvaluator,
     MemoryEvalConfig,
     MemoryEvalResult,
@@ -48,7 +48,7 @@ from headroom.evals.memory.runner import (
     run_locomo_eval,
     run_locomo_eval_sync,
 )
-from headroom.evals.memory.runner_v2 import (
+from legroom.evals.memory.runner_v2 import (
     EvalMetrics,
     LoCoMoEvaluatorV2,
     MemoryEvalConfigV2,

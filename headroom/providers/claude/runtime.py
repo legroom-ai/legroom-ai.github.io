@@ -21,14 +21,14 @@ REMOTE_CONTROL_FEATURE = "Remote Control"
 # GH #1779: Claude Code v2.1.196 added a client-side eligibility check that
 # DISABLES first-party Remote Control (`/remote-control` / `/rc`, which mirrors a
 # local CLI session to claude.ai/code and the mobile apps) whenever
-# ANTHROPIC_BASE_URL points at a non-`api.anthropic.com` host. Headroom routes
+# ANTHROPIC_BASE_URL points at a non-`api.anthropic.com` host. Legroom routes
 # through http://127.0.0.1:<port>, so on this version and newer the disable is
 # DETERMINISTIC (not "may") — the `/rc` command simply vanishes. The gate is
 # upstream in the Claude Code binary and RC's control-plane talks to claude.ai,
-# not the API host, so Headroom cannot force it back on; the honest fix is an
+# not the API host, so Legroom cannot force it back on; the honest fix is an
 # accurate warning at launch/doctor time. This is the same base-URL gating
 # family as #746 (on-demand tool loading) and #1158 (1M context window), both of
-# which Headroom *can* restore (see the sibling-gate note below).
+# which Legroom *can* restore (see the sibling-gate note below).
 REMOTE_CONTROL_GATED_MIN_VERSION = (2, 1, 196)
 
 # Auth-mode signals that mean Remote Control was NEVER available for this
@@ -47,9 +47,9 @@ REMOTE_CONTROL_NON_SUBSCRIPTION_ENV = (
 )
 
 # Co-reported alongside the RC gate so the user sees the whole base-URL gating
-# family in one place (issue #1779). Unlike RC, Headroom *does* restore these two
+# family in one place (issue #1779). Unlike RC, Legroom *does* restore these two
 # siblings — #746 by default, #1158 on request — which is the point of showing
-# them together: RC is the one member of the family Headroom cannot fix.
+# them together: RC is the one member of the family Legroom cannot fix.
 # This constant describes DEFAULT behaviour and is the right form for `doctor`,
 # which cannot see the wrap launch flags. `wrap` knows its flags and must use
 # :func:`remote_control_sibling_gate_note` instead, so the note never claims
@@ -57,8 +57,8 @@ REMOTE_CONTROL_NON_SUBSCRIPTION_ENV = (
 # user to pass `--1m` they already passed.
 REMOTE_CONTROL_SIBLING_GATE_NOTE = (
     "Same base-URL gate also affects on-demand tool loading "
-    "(#746 — `headroom wrap claude` keeps it on by default) and the 1M context "
-    "window (#1158 — opt in with `headroom wrap claude --1m`)."
+    "(#746 — `legroom wrap claude` keeps it on by default) and the 1M context "
+    "window (#1158 — opt in with `legroom wrap claude --1m`)."
 )
 
 
@@ -75,14 +75,14 @@ def remote_control_sibling_gate_note(*, tool_search_active: bool, context_1m_ena
       advise adding a flag that is already in effect.
     """
     tool_part = (
-        "#746 — Headroom keeps it on for this session"
+        "#746 — Legroom keeps it on for this session"
         if tool_search_active
         else "#746 — OFF for this session per your --tool-search/ENABLE_TOOL_SEARCH setting"
     )
     context_part = (
         "#1158 — already restored via --1m"
         if context_1m_enabled
-        else "#1158 — restore with `headroom wrap claude --1m`"
+        else "#1158 — restore with `legroom wrap claude --1m`"
     )
     return (
         "Same base-URL gate also affects on-demand tool loading "
@@ -130,8 +130,8 @@ def remote_control_gate_message(source: str, *, version: tuple[int, int, int] | 
         )
     return (
         f"{REMOTE_CONTROL_FEATURE}: {lead} "
-        "Headroom cannot override this client-side gate — run Claude without "
-        "Headroom for sessions that need Remote Control."
+        "Legroom cannot override this client-side gate — run Claude without "
+        "Legroom for sessions that need Remote Control."
     )
 
 
@@ -203,13 +203,13 @@ def detect_claude_code_version(claude_bin: str | None = None) -> tuple[int, int,
     Runs ``claude --version`` and parses it. Returns ``None`` on any failure
     (binary missing, non-zero exit, timeout, unparseable or absent output) so
     callers fall back to the version-unknown wording rather than crash. Never
-    raises. Uses the shared ``headroom._subprocess`` wrapper, which forces
+    raises. Uses the shared ``legroom._subprocess`` wrapper, which forces
     ``encoding="utf-8"`` under ``text=True`` (the repo's Windows-cp1252 guard).
     """
     import shutil
     import subprocess
 
-    from headroom._subprocess import run
+    from legroom._subprocess import run
 
     binary = claude_bin or shutil.which("claude")
     if not binary:

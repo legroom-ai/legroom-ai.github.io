@@ -45,10 +45,10 @@ def evals() -> None:
 
     \b
     Examples:
-        headroom evals memory       Run LoCoMo memory evaluation
-        headroom evals memory-v2    Run V2 evaluation with LLM-controlled tools
-        headroom evals adversarial  Compression-robustness adversarial grid
-        headroom evals probes       Retention probes over recorded sessions
+        legroom evals memory       Run LoCoMo memory evaluation
+        legroom evals memory-v2    Run V2 evaluation with LLM-controlled tools
+        legroom evals adversarial  Compression-robustness adversarial grid
+        legroom evals probes       Retention probes over recorded sessions
     """
     pass
 
@@ -160,8 +160,8 @@ def memory_eval(
 
     \b
     Examples:
-        headroom evals memory -n 3
-        headroom evals memory --answer-model gpt-4o --llm-judge
+        legroom evals memory -n 3
+        legroom evals memory --answer-model gpt-4o --llm-judge
     """
     _run_memory_eval(
         n_conversations=n_conversations,
@@ -276,8 +276,8 @@ def memory_eval_v2(
 
     \b
     Examples:
-        headroom evals memory-v2 -n 3
-        headroom evals memory-v2 --answer-model gpt-4o --save-model gpt-4o-mini
+        legroom evals memory-v2 -n 3
+        legroom evals memory-v2 --answer-model gpt-4o --save-model gpt-4o-mini
     """
     _run_memory_eval_v2(
         n_conversations=n_conversations,
@@ -338,8 +338,8 @@ def memory_eval_compat(
     parallel: int,
     debug: bool,
 ) -> None:
-    """Deprecated: Use 'headroom evals memory' instead."""
-    click.echo("Note: 'memory-eval' is deprecated. Use 'headroom evals memory'", err=True)
+    """Deprecated: Use 'legroom evals memory' instead."""
+    click.echo("Note: 'memory-eval' is deprecated. Use 'legroom evals memory'", err=True)
     _run_memory_eval(
         n_conversations=n_conversations,
         categories=categories,
@@ -388,8 +388,8 @@ def memory_eval_v2_compat(
     parallel: int,
     debug: bool,
 ) -> None:
-    """Deprecated: Use 'headroom evals memory-v2' instead."""
-    click.echo("Note: 'memory-eval-v2' is deprecated. Use 'headroom evals memory-v2'", err=True)
+    """Deprecated: Use 'legroom evals memory-v2' instead."""
+    click.echo("Note: 'memory-eval-v2' is deprecated. Use 'legroom evals memory-v2'", err=True)
     _run_memory_eval_v2(
         n_conversations=n_conversations,
         categories=categories,
@@ -438,7 +438,7 @@ def _run_memory_eval(
     warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
 
     try:
-        from headroom.evals.memory import (
+        from legroom.evals.memory import (
             LoCoMoEvaluator,
             MemoryEvalConfig,
             create_anthropic_judge,
@@ -446,10 +446,10 @@ def _run_memory_eval(
             create_openai_judge,
             simple_judge,
         )
-        from headroom.memory import MemoryConfig
+        from legroom.memory import MemoryConfig
     except ImportError as e:
         click.echo("Error: Memory eval dependencies not installed.")
-        click.echo("Run: pip install headroom[memory,evals]")
+        click.echo("Run: pip install legroom[memory,evals]")
         click.echo(f"Details: {e}")
         raise SystemExit(1) from None
 
@@ -552,7 +552,7 @@ def _run_memory_eval(
 
     click.echo(f"""
 ╔═══════════════════════════════════════════════════════════════════════╗
-║                    HEADROOM MEMORY EVALUATION                          ║
+║                    LEGROOM MEMORY EVALUATION                          ║
 ║                         LoCoMo Benchmark                               ║
 ╚═══════════════════════════════════════════════════════════════════════╝
 
@@ -615,13 +615,13 @@ def _run_memory_eval_v2(
     warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
 
     try:
-        from headroom.evals.memory import (
+        from legroom.evals.memory import (
             LoCoMoEvaluatorV2,
             MemoryEvalConfigV2,
         )
     except ImportError as e:
         click.echo("Error: Memory eval V2 dependencies not installed.")
-        click.echo("Run: pip install headroom[memory,evals]")
+        click.echo("Run: pip install legroom[memory,evals]")
         click.echo(f"Details: {e}")
         raise SystemExit(1) from None
 
@@ -647,7 +647,7 @@ def _run_memory_eval_v2(
 
     click.echo(f"""
 ╔═══════════════════════════════════════════════════════════════════════╗
-║                   HEADROOM MEMORY EVALUATION V2                        ║
+║                   LEGROOM MEMORY EVALUATION V2                        ║
 ║              LLM-Controlled Memory Architecture                        ║
 ╚═══════════════════════════════════════════════════════════════════════╝
 
@@ -697,7 +697,7 @@ Running evaluation...
     "recordings_dir",
     required=True,
     type=click.Path(exists=True, file_okay=False, path_type=Path),
-    help="Directory of JSONL recordings written via HEADROOM_PROBE_RECORD_DIR.",
+    help="Directory of JSONL recordings written via LEGROOM_PROBE_RECORD_DIR.",
 )
 @click.option(
     "--json-output",
@@ -709,12 +709,12 @@ def probes(recordings_dir: Path, json_output: Path | None) -> None:
 
     \b
     Record sessions first by running the proxy with
-    HEADROOM_PROBE_RECORD_DIR set. Recordings contain full conversation
+    LEGROOM_PROBE_RECORD_DIR set. Recordings contain full conversation
     content in plaintext and stay on this machine.
     """
     import json as json_module
 
-    from headroom.evals.session_probes import render_report, run_probes
+    from legroom.evals.session_probes import render_report, run_probes
 
     report = run_probes(recordings_dir)
     click.echo(render_report(report))
@@ -743,7 +743,7 @@ def adversarial(json_output: Path | None) -> None:
     """
     import json as json_module
 
-    from headroom.evals.adversarial_grid import render_report, run_adversarial_grid
+    from legroom.evals.adversarial_grid import render_report, run_adversarial_grid
 
     report = run_adversarial_grid()
     click.echo(render_report(report))

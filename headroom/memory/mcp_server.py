@@ -1,6 +1,6 @@
-"""Headroom Memory MCP Server.
+"""Legroom Memory MCP Server.
 
-A stdio MCP server that exposes headroom's memory backend as tools
+A stdio MCP server that exposes legroom's memory backend as tools
 that Codex (or any MCP-compatible client) can call natively.
 
 Tools:
@@ -15,13 +15,13 @@ Design:
 
 Usage:
     # Standalone (for testing):
-    python -m headroom.memory.mcp_server --db /path/to/.headroom/memory.db
+    python -m legroom.memory.mcp_server --db /path/to/.legroom/memory.db
 
-    # Registered in Codex config.toml (done by `headroom wrap codex --memory`):
-    [mcp_servers.headroom_memory]
+    # Registered in Codex config.toml (done by `legroom wrap codex --memory`):
+    [mcp_servers.legroom_memory]
     command = "python"
-    args = ["-m", "headroom.memory.mcp_server", "--user", "alice"]
-    # When --db is omitted, the server resolves .headroom/memory.db from cwd.
+    args = ["-m", "legroom.memory.mcp_server", "--user", "alice"]
+    # When --db is omitted, the server resolves .legroom/memory.db from cwd.
 """
 
 from __future__ import annotations
@@ -38,9 +38,9 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import TextContent, Tool
 
-from headroom.memory.backends.local import LocalBackend, LocalBackendConfig
+from legroom.memory.backends.local import LocalBackend, LocalBackendConfig
 
-logger = logging.getLogger("headroom.memory.mcp")
+logger = logging.getLogger("legroom.memory.mcp")
 
 # ---------------------------------------------------------------------------
 # Tool definitions
@@ -157,9 +157,9 @@ async def _warm_up_backend(backend: LocalBackend, user_id: str) -> None:
 
 
 def create_memory_server(db_path: str, user_id: str = "default") -> Server:
-    """Create an MCP server backed by headroom's local memory."""
+    """Create an MCP server backed by legroom's local memory."""
 
-    server = Server("headroom-memory")
+    server = Server("legroom-memory")
     _backend: LocalBackend | None = None
     _init_task: asyncio.Task[LocalBackend] | None = None
 
@@ -369,7 +369,7 @@ def _memory_mcp_startup_context(
     resolved_path = (
         configured_path if configured_path.is_absolute() else (cwd / configured_path)
     ).resolve(strict=False)
-    active_project_db = (cwd / ".headroom" / "memory.db").resolve(strict=False)
+    active_project_db = (cwd / ".legroom" / "memory.db").resolve(strict=False)
     if not db_flag_present:
         config_source = "cwd-default"
         resolution = "dynamic-cwd"
@@ -398,10 +398,10 @@ def _memory_mcp_startup_context(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Headroom Memory MCP Server")
+    parser = argparse.ArgumentParser(description="Legroom Memory MCP Server")
     parser.add_argument(
         "--db",
-        default=str(Path.cwd() / ".headroom" / "memory.db"),
+        default=str(Path.cwd() / ".legroom" / "memory.db"),
         help="Path to memory SQLite database",
     )
     parser.add_argument(

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from headroom.proxy.output_turn_policy import (
+from legroom.proxy.output_turn_policy import (
     TurnKind,
     classify_openai_responses_input,
     classify_turn,

@@ -5,14 +5,14 @@ from typing import Any
 
 import pytest
 
-from headroom.ccr.response_handler import (
+from legroom.ccr.response_handler import (
     CCRResponseHandler,
     CCRToolCall,
     CCRToolResult,
     StreamingCCRBuffer,
     StreamingCCRHandler,
 )
-from headroom.ccr.tool_injection import CCR_TOOL_NAME
+from legroom.ccr.tool_injection import CCR_TOOL_NAME
 
 
 class FakeStore:
@@ -102,7 +102,7 @@ def test_execute_retrieval_error_paths(monkeypatch: pytest.MonkeyPatch) -> None:
     handler = CCRResponseHandler()
     # Retrieval is by hash only; a store error surfaces as a failed result.
     monkeypatch.setattr(
-        "headroom.ccr.response_handler.get_compression_store",
+        "legroom.ccr.response_handler.get_compression_store",
         lambda: FakeStore(retrieve_error=RuntimeError("retrieve boom")),
     )
     retrieve_result = handler._execute_retrieval(CCRToolCall(tool_call_id="t2", hash_key="abc"))
@@ -113,12 +113,12 @@ def test_execute_retrieval_error_paths(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_create_tool_result_message_google_and_generic_formats() -> None:
     handler = CCRResponseHandler()
     results = [
-        CCRToolResult(tool_call_id="headroom_retrieve", content='{"count": 1}', success=True)
+        CCRToolResult(tool_call_id="legroom_retrieve", content='{"count": 1}', success=True)
     ]
     google_message = handler._create_tool_result_message(results, "google")
     assert google_message == {
         "role": "user",
-        "parts": [{"functionResponse": {"name": "headroom_retrieve", "response": {"count": 1}}}],
+        "parts": [{"functionResponse": {"name": "legroom_retrieve", "response": {"count": 1}}}],
     }
 
     generic_message = handler._create_tool_result_message(
@@ -131,7 +131,7 @@ def test_create_tool_result_message_google_and_generic_formats() -> None:
     ]
 
     invalid_google = handler._create_tool_result_message(
-        [CCRToolResult(tool_call_id="headroom_retrieve", content="not-json", success=True)],
+        [CCRToolResult(tool_call_id="legroom_retrieve", content="not-json", success=True)],
         "google",
     )
     assert invalid_google["parts"][0]["functionResponse"]["response"] == {"content": "not-json"}
@@ -228,7 +228,7 @@ def test_streaming_buffer_and_parse_sse_helpers() -> None:
             b'data: {"type":"content_block_start","content_block":{"type":"text","text":"Hel"}}',
             b'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"lo"}}',
             b'data: {"type":"content_block_stop"}',
-            b'data: {"type":"content_block_start","content_block":{"type":"tool_use","id":"tool_1","name":"headroom_retrieve"}}',
+            b'data: {"type":"content_block_start","content_block":{"type":"tool_use","id":"tool_1","name":"legroom_retrieve"}}',
             b'data: {"type":"content_block_delta","delta":{"type":"input_json_delta","partial_json":"{\\"hash\\":\\"abc\\"}"}}',
             b'data: {"type":"content_block_stop"}',
             (
@@ -247,7 +247,7 @@ def test_streaming_buffer_and_parse_sse_helpers() -> None:
     }
     assert parsed["content"][1] == {"type": "redacted_thinking", "data": "ENC:abc"}
     assert parsed["content"][2] == {"type": "text", "text": "Hello"}
-    assert parsed["content"][3]["name"] == "headroom_retrieve"
+    assert parsed["content"][3]["name"] == "legroom_retrieve"
     assert parsed["content"][3]["input"] == {"hash": "abc"}
     assert parsed["stop_reason"] == "refusal"
     assert parsed["stop_details"] == stop_details
@@ -266,7 +266,7 @@ def test_streaming_buffer_and_parse_sse_helpers() -> None:
                                     "index": 0,
                                     "id": "call_1",
                                     "function": {
-                                        "name": "headroom_retrieve",
+                                        "name": "legroom_retrieve",
                                         "arguments": '{"hash":"aaaaaaaaaaaa',
                                     },
                                 }
@@ -345,7 +345,7 @@ async def test_streaming_handler_process_stream_pass_through_and_ccr(
     monkeypatch.setattr(ccr_handler, "_response_to_sse", fake_response_to_sse)
 
     ccr_chunks = [
-        b'{"type":"tool_use","name":"headroom_retrieve"',
+        b'{"type":"tool_use","name":"legroom_retrieve"',
         b',"stop_reason":"tool_use"}',
         b"tail",
     ]
@@ -370,7 +370,7 @@ async def test_streaming_handler_falls_back_to_buffer_on_processing_error(
         lambda data: (_ for _ in ()).throw(RuntimeError("parse failed")),
     )
 
-    chunks = [b'{"type":"tool_use","name":"headroom_retrieve"', b',"stop_reason":"tool_use"}']
+    chunks = [b'{"type":"tool_use","name":"legroom_retrieve"', b',"stop_reason":"tool_use"}']
     streamed = [
         chunk
         async for chunk in handler.process_stream(_async_iter(chunks), [], None, lambda m, t: None)

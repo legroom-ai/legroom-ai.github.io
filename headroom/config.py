@@ -1,4 +1,4 @@
-"""Configuration models for Headroom SDK."""
+"""Configuration models for Legroom SDK."""
 
 from __future__ import annotations
 
@@ -9,11 +9,11 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Literal
 
-from headroom.models.config import ML_MODEL_DEFAULTS
+from legroom.models.config import ML_MODEL_DEFAULTS
 
 
-class HeadroomMode(str, Enum):
-    """Operating modes for Headroom."""
+class LegroomMode(str, Enum):
+    """Operating modes for Legroom."""
 
     AUDIT = "audit"  # Observe only, no modifications
     OPTIMIZE = "optimize"  # Apply deterministic transforms
@@ -115,7 +115,7 @@ class RelevanceScorerConfig:
     DEFAULT: "hybrid" - combines exact matching (UUIDs, IDs) with semantic
     understanding. Falls back to BM25 if sentence-transformers not installed.
 
-    For full hybrid support, install: pip install headroom[relevance]
+    For full hybrid support, install: pip install legroom[relevance]
 
     WHY HYBRID IS DEFAULT:
     - Missing important items during compression is catastrophic
@@ -212,7 +212,7 @@ class AnchorConfig:
 # WebSearch/WebFetch results are large reference payloads that must remain verbatim.
 # Bash is NOT excluded — its outputs (build logs, test output) are ideal compression targets.
 # To protect Bash or other non-excluded tools from lossy compression, use
-# HEADROOM_PROTECT_TOOL_RESULTS=Bash or --protect-tool-results Bash.
+# LEGROOM_PROTECT_TOOL_RESULTS=Bash or --protect-tool-results Bash.
 DEFAULT_EXCLUDE_TOOLS: frozenset[str] = frozenset(
     {
         "Read",
@@ -276,9 +276,9 @@ def is_tool_excluded(name: str, exclude_tools: Iterable[str]) -> bool:
     each name (issue #870).
 
     MCP tool wrappers are also matched through their common aliases. For example,
-    ``mcp__Headroom__headroom_retrieve`` and
-    ``mcp_Headroom_headroom_retrieve`` both match ``mcp__*`` and the bare
-    ``headroom_retrieve`` entry.
+    ``mcp__Legroom__legroom_retrieve`` and
+    ``mcp_Legroom_legroom_retrieve`` both match ``mcp__*`` and the bare
+    ``legroom_retrieve`` entry.
     """
     if not exclude_tools:
         return False
@@ -333,7 +333,7 @@ class ReadLifecycleConfig:
 class ReadMaturationConfig:
     """Mechanism B: hold-back Read maturation (compress before cache entry).
 
-    Motivation (measured by `headroom audit-reads`): the median Read stays
+    Motivation (measured by `legroom audit-reads`): the median Read stays
     in context for ~118 assistant turns after it appears, billed at the
     provider's cache-read rate every request — a Read's lifetime cost is
     roughly 13x its size. The only cache-safe moment to shrink it is
@@ -515,7 +515,7 @@ class CacheOptimizerConfig:
     """
 
     enabled: bool = True  # Enable provider-specific cache optimization
-    auto_detect_provider: bool = True  # Auto-detect from HeadroomClient provider
+    auto_detect_provider: bool = True  # Auto-detect from LegroomClient provider
     min_cacheable_tokens: int = 1024  # Minimum tokens for caching (provider may override)
     enable_semantic_cache: bool = False  # Enable query-level semantic caching
     semantic_cache_similarity: float = 0.95  # Similarity threshold for semantic cache
@@ -538,7 +538,7 @@ class CCRConfig:
     1. COMPRESS: SmartCrusher compresses array from 1000 to 20 items
     2. CACHE: Original 1000 items stored in CompressionStore
     3. INJECT: Marker added to tell LLM how to retrieve more
-    4. RETRIEVE: If LLM needs more, it calls headroom_retrieve(hash) to get the full original back
+    4. RETRIEVE: If LLM needs more, it calls legroom_retrieve(hash) to get the full original back
 
     Benefits:
     - Zero-risk compression: worst case = LLM retrieves what it needs
@@ -557,7 +557,7 @@ class CCRConfig:
     # sessions that routinely run 30+ minutes; an expired entry silently
     # converts "lossless with retrieval" into "lossy", so the TTL is the
     # weakest link in the no-accuracy-loss guarantee. Kept in lockstep
-    # with Rust DEFAULT_TTL (crates/headroom-core/src/ccr/mod.rs) and
+    # with Rust DEFAULT_TTL (crates/legroom-core/src/ccr/mod.rs) and
     # DEFAULT_CCR_TTL_SECONDS (cache/compression_store.py).
     store_ttl_seconds: int = 1800  # Cache TTL (30 minutes)
     inject_retrieval_marker: bool = True  # Add retrieval hint to compressed output
@@ -565,7 +565,7 @@ class CCRConfig:
     min_items_to_cache: int = 20  # Only cache if original had >= N items
 
     # Tool injection (Phase 3)
-    inject_tool: bool = True  # Inject headroom_retrieve tool into tools array
+    inject_tool: bool = True  # Inject legroom_retrieve tool into tools array
     inject_system_instructions: bool = False  # Add retrieval instructions to system message
 
     # Retrieval marker format
@@ -584,7 +584,7 @@ class PrefixFreezeConfig:
 
     When enabled, tracks provider prefix cache state across turns and freezes
     already-cached messages so the transform pipeline skips them. This prevents
-    Headroom from invalidating the provider's prefix cache (which would replace
+    Legroom from invalidating the provider's prefix cache (which would replace
     a 90% read discount with a 25% write penalty on Anthropic).
 
     The force_compress_threshold controls when compression savings are large
@@ -599,11 +599,11 @@ class PrefixFreezeConfig:
 
 
 @dataclass
-class HeadroomConfig:
-    """Main configuration for HeadroomClient."""
+class LegroomConfig:
+    """Main configuration for LegroomClient."""
 
-    store_url: str = "sqlite:///headroom.db"
-    default_mode: HeadroomMode = HeadroomMode.AUDIT
+    store_url: str = "sqlite:///legroom.db"
+    default_mode: LegroomMode = LegroomMode.AUDIT
     model_context_limits: dict[str, int] = field(
         default_factory=lambda: DEFAULT_MODEL_CONTEXT_LIMITS.copy()
     )
@@ -624,7 +624,7 @@ class HeadroomConfig:
     content_router_enabled: InitVar[bool | None] = None
 
     # Tool-result interceptors (ast-grep Read outline, etc.). Opt-in for now.
-    # Env var HEADROOM_INTERCEPT_ENABLED=1 also enables (for CLI `--intercept-tool-results`).
+    # Env var LEGROOM_INTERCEPT_ENABLED=1 also enables (for CLI `--intercept-tool-results`).
     intercept_tool_results: bool = False
 
     # Debugging - opt-in diff artifact generation
@@ -765,7 +765,7 @@ class TransformDiff:
 class DiffArtifact:
     """Complete diff artifact for debugging transform pipeline.
 
-    Opt-in via HeadroomConfig.generate_diff_artifact = True.
+    Opt-in via LegroomConfig.generate_diff_artifact = True.
     Useful for understanding what each transform did to your messages.
     """
 

@@ -2,16 +2,16 @@
 
 Exposes:
 
-    headroom sg …           ->  ast-grep (from the ast-grep-cli PyPI wheel)
-    headroom diff A B …     ->  difftastic
-    headroom loc [PATH] …   ->  scc
-    headroom tools install  ->  pre-fetch all bundled binaries
-    headroom tools doctor   ->  print a status table
-    headroom tools list     ->  show the registry
+    legroom sg …           ->  ast-grep (from the ast-grep-cli PyPI wheel)
+    legroom diff A B …     ->  difftastic
+    legroom loc [PATH] …   ->  scc
+    legroom tools install  ->  pre-fetch all bundled binaries
+    legroom tools doctor   ->  print a status table
+    legroom tools list     ->  show the registry
 
 The passthrough commands forward every argument, stdin, stdout, stderr, and
 the exit code verbatim, so agents can invoke them via their existing shell
-tool without any Headroom-specific protocol.
+tool without any Legroom-specific protocol.
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from collections.abc import Sequence
 
 import click
 
-from headroom import binaries
+from legroom import binaries
 
 from .main import main
 
@@ -46,7 +46,7 @@ def _exec_tool(tool: str, argv: Sequence[str]) -> None:
         sys.exit(2)
     except binaries.OfflineError as e:
         click.secho(
-            f"error: {e}\nHint: run `headroom tools install` on a networked machine, "
+            f"error: {e}\nHint: run `legroom tools install` on a networked machine, "
             f"or pass --from <bundle.tar.gz>.",
             fg="red",
             err=True,
@@ -60,7 +60,7 @@ def _exec_tool(tool: str, argv: Sequence[str]) -> None:
     # fd/pty passthrough. NOTE: os.execv replaces the process image — atexit
     # handlers, context managers, and Python finalizers do NOT run. Anything
     # that needs to clean up on shell exit must be handled elsewhere (e.g.
-    # the parent `headroom` process, not these thin passthroughs).
+    # the parent `legroom` process, not these thin passthroughs).
     cmd = [str(path), *argv]
     if not _is_windows():
         os.execv(cmd[0], cmd)  # never returns
@@ -206,7 +206,7 @@ def tools_install_cmd(tools: tuple[str, ...], force: bool) -> None:
                 click.echo(f"{name}: on PATH at {on_path} (pypi wheel)")
             else:
                 click.secho(
-                    f"{name}: not on PATH — `pip install headroom-ai` should provide it",
+                    f"{name}: not on PATH — `pip install legroom-ai` should provide it",
                     fg="yellow",
                 )
                 exit_code = 1

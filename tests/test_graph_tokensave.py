@@ -10,7 +10,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from headroom.graph import tokensave_installer as ts
+from legroom.graph import tokensave_installer as ts
 
 
 def _tar_archive(member_name: str = ts.TOKENSAVE_BIN_NAME) -> bytes:
@@ -89,7 +89,7 @@ def test_get_tokensave_path_prefers_path_then_install_dir(monkeypatch, tmp_path:
 def test_ensure_offline_returns_none_when_absent(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(ts, "TOKENSAVE_BIN_DIR", tmp_path)
     monkeypatch.setattr("shutil.which", lambda name: None)
-    monkeypatch.setenv("HEADROOM_BINARIES_OFFLINE", "1")
+    monkeypatch.setenv("LEGROOM_BINARIES_OFFLINE", "1")
 
     def _boom(*a, **k):
         raise AssertionError("download must not run when offline")
@@ -112,7 +112,7 @@ def test_ensure_returns_existing_without_download(monkeypatch, tmp_path: Path) -
 
 def test_ensure_returns_none_on_unsupported_platform(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(ts, "get_tokensave_path", lambda: None)
-    monkeypatch.delenv("HEADROOM_BINARIES_OFFLINE", raising=False)
+    monkeypatch.delenv("LEGROOM_BINARIES_OFFLINE", raising=False)
     monkeypatch.setattr(ts.platform, "system", lambda: "darwin")
     monkeypatch.setattr(ts.platform, "machine", lambda: "x86_64")  # no asset
     assert ts.ensure_tokensave() is None
@@ -124,7 +124,7 @@ def test_download_tokensave_tarball(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(ts.platform, "machine", lambda: "x86_64")
     # Synthetic archive bytes won't match the pinned digest; this test covers
     # extraction, not integrity, so opt out of verification explicitly.
-    monkeypatch.setenv("HEADROOM_TOKENSAVE_ALLOW_UNVERIFIED", "1")
+    monkeypatch.setenv("LEGROOM_TOKENSAVE_ALLOW_UNVERIFIED", "1")
     monkeypatch.setattr(ts, "urlopen", lambda url, timeout=60: FakeResponse(_tar_archive()))
     monkeypatch.setattr(
         "subprocess.run", lambda *a, **k: SimpleNamespace(returncode=0, stdout="tokensave 6\n")
@@ -138,7 +138,7 @@ def test_download_tokensave_zip_windows(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(ts, "TOKENSAVE_BIN_DIR", tmp_path)
     monkeypatch.setattr(ts.platform, "system", lambda: "windows")
     monkeypatch.setattr(ts.platform, "machine", lambda: "amd64")
-    monkeypatch.setenv("HEADROOM_TOKENSAVE_ALLOW_UNVERIFIED", "1")
+    monkeypatch.setenv("LEGROOM_TOKENSAVE_ALLOW_UNVERIFIED", "1")
     monkeypatch.setattr(ts, "urlopen", lambda url, timeout=60: FakeResponse(_zip_archive()))
     monkeypatch.setattr(
         "subprocess.run", lambda *a, **k: SimpleNamespace(returncode=0, stdout="tokensave 6\n")
@@ -174,7 +174,7 @@ def test_download_raises_when_binary_missing_from_tarball(monkeypatch, tmp_path:
     monkeypatch.setattr(ts.platform, "system", lambda: "linux")
     monkeypatch.setattr(ts.platform, "machine", lambda: "x86_64")
     # Archive contains an unrelated member, not the tokensave binary.
-    monkeypatch.setenv("HEADROOM_TOKENSAVE_ALLOW_UNVERIFIED", "1")
+    monkeypatch.setenv("LEGROOM_TOKENSAVE_ALLOW_UNVERIFIED", "1")
     monkeypatch.setattr(
         ts, "urlopen", lambda url, timeout=60: FakeResponse(_tar_archive("README.md"))
     )
@@ -186,7 +186,7 @@ def test_download_raises_when_binary_missing_from_zip(monkeypatch, tmp_path: Pat
     monkeypatch.setattr(ts, "TOKENSAVE_BIN_DIR", tmp_path)
     monkeypatch.setattr(ts.platform, "system", lambda: "windows")
     monkeypatch.setattr(ts.platform, "machine", lambda: "amd64")
-    monkeypatch.setenv("HEADROOM_TOKENSAVE_ALLOW_UNVERIFIED", "1")
+    monkeypatch.setenv("LEGROOM_TOKENSAVE_ALLOW_UNVERIFIED", "1")
     monkeypatch.setattr(
         ts, "urlopen", lambda url, timeout=60: FakeResponse(_zip_archive("notes.txt"))
     )
@@ -198,7 +198,7 @@ def test_download_tolerates_failed_version_check(monkeypatch, tmp_path: Path) ->
     monkeypatch.setattr(ts, "TOKENSAVE_BIN_DIR", tmp_path)
     monkeypatch.setattr(ts.platform, "system", lambda: "linux")
     monkeypatch.setattr(ts.platform, "machine", lambda: "x86_64")
-    monkeypatch.setenv("HEADROOM_TOKENSAVE_ALLOW_UNVERIFIED", "1")
+    monkeypatch.setenv("LEGROOM_TOKENSAVE_ALLOW_UNVERIFIED", "1")
     monkeypatch.setattr(ts, "urlopen", lambda url, timeout=60: FakeResponse(_tar_archive()))
     # Non-zero return code and a raising probe must both be non-fatal.
     monkeypatch.setattr(
@@ -230,14 +230,14 @@ def test_verify_asset_digest_rejects_mismatch(monkeypatch) -> None:
 
 def test_verify_asset_digest_refuses_unpinned_without_optout(monkeypatch) -> None:
     monkeypatch.setattr(ts, "TOKENSAVE_ASSET_DIGESTS", {})
-    monkeypatch.delenv("HEADROOM_TOKENSAVE_ALLOW_UNVERIFIED", raising=False)
+    monkeypatch.delenv("LEGROOM_TOKENSAVE_ALLOW_UNVERIFIED", raising=False)
     with pytest.raises(RuntimeError, match="no pinned SHA-256 digest"):
         ts._verify_asset_digest("unknown.tar.gz", b"bytes")
 
 
 def test_verify_asset_digest_allows_unpinned_with_optout(monkeypatch) -> None:
     monkeypatch.setattr(ts, "TOKENSAVE_ASSET_DIGESTS", {})
-    monkeypatch.setenv("HEADROOM_TOKENSAVE_ALLOW_UNVERIFIED", "1")
+    monkeypatch.setenv("LEGROOM_TOKENSAVE_ALLOW_UNVERIFIED", "1")
     ts._verify_asset_digest("unknown.tar.gz", b"bytes")  # no exception
 
 
@@ -245,7 +245,7 @@ def test_download_aborts_on_digest_mismatch(monkeypatch, tmp_path: Path) -> None
     monkeypatch.setattr(ts, "TOKENSAVE_BIN_DIR", tmp_path)
     monkeypatch.setattr(ts.platform, "system", lambda: "linux")
     monkeypatch.setattr(ts.platform, "machine", lambda: "x86_64")
-    monkeypatch.delenv("HEADROOM_TOKENSAVE_ALLOW_UNVERIFIED", raising=False)
+    monkeypatch.delenv("LEGROOM_TOKENSAVE_ALLOW_UNVERIFIED", raising=False)
     # Pin a digest that the synthetic archive cannot match.
     monkeypatch.setattr(
         ts, "TOKENSAVE_ASSET_DIGESTS", {"tokensave-v7.0.0-x86_64-linux.tar.gz": "00" * 32}
@@ -268,7 +268,7 @@ def test_download_honors_invalid_url_scheme(monkeypatch, tmp_path: Path) -> None
 
 def test_ensure_returns_none_when_download_fails(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(ts, "get_tokensave_path", lambda: None)
-    monkeypatch.delenv("HEADROOM_BINARIES_OFFLINE", raising=False)
+    monkeypatch.delenv("LEGROOM_BINARIES_OFFLINE", raising=False)
 
     def _raise(version=None):
         raise RuntimeError("download failed")
@@ -278,7 +278,7 @@ def test_ensure_returns_none_when_download_fails(monkeypatch, tmp_path: Path) ->
 
 
 def test_pinned_version_env_override(monkeypatch) -> None:
-    monkeypatch.setenv("HEADROOM_TOKENSAVE_VERSION", "v9.9.9")
+    monkeypatch.setenv("LEGROOM_TOKENSAVE_VERSION", "v9.9.9")
     assert ts._pinned_version() == "v9.9.9"
-    monkeypatch.delenv("HEADROOM_TOKENSAVE_VERSION", raising=False)
+    monkeypatch.delenv("LEGROOM_TOKENSAVE_VERSION", raising=False)
     assert ts._pinned_version() == ts.TOKENSAVE_VERSION

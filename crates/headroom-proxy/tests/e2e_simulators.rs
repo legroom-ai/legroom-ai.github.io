@@ -1,7 +1,7 @@
 //! End-to-end proxy tests backed by the Rust provider simulators.
 //!
-//! These tests run Headroom and the simulator in-process. The client only
-//! talks to Headroom; Headroom must reach every provider surface through the
+//! These tests run Legroom and the simulator in-process. The client only
+//! talks to Legroom; Legroom must reach every provider surface through the
 //! simulator, never through live provider credentials.
 
 mod common;
@@ -10,14 +10,14 @@ use std::net::SocketAddr;
 
 use aws_credential_types::Credentials;
 use common::{install_static_token_source, start_proxy_with_state};
-use headroom_simulators::config::{ConfiguredResponse, SimulatorConfig, StubRule};
-use headroom_simulators::{build_app as build_simulator_app, Simulator};
+use legroom_simulators::config::{ConfiguredResponse, SimulatorConfig, StubRule};
+use legroom_simulators::{build_app as build_simulator_app, Simulator};
 use serde_json::{json, Value};
 use tokio::sync::oneshot;
 use url::Url;
 
 const BEDROCK_MODEL: &str = "anthropic.claude-3-haiku-20240307-v1:0";
-const VERTEX_PROJECT: &str = "headroom-simulator-e2e";
+const VERTEX_PROJECT: &str = "legroom-simulator-e2e";
 const VERTEX_LOCATION: &str = "us-central1";
 const VERTEX_MODEL: &str = "claude-3-5-sonnet@20240620";
 const TEST_BEARER: &str = "ya29.simulator-e2e-token";
@@ -115,7 +115,7 @@ async fn start_simulator_proxy_without_bedrock_credentials(
 fn assert_simulator_header(resp: &reqwest::Response) {
     assert_eq!(
         resp.headers()
-            .get("x-headroom-simulator")
+            .get("x-legroom-simulator")
             .and_then(|v| v.to_str().ok()),
         Some("true"),
         "response must have come from the simulator"
@@ -124,7 +124,7 @@ fn assert_simulator_header(resp: &reqwest::Response) {
 
 fn assert_not_simulator_response(resp: &reqwest::Response) {
     assert!(
-        resp.headers().get("x-headroom-simulator").is_none(),
+        resp.headers().get("x-legroom-simulator").is_none(),
         "proxy-owned preflight errors must not be simulator responses"
     );
 }
@@ -431,7 +431,7 @@ async fn vertex_raw_and_stream_predict_use_simulator() {
     let raw_body: Value = raw.json().await.unwrap();
     assert_eq!(
         raw_body["model"],
-        json!("headroom-simulator-vertex-anthropic")
+        json!("legroom-simulator-vertex-anthropic")
     );
 
     let stream = json_post(
@@ -451,7 +451,7 @@ async fn vertex_raw_and_stream_predict_use_simulator() {
 }
 
 #[tokio::test]
-async fn simulator_provider_errors_flow_through_headroom() {
+async fn simulator_provider_errors_flow_through_legroom() {
     let vertex_path = format!(
         "/v1beta1/projects/{VERTEX_PROJECT}/locations/{VERTEX_LOCATION}/publishers/anthropic/models/{VERTEX_MODEL}:rawPredict"
     );
@@ -524,7 +524,7 @@ async fn simulator_provider_errors_flow_through_headroom() {
         assert_simulator_header(&resp);
         assert!(
             resp.headers().get("x-simulator-error-path").is_some(),
-            "configured simulator error path should survive Headroom response filtering"
+            "configured simulator error path should survive Legroom response filtering"
         );
         let error_body: Value = resp.json().await.unwrap();
         assert_eq!(error_body["error"]["type"], json!(expected_type));
@@ -535,7 +535,7 @@ async fn simulator_provider_errors_flow_through_headroom() {
 }
 
 #[tokio::test]
-async fn headroom_preflight_errors_stop_before_simulator_fallback() {
+async fn legroom_preflight_errors_stop_before_simulator_fallback() {
     let simulator = start_simulator().await;
     let proxy = start_simulator_proxy_without_bedrock_credentials(&simulator.url()).await;
     let client = reqwest::Client::new();

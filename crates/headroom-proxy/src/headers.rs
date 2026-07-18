@@ -29,10 +29,10 @@ const CLIENT_MANAGED: &[&str] = &["host", "content-length"];
 /// fixes P5-49). Case-insensitive prefix match. The Rust path mirrors the
 /// Python `_strip_internal_headers` helper.
 ///
-/// Response-side `X-Headroom-*` injection (e.g. `x-headroom-tokens-saved`)
+/// Response-side `X-Legroom-*` injection (e.g. `x-legroom-tokens-saved`)
 /// is intentionally untouched — that direction is the proxy describing its
 /// own work to the client and never crosses an upstream boundary.
-pub const INTERNAL_HEADER_PREFIX: &str = "x-headroom-";
+pub const INTERNAL_HEADER_PREFIX: &str = "x-legroom-";
 
 /// Returns true if `name` is hop-by-hop and must be stripped.
 pub fn is_hop_by_hop(name: &HeaderName) -> bool {
@@ -50,7 +50,7 @@ pub fn is_request_drop(name: &HeaderName) -> bool {
     CLIENT_MANAGED.iter().any(|h| h.eq_ignore_ascii_case(n))
 }
 
-/// Returns true when `name` matches the internal `x-headroom-*` prefix
+/// Returns true when `name` matches the internal `x-legroom-*` prefix
 /// (case-insensitive). Pure function, no regex.
 pub fn is_internal_header(name: &HeaderName) -> bool {
     name.as_str()
@@ -125,9 +125,9 @@ pub fn strip_internal_headers(headers: &mut HeaderMap) -> usize {
 ///   - X-Forwarded-For appended
 ///   - X-Forwarded-Proto, X-Forwarded-Host set
 ///   - X-Request-Id ensured
-///   - When `strip_internal == true`, `x-headroom-*` headers stripped
+///   - When `strip_internal == true`, `x-legroom-*` headers stripped
 ///     (PR-A5, fixes P5-49). Operators can disable via
-///     `HEADROOM_PROXY_STRIP_INTERNAL_HEADERS=disabled` for diagnostic
+///     `LEGROOM_PROXY_STRIP_INTERNAL_HEADERS=disabled` for diagnostic
 ///     shadow tracing.
 pub fn build_forward_request_headers(
     incoming: &HeaderMap,
@@ -219,15 +219,15 @@ mod tests {
     #[test]
     fn internal_header_detected_case_insensitive() {
         assert!(is_internal_header(&HeaderName::from_static(
-            "x-headroom-bypass"
+            "x-legroom-bypass"
         )));
         // HeaderName normalizes to lowercase internally, so any cased input
         // ends up matching the lowercase prefix.
         assert!(is_internal_header(
-            &HeaderName::from_bytes(b"X-Headroom-Mode").unwrap()
+            &HeaderName::from_bytes(b"X-Legroom-Mode").unwrap()
         ));
         assert!(is_internal_header(
-            &HeaderName::from_bytes(b"X-HEADROOM-FOO").unwrap()
+            &HeaderName::from_bytes(b"X-LEGROOM-FOO").unwrap()
         ));
         assert!(!is_internal_header(&HeaderName::from_static(
             "x-request-id"
@@ -241,13 +241,13 @@ mod tests {
     fn strip_internal_headers_removes_only_internal_prefix() {
         let mut h = HeaderMap::new();
         h.insert("authorization", HeaderValue::from_static("Bearer x"));
-        h.insert("x-headroom-bypass", HeaderValue::from_static("true"));
-        h.insert("x-headroom-mode", HeaderValue::from_static("passthrough"));
+        h.insert("x-legroom-bypass", HeaderValue::from_static("true"));
+        h.insert("x-legroom-mode", HeaderValue::from_static("passthrough"));
         h.insert("x-request-id", HeaderValue::from_static("req-1"));
         let removed = strip_internal_headers(&mut h);
         assert_eq!(removed, 2);
-        assert!(h.get("x-headroom-bypass").is_none());
-        assert!(h.get("x-headroom-mode").is_none());
+        assert!(h.get("x-legroom-bypass").is_none());
+        assert!(h.get("x-legroom-mode").is_none());
         assert!(h.get("authorization").is_some());
         assert!(h.get("x-request-id").is_some());
     }
@@ -256,7 +256,7 @@ mod tests {
     fn build_forward_strips_internal_when_enabled() {
         let mut incoming = HeaderMap::new();
         incoming.insert("authorization", HeaderValue::from_static("Bearer x"));
-        incoming.insert("x-headroom-bypass", HeaderValue::from_static("true"));
+        incoming.insert("x-legroom-bypass", HeaderValue::from_static("true"));
         let out = build_forward_request_headers(
             &incoming,
             "127.0.0.1".parse().unwrap(),
@@ -266,14 +266,14 @@ mod tests {
             true,
         );
         assert!(out.get("authorization").is_some());
-        assert!(out.get("x-headroom-bypass").is_none());
+        assert!(out.get("x-legroom-bypass").is_none());
     }
 
     #[test]
     fn build_forward_keeps_internal_when_disabled() {
         let mut incoming = HeaderMap::new();
         incoming.insert("authorization", HeaderValue::from_static("Bearer x"));
-        incoming.insert("x-headroom-bypass", HeaderValue::from_static("true"));
+        incoming.insert("x-legroom-bypass", HeaderValue::from_static("true"));
         let out = build_forward_request_headers(
             &incoming,
             "127.0.0.1".parse().unwrap(),
@@ -283,6 +283,6 @@ mod tests {
             false,
         );
         assert!(out.get("authorization").is_some());
-        assert!(out.get("x-headroom-bypass").is_some());
+        assert!(out.get("x-legroom-bypass").is_some());
     }
 }

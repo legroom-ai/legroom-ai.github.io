@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-import headroom.subscription.base as base_module
-from headroom.subscription.base import (
+import legroom.subscription.base as base_module
+from legroom.subscription.base import (
     QuotaTracker,
     QuotaTrackerRegistry,
     get_quota_registry,

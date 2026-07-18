@@ -1,6 +1,6 @@
 """Per-request project attribution for the proxy.
 
-``headroom wrap`` launches agents with an ``X-Headroom-Project`` header
+``legroom wrap`` launches agents with an ``X-Legroom-Project`` header
 (via ``ANTHROPIC_CUSTOM_HEADERS`` for Claude Code and ``env_http_headers``
 for Codex) naming the project directory the agent is working in. The proxy
 captures that header once per request — in the HTTP middleware for regular
@@ -19,17 +19,17 @@ from collections.abc import MutableMapping
 from contextvars import ContextVar
 from typing import Any
 
-from headroom.proxy.project_policy import (
+from legroom.proxy.project_policy import (
     PROJECT_HEADER,
     PROJECT_PATH_PREFIX,
     classify_project,
     split_project_path,
     with_project_prefix,
 )
-from headroom.proxy.request_scope import normalize_scope_path
-from headroom.proxy.savings_tracker import sanitize_project_name
+from legroom.proxy.request_scope import normalize_scope_path
+from legroom.proxy.savings_tracker import sanitize_project_name
 
-_current_project: ContextVar[str | None] = ContextVar("headroom_current_project", default=None)
+_current_project: ContextVar[str | None] = ContextVar("legroom_current_project", default=None)
 
 
 def set_current_project(project: str | None) -> None:

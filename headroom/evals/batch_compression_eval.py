@@ -1,7 +1,7 @@
 """Batch API Compression Accuracy Evaluation.
 
 This module evaluates whether compression preserves LLM accuracy when processing
-batch API requests through the Headroom proxy.
+batch API requests through the Legroom proxy.
 
 Evaluation Strategy:
 1. Create batch requests with questions that have known/verifiable answers
@@ -19,7 +19,7 @@ Test Categories:
 Works with both OpenAI and Anthropic batch APIs.
 
 Usage:
-    >>> from headroom.evals.batch_compression_eval import (
+    >>> from legroom.evals.batch_compression_eval import (
     ...     BatchCompressionEvaluator,
     ...     run_batch_compression_eval,
     ... )
@@ -27,7 +27,7 @@ Usage:
     >>> print(results.summary())
 
 CLI:
-    python -m headroom.evals.batch_compression_eval --provider anthropic --samples 10
+    python -m legroom.evals.batch_compression_eval --provider anthropic --samples 10
 """
 
 from __future__ import annotations
@@ -40,13 +40,13 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Literal
 
-from headroom.evals.metrics import (
+from legroom.evals.metrics import (
     compute_exact_match,
     compute_f1,
     compute_rouge_l,
     compute_semantic_similarity,
 )
-from headroom.transforms.content_router import ContentRouter, ContentRouterConfig
+from legroom.transforms.content_router import ContentRouter, ContentRouterConfig
 
 logger = logging.getLogger(__name__)
 
@@ -351,7 +351,7 @@ def generate_factual_test_cases() -> list[BatchTestCase]:
                         "content": """Based on this context, answer the question.
 
 Context:
-The Headroom SDK is a context optimization layer for LLM applications. It was created
+The Legroom SDK is a context optimization layer for LLM applications. It was created
 by Anthropic in 2024. The main features include SmartCrusher for JSON compression,
 Kompress for text compression, and CCR (Compress-Cache-Retrieve) for reversible
 compression. The SDK supports Python 3.9+ and can save up to 70% of tokens on
@@ -482,7 +482,7 @@ API Response:
                                     "data": {
                                         "repositories": [
                                             {
-                                                "name": "headroom",
+                                                "name": "legroom",
                                                 "stars": 1250,
                                                 "language": "Python",
                                             },
@@ -510,7 +510,7 @@ Question: Which repository has the most stars? Answer with just the repository n
             ),
             ground_truth="prompt-optimizer",
             ground_truth_keywords=["prompt-optimizer", "prompt optimizer"],
-            context_facts=["headroom", "1250", "llm-cache", "890", "prompt-optimizer", "2100"],
+            context_facts=["legroom", "1250", "llm-cache", "890", "prompt-optimizer", "2100"],
         ),
         BatchTestCase(
             id="json_003",
@@ -943,7 +943,7 @@ class TokenCounter:
         """Lazy load tokenizer."""
         if self._tokenizer is None:
             try:
-                from headroom.tokenizers import get_tokenizer
+                from legroom.tokenizers import get_tokenizer
 
                 self._tokenizer = get_tokenizer(self.model)
             except ImportError:
@@ -1303,7 +1303,7 @@ def evaluate_token_counting_accuracy(
 ) -> TokenCountAccuracyResult:
     """Evaluate token counting accuracy against provider's official count.
 
-    This verifies that Headroom's token counting matches the provider's
+    This verifies that Legroom's token counting matches the provider's
     actual token usage as reported in API responses.
 
     Args:

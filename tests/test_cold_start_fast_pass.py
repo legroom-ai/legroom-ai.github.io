@@ -13,9 +13,9 @@ from unittest.mock import MagicMock
 import anyio
 from fastapi import Request
 
-from headroom.config import TransformResult
-from headroom.proxy.handlers.anthropic import AnthropicHandlerMixin
-from headroom.proxy.models import ProxyConfig
+from legroom.config import TransformResult
+from legroom.proxy.handlers.anthropic import AnthropicHandlerMixin
+from legroom.proxy.models import ProxyConfig
 
 _COMPRESSED_TEXT = "compressed tool output"
 
@@ -204,7 +204,7 @@ def _build_request(body: dict) -> Request:
 
 
 def test_cold_start_runs_fast_pass_and_defers_only_kompress(monkeypatch):
-    import headroom.tokenizers as _tk
+    import legroom.tokenizers as _tk
 
     monkeypatch.setattr(_tk, "get_tokenizer", lambda model: _DummyTokenizer())
 
@@ -258,7 +258,7 @@ def test_cold_start_runs_fast_pass_and_defers_only_kompress(monkeypatch):
 
 
 def test_fast_pass_failure_falls_back_to_full_deferral(monkeypatch):
-    import headroom.tokenizers as _tk
+    import legroom.tokenizers as _tk
 
     monkeypatch.setattr(_tk, "get_tokenizer", lambda model: _DummyTokenizer())
 

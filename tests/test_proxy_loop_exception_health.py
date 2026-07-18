@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 import pytest
 from fastapi.testclient import TestClient
 
-from headroom.proxy.server import ProxyConfig, create_app
+from legroom.proxy.server import ProxyConfig, create_app
 
 pytest.importorskip("fastapi")
 pytest.importorskip("httpx")

@@ -12,7 +12,7 @@ import pytest
 
 pytest.importorskip("fastapi")
 
-from headroom.telemetry.toin import (
+from legroom.telemetry.toin import (
     TOINConfig,
     ToolIntelligenceNetwork,
     get_toin,
@@ -40,8 +40,8 @@ def test_filesystem_backend_persists(tmp_path):
 def test_apply_stateless_persistence_forces_toin_in_memory(tmp_path, monkeypatch):
     """The proxy wiring (_apply_stateless_persistence) reconfigures the global
     TOIN singleton to in-memory when the config is stateless."""
-    monkeypatch.setenv("HEADROOM_WORKSPACE_DIR", str(tmp_path))
-    from headroom.proxy.server import _apply_stateless_persistence
+    monkeypatch.setenv("LEGROOM_WORKSPACE_DIR", str(tmp_path))
+    from legroom.proxy.server import _apply_stateless_persistence
 
     reset_toin()
     try:
@@ -57,8 +57,8 @@ def test_apply_stateless_persistence_forces_toin_in_memory(tmp_path, monkeypatch
 
 def test_apply_stateless_persistence_noop_when_not_stateless(tmp_path, monkeypatch):
     """When not stateless, the helper does nothing (default persistence kept)."""
-    monkeypatch.setenv("HEADROOM_WORKSPACE_DIR", str(tmp_path))
-    from headroom.proxy.server import _apply_stateless_persistence
+    monkeypatch.setenv("LEGROOM_WORKSPACE_DIR", str(tmp_path))
+    from legroom.proxy.server import _apply_stateless_persistence
 
     reset_toin()
     try:

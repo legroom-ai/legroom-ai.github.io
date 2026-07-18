@@ -6,8 +6,8 @@ CJK string collapses to ONE token, so token-F1 is all-or-nothing), and
 CJK compression savings were reported ~4-6x wrong.
 """
 
-from headroom.evals.core import CompressionEvaluator
-from headroom.evals.metrics import compute_f1, tokenize
+from legroom.evals.core import CompressionEvaluator
+from legroom.evals.metrics import compute_f1, tokenize
 
 
 def test_tokenize_splits_cjk_into_units():

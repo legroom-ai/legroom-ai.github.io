@@ -1,12 +1,12 @@
 """Lightweight audit log for administrative / state-mutating proxy actions.
 
 Emits one structured JSON line per sensitive action (``/admin/*`` runtime
-changes, cache clears, stats resets) to the dedicated ``headroom.audit``
+changes, cache clears, stats resets) to the dedicated ``legroom.audit``
 logger. Operators capture this stream the same way they capture the proxy
 log; routing/retention is theirs to configure.
 
 Logger-only by design — it writes **no** dedicated file, so it is safe under
-``HEADROOM_STATELESS`` (no filesystem writes) and respects whatever log sink
+``LEGROOM_STATELESS`` (no filesystem writes) and respects whatever log sink
 the deployment already uses.
 """
 
@@ -16,7 +16,7 @@ import json
 import logging
 from typing import Any
 
-audit_logger = logging.getLogger("headroom.audit")
+audit_logger = logging.getLogger("legroom.audit")
 
 # Paths whose requests mutate runtime state or expose stored content and so
 # warrant an audit trail. Matched by exact value or, for ``/admin/``, prefix.
@@ -45,7 +45,7 @@ def record_admin_action(
     request); logs at WARNING on its own failure."""
     try:
         event: dict[str, Any] = {
-            "event": "headroom_admin_audit",
+            "event": "legroom_admin_audit",
             "action": action,
             "method": getattr(request, "method", None),
             "path": getattr(getattr(request, "url", None), "path", None),

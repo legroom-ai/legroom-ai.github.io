@@ -3,11 +3,11 @@ title: Context Management
 description: Automatic live-zone-only context management that compresses the newest content blocks while preserving the provider cache hot zone.
 ---
 
-Context management is now handled automatically inside the pipeline (live-zone-only compression). Headroom **never drops messages** from the conversation history and does not do position-based or score-based context management.
+Context management is now handled automatically inside the pipeline (live-zone-only compression). Legroom **never drops messages** from the conversation history and does not do position-based or score-based context management.
 
 ## How It Works
 
-Headroom compresses only the **newest content blocks** — the latest user message and the latest tool result / tool output. Compression is type-aware and reversible via [CCR](/docs/ccr), so the LLM can retrieve the original content on demand.
+Legroom compresses only the **newest content blocks** — the latest user message and the latest tool result / tool output. Compression is type-aware and reversible via [CCR](/docs/ccr), so the LLM can retrieve the original content on demand.
 
 The **cache hot zone** — the system prompt, tool definitions, and older turns — is never mutated. Leaving the prefix untouched preserves provider prompt caching, so cache hit rates stay stable across turns.
 
@@ -21,7 +21,7 @@ Conversation with a large latest tool result
 
 ## Protection rules
 
-Headroom enforces several protections to ensure model output quality:
+Legroom enforces several protections to ensure model output quality:
 
 ### Output buffer reservation
 
@@ -48,7 +48,7 @@ Context management is now automatic. Use per-request overrides to control behavi
 <Tabs groupId="lang" items={['TypeScript', 'Python']}>
 <Tab value="TypeScript">
 ```ts twoslash
-import { compress } from "headroom-ai";
+import { compress } from "legroom-ai";
 
 const result = await compress(messages, {
   model: "gpt-4o",
@@ -60,10 +60,10 @@ console.log(`Compressed: ${result.tokensBefore} -> ${result.tokensAfter}`);
 </Tab>
 <Tab value="Python">
 ```python
-from headroom import HeadroomClient, OpenAIProvider
+from legroom import LegroomClient, OpenAIProvider
 from openai import OpenAI
 
-client = HeadroomClient(
+client = LegroomClient(
     original_client=OpenAI(),
     provider=OpenAIProvider(),
     default_mode="optimize",
@@ -73,11 +73,11 @@ client = HeadroomClient(
 response = client.chat.completions.create(
     model="gpt-4o",
     messages=messages,
-    headroom_output_buffer_tokens=8000,  # More room for long responses
-    headroom_keep_turns=5,               # Protect last 5 turns
+    legroom_output_buffer_tokens=8000,  # More room for long responses
+    legroom_keep_turns=5,               # Protect last 5 turns
 )
 ```
 </Tab>
 </Tabs>
 
-> **Note:** The `IntelligentContextConfig`, `ScoringWeights`, and `RollingWindowConfig` classes are no longer part of Headroom. Context management is now handled automatically inside the pipeline (live-zone-only compression).
+> **Note:** The `IntelligentContextConfig`, `ScoringWeights`, and `RollingWindowConfig` classes are no longer part of Legroom. Context management is now handled automatically inside the pipeline (live-zone-only compression).

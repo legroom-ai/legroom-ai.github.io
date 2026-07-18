@@ -1,4 +1,4 @@
-"""Headroom performance analysis.
+"""Legroom performance analysis.
 
-Parse proxy logs and surface actionable insights via `headroom perf`.
+Parse proxy logs and surface actionable insights via `legroom perf`.
 """

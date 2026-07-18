@@ -13,8 +13,8 @@ def temp_project(tmp_path: Path) -> dict[str, Path]:
     """Create a temporary project with all versioned files."""
     # Create directory structure
     root = tmp_path / "project"
-    headroom = root / "headroom"
-    headroom.mkdir(parents=True)
+    legroom = root / "legroom"
+    legroom.mkdir(parents=True)
     repo_claude_plugin = root / ".claude-plugin"
     repo_claude_plugin.mkdir(parents=True)
     repo_github_plugin = root / ".github" / "plugin"
@@ -22,9 +22,9 @@ def temp_project(tmp_path: Path) -> dict[str, Path]:
     plugins = root / "plugins"
     openclaw = plugins / "openclaw"
     openclaw.mkdir(parents=True)
-    agent_hooks_claude = plugins / "headroom-agent-hooks" / ".claude-plugin"
+    agent_hooks_claude = plugins / "legroom-agent-hooks" / ".claude-plugin"
     agent_hooks_claude.mkdir(parents=True)
-    agent_hooks_github = plugins / "headroom-agent-hooks" / ".github" / "plugin"
+    agent_hooks_github = plugins / "legroom-agent-hooks" / ".github" / "plugin"
     agent_hooks_github.mkdir(parents=True)
     sdk = root / "sdk"
     typescript = sdk / "typescript"
@@ -34,8 +34,8 @@ def temp_project(tmp_path: Path) -> dict[str, Path]:
     pyproject = root / "pyproject.toml"
     pyproject.write_text('[project]\nversion = "0.5.25"\n')
 
-    # headroom/_version.py is runtime-derived and must not be rewritten by version-sync.
-    version_py = headroom / "_version.py"
+    # legroom/_version.py is runtime-derived and must not be rewritten by version-sync.
+    version_py = legroom / "_version.py"
     version_py.write_text('"""Package version metadata."""\n\n__version__ = "0.5.25"\n')
 
     # plugins/openclaw/package.json
@@ -45,7 +45,7 @@ def temp_project(tmp_path: Path) -> dict[str, Path]:
             {
                 "name": "test",
                 "version": "0.5.25",
-                "dependencies": {"headroom-ai": "^0.22.3"},
+                "dependencies": {"legroom-ai": "^0.22.3"},
             }
         )
     )
@@ -55,7 +55,7 @@ def temp_project(tmp_path: Path) -> dict[str, Path]:
         json.dumps(
             {
                 "metadata": {"name": "claude-marketplace", "version": "0.1.0"},
-                "plugins": [{"name": "headroom-agent-hooks", "version": "0.1.0"}],
+                "plugins": [{"name": "legroom-agent-hooks", "version": "0.1.0"}],
             }
         )
     )
@@ -65,16 +65,16 @@ def temp_project(tmp_path: Path) -> dict[str, Path]:
         json.dumps(
             {
                 "metadata": {"name": "copilot-marketplace", "version": "0.1.0"},
-                "plugins": [{"name": "headroom-agent-hooks", "version": "0.1.0"}],
+                "plugins": [{"name": "legroom-agent-hooks", "version": "0.1.0"}],
             }
         )
     )
 
     claude_plugin = agent_hooks_claude / "plugin.json"
-    claude_plugin.write_text(json.dumps({"name": "headroom-agent-hooks", "version": "0.1.0"}))
+    claude_plugin.write_text(json.dumps({"name": "legroom-agent-hooks", "version": "0.1.0"}))
 
     github_plugin = agent_hooks_github / "plugin.json"
-    github_plugin.write_text(json.dumps({"name": "headroom-agent-hooks", "version": "0.1.0"}))
+    github_plugin.write_text(json.dumps({"name": "legroom-agent-hooks", "version": "0.1.0"}))
 
     # sdk/typescript/package.json
     typescript_pkg = typescript / "package.json"
@@ -110,14 +110,14 @@ def test_version_sync_explicit_version(temp_project: dict[str, Path]) -> None:
     pyproject_content = temp_project["pyproject"].read_text()
     assert 'version = "0.7.0"' in pyproject_content
 
-    # Verify headroom/_version.py is not a synced manifest.
+    # Verify legroom/_version.py is not a synced manifest.
     version_py_content = temp_project["version_py"].read_text()
     assert '__version__ = "0.5.25"' in version_py_content
 
     # Verify plugins/openclaw/package.json
     openclaw_pkg = json.loads(temp_project["openclaw_pkg"].read_text())
     assert openclaw_pkg["version"] == "0.7.0"
-    assert openclaw_pkg["dependencies"]["headroom-ai"] == "^0.22.3"
+    assert openclaw_pkg["dependencies"]["legroom-ai"] == "^0.22.3"
 
     # Verify sdk/typescript/package.json
     typescript_pkg = json.loads(temp_project["typescript_pkg"].read_text())
@@ -170,7 +170,7 @@ def test_bump_patch(temp_project: dict[str, Path]) -> None:
 
     openclaw_pkg = json.loads(temp_project["openclaw_pkg"].read_text())
     assert openclaw_pkg["version"] == "0.5.26"
-    assert openclaw_pkg["dependencies"]["headroom-ai"] == "^0.22.3"
+    assert openclaw_pkg["dependencies"]["legroom-ai"] == "^0.22.3"
 
     typescript_pkg = json.loads(temp_project["typescript_pkg"].read_text())
     assert typescript_pkg["version"] == "0.5.26"
@@ -201,7 +201,7 @@ def test_bump_minor(temp_project: dict[str, Path]) -> None:
 
     openclaw_pkg = json.loads(temp_project["openclaw_pkg"].read_text())
     assert openclaw_pkg["version"] == "0.6.0"
-    assert openclaw_pkg["dependencies"]["headroom-ai"] == "^0.22.3"
+    assert openclaw_pkg["dependencies"]["legroom-ai"] == "^0.22.3"
 
     typescript_pkg = json.loads(temp_project["typescript_pkg"].read_text())
     assert typescript_pkg["version"] == "0.6.0"
@@ -232,7 +232,7 @@ def test_bump_major(temp_project: dict[str, Path]) -> None:
 
     openclaw_pkg = json.loads(temp_project["openclaw_pkg"].read_text())
     assert openclaw_pkg["version"] == "1.0.0"
-    assert openclaw_pkg["dependencies"]["headroom-ai"] == "^0.22.3"
+    assert openclaw_pkg["dependencies"]["legroom-ai"] == "^0.22.3"
 
     typescript_pkg = json.loads(temp_project["typescript_pkg"].read_text())
     assert typescript_pkg["version"] == "1.0.0"
@@ -303,7 +303,7 @@ def test_plugin_manifests_only_leaves_package_versions_unchanged(
     assert not (root / ".releasemetadata").exists()
 
 
-def test_openclaw_headroom_dependency_is_preserved_for_registry_installability(
+def test_openclaw_legroom_dependency_is_preserved_for_registry_installability(
     temp_project: dict[str, Path],
 ) -> None:
     """Source package stays installable even when the next SDK is not on npm yet."""
@@ -319,4 +319,4 @@ def test_openclaw_headroom_dependency_is_preserved_for_registry_installability(
     assert result.returncode == 0, f"Script failed: {result.stderr}"
     openclaw_pkg = json.loads(temp_project["openclaw_pkg"].read_text())
     assert openclaw_pkg["version"] == "0.28.0"
-    assert openclaw_pkg["dependencies"]["headroom-ai"] == "^0.22.3"
+    assert openclaw_pkg["dependencies"]["legroom-ai"] == "^0.22.3"

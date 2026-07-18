@@ -6,8 +6,8 @@ from __future__ import annotations
 import pytest
 from click.testing import CliRunner
 
-from headroom.cli import wrap as wrap_mod
-from headroom.cli.main import main
+from legroom.cli import wrap as wrap_mod
+from legroom.cli.main import main
 
 
 @pytest.fixture

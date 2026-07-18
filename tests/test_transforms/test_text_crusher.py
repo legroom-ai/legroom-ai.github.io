@@ -3,12 +3,12 @@
 Validates the core contract: extractive (no invented words), deterministic,
 actually compresses, suppresses near-duplicates, and preferentially keeps
 query-relevant segments. End-to-end answer-quality vs kompress is validated
-separately via headroom/evals before defaulting it on.
+separately via legroom/evals before defaulting it on.
 """
 
 from __future__ import annotations
 
-from headroom.transforms.text_crusher import TextCrusher, TextCrusherConfig
+from legroom.transforms.text_crusher import TextCrusher, TextCrusherConfig
 
 
 def _doc(n: int = 40) -> str:

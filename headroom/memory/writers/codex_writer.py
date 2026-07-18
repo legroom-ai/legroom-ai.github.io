@@ -12,7 +12,7 @@ from __future__ import annotations
 from collections import defaultdict
 from pathlib import Path
 
-from headroom.memory.writers.base import AgentWriter, MemoryEntry
+from legroom.memory.writers.base import AgentWriter, MemoryEntry
 
 
 class CodexMemoryWriter(AgentWriter):
@@ -24,7 +24,7 @@ class CodexMemoryWriter(AgentWriter):
     def format_memories(self, memories: list[MemoryEntry]) -> str:
         """Format as AGENTS.md section."""
         lines = [
-            "## Headroom Learned Context",
+            "## Legroom Learned Context",
             "",
         ]
 

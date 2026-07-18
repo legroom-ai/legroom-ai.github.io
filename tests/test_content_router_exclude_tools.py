@@ -1,9 +1,9 @@
-"""Tests for --protect-tool-results / HEADROOM_PROTECT_TOOL_RESULTS.
+"""Tests for --protect-tool-results / LEGROOM_PROTECT_TOOL_RESULTS.
 
 Three behavioral tests:
 1. protect_tool_results merges into the exclude set so named tools are never
    lossy-compressed.
-2. _parse_csv_tools parses CSV strings without merging HEADROOM_EXCLUDE_TOOLS.
+2. _parse_csv_tools parses CSV strings without merging LEGROOM_EXCLUDE_TOOLS.
 3. ContentRouter with Bash in exclude_tools passes Bash tool_result verbatim.
 """
 
@@ -11,15 +11,15 @@ from __future__ import annotations
 
 import pytest
 
-from headroom.config import DEFAULT_EXCLUDE_TOOLS
-from headroom.proxy.server import (
-    HeadroomProxy,
+from legroom.config import DEFAULT_EXCLUDE_TOOLS
+from legroom.proxy.server import (
+    LegroomProxy,
     ProxyConfig,
     _parse_csv_tools,
 )
 
 
-def _build(**overrides: object) -> HeadroomProxy:
+def _build(**overrides: object) -> LegroomProxy:
     config = ProxyConfig(
         optimize=False,
         cache_enabled=False,
@@ -28,10 +28,10 @@ def _build(**overrides: object) -> HeadroomProxy:
         code_aware_enabled=False,
         **overrides,
     )
-    return HeadroomProxy(config)
+    return LegroomProxy(config)
 
 
-def _router(proxy: HeadroomProxy):
+def _router(proxy: LegroomProxy):
     # ContentRouter is the last transform in the Anthropic pipeline.
     return proxy.anthropic_pipeline.transforms[-1]
 
@@ -73,7 +73,7 @@ def test_protect_tool_results_disables_age_decay_in_token_mode() -> None:
 
 def test_protect_tool_results_env_var_csv() -> None:
     """_parse_csv_tools parses a comma-separated value into both original-case
-    and lowercase entries without merging HEADROOM_EXCLUDE_TOOLS."""
+    and lowercase entries without merging LEGROOM_EXCLUDE_TOOLS."""
     result = _parse_csv_tools("Bash,WebFetch")
 
     assert "Bash" in result
@@ -93,9 +93,9 @@ def test_bash_tool_result_passthrough_when_protected() -> None:
     Base-fails / head-passes."""
     pytest.importorskip("tiktoken")  # needed for OpenAI tokenizer
 
-    from headroom.providers import OpenAIProvider
-    from headroom.tokenizer import Tokenizer
-    from headroom.transforms.content_router import ContentRouter, ContentRouterConfig
+    from legroom.providers import OpenAIProvider
+    from legroom.tokenizer import Tokenizer
+    from legroom.transforms.content_router import ContentRouter, ContentRouterConfig
 
     provider = OpenAIProvider()
     token_counter = provider.get_token_counter("gpt-4o")
@@ -161,8 +161,8 @@ def test_protect_tool_results_survives_runtime_read_protection_window_kwarg() ->
     "regardless of conversation depth" (see PR #1374)."""
     pytest.importorskip("tiktoken")  # needed for OpenAI tokenizer
 
-    from headroom.providers import OpenAIProvider
-    from headroom.tokenizer import Tokenizer
+    from legroom.providers import OpenAIProvider
+    from legroom.tokenizer import Tokenizer
 
     provider = OpenAIProvider()
     token_counter = provider.get_token_counter("gpt-4o")

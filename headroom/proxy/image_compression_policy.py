@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from headroom.proxy.helpers import _headroom_bypass_enabled
+from legroom.proxy.helpers import _legroom_bypass_enabled
 
 
 @dataclass(frozen=True)
@@ -26,7 +26,7 @@ def decide_image_compression(
     has_messages: bool,
 ) -> ImageCompressionPolicyResult:
     """Compute the canonical image-compression gate."""
-    bypass = _headroom_bypass_enabled(headers)
+    bypass = _legroom_bypass_enabled(headers)
 
     if bypass:
         reason: str | None = "bypass_header"

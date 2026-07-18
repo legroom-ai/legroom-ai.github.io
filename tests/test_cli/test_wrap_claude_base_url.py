@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from headroom.cli import wrap as wrap_cli
+from legroom.cli import wrap as wrap_cli
 
 
 def _settings(tmp_path: Path) -> Path:

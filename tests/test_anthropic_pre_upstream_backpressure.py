@@ -1,6 +1,6 @@
 """Unit 4: bounded pre-upstream concurrency for Anthropic replay storms.
 
-Verifies that ``HeadroomProxy`` gates the pre-upstream phase of
+Verifies that ``LegroomProxy`` gates the pre-upstream phase of
 ``handle_anthropic_messages`` with a semaphore, so cold-start replay
 storms cannot starve ``/livez`` or new Codex WS opens.
 
@@ -15,7 +15,7 @@ Covers:
 - ``/livez`` unaffected under Anthropic backpressure
 - compression is not bypassed (the Unit 4 gate is additive, not a shortcut)
 - CLI flag ``--anthropic-pre-upstream-concurrency`` wires into ``ProxyConfig``
-- env var ``HEADROOM_ANTHROPIC_PRE_UPSTREAM_CONCURRENCY`` with flag override
+- env var ``LEGROOM_ANTHROPIC_PRE_UPSTREAM_CONCURRENCY`` with flag override
 """
 
 from __future__ import annotations
@@ -36,10 +36,10 @@ from click.testing import CliRunner
 from fastapi import Request
 from fastapi.testclient import TestClient
 
-from headroom.cli.proxy import proxy as proxy_cli
-from headroom.proxy.handlers.anthropic import AnthropicHandlerMixin
-from headroom.proxy.models import ProxyConfig
-from headroom.proxy.server import HeadroomProxy, create_app
+from legroom.cli.proxy import proxy as proxy_cli
+from legroom.proxy.handlers.anthropic import AnthropicHandlerMixin
+from legroom.proxy.models import ProxyConfig
+from legroom.proxy.server import LegroomProxy, create_app
 
 # --------------------------------------------------------------------------- #
 # Dummy handler that gives tests control over the ``_retry_request`` duration #
@@ -188,7 +188,7 @@ class _DummyAnthropicHandler(AnthropicHandlerMixin):
         )
         # Audit follow-up C3: dedicated compression executor + cancel-aware
         # metrics. The mixin's compression path delegates to
-        # ``HeadroomProxy._run_compression_in_executor`` for bounded thread
+        # ``LegroomProxy._run_compression_in_executor`` for bounded thread
         # use; this dummy handler stands in for the proxy and must therefore
         # provide the same surface.
         import concurrent.futures as _cf
@@ -208,7 +208,7 @@ class _DummyAnthropicHandler(AnthropicHandlerMixin):
         self.upstream_exit_times: list[float] = []
 
     async def _run_compression_in_executor(self, fn, *, timeout):  # noqa: ANN001
-        # Mirror of ``HeadroomProxy._run_compression_in_executor`` for the
+        # Mirror of ``LegroomProxy._run_compression_in_executor`` for the
         # mixin tests. Same metrics semantics; same timeout behavior.
         loop = asyncio.get_running_loop()
         start = time.perf_counter()
@@ -232,10 +232,10 @@ class _DummyAnthropicHandler(AnthropicHandlerMixin):
         return await asyncio.wait_for(future, timeout=timeout)
 
     async def _record_request_outcome(self, outcome) -> None:  # noqa: ANN001
-        # Mirror of ``HeadroomProxy._record_request_outcome`` for the
+        # Mirror of ``LegroomProxy._record_request_outcome`` for the
         # mixin tests. Delegates to the free function in ``outcome.py``
         # so the wire shape is identical to production.
-        from headroom.proxy.outcome import emit_request_outcome
+        from legroom.proxy.outcome import emit_request_outcome
 
         await emit_request_outcome(self, outcome)
 
@@ -325,7 +325,7 @@ class _CapturingHandler(logging.Handler):
 
 @pytest.fixture
 def stage_log_capture():
-    target = logging.getLogger("headroom.proxy")
+    target = logging.getLogger("legroom.proxy")
     handler = _CapturingHandler()
     previous_level = target.level
     target.addHandler(handler)
@@ -348,7 +348,7 @@ def _parse_all_stage_logs(handler: _CapturingHandler) -> list[dict]:
 
 
 def _tokenizer_patch():
-    import headroom.tokenizers as _tk
+    import legroom.tokenizers as _tk
 
     orig_get = _tk.get_tokenizer
 
@@ -476,7 +476,7 @@ def test_concurrency_one_serializes_requests():
 
 def test_unbounded_mode_no_semaphore_instance():
     config = ProxyConfig(anthropic_pre_upstream_concurrency=0)
-    proxy = HeadroomProxy(config)
+    proxy = LegroomProxy(config)
     assert proxy.anthropic_pre_upstream_sem is None
     assert proxy.anthropic_pre_upstream_concurrency == 0
 
@@ -609,7 +609,7 @@ def test_memory_context_timeout_fails_open_and_releases_semaphore():
             },
             {
                 "authorization": "Bearer sk-ant-api-test",
-                "x-headroom-user-id": "user-1",
+                "x-legroom-user-id": "user-1",
             },
         )
         response = await handler.handle_anthropic_messages(req)
@@ -744,10 +744,10 @@ def _run_cli_capture(args: list[str], env: dict | None = None) -> ProxyConfig:
 
     We do NOT want the CLI to actually start a server — monkeypatching the
     ``run_server`` entry point (imported lazily inside the click command
-    via ``from headroom.proxy.server import ... run_server``) short-
+    via ``from legroom.proxy.server import ... run_server``) short-
     circuits it and lets us inspect the ``ProxyConfig`` that was built.
     """
-    import headroom.proxy.server as server_mod
+    import legroom.proxy.server as server_mod
 
     captured: dict[str, ProxyConfig] = {}
     orig_run = server_mod.run_server
@@ -776,22 +776,22 @@ def test_cli_flag_sets_pre_upstream_concurrency():
 def test_env_var_sets_pre_upstream_concurrency():
     # Must set in the env passed to the runner (click reads envvar).
     # Also strip the corresponding CLI flag.
-    env = {"HEADROOM_ANTHROPIC_PRE_UPSTREAM_CONCURRENCY": "4"}
+    env = {"LEGROOM_ANTHROPIC_PRE_UPSTREAM_CONCURRENCY": "4"}
     # Also make sure we don't pick up a host user env that could override.
     config = _run_cli_capture([], env=env)
     assert config.anthropic_pre_upstream_concurrency == 4
 
 
 def test_cli_flag_overrides_env_var():
-    env = {"HEADROOM_ANTHROPIC_PRE_UPSTREAM_CONCURRENCY": "4"}
+    env = {"LEGROOM_ANTHROPIC_PRE_UPSTREAM_CONCURRENCY": "4"}
     config = _run_cli_capture(["--anthropic-pre-upstream-concurrency", "7"], env=env)
     assert config.anthropic_pre_upstream_concurrency == 7
 
 
 def test_cli_env_sets_pre_upstream_timeouts():
     env = {
-        "HEADROOM_ANTHROPIC_PRE_UPSTREAM_ACQUIRE_TIMEOUT_SECONDS": "9.5",
-        "HEADROOM_ANTHROPIC_PRE_UPSTREAM_MEMORY_CONTEXT_TIMEOUT_SECONDS": "3.25",
+        "LEGROOM_ANTHROPIC_PRE_UPSTREAM_ACQUIRE_TIMEOUT_SECONDS": "9.5",
+        "LEGROOM_ANTHROPIC_PRE_UPSTREAM_MEMORY_CONTEXT_TIMEOUT_SECONDS": "3.25",
     }
     config = _run_cli_capture([], env=env)
     assert config.anthropic_pre_upstream_acquire_timeout_seconds == pytest.approx(9.5)
@@ -800,8 +800,8 @@ def test_cli_env_sets_pre_upstream_timeouts():
 
 def test_cli_flags_override_pre_upstream_timeout_env_vars():
     env = {
-        "HEADROOM_ANTHROPIC_PRE_UPSTREAM_ACQUIRE_TIMEOUT_SECONDS": "9.5",
-        "HEADROOM_ANTHROPIC_PRE_UPSTREAM_MEMORY_CONTEXT_TIMEOUT_SECONDS": "3.25",
+        "LEGROOM_ANTHROPIC_PRE_UPSTREAM_ACQUIRE_TIMEOUT_SECONDS": "9.5",
+        "LEGROOM_ANTHROPIC_PRE_UPSTREAM_MEMORY_CONTEXT_TIMEOUT_SECONDS": "3.25",
     }
     config = _run_cli_capture(
         [
@@ -817,13 +817,13 @@ def test_cli_flags_override_pre_upstream_timeout_env_vars():
 
 
 # --------------------------------------------------------------------------- #
-# Sanity: HeadroomProxy auto-computes default when config value is None.       #
+# Sanity: LegroomProxy auto-computes default when config value is None.       #
 # --------------------------------------------------------------------------- #
 
 
 def test_auto_computed_default_on_this_machine():
     config = ProxyConfig()  # field left at None -> auto-compute.
-    proxy = HeadroomProxy(config)
+    proxy = LegroomProxy(config)
     expected = max(2, min(8, os.cpu_count() or 4))
     assert proxy.anthropic_pre_upstream_concurrency == expected
     assert proxy.anthropic_pre_upstream_sem is not None

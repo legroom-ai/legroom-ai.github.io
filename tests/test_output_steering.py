@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from headroom.proxy.output_steering import (
+from legroom.proxy.output_steering import (
     apply_openai_responses_verbosity_steering,
     apply_verbosity_steering,
     replace_or_append_steering_block,
@@ -45,7 +45,7 @@ def test_openai_responses_steering_is_idempotent() -> None:
 
 
 def test_openai_chat_steering_appends_to_system_message() -> None:
-    from headroom.proxy.output_steering import apply_openai_chat_verbosity_steering
+    from legroom.proxy.output_steering import apply_openai_chat_verbosity_steering
 
     body = {
         "messages": [
@@ -63,7 +63,7 @@ def test_openai_chat_steering_appends_to_system_message() -> None:
 
 
 def test_openai_chat_steering_is_idempotent_and_swaps_level() -> None:
-    from headroom.proxy.output_steering import apply_openai_chat_verbosity_steering
+    from legroom.proxy.output_steering import apply_openai_chat_verbosity_steering
 
     body = {"messages": [{"role": "system", "content": "S."}]}
     assert apply_openai_chat_verbosity_steering(body, 2) is True
@@ -75,11 +75,11 @@ def test_openai_chat_steering_is_idempotent_and_swaps_level() -> None:
     assert apply_openai_chat_verbosity_steering(body, 4) is True
     swapped = body["messages"][0]["content"]
     assert steering_text(4) in swapped
-    assert swapped.count("<headroom_output_shaping>") == 1
+    assert swapped.count("<legroom_output_shaping>") == 1
 
 
 def test_openai_chat_steering_inserts_system_when_absent() -> None:
-    from headroom.proxy.output_steering import apply_openai_chat_verbosity_steering
+    from legroom.proxy.output_steering import apply_openai_chat_verbosity_steering
 
     body = {"messages": [{"role": "user", "content": "hi"}]}
     assert apply_openai_chat_verbosity_steering(body, 3) is True
@@ -89,7 +89,7 @@ def test_openai_chat_steering_inserts_system_when_absent() -> None:
 
 
 def test_openai_chat_steering_handles_list_content() -> None:
-    from headroom.proxy.output_steering import apply_openai_chat_verbosity_steering
+    from legroom.proxy.output_steering import apply_openai_chat_verbosity_steering
 
     body = {"messages": [{"role": "system", "content": [{"type": "text", "text": "base"}]}]}
     assert apply_openai_chat_verbosity_steering(body, 1) is True
@@ -100,7 +100,7 @@ def test_openai_chat_steering_handles_list_content() -> None:
 
 
 def test_openai_chat_steering_level_zero_is_noop() -> None:
-    from headroom.proxy.output_steering import apply_openai_chat_verbosity_steering
+    from legroom.proxy.output_steering import apply_openai_chat_verbosity_steering
 
     body = {"messages": [{"role": "system", "content": "S."}]}
     assert apply_openai_chat_verbosity_steering(body, 0) is False

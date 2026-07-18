@@ -52,7 +52,7 @@
       "binary": "scc",
       "source": "boyter/scc",
       "homepage": "https://github.com/boyter/scc",
-      "_comment": "scc is a statically-linked Go binary, so the same asset is used for both libc variants. The duplicated gnu/musl entries are intentional — they document musl support for `headroom tools doctor`.",
+      "_comment": "scc is a statically-linked Go binary, so the same asset is used for both libc variants. The duplicated gnu/musl entries are intentional — they document musl support for `legroom tools doctor`.",
       "assets": {
         "linux-x86_64-gnu": {
           "url": "https://github.com/boyter/scc/releases/download/v3.5.0/scc_Linux_x86_64.tar.gz",
@@ -96,7 +96,7 @@
       "binary": "ast-grep",
       "source": "ast-grep/ast-grep (PyPI: ast-grep-cli)",
       "homepage": "https://ast-grep.github.io/",
-      "_comment": "Installed via the ast-grep-cli PyPI wheel; we never fetch from GitHub for this tool. Listed here so `headroom tools doctor` can report it.",
+      "_comment": "Installed via the ast-grep-cli PyPI wheel; we never fetch from GitHub for this tool. Listed here so `legroom tools doctor` can report it.",
       "assets": {}
     }
   }

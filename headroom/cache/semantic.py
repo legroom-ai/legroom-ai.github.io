@@ -16,7 +16,7 @@ Key difference from Prompt Caching:
 - Semantic Caching: We cache responses for similar queries (similar query = cached answer)
 
 Usage:
-    from headroom.cache import SemanticCacheLayer, CacheOptimizerRegistry
+    from legroom.cache import SemanticCacheLayer, CacheOptimizerRegistry
 
     # Get provider optimizer
     provider_optimizer = CacheOptimizerRegistry.get("anthropic")
@@ -42,7 +42,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-from headroom.models.config import ML_MODEL_DEFAULTS
+from legroom.models.config import ML_MODEL_DEFAULTS
 
 from .base import (
     BaseCacheOptimizer,

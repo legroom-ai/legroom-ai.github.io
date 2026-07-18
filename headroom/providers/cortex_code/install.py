@@ -15,7 +15,7 @@ def render_setup_lines(port: int, project: str | None = None) -> list[str]:
     """Render the Cortex Code setup instructions for the local proxy."""
     _, env_lines = build_launch_env(port=port, environ={}, project=project)
     lines = [
-        "  Headroom proxy is running. Configure Cortex Code (CoCo):",
+        "  Legroom proxy is running. Configure Cortex Code (CoCo):",
         "",
         "  Set the following environment variable before launching cortex:",
     ]

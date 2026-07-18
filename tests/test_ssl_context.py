@@ -1,4 +1,4 @@
-"""Unit tests for headroom.proxy.ssl_context.find_ca_bundle.
+"""Unit tests for legroom.proxy.ssl_context.find_ca_bundle.
 
 Covers:
 - Returns None when no env var is set
@@ -17,8 +17,8 @@ import ssl
 
 import pytest
 
-from headroom.proxy import ssl_context
-from headroom.proxy.ssl_context import (
+from legroom.proxy import ssl_context
+from legroom.proxy.ssl_context import (
     apply_global_tls_relaxation,
     build_httpx_verify,
     find_ca_bundle,
@@ -65,7 +65,7 @@ def _clean_env(monkeypatch):
         "SSL_CERT_FILE",
         "REQUESTS_CA_BUNDLE",
         "NODE_EXTRA_CA_CERTS",
-        "HEADROOM_TLS_STRICT",
+        "LEGROOM_TLS_STRICT",
     ):
         monkeypatch.delenv(var, raising=False)
 
@@ -222,7 +222,7 @@ class TestFindCaBundleNonexistentPaths:
 
 
 # ---------------------------------------------------------------------------
-# HEADROOM_TLS_STRICT toggle (issue #1308): corporate TLS-inspection roots
+# LEGROOM_TLS_STRICT toggle (issue #1308): corporate TLS-inspection roots
 # (Zscaler, Netskope) set CA:TRUE without the critical bit, which Python 3.13
 # + OpenSSL 3.x reject under VERIFY_X509_STRICT. A CA bundle can't fix that —
 # the cert is found, the strict check fails. The toggle clears only the strict
@@ -234,13 +234,13 @@ class TestTlsStrictDisabled:
     @pytest.mark.parametrize("val", ["0", "false", "FALSE", "No", "off", "  off  "])
     def test_off_values_disable_strict(self, monkeypatch, val):
         _clean_env(monkeypatch)
-        monkeypatch.setenv("HEADROOM_TLS_STRICT", val)
+        monkeypatch.setenv("LEGROOM_TLS_STRICT", val)
         assert tls_strict_disabled() is True
 
     @pytest.mark.parametrize("val", ["1", "true", "yes", "on", "", "strict", "00"])
     def test_other_values_keep_strict(self, monkeypatch, val):
         _clean_env(monkeypatch)
-        monkeypatch.setenv("HEADROOM_TLS_STRICT", val)
+        monkeypatch.setenv("LEGROOM_TLS_STRICT", val)
         assert tls_strict_disabled() is False
 
     def test_unset_keeps_strict(self, monkeypatch):
@@ -257,7 +257,7 @@ class TestBuildHttpxVerify:
     def test_toggle_off_returns_relaxed_context(self, monkeypatch):
         """No CA bundle, strict OFF → default trust store with strict cleared."""
         _clean_env(monkeypatch)
-        monkeypatch.setenv("HEADROOM_TLS_STRICT", "0")
+        monkeypatch.setenv("LEGROOM_TLS_STRICT", "0")
         ctx = build_httpx_verify()
         assert isinstance(ctx, ssl.SSLContext)
         strict_flag = getattr(ssl, "VERIFY_X509_STRICT", 0)
@@ -272,7 +272,7 @@ class TestBuildHttpxVerify:
         """A configured CA bundle wins; the result is that bundle's context."""
         _clean_env(monkeypatch)
         monkeypatch.setenv("SSL_CERT_FILE", ca_pem_file)
-        monkeypatch.setenv("HEADROOM_TLS_STRICT", "0")
+        monkeypatch.setenv("LEGROOM_TLS_STRICT", "0")
         ctx = build_httpx_verify()
         assert isinstance(ctx, ssl.SSLContext)
         # Replacement bundle → only the single test CA is trusted.
@@ -286,7 +286,7 @@ class TestApplyGlobalTlsRelaxation:
 
     def test_patches_urllib3_when_toggle_off(self, monkeypatch):
         _clean_env(monkeypatch)
-        monkeypatch.setenv("HEADROOM_TLS_STRICT", "0")
+        monkeypatch.setenv("LEGROOM_TLS_STRICT", "0")
         strict_flag = getattr(ssl, "VERIFY_X509_STRICT", 0)
         if not strict_flag:
             pytest.skip("VERIFY_X509_STRICT unavailable on this OpenSSL build")
@@ -300,6 +300,6 @@ class TestApplyGlobalTlsRelaxation:
             assert ctx.verify_flags & strict_flag == 0
             # Idempotent: second call doesn't re-wrap or error.
             assert apply_global_tls_relaxation() is True
-            assert getattr(u3ssl.create_urllib3_context, "_headroom_strict_relaxed", False)
+            assert getattr(u3ssl.create_urllib3_context, "_legroom_strict_relaxed", False)
         finally:
             u3ssl.create_urllib3_context = original

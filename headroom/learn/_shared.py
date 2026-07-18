@@ -1,4 +1,4 @@
-"""Shared utilities for headroom learn plugins.
+"""Shared utilities for legroom learn plugins.
 
 Error classification, tool name normalization, and other helpers
 used across all scanner plugins.
@@ -17,7 +17,7 @@ def claude_config_dir() -> Path:
     """Resolve the Claude Code config directory, honoring ``CLAUDE_CONFIG_DIR``.
 
     Claude Code relocates its config (including ``projects/`` logs and the
-    global ``CLAUDE.md``) when ``CLAUDE_CONFIG_DIR`` is set. ``headroom learn``
+    global ``CLAUDE.md``) when ``CLAUDE_CONFIG_DIR`` is set. ``legroom learn``
     must read and write the same directory, mirroring the override already
     honored in ``subscription`` and ``mcp_registry``. Falls back to
     ``~/.claude``.

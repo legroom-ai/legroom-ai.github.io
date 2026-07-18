@@ -1,4 +1,4 @@
-"""Security validation tests for Headroom.
+"""Security validation tests for Legroom.
 
 These tests verify security measures against common attack vectors:
 - SQL injection via metadata keys
@@ -10,7 +10,7 @@ These tests exist as regression tests to ensure security fixes remain effective.
 
 import pytest
 
-from headroom.memory.adapters.sqlite import _validate_metadata_key
+from legroom.memory.adapters.sqlite import _validate_metadata_key
 
 
 class TestSQLiteMetadataKeyValidation:
@@ -96,9 +96,9 @@ class TestSQLiteMetadataFilteringIntegration:
         import tempfile
         from pathlib import Path
 
-        from headroom.memory.adapters.sqlite import SQLiteMemoryStore
-        from headroom.memory.models import Memory
-        from headroom.memory.ports import MemoryFilter
+        from legroom.memory.adapters.sqlite import SQLiteMemoryStore
+        from legroom.memory.models import Memory
+        from legroom.memory.ports import MemoryFilter
 
         with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
             db_path = Path(f.name)

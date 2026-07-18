@@ -26,7 +26,7 @@ mod common;
 use aws_credential_types::Credentials;
 use bytes::{Bytes, BytesMut};
 use common::start_proxy_with_state;
-use headroom_proxy::bedrock::MessageBuilder;
+use legroom_proxy::bedrock::MessageBuilder;
 use serde_json::json;
 use url::Url;
 use wiremock::matchers::{method, path};
@@ -62,7 +62,7 @@ fn test_credentials() -> Credentials {
 async fn bedrock_proxy_with_region(
     upstream: &MockServer,
     region: &str,
-    customize: impl FnOnce(&mut headroom_proxy::Config),
+    customize: impl FnOnce(&mut legroom_proxy::Config),
 ) -> common::ProxyHandle {
     let endpoint: Url = upstream.uri().parse().unwrap();
     let region = region.to_string();
@@ -148,7 +148,7 @@ async fn metrics_increment_per_invoke() {
     let upstream = MockServer::start().await;
     mount_simple_invoke_for(&upstream, TEST_MODEL_INVOKE_COUNT).await;
     let proxy = bedrock_proxy_with_region(&upstream, TEST_REGION_INVOKE_COUNT, |c| {
-        c.compression_mode = headroom_proxy::config::CompressionMode::Off;
+        c.compression_mode = legroom_proxy::config::CompressionMode::Off;
     })
     .await;
 
@@ -200,7 +200,7 @@ async fn metrics_observe_latency() {
     let upstream = MockServer::start().await;
     mount_simple_invoke_for(&upstream, TEST_MODEL_LATENCY).await;
     let proxy = bedrock_proxy_with_region(&upstream, TEST_REGION_LATENCY, |c| {
-        c.compression_mode = headroom_proxy::config::CompressionMode::Off;
+        c.compression_mode = legroom_proxy::config::CompressionMode::Off;
     })
     .await;
 
@@ -295,7 +295,7 @@ async fn eventstream_metrics_per_message_type() {
         .await;
 
     let proxy = bedrock_proxy_with_region(&upstream, TEST_REGION_EVENTSTREAM, |c| {
-        c.compression_mode = headroom_proxy::config::CompressionMode::Off;
+        c.compression_mode = legroom_proxy::config::CompressionMode::Off;
     })
     .await;
 
@@ -370,7 +370,7 @@ async fn metrics_endpoint_serves_scrape() {
         .mount(&upstream)
         .await;
     let proxy = bedrock_proxy_with_region(&upstream, TEST_REGION_SCRAPE, |c| {
-        c.compression_mode = headroom_proxy::config::CompressionMode::Off;
+        c.compression_mode = legroom_proxy::config::CompressionMode::Off;
     })
     .await;
 

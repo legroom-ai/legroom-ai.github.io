@@ -33,7 +33,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
-    from headroom.memory.backends.local import LocalBackend
+    from legroom.memory.backends.local import LocalBackend
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ Provider = Literal["anthropic", "openai", "gemini", "generic"]
 # Tool Names
 # =============================================================================
 
-# Custom memory tool names (Headroom's tools)
+# Custom memory tool names (Legroom's tools)
 MEMORY_TOOL_NAMES = {"memory_save", "memory_search", "memory_update", "memory_delete"}
 
 # Anthropic's native memory tool
@@ -504,7 +504,7 @@ class MemoryToolAdapterConfig:
     use_native_tool: bool = True  # Default to native for Anthropic (subscription-safe)
     inject_tools: bool = True
     inject_context: bool = True
-    db_path: str = "headroom_memory.db"
+    db_path: str = "legroom_memory.db"
     top_k: int = 10
     min_similarity: float = 0.3
 
@@ -556,7 +556,7 @@ class MemoryToolAdapter:
         if not self.config.enabled:
             return
 
-        from headroom.memory.backends.local import LocalBackend, LocalBackendConfig
+        from legroom.memory.backends.local import LocalBackend, LocalBackendConfig
 
         backend_config = LocalBackendConfig(db_path=self.config.db_path)
         self._backend = LocalBackend(backend_config)

@@ -1,4 +1,4 @@
-"""Tests for headroom.proxy.tool_schema_compaction — shared tool-schema compaction.
+"""Tests for legroom.proxy.tool_schema_compaction — shared tool-schema compaction.
 
 Verifies that the compaction logic (shared by OpenAI and Anthropic handlers):
 - strips JSON Schema annotation keys ($schema, title, examples, …)
@@ -9,7 +9,7 @@ Verifies that the compaction logic (shared by OpenAI and Anthropic handlers):
 
 from __future__ import annotations
 
-from headroom.proxy.tool_schema_compaction import (
+from legroom.proxy.tool_schema_compaction import (
     compact_tool_schema_value,
     compact_tools,
 )
@@ -292,19 +292,19 @@ class TestTruncateDescription:
     """Unit tests for _truncate_description."""
 
     def test_short_description_unchanged(self) -> None:
-        from headroom.proxy.tool_schema_compaction import _truncate_description
+        from legroom.proxy.tool_schema_compaction import _truncate_description
 
         assert _truncate_description("Read a file.", 120) == "Read a file."
 
     def test_first_sentence_preserved(self) -> None:
-        from headroom.proxy.tool_schema_compaction import _truncate_description
+        from legroom.proxy.tool_schema_compaction import _truncate_description
 
         desc = "Fast and precise code search across ALL GitHub repositories. Best for finding exact symbols."
         result = _truncate_description(desc, 60)
         assert result == "Fast and precise code search across ALL GitHub repositories."
 
     def test_first_sentence_plus_second(self) -> None:
-        from headroom.proxy.tool_schema_compaction import _truncate_description
+        from legroom.proxy.tool_schema_compaction import _truncate_description
 
         desc = "Read a file. Returns the contents as text."
         result = _truncate_description(desc, 60)
@@ -313,7 +313,7 @@ class TestTruncateDescription:
         assert "Returns the contents as text." in result
 
     def test_long_first_sentence_truncated(self) -> None:
-        from headroom.proxy.tool_schema_compaction import _truncate_description
+        from legroom.proxy.tool_schema_compaction import _truncate_description
 
         desc = "This is an extremely long description that goes on and on without any sentence boundary"
         result = _truncate_description(desc, 40)
@@ -321,7 +321,7 @@ class TestTruncateDescription:
         assert result.endswith("…")
 
     def test_whitespace_normalised_before_truncation(self) -> None:
-        from headroom.proxy.tool_schema_compaction import _truncate_description
+        from legroom.proxy.tool_schema_compaction import _truncate_description
 
         desc = "  Search   code.   Very   useful.  "
         result = _truncate_description(desc, 60)
@@ -329,7 +329,7 @@ class TestTruncateDescription:
         assert result == "Search code. Very useful."
 
     def test_max_chars_zero_returns_original(self) -> None:
-        from headroom.proxy.tool_schema_compaction import _truncate_description
+        from legroom.proxy.tool_schema_compaction import _truncate_description
 
         desc = "Any long description that would normally be truncated."
         result = _truncate_description(desc, 0)
@@ -337,7 +337,7 @@ class TestTruncateDescription:
         assert result == "Any long description that would normally be truncated."
 
     def test_chinese_description(self) -> None:
-        from headroom.proxy.tool_schema_compaction import _truncate_description
+        from legroom.proxy.tool_schema_compaction import _truncate_description
 
         desc = "搜索代码仓库中的函数和类。支持正则表达式匹配。"
         result = _truncate_description(desc, 30)
@@ -349,7 +349,7 @@ class TestCompactToolDescriptions:
     """Unit tests for compact_tool_descriptions (full payload)."""
 
     def test_truncates_long_tool_description(self) -> None:
-        from headroom.proxy.tool_schema_compaction import compact_tool_descriptions
+        from legroom.proxy.tool_schema_compaction import compact_tool_descriptions
 
         payload = {
             "tools": [
@@ -371,7 +371,7 @@ class TestCompactToolDescriptions:
         assert len(tool["description"]) < len(payload["tools"][0]["description"])
 
     def test_truncates_nested_param_descriptions(self) -> None:
-        from headroom.proxy.tool_schema_compaction import compact_tool_descriptions
+        from legroom.proxy.tool_schema_compaction import compact_tool_descriptions
 
         payload = {
             "tools": [
@@ -396,7 +396,7 @@ class TestCompactToolDescriptions:
         assert "The search query string to find matching code." == param_desc
 
     def test_disabled_when_max_chars_zero(self) -> None:
-        from headroom.proxy.tool_schema_compaction import compact_tool_descriptions
+        from legroom.proxy.tool_schema_compaction import compact_tool_descriptions
 
         payload = {
             "tools": [
@@ -408,13 +408,13 @@ class TestCompactToolDescriptions:
         assert result is payload
 
     def test_no_tools_returns_unchanged(self) -> None:
-        from headroom.proxy.tool_schema_compaction import compact_tool_descriptions
+        from legroom.proxy.tool_schema_compaction import compact_tool_descriptions
 
         result, modified, _, _ = compact_tool_descriptions({"model": "x"}, max_chars=120)
         assert modified is False
 
     def test_preserves_non_description_fields(self) -> None:
-        from headroom.proxy.tool_schema_compaction import compact_tool_descriptions
+        from legroom.proxy.tool_schema_compaction import compact_tool_descriptions
 
         payload = {
             "model": "claude-sonnet-4-20250514",
@@ -441,7 +441,7 @@ class TestCompactToolDescriptions:
 
     def test_large_tool_set_savings(self) -> None:
         """44 GitHub-like tools with verbose descriptions should see significant savings."""
-        from headroom.proxy.tool_schema_compaction import compact_tool_descriptions
+        from legroom.proxy.tool_schema_compaction import compact_tool_descriptions
 
         tools = []
         for i in range(44):

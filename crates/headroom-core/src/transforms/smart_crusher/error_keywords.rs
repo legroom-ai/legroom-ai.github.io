@@ -1,6 +1,6 @@
 //! Canonical error keyword set for item preservation.
 //!
-//! Direct port of `ERROR_KEYWORDS` from `headroom/transforms/error_detection.py:18-33`.
+//! Direct port of `ERROR_KEYWORDS` from `legroom/transforms/error_detection.py:18-33`.
 //! These are the **FALLBACK** preservation signal when TOIN field
 //! semantics aren't available yet (per the Python module-level
 //! comment). Intentionally broad — better to over-preserve than to

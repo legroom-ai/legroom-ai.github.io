@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from headroom.ccr.tool_calls import (
+from legroom.ccr.tool_calls import (
     CCRToolCall,
     extract_tool_calls,
     has_ccr_tool_calls,
     parse_ccr_tool_calls,
     tool_call_id_for_provider,
 )
-from headroom.ccr.tool_injection import CCR_TOOL_NAME
+from legroom.ccr.tool_injection import CCR_TOOL_NAME
 
 HASH = "abc123def456abc123def456"
 

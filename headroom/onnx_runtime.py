@@ -1,4 +1,4 @@
-"""ONNX Runtime helpers for long-running Headroom processes."""
+"""ONNX Runtime helpers for long-running Legroom processes."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 # Override for the CPU memory-arena default below: "1"/"true" forces the
 # arena ON, "0"/"false" forces it OFF, unset/"auto" uses the platform default.
-ONNX_CPU_ARENA_ENV = "HEADROOM_ONNX_CPU_ARENA"
+ONNX_CPU_ARENA_ENV = "LEGROOM_ONNX_CPU_ARENA"
 
 _TRUTHY = frozenset({"1", "true", "yes", "on"})
 _FALSY = frozenset({"0", "false", "no", "off"})
@@ -33,7 +33,7 @@ def cpu_arena_enabled() -> bool:
     """Whether ONNX Runtime's CPU memory arena should stay enabled.
 
     Disabling the arena trades peak throughput for lower retained RSS, which
-    is the right call on the small Linux VMs Headroom commonly runs on. On
+    is the right call on the small Linux VMs Legroom commonly runs on. On
     Windows the same setting is catastrophic: without the arena every
     ``Run()`` falls back to per-node VirtualAlloc/free, slowing transformer
     inference by 2-3 orders of magnitude (onnxruntime#11627). That turned
@@ -49,7 +49,7 @@ def cpu_arena_enabled() -> bool:
 # Pin model artifacts to immutable commit SHAs so a changed or compromised
 # upstream HuggingFace repo cannot be pulled silently (supply-chain integrity).
 # Repos not listed here fall back to the floating default ref. Set
-# HEADROOM_HF_PIN=off to bypass pinning (e.g. when intentionally evaluating a
+# LEGROOM_HF_PIN=off to bypass pinning (e.g. when intentionally evaluating a
 # newer model revision). To upgrade a model, bump its SHA here deliberately.
 _PINNED_REVISIONS: dict[str, str] = {
     # ghaliba3/kompress-v2-base @ 2026-06-10
@@ -66,7 +66,7 @@ def _resolve_revision(repo_id: str, revision: str | None) -> str | None:
     SHA for a known repo, else ``None`` (floating ref)."""
     if revision is not None:
         return revision
-    if os.environ.get("HEADROOM_HF_PIN", "").strip().lower() in ("off", "0", "false", "no"):
+    if os.environ.get("LEGROOM_HF_PIN", "").strip().lower() in ("off", "0", "false", "no"):
         return None
     return _PINNED_REVISIONS.get(repo_id)
 
@@ -125,7 +125,7 @@ def create_cpu_session_options(
 ) -> Any:
     """Create CPU-oriented ONNX Runtime session options.
 
-    Headroom runs as a long-lived proxy process, so we bias toward predictable
+    Legroom runs as a long-lived proxy process, so we bias toward predictable
     memory usage over peak ONNX throughput. Disabling ORT's CPU arena and memory
     pattern caches reduces retained anonymous RSS after variable-size inference
     workloads, which is especially important on small VMs.

@@ -9,12 +9,12 @@ SavingsRecorder.estimate_request_savings supplies that per-request number.
 
 from __future__ import annotations
 
-from headroom.proxy.output_savings import (
+from legroom.proxy.output_savings import (
     SavingsRecorder,
     stratum_key,
     stratum_label,
 )
-from headroom.proxy.savings_tracker import SavingsTracker
+from legroom.proxy.savings_tracker import SavingsTracker
 
 
 def test_record_request_buckets_output_shaping_savings(tmp_path):

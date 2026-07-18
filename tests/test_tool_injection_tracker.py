@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from headroom.proxy.tool_injection_tracker import SessionToolTracker
+from legroom.proxy.tool_injection_tracker import SessionToolTracker
 
 
 def test_tracker_reports_unknown_session_as_not_injected() -> None:

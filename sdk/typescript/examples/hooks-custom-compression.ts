@@ -6,8 +6,8 @@
  *
  * Run: npx tsx examples/07-hooks-custom-compression.ts
  */
-import { compress, CompressionHooks } from "headroom-ai";
-import type { CompressContext, CompressEvent } from "headroom-ai";
+import { compress, CompressionHooks } from "legroom-ai";
+import type { CompressContext, CompressEvent } from "legroom-ai";
 import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
 

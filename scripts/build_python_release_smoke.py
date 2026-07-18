@@ -4,7 +4,7 @@
 This is the local companion to the release workflow's wheel/sdist gates. It
 builds a wheel with maturin, builds an sdist, validates the sdist License-File
 metadata, installs the wheel into a clean virtual environment, and imports the
-native `headroom._core` extension from that installed wheel.
+native `legroom._core` extension from that installed wheel.
 """
 
 from __future__ import annotations
@@ -97,10 +97,10 @@ def verify_wheel(wheel: Path, expected_version: str) -> None:
         native_members = [
             name
             for name in names
-            if name.startswith("headroom/_core") and Path(name).suffix.lower() in {".pyd", ".so"}
+            if name.startswith("legroom/_core") and Path(name).suffix.lower() in {".pyd", ".so"}
         ]
         if not native_members:
-            raise SystemExit(f"{wheel.name} does not contain headroom/_core native extension")
+            raise SystemExit(f"{wheel.name} does not contain legroom/_core native extension")
 
         metadata_members = [name for name in names if name.endswith(".dist-info/METADATA")]
         if len(metadata_members) != 1:
@@ -158,7 +158,7 @@ def venv_python(venv_dir: Path) -> Path:
 
 
 def smoke_install_wheel(wheel: Path, python_exe: str, expected_version: str) -> None:
-    with tempfile.TemporaryDirectory(prefix="headroom-python-smoke-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="legroom-python-smoke-") as tmp:
         venv_dir = Path(tmp) / "venv"
         run([python_exe, "-m", "venv", venv_dir])
         smoke_python = venv_python(venv_dir)
@@ -177,12 +177,12 @@ def smoke_install_wheel(wheel: Path, python_exe: str, expected_version: str) -> 
 
         smoke_code = f"""
 import importlib.metadata as metadata
-import headroom
-from headroom._core import DiffCompressor, SmartCrusher, hello
+import legroom
+from legroom._core import DiffCompressor, SmartCrusher, hello
 
-version = metadata.version("headroom-ai")
+version = metadata.version("legroom-ai")
 assert version == {expected_version!r}, version
-assert headroom.__version__ == {expected_version!r}, headroom.__version__
+assert legroom.__version__ == {expected_version!r}, legroom.__version__
 print(f"smoke-import OK: version={{version}} hello={{hello()}} diff={{DiffCompressor!r}} smart={{SmartCrusher!r}}")
 """
         import_cwd = Path(tmp) / "import-cwd"
@@ -196,7 +196,7 @@ def parse_args() -> argparse.Namespace:
     default_out = ROOT / "release-assets-local" / f"python-{version}-{stamp}"
 
     parser = argparse.ArgumentParser(
-        description="Build and smoke-test local Headroom Python release artifacts."
+        description="Build and smoke-test local Legroom Python release artifacts."
     )
     parser.add_argument("--out", type=Path, default=default_out)
     parser.add_argument("--python", default=sys.executable)
@@ -222,8 +222,8 @@ def main() -> None:
     ensure_empty_dir(out_dir)
     build_artifacts(out_dir, python_exe, args.profile, args.release)
 
-    wheel = find_one_artifact(out_dir, "headroom_ai-*.whl")
-    sdist = find_one_artifact(out_dir, "headroom_ai-*.tar.gz")
+    wheel = find_one_artifact(out_dir, "legroom_ai-*.whl")
+    sdist = find_one_artifact(out_dir, "legroom_ai-*.tar.gz")
     verify_wheel(wheel, expected_version)
     verify_sdist_license_files(sdist)
     smoke_install_wheel(wheel, python_exe, expected_version)

@@ -1,4 +1,4 @@
-"""Allow running CLI with python -m headroom.cli."""
+"""Allow running CLI with python -m legroom.cli."""
 
 from .main import main
 

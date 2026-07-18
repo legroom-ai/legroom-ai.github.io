@@ -21,7 +21,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from headroom.subscription.models import WindowTokens
+from legroom.subscription.models import WindowTokens
 
 logger = logging.getLogger(__name__)
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from headroom.proxy.image_compression_policy import (
+from legroom.proxy.image_compression_policy import (
     apply_image_skip_reason,
     decide_image_compression,
 )
@@ -21,7 +21,7 @@ def test_decide_image_compression_allows_happy_path() -> None:
 
 def test_decide_image_compression_uses_canonical_precedence() -> None:
     decision = decide_image_compression(
-        headers={"x-headroom-bypass": "true"},
+        headers={"x-legroom-bypass": "true"},
         image_optimize_enabled=False,
         has_messages=False,
     )

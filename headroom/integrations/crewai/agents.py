@@ -1,6 +1,6 @@
 """CrewAI agent tool integration with output compression.
 
-This module provides HeadroomToolWrapper and wrap_tools_with_headroom
+This module provides LegroomToolWrapper and wrap_tools_with_legroom
 for wrapping CrewAI tools to automatically compress their outputs
 and track per-tool compression metrics.
 
@@ -9,14 +9,14 @@ BaseTool interface (BaseTool.run -> _run -> result -> agent context).
 
 Example:
     from crewai.tools.base_tool import tool
-    from headroom.integrations.crewai import wrap_tools_with_headroom
+    from legroom.integrations.crewai import wrap_tools_with_legroom
 
     @tool
     def search_database(query: str) -> str:
         \"\"\"Search the database.\"\"\"
         return json.dumps({"results": [...], "total": 1000})
 
-    wrapped = wrap_tools_with_headroom(
+    wrapped = wrap_tools_with_legroom(
         [search_database],
         min_chars_to_compress=1000,
     )
@@ -37,7 +37,7 @@ except ImportError:
     CREWAI_AVAILABLE = False
     BaseTool = object  # type: ignore[misc,assignment]
 
-from headroom.integrations.mcp import compress_tool_result
+from legroom.integrations.mcp import compress_tool_result
 
 logger = logging.getLogger(__name__)
 
@@ -157,10 +157,10 @@ def reset_tool_metrics() -> None:
     _global_metrics = ToolMetricsCollector()
 
 
-class HeadroomToolWrapper(BaseTool):  # type: ignore[misc]
+class LegroomToolWrapper(BaseTool):  # type: ignore[misc]
     """Wraps a CrewAI BaseTool to compress its output.
 
-    Applies Headroom compression to tool outputs, particularly useful
+    Applies Legroom compression to tool outputs, particularly useful
     for tools that return large JSON arrays, search results, database
     query results, or verbose log output.
 
@@ -169,14 +169,14 @@ class HeadroomToolWrapper(BaseTool):  # type: ignore[misc]
 
     Example:
         from crewai.tools.base_tool import tool
-        from headroom.integrations.crewai import HeadroomToolWrapper
+        from legroom.integrations.crewai import LegroomToolWrapper
 
         @tool
         def search(query: str) -> str:
             \"\"\"Search and return results.\"\"\"
             return json.dumps({"results": [...]})
 
-        wrapped = HeadroomToolWrapper(search)
+        wrapped = LegroomToolWrapper(search)
         result = wrapped.run(query="python tutorials")
 
     Attributes:
@@ -197,7 +197,7 @@ class HeadroomToolWrapper(BaseTool):  # type: ignore[misc]
         min_chars_to_compress: int = 1000,
         metrics_collector: ToolMetricsCollector | None = None,
     ) -> None:
-        """Initialize HeadroomToolWrapper.
+        """Initialize LegroomToolWrapper.
 
         Args:
             tool: The CrewAI BaseTool to wrap.
@@ -306,7 +306,7 @@ class HeadroomToolWrapper(BaseTool):  # type: ignore[misc]
 
         if was_compressed and chars_saved > 0:
             logger.info(
-                "HeadroomToolWrapper[%s]: %d -> %d chars (%d saved, %.1f%% of original)",
+                "LegroomToolWrapper[%s]: %d -> %d chars (%d saved, %.1f%% of original)",
                 self.name,
                 chars_before,
                 chars_after,
@@ -315,12 +315,12 @@ class HeadroomToolWrapper(BaseTool):  # type: ignore[misc]
             )
 
 
-def wrap_tools_with_headroom(
+def wrap_tools_with_legroom(
     tools: list[BaseTool],
     min_chars_to_compress: int = 1000,
     metrics_collector: ToolMetricsCollector | None = None,
 ) -> list[BaseTool]:
-    """Wrap multiple CrewAI tools with Headroom compression.
+    """Wrap multiple CrewAI tools with Legroom compression.
 
     Convenience function to wrap all tools in a list at once.
     Each wrapped tool preserves the original's name, description,
@@ -337,14 +337,14 @@ def wrap_tools_with_headroom(
     Example:
         from crewai import Agent
         from crewai.tools.base_tool import tool
-        from headroom.integrations.crewai import wrap_tools_with_headroom
+        from legroom.integrations.crewai import wrap_tools_with_legroom
 
         @tool
         def search(query: str) -> str:
             \"\"\"Search the database.\"\"\"
             return json.dumps(results)
 
-        wrapped = wrap_tools_with_headroom([search])
+        wrapped = wrap_tools_with_legroom([search])
         agent = Agent(role="Researcher", tools=wrapped, ...)
     """
     _check_crewai_available()
@@ -352,7 +352,7 @@ def wrap_tools_with_headroom(
     collector = metrics_collector or _global_metrics
 
     return [
-        HeadroomToolWrapper(
+        LegroomToolWrapper(
             tool=t,
             min_chars_to_compress=min_chars_to_compress,
             metrics_collector=collector,

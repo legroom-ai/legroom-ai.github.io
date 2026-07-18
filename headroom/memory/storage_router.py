@@ -10,7 +10,7 @@ Three storage modes:
 * ``PROJECT`` (default): one DB per resolved project. The project is
   identified from request headers (explicit) or by parsing a Claude
   Code / Codex ``<env>`` block for the working directory.
-* ``USER``: one DB per ``x-headroom-user-id`` (no project axis).
+* ``USER``: one DB per ``x-legroom-user-id`` (no project axis).
 * ``GLOBAL``: a single DB shared across everything. Matches the pre-fix
   behaviour and is preserved so users can still reach memories written
   before the fix landed.
@@ -34,7 +34,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-from headroom.memory.backends.local import LocalBackend, LocalBackendConfig
+from legroom.memory.backends.local import LocalBackend, LocalBackendConfig
 
 logger = logging.getLogger(__name__)
 
@@ -156,14 +156,14 @@ class ProjectResolver:
         """
 
         # Tier 1: client-provided explicit project id (any client).
-        explicit = self._first_nonempty_header(ctx.headers, "x-headroom-project-id")
+        explicit = self._first_nonempty_header(ctx.headers, "x-legroom-project-id")
         if explicit:
             safe = self._sanitize_basename(explicit)
             if safe:
                 return safe, explicit
 
         # Tier 2: client-provided explicit cwd (any client).
-        explicit_cwd = self._first_nonempty_header(ctx.headers, "x-headroom-cwd")
+        explicit_cwd = self._first_nonempty_header(ctx.headers, "x-legroom-cwd")
         if explicit_cwd:
             ident = self._identity_from_cwd(explicit_cwd)
             if ident is not None:
@@ -317,7 +317,7 @@ class BackendRouter:
                 # command).
                 logger.warning(
                     "event=memory_project_unresolved behavior=empty user_id=%s "
-                    "hint='set x-headroom-project-id or x-headroom-cwd header, "
+                    "hint='set x-legroom-project-id or x-legroom-cwd header, "
                     "or set memory.unresolved_project_fallback=global to opt-in "
                     "to legacy cross-project GLOBAL pooling (cross-project leak risk).'",
                     ctx.base_user_id,

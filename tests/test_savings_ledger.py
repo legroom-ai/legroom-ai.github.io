@@ -1,4 +1,4 @@
-"""Tests for the durable savings event ledger and the `headroom savings` CLI."""
+"""Tests for the durable savings event ledger and the `legroom savings` CLI."""
 
 from __future__ import annotations
 
@@ -7,14 +7,14 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from headroom import savings_ledger as L
+from legroom import savings_ledger as L
 
 UTC = timezone.utc
 
 
 def _events_env(monkeypatch, tmp_path):
     path = tmp_path / "savings_events.jsonl"
-    monkeypatch.setenv("HEADROOM_SAVINGS_EVENTS_PATH", str(path))
+    monkeypatch.setenv("LEGROOM_SAVINGS_EVENTS_PATH", str(path))
     return path
 
 
@@ -161,7 +161,7 @@ def test_cli_reset_deletes_ledger(monkeypatch, tmp_path):
     pytest.importorskip("click")
     from click.testing import CliRunner
 
-    from headroom.cli.savings import savings
+    from legroom.cli.savings import savings
 
     path = _events_env(monkeypatch, tmp_path)
     L.record_savings_event(tokens_before=1000, tokens_after=300, model=None, client="claude-code")
@@ -182,7 +182,7 @@ def test_cli_empty_state(monkeypatch, tmp_path):
     pytest.importorskip("click")
     from click.testing import CliRunner
 
-    from headroom.cli.savings import savings
+    from legroom.cli.savings import savings
 
     _events_env(monkeypatch, tmp_path)
     result = CliRunner().invoke(savings, [])
@@ -194,7 +194,7 @@ def test_cli_renders_sections_and_json(monkeypatch, tmp_path):
     pytest.importorskip("click")
     from click.testing import CliRunner
 
-    from headroom.cli.savings import savings
+    from legroom.cli.savings import savings
 
     _events_env(monkeypatch, tmp_path)
     L.record_savings_event(tokens_before=1000, tokens_after=300, model=None, client="claude-code")
@@ -223,12 +223,12 @@ def test_cli_renders_sections_and_json(monkeypatch, tmp_path):
 
 def test_mcp_compress_records_durable_event(monkeypatch, tmp_path):
     pytest.importorskip("mcp", reason="MCP SDK required")
-    from headroom.ccr import mcp_server
+    from legroom.ccr import mcp_server
 
     _events_env(monkeypatch, tmp_path)
-    monkeypatch.setenv("HEADROOM_MCP_CLIENT", "claude-code")
+    monkeypatch.setenv("LEGROOM_MCP_CLIENT", "claude-code")
 
-    server = mcp_server.HeadroomMCPServer(check_proxy=False)
+    server = mcp_server.LegroomMCPServer(check_proxy=False)
     server._record_savings({"original_tokens": 1000, "compressed_tokens": 250})
 
     report = L.aggregate_savings()
@@ -238,10 +238,10 @@ def test_mcp_compress_records_durable_event(monkeypatch, tmp_path):
 
 def test_mcp_record_savings_ignores_noop(monkeypatch, tmp_path):
     pytest.importorskip("mcp", reason="MCP SDK required")
-    from headroom.ccr import mcp_server
+    from legroom.ccr import mcp_server
 
     _events_env(monkeypatch, tmp_path)
-    server = mcp_server.HeadroomMCPServer(check_proxy=False)
+    server = mcp_server.LegroomMCPServer(check_proxy=False)
     server._record_savings({"original_tokens": 500, "compressed_tokens": 500})
     assert L.aggregate_savings().lifetime["calls"] == 0
 
@@ -257,12 +257,12 @@ def test_proxy_record_request_appends_ledger_event(tmp_path, monkeypatch):
 
     from fastapi.testclient import TestClient
 
-    from headroom.proxy.server import ProxyConfig, create_app
+    from legroom.proxy.server import ProxyConfig, create_app
 
-    monkeypatch.setenv("HEADROOM_SAVINGS_PATH", str(tmp_path / "proxy_savings.json"))
-    monkeypatch.setenv("HEADROOM_SAVINGS_EVENTS_PATH", str(tmp_path / "savings_events.jsonl"))
+    monkeypatch.setenv("LEGROOM_SAVINGS_PATH", str(tmp_path / "proxy_savings.json"))
+    monkeypatch.setenv("LEGROOM_SAVINGS_EVENTS_PATH", str(tmp_path / "savings_events.jsonl"))
     monkeypatch.setattr(
-        "headroom.proxy.server.CostTracker._get_cache_prices",
+        "legroom.proxy.server.CostTracker._get_cache_prices",
         lambda self, model: (0.001, 0.0015, 0.002),
     )
 
@@ -311,7 +311,7 @@ def test_cli_days_flag_capped_at_30(monkeypatch, tmp_path, bad_days):
     pytest.importorskip("click")
     from click.testing import CliRunner
 
-    from headroom.cli.savings import savings
+    from legroom.cli.savings import savings
 
     _events_env(monkeypatch, tmp_path)
     result = CliRunner().invoke(savings, ["--days", bad_days])

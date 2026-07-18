@@ -1,11 +1,11 @@
-"""Cohere provider for Headroom SDK.
+"""Cohere provider for Legroom SDK.
 
 Token counting uses Cohere's official tokenize API when a client
 is provided. This gives accurate counts for all content types.
 
 Usage:
     import cohere
-    from headroom import CohereProvider
+    from legroom import CohereProvider
 
     client = cohere.ClientV2()  # Uses CO_API_KEY env var
     provider = CohereProvider(client=client)  # Accurate counting via API
@@ -21,7 +21,7 @@ import warnings
 from datetime import date
 from typing import Any
 
-from headroom.tokenizers import EstimatingTokenCounter
+from legroom.tokenizers import EstimatingTokenCounter
 
 from .base import Provider, TokenCounter
 

@@ -1,6 +1,6 @@
 ---
 title: Quickstart
-description: Get Headroom running in 5 minutes. Install, compress, and send to your LLM with fewer tokens.
+description: Get Legroom running in 5 minutes. Install, compress, and send to your LLM with fewer tokens.
 ---
 
 This guide gets you from zero to compressed LLM calls in under 5 minutes.
@@ -10,27 +10,27 @@ This guide gets you from zero to compressed LLM calls in under 5 minutes.
 <Tabs groupId="lang" items={['TypeScript', 'Python']}>
 <Tab value="TypeScript">
 ```bash
-npm install headroom-ai
+npm install legroom-ai
 ```
 </Tab>
 <Tab value="Python">
 ```bash
 # CLI/proxy/wrap on your machine
-uv tool install --python 3.13 "headroom-ai[all]"
+uv tool install --python 3.13 "legroom-ai[all]"
 
 # Python project or virtualenv
-pip install "headroom-ai[all]"
+pip install "legroom-ai[all]"
 ```
 </Tab>
 </Tabs>
 
 <Callout type="info" title="TypeScript SDK requires the proxy">
-The TypeScript SDK sends messages to a local Headroom proxy for compression. Start the proxy before using the TS SDK:
+The TypeScript SDK sends messages to a local Legroom proxy for compression. Start the proxy before using the TS SDK:
 
 ```bash
-uv tool install --python 3.13 "headroom-ai[proxy]"
-# or, inside a Python project: pip install "headroom-ai[proxy]"
-headroom proxy --port 8787
+uv tool install --python 3.13 "legroom-ai[proxy]"
+# or, inside a Python project: pip install "legroom-ai[proxy]"
+legroom proxy --port 8787
 ```
 
 The proxy runs the compression pipeline (Python) and exposes an HTTP API that the TS SDK calls.
@@ -41,7 +41,7 @@ The proxy runs the compression pipeline (Python) and exposes an HTTP API that th
 <Tabs groupId="lang" items={['TypeScript', 'Python']}>
 <Tab value="TypeScript">
 ```ts twoslash
-import { compress } from 'headroom-ai';
+import { compress } from 'legroom-ai';
 
 const messages = [
   { role: 'system' as const, content: 'You analyze search results.' },
@@ -77,7 +77,7 @@ const result = await compress(messages, {
 </Tab>
 <Tab value="Python">
 ```python
-from headroom import compress
+from legroom import compress
 import json
 
 messages = [
@@ -203,11 +203,11 @@ Transforms:    ['smart_crusher', 'cache_aligner']
 
 ## Alternative: proxy mode (zero code changes)
 
-If you do not want to change any code, run Headroom as a proxy and point your existing client at it:
+If you do not want to change any code, run Legroom as a proxy and point your existing client at it:
 
 ```bash
 # Start the proxy
-headroom proxy --port 8787
+legroom proxy --port 8787
 
 # Point Claude Code at it
 ANTHROPIC_BASE_URL=http://localhost:8787 claude
@@ -216,7 +216,7 @@ ANTHROPIC_BASE_URL=http://localhost:8787 claude
 OPENAI_BASE_URL=http://localhost:8787/v1 your-app
 ```
 
-All requests flow through Headroom automatically. Check savings at any time:
+All requests flow through Legroom automatically. Check savings at any time:
 
 ```bash
 curl http://localhost:8787/stats
@@ -225,7 +225,7 @@ curl http://localhost:8787/stats
 
 ## What gets compressed
 
-The biggest savings come from tool outputs -- search results, database rows, log files, API responses. Headroom auto-detects the content type and routes it to the best compressor. No configuration needed.
+The biggest savings come from tool outputs -- search results, database rows, log files, API responses. Legroom auto-detects the content type and routes it to the best compressor. No configuration needed.
 
 | Content type | Compressor | Typical savings |
 |---|---|---|

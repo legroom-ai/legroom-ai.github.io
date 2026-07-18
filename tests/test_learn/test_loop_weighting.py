@@ -1,4 +1,4 @@
-"""Tests for loop detection and loop-weighting in Headroom Learn.
+"""Tests for loop detection and loop-weighting in Legroom Learn.
 
 Covers the gap these changes close: RTK re-fetch loops (repeated, successful
 but insufficient calls) were invisible to failure-only analysis and, even when
@@ -16,18 +16,18 @@ surfaced, were ranked no higher than a one-off rule. These tests pin:
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from headroom.learn.analyzer import SessionAnalyzer, _build_digest
-from headroom.learn.fixtures import (
+from legroom.learn.analyzer import SessionAnalyzer, _build_digest
+from legroom.learn.fixtures import (
     error_loop_session,
     one_off_error_session,
     rtk_refetch_loop_session,
 )
-from headroom.learn.loops import (
+from legroom.learn.loops import (
     _canonical_signature,
     apply_loop_weighting,
     detect_loops,
 )
-from headroom.learn.models import (
+from legroom.learn.models import (
     ProjectInfo,
     Recommendation,
     RecommendationTarget,
@@ -160,7 +160,7 @@ class TestApplyLoopWeighting:
 
 
 class TestAnalyzeEndToEnd:
-    @patch("headroom.learn.analyzer._call_llm")
+    @patch("legroom.learn.analyzer._call_llm")
     def test_refetch_loop_with_no_failures_is_still_analyzed(self, mock_call_llm: MagicMock):
         # Pure re-fetch loop: zero errors, no events. Must NOT early-return.
         mock_call_llm.return_value = {"context_file_rules": [], "memory_file_rules": []}
@@ -168,7 +168,7 @@ class TestAnalyzeEndToEnd:
         analyzer.analyze(_project(), [rtk_refetch_loop_session()])
         mock_call_llm.assert_called_once()  # the guard let it through
 
-    @patch("headroom.learn.analyzer._call_llm")
+    @patch("legroom.learn.analyzer._call_llm")
     def test_loop_guardrail_outranks_one_off_in_result(self, mock_call_llm: MagicMock):
         # LLM returns both rules, rating the one-off higher than the loop.
         mock_call_llm.return_value = {

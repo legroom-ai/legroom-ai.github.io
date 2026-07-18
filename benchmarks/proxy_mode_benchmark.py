@@ -19,14 +19,14 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 
-from headroom.cache.compression_cache import CompressionCache
-from headroom.cache.prefix_tracker import PrefixCacheTracker
-from headroom.proxy.handlers.anthropic import AnthropicHandlerMixin
-from headroom.proxy.models import ProxyConfig
-from headroom.proxy.modes import PROXY_MODE_CACHE, PROXY_MODE_TOKEN
-from headroom.proxy.server import HeadroomProxy
-from headroom.tokenizers import get_tokenizer
-from headroom.utils import extract_user_query
+from legroom.cache.compression_cache import CompressionCache
+from legroom.cache.prefix_tracker import PrefixCacheTracker
+from legroom.proxy.handlers.anthropic import AnthropicHandlerMixin
+from legroom.proxy.models import ProxyConfig
+from legroom.proxy.modes import PROXY_MODE_CACHE, PROXY_MODE_TOKEN
+from legroom.proxy.server import LegroomProxy
+from legroom.tokenizers import get_tokenizer
+from legroom.utils import extract_user_query
 
 MODEL = "claude-sonnet-4-6"
 
@@ -132,7 +132,7 @@ def _common_prefix_tokens(
     return common, counts
 
 
-def _make_proxy(mode: str) -> HeadroomProxy:
+def _make_proxy(mode: str) -> LegroomProxy:
     cfg = ProxyConfig(
         mode=mode,
         optimize=True,
@@ -148,7 +148,7 @@ def _make_proxy(mode: str) -> HeadroomProxy:
         ccr_handle_responses=False,
         ccr_context_tracking=False,
     )
-    return HeadroomProxy(cfg)
+    return LegroomProxy(cfg)
 
 
 def _simulate_mode(turns: int, mode: str) -> ModeBenchmarkResult:
@@ -259,15 +259,15 @@ def _print_results(results: dict[str, ModeBenchmarkResult]) -> None:
 
 def _print_real_harness() -> None:
     print("\nReal test harness (manual; optional, not executed by this benchmark):")
-    print("  1) Start proxy in cache mode:  HEADROOM_MODE=cache headroom proxy --port 8787")
-    print("  2) Start proxy in token mode:  HEADROOM_MODE=token headroom proxy --port 8787")
+    print("  1) Start proxy in cache mode:  LEGROOM_MODE=cache legroom proxy --port 8787")
+    print("  2) Start proxy in token mode:  LEGROOM_MODE=token legroom proxy --port 8787")
     print("  3) Run Claude Code against each:")
     print("     ANTHROPIC_BASE_URL=http://localhost:8787 claude")
     print("  4) Compare /stats prefix_cache and compression sections per run.")
 
 
 def main() -> None:
-    logging.getLogger("headroom").setLevel(logging.WARNING)
+    logging.getLogger("legroom").setLevel(logging.WARNING)
     logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
     logging.getLogger("huggingface_hub").setLevel(logging.WARNING)
 

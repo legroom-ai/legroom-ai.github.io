@@ -37,7 +37,7 @@ _load_failed: set[str] = set()
 
 def _load_timeout_seconds() -> float:
     try:
-        return float(os.environ.get("HEADROOM_TIKTOKEN_LOAD_TIMEOUT_SECONDS", "10"))
+        return float(os.environ.get("LEGROOM_TIKTOKEN_LOAD_TIMEOUT_SECONDS", "10"))
     except (TypeError, ValueError):
         return 10.0
 
@@ -107,7 +107,7 @@ DEFAULT_ENCODING = "cl100k_base"
 def _get_encoding(encoding_name: str):
     """Get a tiktoken encoding, cached for performance.
 
-    Bounded by ``HEADROOM_TIKTOKEN_LOAD_TIMEOUT_SECONDS`` (default 10s): tiktoken's
+    Bounded by ``LEGROOM_TIKTOKEN_LOAD_TIMEOUT_SECONDS`` (default 10s): tiktoken's
     vocab download has no network timeout, so we run the load on a worker thread
     and raise :class:`TiktokenLoadError` if it doesn't finish in time, letting
     callers fall back to estimation rather than hang the request (GH #956). The
@@ -136,7 +136,7 @@ def _get_encoding(encoding_name: str):
         logger.warning(
             "tiktoken encoding %r did not load within %.1fs (likely a stalled vocab "
             "download); falling back to token estimation. Pre-populate TIKTOKEN_CACHE_DIR "
-            "or tune HEADROOM_TIKTOKEN_LOAD_TIMEOUT_SECONDS.",
+            "or tune LEGROOM_TIKTOKEN_LOAD_TIMEOUT_SECONDS.",
             encoding_name,
             _load_timeout_seconds(),
         )

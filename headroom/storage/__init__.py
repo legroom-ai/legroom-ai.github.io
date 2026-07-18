@@ -1,4 +1,4 @@
-"""Storage modules for Headroom SDK."""
+"""Storage modules for Legroom SDK."""
 
 from .base import Storage
 from .jsonl import JSONLStorage
@@ -20,7 +20,7 @@ def create_storage(store_url: str) -> Storage:
     - jsonl:///path/to/file.jsonl
 
     Other schemes (e.g. postgres://) can be provided by packages that register
-    the setuptools entry point headroom.storage_backend with name=<scheme>.
+    the setuptools entry point legroom.storage_backend with name=<scheme>.
 
     Args:
         store_url: Storage URL.
@@ -40,13 +40,13 @@ def create_storage(store_url: str) -> Storage:
             path = path
         return JSONLStorage(path)
     else:
-        # Unknown scheme: try entry point headroom.storage_backend[name=scheme]
+        # Unknown scheme: try entry point legroom.storage_backend[name=scheme]
         scheme = store_url.split("://", 1)[0].lower() if "://" in store_url else ""
         if scheme:
             try:
                 from importlib.metadata import entry_points
 
-                all_eps = entry_points(group="headroom.storage_backend")
+                all_eps = entry_points(group="legroom.storage_backend")
                 ep = next((e for e in all_eps if e.name == scheme), None)
                 if ep is not None:
                     create_fn = ep.load()

@@ -1,6 +1,6 @@
 """Synthetic session fixtures that reproduce known waste patterns.
 
-These build :class:`SessionData` shaped like the real patterns Headroom Learn
+These build :class:`SessionData` shaped like the real patterns Legroom Learn
 must catch, so both unit tests and the RTK-loop eval (``benchmarks/
 rtk_loop_learn_eval.py``) drive the analyzer from one source of truth instead
 of hand-mocking calls inline.

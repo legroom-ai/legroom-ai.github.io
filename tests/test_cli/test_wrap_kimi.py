@@ -1,4 +1,4 @@
-"""Tests for `headroom wrap kimi` command."""
+"""Tests for `legroom wrap kimi` command."""
 
 from __future__ import annotations
 
@@ -9,8 +9,8 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner
 
-from headroom.cli import wrap as wrap_mod
-from headroom.cli.main import main
+from legroom.cli import wrap as wrap_mod
+from legroom.cli.main import main
 
 
 @pytest.fixture
@@ -25,7 +25,7 @@ def test_wrap_kimi_launch(
 ) -> None:
     """Kimi launches with correct configuration."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
 
     captured: dict[str, Any] = {}
 
@@ -58,7 +58,7 @@ def test_wrap_kimi_with_project_name(
     project_dir = tmp_path / "my-project"
     project_dir.mkdir()
     monkeypatch.chdir(project_dir)
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
 
     captured: dict[str, Any] = {}
 
@@ -81,7 +81,7 @@ def test_wrap_kimi_cli_fallback(
 ) -> None:
     """Falls back to the `kimi-cli` binary when `kimi` is not on PATH."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
 
     captured: dict[str, Any] = {}
 
@@ -107,7 +107,7 @@ def test_wrap_kimi_not_found(
 ) -> None:
     """Error message when neither kimi nor kimi-cli is found."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
 
     with patch.object(wrap_mod.shutil, "which", return_value=None):
         result = runner.invoke(main, ["wrap", "kimi"])
@@ -124,7 +124,7 @@ def test_wrap_kimi_custom_port(
 ) -> None:
     """Custom --port is passed to _launch_tool and appears in KIMI_BASE_URL."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
 
     captured: dict[str, Any] = {}
 
@@ -148,7 +148,7 @@ def test_wrap_kimi_custom_api_url(
 ) -> None:
     """--kimi-api-url overrides the upstream endpoint passed to _launch_tool."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
 
     captured: dict[str, Any] = {}
 
@@ -174,7 +174,7 @@ def test_wrap_kimi_no_proxy(
 ) -> None:
     """--no-proxy flag prevents proxy startup."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
 
     captured: dict[str, Any] = {}
 
@@ -197,7 +197,7 @@ def test_wrap_kimi_learn_memory(
 ) -> None:
     """--learn and --memory flags are passed to _launch_tool."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
 
     captured: dict[str, Any] = {}
 

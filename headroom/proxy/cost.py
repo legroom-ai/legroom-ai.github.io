@@ -1,4 +1,4 @@
-"""Cost tracking and budget management for the Headroom proxy.
+"""Cost tracking and budget management for the Legroom proxy.
 
 Contains the CostTracker class and cost-related helper functions
 for prefix cache statistics, cost merging, and session summaries.
@@ -15,10 +15,10 @@ from collections import deque
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
-from headroom.proxy.modes import PROXY_MODE_CACHE
+from legroom.proxy.modes import PROXY_MODE_CACHE
 
 if TYPE_CHECKING:
-    from headroom.proxy.prometheus_metrics import PrometheusMetrics
+    from legroom.proxy.prometheus_metrics import PrometheusMetrics
 
 LITELLM_AVAILABLE = importlib.util.find_spec("litellm") is not None
 litellm: Any | None = None
@@ -42,7 +42,7 @@ def _get_litellm_module() -> Any | None:
     return litellm
 
 
-logger = logging.getLogger("headroom.proxy")
+logger = logging.getLogger("legroom.proxy")
 
 # Provider-specific cache discount multipliers (what fraction of input price)
 # Used to calculate dollar savings from prefix caching
@@ -88,7 +88,7 @@ def _summarize_transforms(transforms: list[str]) -> str:
 def header_safe_transforms(transforms: list[str]) -> list[str]:
     """Strip enriched detail so each tag is safe in the comma-joined header.
 
-    ``x-headroom-transforms`` is built as ``",".join(transforms_applied)``, so a
+    ``x-legroom-transforms`` is built as ``",".join(transforms_applied)``, so a
     tag must not itself contain a comma or the header can't be split back into
     tags. The enriched ``read_lifecycle:<state>:<path>`` and
     ``smart_crush:<n>:<names>`` tags carry comma-bearing detail (file paths may
@@ -354,9 +354,9 @@ def build_prefix_cache_stats(
         },
         "attribution": (
             "Prefix caching is performed by the LLM provider (Anthropic, OpenAI). "
-            "Headroom reports cache stats as observed from API responses. "
+            "Legroom reports cache stats as observed from API responses. "
             "CacheAligner and prefix freeze improve cache hit rates by stabilizing "
-            "the message prefix, but baseline caching happens without Headroom. "
+            "the message prefix, but baseline caching happens without Legroom. "
             "Observed TTL bucket metrics reflect provider-reported cache write usage "
             "(for example Anthropic 5m vs 1h), not configured or remaining TTL."
         ),
@@ -404,12 +404,12 @@ def merge_cost_stats(
 
 
 def _aggregate_mcp_events() -> dict[str, int]:
-    """Aggregate compression / retrieval events written by Headroom MCP
+    """Aggregate compression / retrieval events written by Legroom MCP
     server instances to the cross-process shared events file.
 
-    The Headroom MCP server (``headroom mcp serve``) records every
-    ``headroom_compress`` and ``headroom_retrieve`` invocation to a
-    file-locked shared log (see :func:`headroom.ccr.mcp_server._append_shared_event`).
+    The Legroom MCP server (``legroom mcp serve``) records every
+    ``legroom_compress`` and ``legroom_retrieve`` invocation to a
+    file-locked shared log (see :func:`legroom.ccr.mcp_server._append_shared_event`).
     This helper reads that log and aggregates within the rolling window
     so the proxy's ``/stats`` can surface MCP-side work alongside the
     proxy's own HTTP-path compression numbers.
@@ -419,14 +419,14 @@ def _aggregate_mcp_events() -> dict[str, int]:
     intent is "if there's nothing to report, report zero" so this
     helper never blocks the summary.
 
-    Keys: ``compressions`` (count of headroom_compress calls),
+    Keys: ``compressions`` (count of legroom_compress calls),
     ``tokens_removed`` (sum of input_tokens-output_tokens across
-    compress events), ``retrievals`` (count of headroom_retrieve
+    compress events), ``retrievals`` (count of legroom_retrieve
     calls — the load-bearing over-compression signal).
     """
     zero = {"compressions": 0, "tokens_removed": 0, "retrievals": 0}
     try:
-        from headroom.ccr.mcp_server import _read_shared_events
+        from legroom.ccr.mcp_server import _read_shared_events
     except ImportError:
         return zero
 
@@ -464,7 +464,7 @@ def build_session_summary(
     """Build a human-readable session summary from metrics and request logs.
 
     This is the headline view users see first in /stats — designed to answer
-    "is Headroom working?" at a glance.
+    "is Legroom working?" at a glance.
     """
     # Analyze per-request compression from the logger
     compressed_requests: list[dict] = []
@@ -546,7 +546,7 @@ def build_session_summary(
     # price. CLI filtering tokens are counted in token savings but have no
     # model-specific price because they never reached the proxy request.
     cost_stats = proxy.cost_tracker.stats() if proxy.cost_tracker else {}
-    cost_with = cost_stats.get("cost_with_headroom_usd", 0.0)
+    cost_with = cost_stats.get("cost_with_legroom_usd", 0.0)
     compression_savings = cost_stats.get("savings_usd", 0.0)
     cache_net = prefix_cache_stats.get("totals", {}).get("net_savings_usd", 0.0)
     total_saved_usd = round(compression_savings, 2)
@@ -580,8 +580,8 @@ def build_session_summary(
         },
         "uncompressed_requests": {k: v for k, v in uncompressed_reasons.items() if v > 0},
         "cost": {
-            "without_headroom_usd": round(cost_without, 2),
-            "with_headroom_usd": round(cost_with, 2),
+            "without_legroom_usd": round(cost_without, 2),
+            "with_legroom_usd": round(cost_with, 2),
             "total_saved_usd": total_saved_usd,
             "savings_pct": savings_pct_cost,
             "breakdown": {
@@ -601,7 +601,7 @@ def build_session_summary(
         },
     }
 
-    # MCP-side compression: events written by `headroom mcp serve`
+    # MCP-side compression: events written by `legroom mcp serve`
     # instances (one or more) to the shared stats log. Surfaces direct
     # tool invocations the proxy HTTP path never sees, plus the
     # `retrievals` counter — the load-bearing signal for over-compression
@@ -627,7 +627,7 @@ def build_session_summary(
     # Add tip if token mode would help
     if proxy.config.mode == PROXY_MODE_CACHE and uncompressed_reasons["prefix_frozen"] > 10:
         summary["tip"] = (
-            "Most requests are prefix-frozen. Set HEADROOM_MODE=token "
+            "Most requests are prefix-frozen. Set LEGROOM_MODE=token "
             "to compress frozen messages and extend your session by ~25-35%."
         )
 
@@ -710,7 +710,7 @@ class CostTracker:
             return None
 
         try:
-            from headroom.pricing.litellm_pricing import resolve_litellm_model
+            from legroom.pricing.litellm_pricing import resolve_litellm_model
 
             resolved_model = resolve_litellm_model(model)
 
@@ -766,14 +766,14 @@ class CostTracker:
 
         Args:
             model: Model name.
-            tokens_saved: Tokens removed by compression (Headroom's count).
-            tokens_sent: Compressed message tokens sent (Headroom's count).
+            tokens_saved: Tokens removed by compression (Legroom's count).
+            tokens_sent: Compressed message tokens sent (Legroom's count).
             cache_read_tokens: Cache read tokens from API response usage.
             cache_write_tokens: Cache write tokens from API response usage.
             uncached_tokens: Non-cached input tokens from API response usage.
             output_tokens: Output tokens from API response usage.
         """
-        # Post-guard invariant (all providers): Headroom never forwards a request
+        # Post-guard invariant (all providers): Legroom never forwards a request
         # larger than the original (handlers revert any inflation before sending),
         # so compression savings are >= 0 by construction. A negative here is an
         # intermediate/hook token-count artifact that never reached the model;
@@ -853,7 +853,7 @@ class CostTracker:
         if litellm is None:
             return None
         try:
-            from headroom.pricing.litellm_pricing import resolve_litellm_model
+            from legroom.pricing.litellm_pricing import resolve_litellm_model
 
             resolved = resolve_litellm_model(model)
             info = litellm.model_cost.get(resolved, {})
@@ -872,7 +872,7 @@ class CostTracker:
         if litellm is None:
             return None
         try:
-            from headroom.pricing.litellm_pricing import resolve_litellm_model
+            from legroom.pricing.litellm_pricing import resolve_litellm_model
 
             resolved = resolve_litellm_model(model)
             info = litellm.model_cost.get(resolved, {})
@@ -909,7 +909,7 @@ class CostTracker:
         # LiteLLM's per-category pricing (cache reads discounted, writes at
         # premium, uncached at list). Falls back to list price when cache
         # data is unavailable.
-        cost_with_headroom = 0.0
+        cost_with_legroom = 0.0
         total_billed_input_tokens = 0
         total_input_tokens = 0
         for model in self._tokens_saved_by_model:
@@ -931,7 +931,7 @@ class CostTracker:
                     # No cache data from API — fall back to list price
                     model_cost = sent * uncached_price
                     billed_tokens = sent
-                cost_with_headroom += model_cost
+                cost_with_legroom += model_cost
                 total_billed_input_tokens += billed_tokens
 
         # Compression savings: price saved tokens at the model's list input price.
@@ -950,14 +950,14 @@ class CostTracker:
         return {
             "total_tokens_saved": total_saved,
             "total_input_tokens": total_input_tokens,
-            "total_input_cost_usd": round(cost_with_headroom, 4),
+            "total_input_cost_usd": round(cost_with_legroom, 4),
             "cache_write_5m_tokens": sum(self._api_cache_write_5m_by_model.values()),
             "cache_write_1h_tokens": sum(self._api_cache_write_1h_by_model.values()),
             "per_model": per_model,
-            "cost_with_headroom_usd": round(cost_with_headroom, 4),
+            "cost_with_legroom_usd": round(cost_with_legroom, 4),
             "savings_usd": round(savings_usd, 4),
             # Budget config passthrough — surfaces in /stats["cost"] so
-            # `headroom doctor` can report whether a budget is set.
+            # `legroom doctor` can report whether a budget is set.
             "budget_limit_usd": self.budget_limit_usd,
             "budget_period": self.budget_period,
         }

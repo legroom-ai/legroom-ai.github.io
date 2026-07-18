@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from collections.abc import Mapping
 
-from headroom.proxy.project_context import with_project_prefix
+from legroom.proxy.project_context import with_project_prefix
 
 SNOWFLAKE_ACCOUNT_ENV = "SNOWFLAKE_ACCOUNT"
 SNOWFLAKE_HOST_ENV = "SNOWFLAKE_HOST"

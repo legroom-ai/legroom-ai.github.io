@@ -13,7 +13,7 @@
 //!     additional pings) are tolerated without error.
 
 use bytes::Bytes;
-use headroom_proxy::sse::{SseEvent, SseFramer};
+use legroom_proxy::sse::{SseEvent, SseFramer};
 
 /// A 4-byte UTF-8 emoji (U+1F600 GRINNING FACE) is a deterministic
 /// torture-test for split-codepoint chunking. Bytes: F0 9F 98 80.

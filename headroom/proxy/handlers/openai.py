@@ -1,4 +1,4 @@
-"""OpenAI handler mixin for HeadroomProxy.
+"""OpenAI handler mixin for LegroomProxy.
 
 Contains all OpenAI Chat Completions, Responses API, and passthrough handlers.
 """
@@ -22,15 +22,15 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 from urllib.parse import quote, unquote, urlparse
 
-from headroom.proxy.helpers import (
+from legroom.proxy.helpers import (
     COMPRESSION_TIMEOUT_SECONDS,
-    _headroom_bypass_enabled,
+    _legroom_bypass_enabled,
     extract_tags,
     jitter_delay_ms,
 )
-from headroom.proxy.loopback_guard import is_loopback_host
-from headroom.proxy.stage_timer import StageTimer, emit_stage_timings_log
-from headroom.proxy.ws_session_registry import (
+from legroom.proxy.loopback_guard import is_loopback_host
+from legroom.proxy.stage_timer import StageTimer, emit_stage_timings_log
+from legroom.proxy.ws_session_registry import (
     TerminationCause,
     WebSocketSessionRegistry,
     WSSessionHandle,
@@ -42,45 +42,45 @@ if TYPE_CHECKING:
 
 import httpx
 
-from headroom.agent_savings import proxy_pipeline_kwargs
-from headroom.copilot_auth import (
+from legroom.agent_savings import proxy_pipeline_kwargs
+from legroom.copilot_auth import (
     apply_copilot_api_auth,
     build_copilot_upstream_url,
     is_copilot_api_url,
 )
-from headroom.pipeline import PipelineStage, summarize_routing_markers
-from headroom.providers.codex.responses import (
+from legroom.pipeline import PipelineStage, summarize_routing_markers
+from legroom.providers.codex.responses import (
     codex_responses_http_url,
     codex_responses_websocket_url,
     has_chatgpt_account_header,
 )
-from headroom.providers.codex.runtime import (
+from legroom.providers.codex.runtime import (
     decode_openai_bearer_payload,
 )
-from headroom.providers.codex.runtime import (
+from legroom.providers.codex.runtime import (
     resolve_codex_routing_headers as _resolve_codex_routing_headers,
 )
-from headroom.providers.copilot import model_prefers_responses_api
-from headroom.proxy.auth_mode import (
+from legroom.providers.copilot import model_prefers_responses_api
+from legroom.proxy.auth_mode import (
     classify_auth_mode,
     classify_client,
     should_stamp_codex_client,
 )
-from headroom.proxy.compression_decision import CompressionDecision
-from headroom.proxy.cost import _summarize_transforms, header_safe_transforms
-from headroom.proxy.handlers._debug_dump import _debug_dump_mode, _redact_debug_value
-from headroom.proxy.image_isolation import run_image_compression_isolated
-from headroom.proxy.outcome import RequestOutcome
-from headroom.proxy.passthrough import (
+from legroom.proxy.compression_decision import CompressionDecision
+from legroom.proxy.cost import _summarize_transforms, header_safe_transforms
+from legroom.proxy.handlers._debug_dump import _debug_dump_mode, _redact_debug_value
+from legroom.proxy.image_isolation import run_image_compression_isolated
+from legroom.proxy.outcome import RequestOutcome
+from legroom.proxy.passthrough import (
     custom_base_passthrough_telemetry as _custom_base_passthrough_telemetry,
 )
-from headroom.proxy.project_context import classify_project, set_current_project
+from legroom.proxy.project_context import classify_project, set_current_project
 
-logger = logging.getLogger("headroom.proxy")
+logger = logging.getLogger("legroom.proxy")
 
 _OPENAI_RESPONSES_UNIT_CACHE_MAX_ENTRIES = 10_000
 _OPENAI_RESPONSES_UNIT_CACHE_VERSION = "openai_responses_unit_v1"
-_OPENAI_RESPONSES_UNIT_PARALLELISM_ENV = "HEADROOM_TOOL_OUTPUT_COMPRESSION_PARALLELISM"
+_OPENAI_RESPONSES_UNIT_PARALLELISM_ENV = "LEGROOM_TOOL_OUTPUT_COMPRESSION_PARALLELISM"
 _OPENAI_RESPONSES_UNIT_PARALLELISM_DEFAULT = 4
 _OPENAI_RESPONSES_UNIT_PARALLELISM_MAX = 16
 _OPENAI_RESPONSES_UNIT_CACHE_INIT_LOCK = threading.RLock()
@@ -93,13 +93,13 @@ def _codex_ws_compression_timeout_seconds() -> float:
     return min(COMPRESSION_TIMEOUT_SECONDS, _CODEX_WS_COMPRESSION_TIMEOUT_SECONDS)
 
 
-_WS_ALLOWED_ORIGINS_ENV = "HEADROOM_WS_ORIGINS"
-_CORS_ALLOWED_ORIGINS_ENV = "HEADROOM_CORS_ORIGINS"
+_WS_ALLOWED_ORIGINS_ENV = "LEGROOM_WS_ORIGINS"
+_CORS_ALLOWED_ORIGINS_ENV = "LEGROOM_CORS_ORIGINS"
 _CODEX_RESPONSES_LITE_HEADER = "x-openai-internal-codex-responses-lite"
 # Codex mirrors the responses-lite request header into the response.create
 # frame body under client_metadata; upstream rejects gpt-5.x when it is
 # truthy. Stripping the WS handshake header alone is insufficient
-# (headroomlabs-ai/headroom#1523) — the frame-body mirror must be removed too.
+# (legroom-ai/legroom#1523) — the frame-body mirror must be removed too.
 _CODEX_LITE_METADATA_KEY = "ws_request_header_x_openai_internal_codex_responses_lite"
 
 
@@ -125,8 +125,8 @@ def _strip_codex_lite_metadata(raw_msg: str) -> str:
 
 _OPENAI_CHAT_COMPLETIONS_PATH = "/chat/completions"
 _OPENAI_RESPONSES_PATH = "/responses"
-_OPENAI_ORIGINAL_PATH_HEADER = "x-headroom-original-path"
-_OPENAI_BASE_URL_HEADER = "x-headroom-base-url"
+_OPENAI_ORIGINAL_PATH_HEADER = "x-legroom-original-path"
+_OPENAI_BASE_URL_HEADER = "x-legroom-base-url"
 _decode_openai_bearer_payload = decode_openai_bearer_payload
 
 
@@ -285,7 +285,7 @@ def _is_allowed_websocket_origin(headers: dict[str, str]) -> bool:
 
     Native clients commonly omit Origin, so absence is allowed. When Origin is
     present, default to loopback-only and allow explicit configured origins via
-    HEADROOM_WS_ORIGINS or HEADROOM_CORS_ORIGINS.
+    LEGROOM_WS_ORIGINS or LEGROOM_CORS_ORIGINS.
     """
     origin = _header_get(headers, "origin")
     if not origin:
@@ -383,7 +383,7 @@ def _openai_responses_unit_executor() -> ThreadPoolExecutor:
         if _OPENAI_RESPONSES_UNIT_EXECUTOR is None:
             _OPENAI_RESPONSES_UNIT_EXECUTOR = ThreadPoolExecutor(
                 max_workers=_OPENAI_RESPONSES_UNIT_PARALLELISM_MAX,
-                thread_name_prefix="headroom-openai-unit",
+                thread_name_prefix="legroom-openai-unit",
             )
         return _OPENAI_RESPONSES_UNIT_EXECUTOR
 
@@ -514,7 +514,7 @@ _OPENAI_TOOL_SCHEMA_DROP_KEYS = {
     "writeOnly",
 }
 # Kept for backward compatibility with evals that import this symbol.
-# The canonical set lives in headroom.proxy.tool_schema_compaction.
+# The canonical set lives in legroom.proxy.tool_schema_compaction.
 
 
 def _json_byte_len(value: Any) -> int:
@@ -527,7 +527,7 @@ def _shape_openai_responses_payload(
     model: str,
     request_id: str,
 ) -> tuple[list[str], bool]:
-    """Output shaping for a Responses payload (opt-in, HEADROOM_OUTPUT_SHAPER).
+    """Output shaping for a Responses payload (opt-in, LEGROOM_OUTPUT_SHAPER).
 
     The Responses counterpart of the Anthropic handler's shaping block:
     conversation-stable holdout assignment, stratum labelling for the
@@ -542,14 +542,14 @@ def _shape_openai_responses_payload(
     must not be able to break request forwarding.
     """
     try:
-        from headroom.proxy import runtime_env
-        from headroom.proxy.output_savings import (
+        from legroom.proxy import runtime_env
+        from legroom.proxy.output_savings import (
             assign_arm,
             conversation_key_from_responses_body,
             stratum_key,
             stratum_label,
         )
-        from headroom.proxy.output_shaper import (
+        from legroom.proxy.output_shaper import (
             OutputShaperSettings,
             classify_responses_turn,
             resolve_verbosity_level,
@@ -561,7 +561,7 @@ def _shape_openai_responses_payload(
             return [], False
 
         try:
-            holdout = float(runtime_env.getenv("HEADROOM_OUTPUT_HOLDOUT", "0") or "0")
+            holdout = float(runtime_env.getenv("LEGROOM_OUTPUT_HOLDOUT", "0") or "0")
         except ValueError:
             holdout = 0.0
         arm = assign_arm(conversation_key_from_responses_body(payload), holdout)
@@ -601,7 +601,7 @@ def _compact_openai_tool_schema_value(
     _parent_key: str | None = None,
 ) -> Any:
     # Delegate to shared compaction logic.
-    from headroom.proxy.tool_schema_compaction import compact_tool_schema_value
+    from legroom.proxy.tool_schema_compaction import compact_tool_schema_value
 
     return compact_tool_schema_value(value, _parent_key)
 
@@ -609,7 +609,7 @@ def _compact_openai_tool_schema_value(
 def _compact_openai_responses_tools(
     payload: dict[str, Any],
 ) -> tuple[dict[str, Any], bool, int, int]:
-    from headroom.proxy.tool_schema_compaction import compact_tools
+    from legroom.proxy.tool_schema_compaction import compact_tools
 
     return compact_tools(payload)
 
@@ -617,7 +617,7 @@ def _compact_openai_responses_tools(
 def _responses_request_allows_memory_tool_continuation(payload: dict[str, Any]) -> bool:
     """Return whether Responses memory tools may rely on stored continuations.
 
-    Headroom memory tools use ``previous_response_id`` continuations after a
+    Legroom memory tools use ``previous_response_id`` continuations after a
     tool call. Those continuations require the originating response to be
     stored. When a client explicitly sends ``store=false``, preserve that
     contract and skip the Responses memory-tool injection path instead of
@@ -832,15 +832,15 @@ def _responses_input_to_learner_messages(
     return messages
 
 
-def _has_headroom_retrieve_tool_responses(tools: Any) -> bool:
+def _has_legroom_retrieve_tool_responses(tools: Any) -> bool:
     """Return True when the Responses API tool list includes CCR retrieve.
 
     Responses API tool defs are flat (``{"type": "function", "name": ...}``)
     rather than nested under a "function" key like chat-completions
     tool_calls, so this can't reuse the chat-completions tool-list check.
-    Mirrors ``AnthropicHandler._has_headroom_retrieve_tool``.
+    Mirrors ``AnthropicHandler._has_legroom_retrieve_tool``.
     """
-    from headroom.ccr import CCR_TOOL_NAME
+    from legroom.ccr import CCR_TOOL_NAME
 
     if not isinstance(tools, list):
         return False
@@ -868,7 +868,7 @@ def _should_buffer_openai_responses_stream_ccr(
         stream
         and ccr_response_handler_enabled
         and not is_chatgpt_auth
-        and _has_headroom_retrieve_tool_responses(tools)
+        and _has_legroom_retrieve_tool_responses(tools)
     )
 
 
@@ -908,7 +908,7 @@ def _dedup_responses_output_items(
     ``count_tokens`` callable is given. Never raises on malformed input.
     """
     try:
-        from headroom.transforms.cross_turn_dedup import DedupBlock, dedup_blocks
+        from legroom.transforms.cross_turn_dedup import DedupBlock, dedup_blocks
     except Exception:
         return 0, 0
 
@@ -982,10 +982,10 @@ def _openai_responses_to_sse(response: dict[str, Any]) -> list[bytes]:
 
 
 def _output_shaping_holdout_fraction() -> float:
-    from headroom.proxy import runtime_env
+    from legroom.proxy import runtime_env
 
     try:
-        return float(runtime_env.getenv("HEADROOM_OUTPUT_HOLDOUT", "0") or "0")
+        return float(runtime_env.getenv("LEGROOM_OUTPUT_HOLDOUT", "0") or "0")
     except ValueError:
         return 0.0
 
@@ -998,13 +998,13 @@ def _shape_openai_responses_for_output(
     conversation_key: str | None = None,
 ) -> Any:
     """Apply OpenAI Responses output shaping and attach holdout labels."""
-    from headroom.proxy.output_savings import (
+    from legroom.proxy.output_savings import (
         assign_arm,
         conversation_key_from_body,
         stratum_key,
         stratum_label,
     )
-    from headroom.proxy.output_shaper import (
+    from legroom.proxy.output_shaper import (
         OutputShaperSettings,
         ShapeResult,
         classify_openai_responses_input,
@@ -1168,7 +1168,7 @@ def _extract_codex_handshake_headers(upstream: Any) -> list[tuple[str, str]]:
     OpenAI delivers the Codex subscription/rate-limit window only on the
     WebSocket handshake response headers (not in data frames). We forward
     that subset onto the client-facing 101 so Codex, ``/stats``, and the
-    headroom-desktop gauge can all read the live window. Filtered strictly
+    legroom-desktop gauge can all read the live window. Filtered strictly
     to ``x-codex-*`` -- never ``set-cookie``/``authorization``/etc.
     """
     resp = getattr(upstream, "response", None)
@@ -1249,7 +1249,7 @@ def _prefers_http1_passthrough(base_url: str) -> bool:
 
 
 class OpenAIHandlerMixin:
-    """Mixin providing OpenAI API handler methods for HeadroomProxy."""
+    """Mixin providing OpenAI API handler methods for LegroomProxy."""
 
     OPENAI_RESPONSES_ROUTER_MIN_BYTES = 512
     OPENAI_RESPONSES_OUTPUT_TYPES = _RESPONSES_OUTPUT_ITEM_TYPES
@@ -1320,14 +1320,14 @@ class OpenAIHandlerMixin:
             logger.debug("[%s] Traffic learner (responses): %s", request_id, exc)
 
     @staticmethod
-    def _headroom_bypass_enabled(headers: Any) -> bool:
+    def _legroom_bypass_enabled(headers: Any) -> bool:
         """Return True when inbound headers request full passthrough."""
-        return _headroom_bypass_enabled(headers)
+        return _legroom_bypass_enabled(headers)
 
     def _resolve_openai_upstream(self, request: Request) -> str:
         """Return the OpenAI upstream base URL for ``request``.
 
-        Honors the ``x-headroom-base-url`` request header so OpenAI-compatible
+        Honors the ``x-legroom-base-url`` request header so OpenAI-compatible
         gateways (LiteLLM, CPA, self-hosted vLLM, Azure OpenAI) route through
         the dedicated ``/v1/chat/completions`` and ``/v1/responses`` handlers,
         not just the generic passthrough route that already honors it. Falls
@@ -1422,12 +1422,12 @@ class OpenAIHandlerMixin:
         if not isinstance(items, list):
             return payload, False, 0, [], {}, [], 0
         try:
-            from headroom.transforms.compression_batches import (
+            from legroom.transforms.compression_batches import (
                 CompressionBatchEntry,
                 build_compression_batches,
                 compress_batch_with_router,
             )
-            from headroom.transforms.compression_units import (
+            from legroom.transforms.compression_units import (
                 CompressionUnit,
                 RoutedCompressionUnit,
                 compress_unit_with_router,
@@ -1500,9 +1500,9 @@ class OpenAIHandlerMixin:
                         return True
             return False
 
-        headroom_retrieve_call_ids: set[str] = set()
+        legroom_retrieve_call_ids: set[str] = set()
         # Map each Responses tool call to its name so that outputs belonging to
-        # excluded tools (HEADROOM_EXCLUDE_TOOLS) can be protected from
+        # excluded tools (LEGROOM_EXCLUDE_TOOLS) can be protected from
         # compression. The chat/Anthropic paths get this via
         # ContentRouter._build_tool_name_map; the Responses payload carries the
         # name on the `function_call` item and the originating call_id on the
@@ -1518,16 +1518,16 @@ class OpenAIHandlerMixin:
             if isinstance(name, str) and isinstance(call_id, str) and call_id:
                 function_name_by_call_id[call_id] = name
             if isinstance(name, str) and (
-                name == "headroom_retrieve" or name.endswith("__headroom_retrieve")
+                name == "legroom_retrieve" or name.endswith("__legroom_retrieve")
             ):
                 if isinstance(call_id, str) and call_id:
-                    headroom_retrieve_call_ids.add(call_id)
+                    legroom_retrieve_call_ids.add(call_id)
 
         # Resolve the effective exclude set once (None -> built-in defaults),
         # mirroring ContentRouter's policy. exclude_tools already contains both
         # original and lowercased name variants (see _parse_exclude_tools), but
         # we also test the lowercased name defensively for case-insensitivity.
-        from headroom.config import (
+        from legroom.config import (
             DEFAULT_EXCLUDE_TOOLS,
             DEFAULT_VERBATIM_EXCLUDE_TOOLS,
             is_tool_excluded,
@@ -1578,13 +1578,13 @@ class OpenAIHandlerMixin:
             item_type = item.get("type")
             if item_type in self.OPENAI_RESPONSES_OUTPUT_TYPES:
                 call_id = item.get("call_id")
-                if isinstance(call_id, str) and call_id in headroom_retrieve_call_ids:
+                if isinstance(call_id, str) and call_id in legroom_retrieve_call_ids:
                     if debug_enabled:
                         extraction_debug.append(
                             {
                                 "index": idx,
                                 "eligible": False,
-                                "reason": "headroom_retrieve_output_protected",
+                                "reason": "legroom_retrieve_output_protected",
                                 "item_type": item_type,
                                 "call_id": call_id,
                                 "item": item,
@@ -2176,9 +2176,9 @@ class OpenAIHandlerMixin:
                 )
 
         # Layer 2: Tool description truncation (opt-in via
-        # HEADROOM_TOOL_DESC_MAX_CHARS).
+        # LEGROOM_TOOL_DESC_MAX_CHARS).
         try:
-            from headroom.proxy.tool_schema_compaction import (
+            from legroom.proxy.tool_schema_compaction import (
                 compact_tool_descriptions,
                 tool_desc_max_chars,
             )
@@ -2225,7 +2225,7 @@ class OpenAIHandlerMixin:
         # deferred defs still ride in the request body (OpenAI needs them to load
         # on demand), so this is a provider-side context saving, not a request-byte
         # one — hence a transform tag but no tokens_saved claim.
-        from headroom.proxy.helpers import inject_tool_search_deferral_openai
+        from legroom.proxy.helpers import inject_tool_search_deferral_openai
 
         _deferred_tools = inject_tool_search_deferral_openai(working.get("tools"), model)
         if _deferred_tools is not working.get("tools"):
@@ -2239,7 +2239,7 @@ class OpenAIHandlerMixin:
         # the outbound tools before we send — the extensible counterpart to the
         # built-in deferral above. Gated on the registry so it is a no-op (no copy,
         # no context construction) when no hook is registered.
-        from headroom.proxy.turn_hooks import (
+        from legroom.proxy.turn_hooks import (
             TurnContext,
             registered_turn_hooks,
             run_request_hooks,
@@ -2401,7 +2401,7 @@ class OpenAIHandlerMixin:
         timing: dict[str, float] = {}
 
         def _compress():  # noqa: ANN202
-            # Output shaping (opt-in via HEADROOM_OUTPUT_SHAPER) runs before
+            # Output shaping (opt-in via LEGROOM_OUTPUT_SHAPER) runs before
             # compression so the turn classifier sees the client's input as
             # sent, and the steering/effort mutations ride the same rewrite
             # path as compression at every call site (HTTP /v1/responses, WS
@@ -2455,23 +2455,23 @@ class OpenAIHandlerMixin:
     ) -> Response | StreamingResponse:
         """Handle OpenAI /v1/chat/completions endpoint."""
         if not hasattr(self, "pipeline_extensions"):
-            from headroom.pipeline import PipelineExtensionManager
+            from legroom.pipeline import PipelineExtensionManager
 
             self.pipeline_extensions = PipelineExtensionManager(discover=False)
 
         from fastapi import HTTPException
         from fastapi.responses import JSONResponse, Response
 
-        from headroom.ccr import CCRToolInjector
-        from headroom.proxy.helpers import (
+        from legroom.ccr import CCRToolInjector
+        from legroom.proxy.helpers import (
             COMPRESSION_TIMEOUT_SECONDS,
             MAX_MESSAGE_ARRAY_LENGTH,
             MAX_REQUEST_BODY_SIZE,
             _read_request_json,
         )
-        from headroom.proxy.modes import is_cache_mode, is_token_mode
-        from headroom.tokenizers import get_tokenizer
-        from headroom.utils import extract_user_query
+        from legroom.proxy.modes import is_cache_mode, is_token_mode
+        from legroom.tokenizers import get_tokenizer
+        from legroom.utils import extract_user_query
 
         start_time = time.time()
         request_id = await self._next_request_id()
@@ -2559,7 +2559,7 @@ class OpenAIHandlerMixin:
         stream = body.get("stream", False)
 
         # Bypass: skip ALL compression for explicit opt-out
-        _bypass = self._headroom_bypass_enabled(request.headers)
+        _bypass = self._legroom_bypass_enabled(request.headers)
         if _bypass:
             logger.info(f"[{request_id}] Bypass: skipping compression (header)")
 
@@ -2567,7 +2567,7 @@ class OpenAIHandlerMixin:
         # Gated on ImageCompressionDecision — same value-type pattern
         # as CompressionDecision + MemoryDecision; locks bypass-respect
         # in tests so a future site can't drift.
-        from headroom.proxy.image_compression_decision import ImageCompressionDecision
+        from legroom.proxy.image_compression_decision import ImageCompressionDecision
 
         _image_decision = ImageCompressionDecision.decide(
             headers=request.headers, config=self.config, messages=messages
@@ -2576,7 +2576,7 @@ class OpenAIHandlerMixin:
         # to where the tags dict exists. The decision is captured here
         # so the conditional is uniform with the other gates.
         if _image_decision.should_compress:
-            from headroom.proxy.helpers import _get_image_compressor
+            from legroom.proxy.helpers import _get_image_compressor
 
             compressor = None
             try:
@@ -2621,18 +2621,18 @@ class OpenAIHandlerMixin:
         # tags now that the tags dict exists. Same observability pattern
         # the funnel uses for passthrough_reason + memory_skip_reason.
         _image_decision.apply_to_tags(tags)
-        # PR-A5 (P5-49): strip internal x-headroom-* from upstream-bound
+        # PR-A5 (P5-49): strip internal x-legroom-* from upstream-bound
         # headers AFTER `_extract_tags` reads them. Inbound bypass gating
         # uses `request.headers.get(...)` above; memory user-id reads
         # `request.headers` below. From this point on, `headers` is the
         # upstream-bound copy.
-        from headroom.proxy.helpers import (
+        from legroom.proxy.helpers import (
             _strip_internal_headers,
             log_outbound_headers,
             merge_extra_headers,
         )
 
-        _pre_strip_count_chat = sum(1 for k in headers if k.lower().startswith("x-headroom-"))
+        _pre_strip_count_chat = sum(1 for k in headers if k.lower().startswith("x-legroom-"))
         headers = _strip_internal_headers(headers)
         headers = merge_extra_headers(headers, self.config.openai_extra_headers)
         log_outbound_headers(
@@ -2657,21 +2657,21 @@ class OpenAIHandlerMixin:
         openai_chat_outcome_provider = custom_chat_provider or "openai"
 
         # Memory: Get user ID when memory is enabled. Reads `request.headers`
-        # directly because `headers` was stripped of `x-headroom-*` for the
+        # directly because `headers` was stripped of `x-legroom-*` for the
         # upstream-bound copy (PR-A5).
         memory_user_id: str | None = None
         memory_request_ctx = None
         if self.memory_handler:
             memory_user_id = request.headers.get(
-                "x-headroom-user-id",
+                "x-legroom-user-id",
                 os.environ.get("USER", os.environ.get("USERNAME", "default")),
             )
             # Per-project memory routing (GH #462). Built once per request
             # so every save/search/inject resolves to the same workspace.
-            from headroom.memory.storage_router import (
+            from legroom.memory.storage_router import (
                 RequestContext as _MemRequestContext,
             )
-            from headroom.memory.storage_router import (
+            from legroom.memory.storage_router import (
                 extract_system_prompt as _extract_sys_prompt,
             )
 
@@ -2686,11 +2686,11 @@ class OpenAIHandlerMixin:
 
         # Canonical memory-injection gate (parallels Anthropic). Pre-
         # PR-this the inline conjunction at the memory site silently
-        # ignored `x-headroom-bypass: true`, mutating request bytes
+        # ignored `x-legroom-bypass: true`, mutating request bytes
         # under the user's "don't touch my bytes" signal.
-        from headroom.proxy.helpers import get_memory_injection_mode
-        from headroom.proxy.memory_decision import MemoryDecision
-        from headroom.proxy.memory_query import MemoryQuery
+        from legroom.proxy.helpers import get_memory_injection_mode
+        from legroom.proxy.memory_decision import MemoryDecision
+        from legroom.proxy.memory_query import MemoryQuery
 
         memory_decision = MemoryDecision.decide(
             headers=request.headers,
@@ -2789,7 +2789,7 @@ class OpenAIHandlerMixin:
         # Hook: pre_compress
         _hook_biases = None
         if self.config.hooks:
-            from headroom.hooks import CompressContext
+            from legroom.hooks import CompressContext
 
             _hook_ctx = CompressContext(model=model, provider="openai")
             try:
@@ -2824,13 +2824,13 @@ class OpenAIHandlerMixin:
         # Same pattern as anthropic.py — read client value, union with
         # session-seen tokens, update tracker. WS auto-injection of
         # `responses_websockets=2026-02-06` lives on the WS handler;
-        # chat-completions has no Headroom-required tokens today, so the
+        # chat-completions has no Legroom-required tokens today, so the
         # merge effectively just makes the client value byte-stable
         # across turns.
-        from headroom.proxy.helpers import (
+        from legroom.proxy.helpers import (
             get_session_beta_tracker as _get_session_beta_tracker_chat,
         )
-        from headroom.proxy.helpers import (
+        from legroom.proxy.helpers import (
             log_beta_header_merge as _log_beta_header_merge_chat,
         )
 
@@ -2857,7 +2857,7 @@ class OpenAIHandlerMixin:
             session_id=openai_session_id,
             client_betas_count=_client_openai_beta_count,
             sticky_betas_count=_sticky_openai_beta_count,
-            headroom_added=[],
+            legroom_added=[],
             request_id=request_id,
         )
 
@@ -2889,7 +2889,7 @@ class OpenAIHandlerMixin:
                 # the is_token_mode branch so the else (non-token) branch
                 # below can pass it through too. See the equivalent block
                 # in handlers/anthropic.py.
-                from headroom.transforms.compression_policy import resolve_policy
+                from legroom.transforms.compression_policy import resolve_policy
 
                 compression_policy = resolve_policy(getattr(request.state, "auth_mode", None))
 
@@ -2925,7 +2925,7 @@ class OpenAIHandlerMixin:
                             biases=_hook_biases,
                             compression_policy=compression_policy,
                             # Thread the savings-profile knobs (e.g.
-                            # HEADROOM_SAVINGS_PROFILE=agent-90) onto the live
+                            # LEGROOM_SAVINGS_PROFILE=agent-90) onto the live
                             # chat-completions path, matching handlers/
                             # anthropic.py and the dedicated OpenAI compress
                             # endpoint. Without this the profile's
@@ -2996,7 +2996,7 @@ class OpenAIHandlerMixin:
         # prefix byte-identical, so freezing can't bust the prompt cache. See the
         # matching guard in the Anthropic handler for the full rationale. Append-
         # only-guarded and idempotent (cache mode already replays).
-        from headroom.cache.prefix_tracker import overlay_cached_prefix
+        from legroom.cache.prefix_tracker import overlay_cached_prefix
 
         _ov = overlay_cached_prefix(
             optimized_messages,
@@ -3063,7 +3063,7 @@ class OpenAIHandlerMixin:
 
         # Hook: post_compress
         if self.config.hooks and tokens_saved > 0:
-            from headroom.hooks import CompressEvent
+            from legroom.hooks import CompressEvent
 
             try:
                 self.config.hooks.post_compress(
@@ -3084,9 +3084,9 @@ class OpenAIHandlerMixin:
 
         # CCR Tool Injection: Inject retrieval tool if compression occurred
         # OR if this session has previously done CCR (PR-B7 sticky-on).
-        # See `headroom/proxy/handlers/anthropic.py` and PR-B7 plan
+        # See `legroom/proxy/handlers/anthropic.py` and PR-B7 plan
         # `REALIGNMENT/04-phase-B-live-zone.md` for the rationale: once a
-        # session has done CCR, the `headroom_retrieve` tool stays
+        # session has done CCR, the `legroom_retrieve` tool stays
         # registered for every subsequent turn so the prompt cache
         # anchored on the previous turn's tool list never busts.
         tools = body.get("tools")
@@ -3104,7 +3104,7 @@ class OpenAIHandlerMixin:
                 optimized_messages = injector.inject_into_system_message(optimized_messages)
 
             if self.config.ccr_inject_tool:
-                from headroom.proxy.helpers import (
+                from legroom.proxy.helpers import (
                     apply_session_sticky_ccr_tool,
                     has_new_ccr_markers,
                 )
@@ -3170,7 +3170,7 @@ class OpenAIHandlerMixin:
                         timeout=(self.config.anthropic_pre_upstream_memory_context_timeout_seconds),
                     )
                     if memory_context:
-                        from headroom.proxy.helpers import (
+                        from legroom.proxy.helpers import (
                             append_text_to_latest_user_chat_message,
                             get_memory_injection_mode,
                             log_memory_injection,
@@ -3215,7 +3215,7 @@ class OpenAIHandlerMixin:
 
                 # Inject memory tools — PR-A7 (P0-6) routes through
                 # `apply_session_sticky_memory_tools` so byte-stable across turns.
-                from headroom.proxy.helpers import (
+                from legroom.proxy.helpers import (
                     apply_session_sticky_memory_tools as _apply_sticky_mem_tools,
                 )
 
@@ -3311,7 +3311,7 @@ class OpenAIHandlerMixin:
         # streamed turn can't be re-driven to resolve whatever the model asks to
         # load. Gated on the registry so it is a no-op when none are registered;
         # the net tool-schema token delta is recorded so it shows up as a saving.
-        from headroom.proxy.turn_hooks import (
+        from legroom.proxy.turn_hooks import (
             TurnContext,
             registered_turn_hooks,
             run_request_hooks,
@@ -3361,7 +3361,7 @@ class OpenAIHandlerMixin:
         # `max_completion_tokens`.
         _normalize_openai_max_tokens(body)
 
-        # Output shaping (opt-in via HEADROOM_OUTPUT_SHAPER): verbosity steering
+        # Output shaping (opt-in via LEGROOM_OUTPUT_SHAPER): verbosity steering
         # on the chat system message. Runs after every other body mutation so the
         # turn classifier sees the final messages, and respects the same bypass
         # as compression. OpenAI-compatible clients that route through
@@ -3370,14 +3370,14 @@ class OpenAIHandlerMixin:
         # Mutating `body` in place is sufficient here — the outbound request
         # serializes `body` fresh, so no body-mutation tracker is needed.
         if not _bypass:
-            from headroom.proxy import runtime_env
-            from headroom.proxy.output_savings import (
+            from legroom.proxy import runtime_env
+            from legroom.proxy.output_savings import (
                 assign_arm,
                 conversation_key_from_body,
                 stratum_key,
                 stratum_label,
             )
-            from headroom.proxy.output_shaper import (
+            from legroom.proxy.output_shaper import (
                 OutputShaperSettings,
                 classify_turn,
                 resolve_verbosity_level,
@@ -3392,7 +3392,7 @@ class OpenAIHandlerMixin:
                 # mid-conversation).
                 _holdout = 0.0
                 try:
-                    _holdout = float(runtime_env.getenv("HEADROOM_OUTPUT_HOLDOUT", "0") or "0")
+                    _holdout = float(runtime_env.getenv("LEGROOM_OUTPUT_HOLDOUT", "0") or "0")
                 except ValueError:
                     _holdout = 0.0
                 _arm = assign_arm(conversation_key_from_body(body), _holdout)
@@ -3490,7 +3490,7 @@ class OpenAIHandlerMixin:
                             content=backend_response.body,
                         )
 
-                    # CCR Response Handling: intercept headroom_retrieve
+                    # CCR Response Handling: intercept legroom_retrieve
                     # tool calls server-side so a Bedrock/LiteLLM
                     # OpenAI-shape response doesn't propagate a tool_call
                     # the downstream caller (e.g. Strands) can't resolve.
@@ -3562,7 +3562,7 @@ class OpenAIHandlerMixin:
                             # Turn hooks (opt-in extensions) may inspect the turn
                             # or re-drive the model before we hand back the
                             # response. Inert when no hook is registered.
-                            from headroom.proxy.turn_hooks import (
+                            from legroom.proxy.turn_hooks import (
                                 TurnContext,
                                 run_response_hooks,
                             )
@@ -3735,13 +3735,13 @@ class OpenAIHandlerMixin:
                 # (e.g. resolve a tool the model asked to load) before we treat
                 # the response as final. Buffered path only; no-op when no hook
                 # is registered.
-                from headroom.proxy.turn_hooks import (
+                from legroom.proxy.turn_hooks import (
                     TurnContext as _TurnContext,
                 )
-                from headroom.proxy.turn_hooks import (
+                from legroom.proxy.turn_hooks import (
                     registered_turn_hooks as _registered_turn_hooks,
                 )
-                from headroom.proxy.turn_hooks import (
+                from legroom.proxy.turn_hooks import (
                     run_response_hooks,
                 )
 
@@ -3833,12 +3833,12 @@ class OpenAIHandlerMixin:
                     )
 
                     # Diagnostic dump — OFF by default (can contain cleartext
-                    # prompt/tool/system content). Opt in via HEADROOM_DEBUG_DUMP
+                    # prompt/tool/system content). Opt in via LEGROOM_DEBUG_DUMP
                     # (=1 redacted, =full with content); never in stateless mode.
                     dump_mode = _debug_dump_mode(self.config)
                     if dump_mode != "off":
                         try:
-                            from headroom import paths as _hr_paths
+                            from legroom import paths as _hr_paths
 
                             debug_dir = _hr_paths.debug_400_dir()
                             debug_dir.mkdir(parents=True, exist_ok=True)
@@ -4003,7 +4003,7 @@ class OpenAIHandlerMixin:
                     )
 
                 # Capture Codex rate-limit window data from response headers
-                from headroom.subscription.codex_rate_limits import (
+                from legroom.subscription.codex_rate_limits import (
                     get_codex_rate_limit_state,
                 )
 
@@ -4022,7 +4022,7 @@ class OpenAIHandlerMixin:
                 # OpenAI Chat direct (non-backend) non-streaming.
                 # Fallback denominator: full pre-comp size — see
                 # equivalent note at the backend-routed sibling.
-                from headroom.proxy.helpers import compute_turn_id
+                from legroom.proxy.helpers import compute_turn_id
 
                 await self._record_request_outcome(
                     RequestOutcome(
@@ -4062,19 +4062,19 @@ class OpenAIHandlerMixin:
                 # Remove compression headers since httpx already decompressed the response
                 response_headers = _sanitize_forwarded_response_headers(response.headers)
 
-                # Inject Headroom compression metrics (for SaaS metering)
-                response_headers["x-headroom-tokens-before"] = str(original_tokens)
-                response_headers["x-headroom-tokens-after"] = str(optimized_tokens)
-                response_headers["x-headroom-tokens-saved"] = str(tokens_saved)
-                response_headers["x-headroom-model"] = model
+                # Inject Legroom compression metrics (for SaaS metering)
+                response_headers["x-legroom-tokens-before"] = str(original_tokens)
+                response_headers["x-legroom-tokens-after"] = str(optimized_tokens)
+                response_headers["x-legroom-tokens-saved"] = str(tokens_saved)
+                response_headers["x-legroom-model"] = model
                 if transforms_applied:
-                    response_headers["x-headroom-transforms"] = ",".join(
+                    response_headers["x-legroom-transforms"] = ",".join(
                         header_safe_transforms(transforms_applied)
                     )
                 if cache_read_tokens > 0:
-                    response_headers["x-headroom-cached"] = "true"
+                    response_headers["x-legroom-cached"] = "true"
                 if _compression_failed:
-                    response_headers["x-headroom-compression-failed"] = "true"
+                    response_headers["x-legroom-compression-failed"] = "true"
 
                 return Response(
                     content=response.content,
@@ -4113,13 +4113,13 @@ class OpenAIHandlerMixin:
         from fastapi import HTTPException
         from fastapi.responses import JSONResponse, Response, StreamingResponse
 
-        from headroom.proxy.body_forwarding import BodyMutationTracker
-        from headroom.proxy.helpers import (
+        from legroom.proxy.body_forwarding import BodyMutationTracker
+        from legroom.proxy.helpers import (
             MAX_REQUEST_BODY_SIZE,
             read_request_json_with_bytes,
         )
-        from headroom.tokenizers import get_tokenizer
-        from headroom.utils import extract_user_query
+        from legroom.tokenizers import get_tokenizer
+        from legroom.utils import extract_user_query
 
         start_time = time.time()
         request_id = await self._next_request_id()
@@ -4168,20 +4168,20 @@ class OpenAIHandlerMixin:
         model = body.get("model", "unknown")
         stream = body.get("stream", False)
         body_mutation_tracker = BodyMutationTracker()
-        _bypass = self._headroom_bypass_enabled(request.headers)
+        _bypass = self._legroom_bypass_enabled(request.headers)
         if _bypass:
             logger.info(
                 "[%s] Responses passthrough reason=bypass_header mutation=disabled",
                 request_id,
             )
 
-        from headroom.proxy.helpers import capture_codex_wire_debug
+        from legroom.proxy.helpers import capture_codex_wire_debug
 
         capture_codex_wire_debug(
             "http_inbound_request",
             request_id=request_id,
             transport="http",
-            direction="client_to_headroom",
+            direction="client_to_legroom",
             method=request.method,
             url=str(request.url),
             headers=dict(request.headers.items()),
@@ -4228,16 +4228,16 @@ class OpenAIHandlerMixin:
         # compression mutates it. This mirrors the Anthropic ingestion path.
         await self._observe_openai_responses_traffic(body, request_id=request_id)
 
-        # PR-A5 (P5-49): strip internal x-headroom-* from upstream-bound
+        # PR-A5 (P5-49): strip internal x-legroom-* from upstream-bound
         # headers AFTER `_extract_tags` reads them. Memory user-id reads
         # `request.headers` below.
-        from headroom.proxy.helpers import (
+        from legroom.proxy.helpers import (
             _strip_internal_headers,
             log_outbound_headers,
             merge_extra_headers,
         )
 
-        _pre_strip_count_resp = sum(1 for k in headers if k.lower().startswith("x-headroom-"))
+        _pre_strip_count_resp = sum(1 for k in headers if k.lower().startswith("x-legroom-"))
         headers = _strip_internal_headers(headers)
         headers = merge_extra_headers(headers, self.config.openai_extra_headers)
         # Mirror the WS handler: never forward Codex's client-only lite header
@@ -4267,10 +4267,10 @@ class OpenAIHandlerMixin:
         _responses_session_id = self.session_tracker_store.compute_session_id(
             request, model, messages
         )
-        from headroom.proxy.helpers import (
+        from legroom.proxy.helpers import (
             get_session_beta_tracker as _get_session_beta_tracker_resp,
         )
-        from headroom.proxy.helpers import (
+        from legroom.proxy.helpers import (
             log_beta_header_merge as _log_beta_header_merge_resp,
         )
 
@@ -4295,23 +4295,23 @@ class OpenAIHandlerMixin:
             session_id=_responses_session_id,
             client_betas_count=_client_resp_beta_count,
             sticky_betas_count=_sticky_resp_beta_count,
-            headroom_added=[],
+            legroom_added=[],
             request_id=request_id,
         )
 
         # Memory: Get user ID when memory is enabled. Reads `request.headers`
-        # directly because `headers` was stripped of `x-headroom-*` (PR-A5).
+        # directly because `headers` was stripped of `x-legroom-*` (PR-A5).
         memory_user_id: str | None = None
         memory_request_ctx = None
         if self.memory_handler:
             memory_user_id = request.headers.get(
-                "x-headroom-user-id",
+                "x-legroom-user-id",
                 os.environ.get("USER", os.environ.get("USERNAME", "default")),
             )
-            from headroom.memory.storage_router import (
+            from legroom.memory.storage_router import (
                 RequestContext as _MemRequestContext,
             )
-            from headroom.memory.storage_router import (
+            from legroom.memory.storage_router import (
                 extract_system_prompt as _extract_sys_prompt,
             )
 
@@ -4361,9 +4361,9 @@ class OpenAIHandlerMixin:
         # (FUTURE: move context injection to post-compression for
         # uniform "memory text rides uncompressed across all
         # handlers" semantics — separate PR with cache-stability tests).
-        from headroom.proxy.helpers import get_memory_injection_mode
-        from headroom.proxy.memory_decision import MemoryDecision
-        from headroom.proxy.memory_query import MemoryQuery
+        from legroom.proxy.helpers import get_memory_injection_mode
+        from legroom.proxy.memory_decision import MemoryDecision
+        from legroom.proxy.memory_query import MemoryQuery
 
         responses_memory_decision = MemoryDecision.decide(
             headers=request.headers,
@@ -4396,7 +4396,7 @@ class OpenAIHandlerMixin:
                             f"{RESPONSES_CONTEXT_SEARCH_TIMEOUT_SECONDS:.1f}s; continuing without it"
                         )
                     if memory_context:
-                        from headroom.proxy.helpers import (
+                        from legroom.proxy.helpers import (
                             append_text_to_latest_user_input_item,
                             get_memory_injection_mode,
                             log_memory_injection,
@@ -4473,7 +4473,7 @@ class OpenAIHandlerMixin:
                 # format BEFORE handing to the sticky tracker so the
                 # canonical bytes pinned in turn 1 already reflect the
                 # exact bytes that will hit the wire.
-                from headroom.proxy.helpers import (
+                from legroom.proxy.helpers import (
                     apply_session_sticky_memory_tools as _apply_sticky_mem_tools_resp,
                 )
 
@@ -4625,9 +4625,9 @@ class OpenAIHandlerMixin:
                 # Fail-closed protection (default): refuse to forward
                 # oversized requests after compression failure. Same
                 # decision matrix and override env var as the WS path
-                # (HEADROOM_WS_FAIL_OPEN_ON_COMPRESSION_FAILURE) — see
+                # (LEGROOM_WS_FAIL_OPEN_ON_COMPRESSION_FAILURE) — see
                 # helpers.decide_compression_failure_action.
-                from headroom.proxy.helpers import (
+                from legroom.proxy.helpers import (
                     decide_compression_failure_action,
                 )
 
@@ -4643,7 +4643,7 @@ class OpenAIHandlerMixin:
                         "returning HTTP 413 so the client can compact "
                         "context and retry. To restore legacy passthrough "
                         "behaviour set "
-                        "HEADROOM_WS_FAIL_OPEN_ON_COMPRESSION_FAILURE=1.",
+                        "LEGROOM_WS_FAIL_OPEN_ON_COMPRESSION_FAILURE=1.",
                         request_id,
                         _http_action.reason,
                         _http_action.frame_bytes,
@@ -4654,7 +4654,7 @@ class OpenAIHandlerMixin:
                             "error": {
                                 "type": "compression_refused",
                                 "message": (
-                                    f"headroom: compression "
+                                    f"legroom: compression "
                                     f"{_http_action.reason} on a "
                                     f"{_http_body_bytes}-byte request "
                                     "— please compact context and retry."
@@ -4664,13 +4664,13 @@ class OpenAIHandlerMixin:
                     ) from _e
 
         if not _bypass:
-            _http_conversation_key = request.headers.get("x-headroom-session-id")
+            _http_conversation_key = request.headers.get("x-legroom-session-id")
             _shape_result = _shape_openai_responses_for_output(
                 body,
                 input_tokens=original_tokens,
                 model=str(model or ""),
                 conversation_key=(
-                    f"header:x-headroom-session-id:{_http_conversation_key}"
+                    f"header:x-legroom-session-id:{_http_conversation_key}"
                     if _http_conversation_key
                     else None
                 ),
@@ -4688,7 +4688,7 @@ class OpenAIHandlerMixin:
                 "http_upstream_request",
                 request_id=request_id,
                 transport="http",
-                direction="headroom_to_upstream",
+                direction="legroom_to_upstream",
                 method="POST",
                 url=url,
                 headers=headers,
@@ -4710,7 +4710,7 @@ class OpenAIHandlerMixin:
         waste_signals_dict: dict[str, int] | None = None
         if tokens_saved > 100:
             try:
-                from headroom.parser import parse_messages
+                from legroom.parser import parse_messages
 
                 _, _, _waste = parse_messages(
                     _responses_input_to_waste_messages(instructions, input_data),
@@ -4721,7 +4721,7 @@ class OpenAIHandlerMixin:
             except Exception:
                 pass
 
-        # CCR: a stream:true request whose tool list carries headroom_retrieve
+        # CCR: a stream:true request whose tool list carries legroom_retrieve
         # can't be intercepted mid-SSE-stream without full event-level
         # splicing (#1877 proposals B/C, out of scope here). Instead, force
         # a buffered stream:false upstream call so retrieval can be resolved
@@ -4744,7 +4744,7 @@ class OpenAIHandlerMixin:
                 body_mutation_tracker.mark_mutated("ccr_streaming_retrieve_buffered_non_stream")
             logger.info(
                 f"[{request_id}] CCR: stream:true /v1/responses request has "
-                "headroom_retrieve available; using buffered stream:false "
+                "legroom_retrieve available; using buffered stream:false "
                 "upstream request for server-side retrieval handling"
             )
 
@@ -4798,7 +4798,7 @@ class OpenAIHandlerMixin:
                     "http_upstream_response",
                     request_id=request_id,
                     transport="http",
-                    direction="upstream_to_headroom",
+                    direction="upstream_to_legroom",
                     method="POST",
                     url=url,
                     headers=dict(response.headers),
@@ -4835,7 +4835,7 @@ class OpenAIHandlerMixin:
                         f"[{request_id}] Failed to extract cached tokens from OpenAI passthrough response: {e}"
                     )
 
-                # CCR Response Handling: intercept headroom_retrieve tool
+                # CCR Response Handling: intercept legroom_retrieve tool
                 # calls server-side so a Responses API function_call the
                 # downstream caller can't resolve (e.g. Strands, or a
                 # buffered-stream request) never reaches the client. Mirrors
@@ -4946,7 +4946,7 @@ class OpenAIHandlerMixin:
                 ):
                     try:
                         # Extract function_call items from output
-                        from headroom.proxy.memory_handler import MEMORY_TOOL_NAMES
+                        from legroom.proxy.memory_handler import MEMORY_TOOL_NAMES
 
                         output_items = resp_json.get("output", [])
                         memory_fc_items = [
@@ -5052,7 +5052,7 @@ class OpenAIHandlerMixin:
                 # Pre-refactor `cache_hit` was hardcoded False on
                 # RequestLog even when cache_read>0 — funnel derives
                 # it correctly.
-                from headroom.proxy.helpers import compute_turn_id
+                from legroom.proxy.helpers import compute_turn_id
 
                 await self._record_request_outcome(
                     RequestOutcome(
@@ -5085,7 +5085,7 @@ class OpenAIHandlerMixin:
                 logger.info(f"[{request_id}] /v1/responses {model}: {total_input_tokens:,} tokens")
 
                 # Capture Codex rate-limit window data from response headers
-                from headroom.subscription.codex_rate_limits import (
+                from legroom.subscription.codex_rate_limits import (
                     get_codex_rate_limit_state,
                 )
 
@@ -5110,7 +5110,7 @@ class OpenAIHandlerMixin:
                         # Anthropic buffered path's residual-CCR guard.
                         logger.warning(
                             f"[{request_id}] CCR: Buffered streaming Responses "
-                            "reply still contains headroom_retrieve after "
+                            "reply still contains legroom_retrieve after "
                             "handling; failing closed"
                         )
 
@@ -5240,14 +5240,14 @@ class OpenAIHandlerMixin:
             getattr(websocket, "client", ""),
             len(ws_headers),
         )
-        from headroom.proxy.helpers import capture_codex_wire_debug
+        from legroom.proxy.helpers import capture_codex_wire_debug
 
         capture_codex_wire_debug(
             "ws_inbound_handshake",
             request_id=request_id,
             session_id=session_id,
             transport="websocket",
-            direction="client_to_headroom",
+            direction="client_to_legroom",
             url=_ws_url,
             headers=ws_headers,
             metadata={"path": _ws_path},
@@ -5255,7 +5255,7 @@ class OpenAIHandlerMixin:
         # Extract per-request tags from headers up front so the
         # session-end RequestLog can attach them. `_extract_tags` is
         # the same helper the HTTP handlers use; on a WebSocket the
-        # tags come from `x-headroom-tag-*` headers in the upgrade
+        # tags come from `x-legroom-tag-*` headers in the upgrade
         # handshake. Returns `{}` when no tags are present.
         _extract_ws_tags = getattr(self, "_extract_tags", None)
         ws_tags = _extract_ws_tags(ws_headers) if callable(_extract_ws_tags) else {}
@@ -5286,14 +5286,14 @@ class OpenAIHandlerMixin:
                 "transfer-encoding",  # hop-by-hop
             }
         )
-        # PR-A5 (P5-49): also drop internal x-headroom-* from the upstream
+        # PR-A5 (P5-49): also drop internal x-legroom-* from the upstream
         # WebSocket handshake. Inbound reads on `ws_headers` (memory user-id
         # below) keep working because we filter only when building
         # `upstream_headers`, not when reading from `ws_headers`.
-        from headroom.proxy.helpers import (
+        from legroom.proxy.helpers import (
             _strip_internal_headers as _strip_internal,
         )
-        from headroom.proxy.helpers import (
+        from legroom.proxy.helpers import (
             log_outbound_headers as _log_outbound_headers,
         )
 
@@ -5302,7 +5302,7 @@ class OpenAIHandlerMixin:
             if k.lower() not in _skip_headers:
                 _ws_pre_strip_filtered[k] = v
         _ws_pre_strip_count = sum(
-            1 for k in _ws_pre_strip_filtered if k.lower().startswith("x-headroom-")
+            1 for k in _ws_pre_strip_filtered if k.lower().startswith("x-legroom-")
         )
         upstream_headers = _strip_internal(_ws_pre_strip_filtered)
         _log_outbound_headers(
@@ -5336,7 +5336,7 @@ class OpenAIHandlerMixin:
 
         # Resolve Copilot auth for this upstream FIRST, before any generic
         # OpenAI-key fallback below -- ensures a real client-supplied Copilot
-        # credential is used/preserved, and Headroom's own credential fetch
+        # credential is used/preserved, and Legroom's own credential fetch
         # only kicks in when the client truly sent none.
         upstream_headers = await apply_copilot_api_auth(upstream_headers, url=upstream_url)
 
@@ -5345,7 +5345,7 @@ class OpenAIHandlerMixin:
             request_id=request_id,
             session_id=session_id,
             transport="websocket",
-            direction="headroom_to_upstream",
+            direction="legroom_to_upstream",
             url=upstream_url,
             headers=upstream_headers,
             metadata={
@@ -5385,13 +5385,13 @@ class OpenAIHandlerMixin:
         # case-insensitively) rather than overwriting it. The
         # SessionBetaTracker also records the merge so a future cross-
         # connection sticky model can replay tokens by session_id.
-        from headroom.proxy.helpers import (
+        from legroom.proxy.helpers import (
             get_session_beta_tracker as _get_session_beta_tracker_ws,
         )
-        from headroom.proxy.helpers import (
+        from legroom.proxy.helpers import (
             log_beta_header_merge as _log_beta_header_merge_ws,
         )
-        from headroom.proxy.helpers import merge_openai_beta as _merge_openai_beta_ws
+        from legroom.proxy.helpers import merge_openai_beta as _merge_openai_beta_ws
 
         _ws_required_tokens = ["responses_websockets=2026-02-06"]
         # Read the original (pre-merge) client value from the WS headers
@@ -5429,7 +5429,7 @@ class OpenAIHandlerMixin:
             session_id=session_id,
             client_betas_count=_ws_client_beta_count,
             sticky_betas_count=_ws_merged_beta_count,
-            headroom_added=_ws_required_tokens,
+            legroom_added=_ws_required_tokens,
             request_id=request_id,
         )
 
@@ -5438,7 +5438,7 @@ class OpenAIHandlerMixin:
             request_id=request_id,
             session_id=session_id,
             transport="websocket",
-            direction="headroom_to_upstream",
+            direction="legroom_to_upstream",
             url=upstream_url,
             headers=upstream_headers,
             metadata={
@@ -5484,7 +5484,7 @@ class OpenAIHandlerMixin:
 
         def _schedule_usage_poll() -> None:
             with contextlib.suppress(Exception):
-                from headroom.subscription.codex_rate_limits import (
+                from legroom.subscription.codex_rate_limits import (
                     maybe_schedule_usage_poll,
                 )
 
@@ -5517,7 +5517,7 @@ class OpenAIHandlerMixin:
             _upstream_connect_recorded = False
             _upstream_first_event_started: float | None = None
             upstream: Any = None
-            from headroom.proxy.helpers import merge_extra_headers
+            from legroom.proxy.helpers import merge_extra_headers
 
             upstream_headers = merge_extra_headers(
                 upstream_headers, self.config.openai_extra_headers
@@ -5589,7 +5589,7 @@ class OpenAIHandlerMixin:
                         for name, value in _codex_handshake
                     ]
                     # Parity with the HTTP path: also refresh Python /stats state.
-                    from headroom.subscription.codex_rate_limits import (
+                    from legroom.subscription.codex_rate_limits import (
                         get_codex_rate_limit_state,
                     )
 
@@ -5670,7 +5670,7 @@ class OpenAIHandlerMixin:
                 Preserve default upstream behavior unless explicitly enabled.
                 """
                 if os.environ.get(
-                    "HEADROOM_OPENAI_WS_FLATTEN_RESPONSE_CREATE", ""
+                    "LEGROOM_OPENAI_WS_FLATTEN_RESPONSE_CREATE", ""
                 ).strip().lower() not in (
                     "1",
                     "true",
@@ -5743,7 +5743,7 @@ class OpenAIHandlerMixin:
             ws_recorded_compression_timing_totals: dict[str, float] = {}
             ws_ttfb_ms: float | None = None
             ws_recorded_ttfb_ms = False
-            _ws_bypass = self._headroom_bypass_enabled(ws_headers)
+            _ws_bypass = self._legroom_bypass_enabled(ws_headers)
             if _ws_bypass:
                 logger.info(
                     "[%s] WS /v1/responses passthrough reason=bypass_header mutation=disabled",
@@ -5755,7 +5755,7 @@ class OpenAIHandlerMixin:
                 request_id=request_id,
                 session_id=session_id,
                 transport="websocket",
-                direction="client_to_headroom",
+                direction="client_to_legroom",
                 url=_ws_url,
                 body=body if body else None,
                 raw_text=None if body else first_msg_raw,
@@ -5844,16 +5844,16 @@ class OpenAIHandlerMixin:
 
             memory_user_id: str | None = None
             memory_request_ctx = None
-            from headroom.proxy.helpers import get_memory_injection_mode, log_memory_injection
-            from headroom.proxy.memory_decision import MemoryDecision
-            from headroom.proxy.memory_query import MemoryQuery
+            from legroom.proxy.helpers import get_memory_injection_mode, log_memory_injection
+            from legroom.proxy.memory_decision import MemoryDecision
+            from legroom.proxy.memory_query import MemoryQuery
 
             async def _prepare_memory_frame(frame_body: dict[str, Any], frame_raw: str) -> str:
                 nonlocal memory_user_id, memory_request_ctx
 
                 memory_user_id_candidate = (
                     ws_headers.get(
-                        "x-headroom-user-id",
+                        "x-legroom-user-id",
                         os.environ.get("USER", os.environ.get("USERNAME", "default")),
                     )
                     if self.memory_handler
@@ -5878,7 +5878,7 @@ class OpenAIHandlerMixin:
                     # ``ws_response_body`` carries ``instructions`` —
                     # that's the system-prompt-equivalent we feed to the
                     # resolver.
-                    from headroom.memory.storage_router import (
+                    from legroom.memory.storage_router import (
                         RequestContext as _MemRequestContext,
                     )
 
@@ -5982,7 +5982,7 @@ class OpenAIHandlerMixin:
                     # WS path uses a per-connection UUID; tracker scope is
                     # the WS session (short-lived). Pre-convert to Responses
                     # API format so canonical bytes match the wire format.
-                    from headroom.proxy.helpers import (
+                    from legroom.proxy.helpers import (
                         apply_session_sticky_memory_tools as _apply_sticky_mem_tools_ws,
                     )
 
@@ -6066,7 +6066,7 @@ class OpenAIHandlerMixin:
             # subscription users default to WebSocket transport for
             # /v1/responses (proxy-confirmed via #409 reviewer testing),
             # so without this call subscription traffic flows through
-            # Headroom uncompressed.
+            # Legroom uncompressed.
             #
             # The first frame may be either:
             #   • {"type": "response.create", "response": {...payload...}}
@@ -6233,14 +6233,14 @@ class OpenAIHandlerMixin:
                     # oversized frames after a compression failure. Forwarding
                     # the original to the upstream would cause a
                     # context-window-exceeded response that the client
-                    # (e.g. Codex) cannot recover from, because Headroom's
+                    # (e.g. Codex) cannot recover from, because Legroom's
                     # earlier successful compressions hid the cumulative
                     # context pressure from the client's auto-compaction
                     # heuristic. Close the client WS with 1009 instead so the
                     # client gets a clear "compact and retry" signal.
                     # See helpers.decide_compression_failure_action for the
                     # decision matrix and env-var overrides.
-                    from headroom.proxy.helpers import (
+                    from legroom.proxy.helpers import (
                         decide_compression_failure_action,
                     )
 
@@ -6257,7 +6257,7 @@ class OpenAIHandlerMixin:
                             "websocket with 1009 so client can compact "
                             "context and retry. To restore legacy "
                             "passthrough behaviour set "
-                            "HEADROOM_WS_FAIL_OPEN_ON_COMPRESSION_FAILURE=1.",
+                            "LEGROOM_WS_FAIL_OPEN_ON_COMPRESSION_FAILURE=1.",
                             request_id,
                             _ws_action.reason,
                             _ws_action.frame_bytes,
@@ -6267,7 +6267,7 @@ class OpenAIHandlerMixin:
                             await websocket.close(
                                 code=1009,
                                 reason=(
-                                    "headroom: compression "
+                                    "legroom: compression "
                                     f"{_ws_action.reason} — please "
                                     "compact context and retry"
                                 ),
@@ -6321,7 +6321,7 @@ class OpenAIHandlerMixin:
                 request_id=request_id,
                 session_id=session_id,
                 transport="websocket",
-                direction="headroom_to_upstream",
+                direction="legroom_to_upstream",
                 url=upstream_url,
                 body=_first_upstream_body,
                 raw_text=None if _first_upstream_body is not None else first_msg_raw,
@@ -6680,7 +6680,7 @@ class OpenAIHandlerMixin:
                                     request_id=request_id,
                                     session_id=session_id,
                                     transport="websocket",
-                                    direction="client_to_headroom",
+                                    direction="client_to_legroom",
                                     url=_ws_url,
                                     body=_inbound_frame_body,
                                     raw_text=None if _inbound_frame_body is not None else msg,
@@ -6740,7 +6740,7 @@ class OpenAIHandlerMixin:
                                     request_id=request_id,
                                     session_id=session_id,
                                     transport="websocket",
-                                    direction="headroom_to_upstream",
+                                    direction="legroom_to_upstream",
                                     url=upstream_url,
                                     body=_outbound_frame_body,
                                     raw_text=None if _outbound_frame_body is not None else msg,
@@ -6794,7 +6794,7 @@ class OpenAIHandlerMixin:
 
                         This prevents orphaned response.created events from confusing Codex.
                         """
-                        from headroom.proxy.memory_handler import MEMORY_TOOL_NAMES
+                        from legroom.proxy.memory_handler import MEMORY_TOOL_NAMES
 
                         # Unit 3: surface response.completed observation
                         # to the outer scope so the termination-cause
@@ -6895,11 +6895,11 @@ class OpenAIHandlerMixin:
                             # emitted only metrics + cost_tracker
                             # — no RequestLog, no PERF — so Codex
                             # traffic was invisible to
-                            # ``headroom perf`` and the recent-
+                            # ``legroom perf`` and the recent-
                             # requests feed. Funnel restores all
                             # four effects uniformly per turn. Per-
                             # turn outcomes carry ``ws_tags`` (the
-                            # `x-headroom-tag-*` headers extracted
+                            # `x-legroom-tag-*` headers extracted
                             # at the WS upgrade) so dashboards can
                             # slice WS turns by tag — same surface
                             # as HTTP turns.
@@ -6931,7 +6931,7 @@ class OpenAIHandlerMixin:
                                 )
                             )
 
-                            # Structured PERF log line so ``headroom perf``
+                            # Structured PERF log line so ``legroom perf``
                             # counts this Codex turn. Pre-P2 this emit was
                             # missing, which is why Codex traffic showed up
                             # as ``Requests: 0`` in the perf report even
@@ -7012,7 +7012,7 @@ class OpenAIHandlerMixin:
                                         request_id=request_id,
                                         session_id=session_id,
                                         transport="websocket",
-                                        direction="upstream_to_headroom",
+                                        direction="upstream_to_legroom",
                                         url=upstream_url,
                                         metadata={
                                             "frame": upstream_frame_index,
@@ -7032,7 +7032,7 @@ class OpenAIHandlerMixin:
                                     request_id=request_id,
                                     session_id=session_id,
                                     transport="websocket",
-                                    direction="upstream_to_headroom",
+                                    direction="upstream_to_legroom",
                                     url=upstream_url,
                                     body=_upstream_frame_body,
                                     raw_text=None if _upstream_frame_body is not None else msg_str,
@@ -7223,7 +7223,7 @@ class OpenAIHandlerMixin:
                                     _upstream_close_reason,
                                 )
                                 if os.environ.get(
-                                    "HEADROOM_OPENAI_WS_PROPAGATE_UPSTREAM_CLOSE", ""
+                                    "LEGROOM_OPENAI_WS_PROPAGATE_UPSTREAM_CLOSE", ""
                                 ).strip().lower() in (
                                     "1",
                                     "true",
@@ -7386,7 +7386,7 @@ class OpenAIHandlerMixin:
                 if hasattr(ws_err, "response"):
                     resp_body = getattr(getattr(ws_err, "response", None), "body", b"")
                     if resp_body:
-                        from headroom.proxy.helpers import safe_decode_for_logging
+                        from legroom.proxy.helpers import safe_decode_for_logging
 
                         _ws_detail += f" | {safe_decode_for_logging(resp_body, max_bytes=300)}"
                 logger.warning(
@@ -7484,7 +7484,7 @@ class OpenAIHandlerMixin:
                 # separate cumulative session-summary row would double-count
                 # Codex WS traffic in the recent-requests feed and every
                 # log-derived stat (savings, throughput).
-                from headroom.proxy.helpers import compute_turn_id
+                from legroom.proxy.helpers import compute_turn_id
 
                 ws_messages_for_log: list[dict[str, Any]] = []
                 ws_input_for_log = ws_inner_for_telemetry.get("input")
@@ -7545,7 +7545,7 @@ class OpenAIHandlerMixin:
                         resp = e.response
                         body_bytes = getattr(resp, "body", None) or b""
                         if body_bytes:
-                            from headroom.proxy.helpers import safe_decode_for_logging
+                            from legroom.proxy.helpers import safe_decode_for_logging
 
                             error_detail += (
                                 f" | body: {safe_decode_for_logging(body_bytes, max_bytes=500)}"
@@ -7694,8 +7694,8 @@ class OpenAIHandlerMixin:
         # is always synthesized from the WebSocket frame so the body is
         # treated as mutated; we still go through the canonical path so
         # numeric precision and UTF-8 are preserved.
-        from headroom.proxy.body_forwarding import prepare_outbound_body_bytes
-        from headroom.proxy.helpers import log_outbound_request
+        from legroom.proxy.body_forwarding import prepare_outbound_body_bytes
+        from legroom.proxy.helpers import log_outbound_request
 
         outbound_bytes, outbound_source = prepare_outbound_body_bytes(
             body=http_body,
@@ -7732,7 +7732,7 @@ class OpenAIHandlerMixin:
                                 error_body += chunk
                                 if len(error_body) > 2000:
                                     break
-                            from headroom.proxy.helpers import safe_decode_for_logging
+                            from legroom.proxy.helpers import safe_decode_for_logging
 
                             error_text = safe_decode_for_logging(error_body)
                             logger.error(
@@ -7755,7 +7755,7 @@ class OpenAIHandlerMixin:
                         # (already accepted headerless on this arm), but /stats
                         # parity is still worth keeping on a WS->HTTP fallback.
                         with contextlib.suppress(Exception):
-                            from headroom.subscription.codex_rate_limits import (
+                            from legroom.subscription.codex_rate_limits import (
                                 get_codex_rate_limit_state,
                             )
 
@@ -7829,10 +7829,10 @@ class OpenAIHandlerMixin:
         """
         from fastapi.responses import JSONResponse
 
-        from headroom.proxy.helpers import _read_request_json
+        from legroom.proxy.helpers import _read_request_json
 
         # Check bypass header
-        if request.headers.get("x-headroom-bypass", "").lower() == "true":
+        if request.headers.get("x-legroom-bypass", "").lower() == "true":
             try:
                 body = await _read_request_json(request)
             except (json.JSONDecodeError, ValueError) as e:
@@ -8125,7 +8125,7 @@ class OpenAIHandlerMixin:
         start_time = time.time()
         path = request.url.path
         if provider == "anthropic" and endpoint_name == "models" and path.startswith("/v1/models/"):
-            from headroom.providers.anthropic import sanitize_anthropic_model_id
+            from legroom.providers.anthropic import sanitize_anthropic_model_id
 
             raw_model_id = path[len("/v1/models/") :]
             clean_model_id = sanitize_anthropic_model_id(unquote(raw_model_id))
@@ -8142,14 +8142,14 @@ class OpenAIHandlerMixin:
         headers.pop("accept-encoding", None)
         client = classify_client(headers)
         tags = extract_tags(headers)
-        # PR-A5 (P5-49): strip internal x-headroom-* before forwarding upstream.
-        from headroom.proxy.helpers import (
+        # PR-A5 (P5-49): strip internal x-legroom-* before forwarding upstream.
+        from legroom.proxy.helpers import (
             _strip_internal_headers,
             log_outbound_headers,
             request_with_transient_retry,
         )
 
-        _pre_strip_count_pt = sum(1 for k in headers if k.lower().startswith("x-headroom-"))
+        _pre_strip_count_pt = sum(1 for k in headers if k.lower().startswith("x-legroom-"))
         headers = _strip_internal_headers(headers)
         log_outbound_headers(
             forwarder="openai_passthrough",
@@ -8167,7 +8167,7 @@ class OpenAIHandlerMixin:
 
         # Hermes owns its scoped coding-agent protocols; keep that adapter out of
         # the generic OpenAI passthrough handler.
-        from headroom.providers.hermes import compress_scoped_passthrough_body
+        from legroom.providers.hermes import compress_scoped_passthrough_body
 
         optimize_enabled = bool(getattr(getattr(self, "config", None), "optimize", False))
         original_body = body
@@ -8175,7 +8175,7 @@ class OpenAIHandlerMixin:
             path,
             body,
             optimize=optimize_enabled,
-            bypass=_headroom_bypass_enabled(request.headers),
+            bypass=_legroom_bypass_enabled(request.headers),
         )
         if body is not original_body:
             headers["content-length"] = str(len(body))
@@ -8279,7 +8279,7 @@ class OpenAIHandlerMixin:
         response_content = response.content
 
         if provider == "anthropic" and endpoint_name == "models":
-            from headroom.providers.anthropic import sanitize_anthropic_model_metadata
+            from legroom.providers.anthropic import sanitize_anthropic_model_metadata
 
             try:
                 payload = response.json()
@@ -8349,7 +8349,7 @@ class OpenAIHandlerMixin:
         """Stream pass-through responses without buffering the upstream body."""
         from fastapi.responses import Response, StreamingResponse
 
-        from headroom.proxy.helpers import MAX_SSE_BUFFER_SIZE
+        from legroom.proxy.helpers import MAX_SSE_BUFFER_SIZE
 
         start_time = time.time()
         path = request.url.path
@@ -8363,9 +8363,9 @@ class OpenAIHandlerMixin:
         client = classify_client(headers)
         tags = extract_tags(headers)
 
-        from headroom.proxy.helpers import _strip_internal_headers, log_outbound_headers
+        from legroom.proxy.helpers import _strip_internal_headers, log_outbound_headers
 
-        _pre_strip_count_pt = sum(1 for k in headers if k.lower().startswith("x-headroom-"))
+        _pre_strip_count_pt = sum(1 for k in headers if k.lower().startswith("x-legroom-"))
         headers = _strip_internal_headers(headers)
         log_outbound_headers(
             forwarder="streaming_passthrough",

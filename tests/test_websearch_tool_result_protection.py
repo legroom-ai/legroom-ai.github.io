@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from headroom.config import DEFAULT_EXCLUDE_TOOLS
-from headroom.proxy.server import HeadroomProxy, ProxyConfig
-from headroom.transforms.content_detector import ContentType
-from headroom.transforms.content_router import (
+from legroom.config import DEFAULT_EXCLUDE_TOOLS
+from legroom.proxy.server import LegroomProxy, ProxyConfig
+from legroom.transforms.content_detector import ContentType
+from legroom.transforms.content_router import (
     CompressionStrategy,
     ContentRouter,
     RouterCompressionResult,
@@ -45,7 +45,7 @@ def _messages(tool_name: str, payload: str) -> list[dict[str, object]]:
 
 
 def _router() -> ContentRouter:
-    proxy = HeadroomProxy(
+    proxy = LegroomProxy(
         ProxyConfig(
             optimize=False,
             cache_enabled=False,
@@ -87,7 +87,7 @@ def test_web_tool_results_bypass_compressor() -> None:
     payload = (
         "{\n"
         '  "results": [\n'
-        '    {"title": "Headroom", "snippet": "reference payload reference payload reference payload"},\n'
+        '    {"title": "Legroom", "snippet": "reference payload reference payload reference payload"},\n'
         '    {"title": "Docs", "snippet": "structured web payload with spacing that must remain verbatim"}\n'
         "  ],\n"
         '  "source": "web"\n'
@@ -126,7 +126,7 @@ def test_web_tool_results_stay_verbatim_outside_token_age_window() -> None:
     payload = (
         "{\n"
         '  "results": [\n'
-        '    {"title": "Headroom", "snippet": "reference payload reference payload reference payload"}\n'
+        '    {"title": "Legroom", "snippet": "reference payload reference payload reference payload"}\n'
         "  ]\n"
         "}"
     )
@@ -145,7 +145,7 @@ def test_web_tool_results_skip_cross_turn_dedup() -> None:
     payload = (
         "{\n"
         '  "results": [\n'
-        '    {"title": "Headroom", "snippet": "structured web payload with spacing that must remain verbatim"}\n'
+        '    {"title": "Legroom", "snippet": "structured web payload with spacing that must remain verbatim"}\n'
         "  ]\n"
         "}"
     )

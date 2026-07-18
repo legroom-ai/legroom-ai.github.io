@@ -216,13 +216,13 @@ def download_locomo(cache_dir: Path | None = None) -> Path:
     """Download LoCoMo dataset if not cached.
 
     Args:
-        cache_dir: Directory to cache the dataset. Defaults to ~/.cache/headroom/
+        cache_dir: Directory to cache the dataset. Defaults to ~/.cache/legroom/
 
     Returns:
         Path to the downloaded JSON file
     """
     if cache_dir is None:
-        cache_dir = Path.home() / ".cache" / "headroom"
+        cache_dir = Path.home() / ".cache" / "legroom"
 
     cache_dir.mkdir(parents=True, exist_ok=True)
     cache_path = cache_dir / "locomo10.json"

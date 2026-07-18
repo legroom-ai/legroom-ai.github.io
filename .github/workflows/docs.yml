@@ -104,7 +104,7 @@ jobs:
     if: >-
       github.event_name != 'pull_request'
       && github.ref == 'refs/heads/main'
-      && github.repository_owner == 'headroomlabs-ai'
+      && github.repository_owner == 'legroom-ai'
     runs-on: ubuntu-latest
     permissions:
       contents: read

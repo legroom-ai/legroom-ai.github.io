@@ -28,7 +28,7 @@
  * exist in the target glibc, only that the SONAME matches.
  *
  * On the END USER's runtime, however, glibc < 2.38 has none of
- * these symbols, and `import headroom._core` fails with:
+ * these symbols, and `import legroom._core` fails with:
  *
  *     ImportError: undefined symbol: __isoc23_strtoll
  *
@@ -81,7 +81,7 @@
  * definition is shadowed but harmless. On glibc < 2.38, libc.so.6
  * has no such symbol; the dynamic linker falls back to
  * `_core.so`'s local symbol — ours wins. Either way, the symbol
- * resolves and `import headroom._core` succeeds.
+ * resolves and `import legroom._core` succeeds.
  *
  * References:
  * - https://sourceware.org/glibc/wiki/Release/2.38
@@ -136,7 +136,7 @@ unsigned long long __isoc23_strtoull(const char *nptr, char **endptr, int base) 
  * glibc-2.38+ headers, so they bake in references to
  * `__libc_single_threaded`. Manylinux_2_28 hosts have it; user
  * machines with glibc < 2.32 (e.g. Ubuntu 20.04 + system glibc
- * 2.31) do not, and `import headroom._core` fails with:
+ * 2.31) do not, and `import legroom._core` fails with:
  *
  *     ImportError: undefined symbol: __libc_single_threaded
  *

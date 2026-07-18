@@ -1,9 +1,9 @@
 """Third-party proxy extension point.
 
-External packages hook into the Headroom proxy at startup by declaring an
-entry point in the ``headroom.proxy_extension`` group in their ``pyproject.toml``:
+External packages hook into the Legroom proxy at startup by declaring an
+entry point in the ``legroom.proxy_extension`` group in their ``pyproject.toml``:
 
-    [project.entry-points."headroom.proxy_extension"]
+    [project.entry-points."legroom.proxy_extension"]
     my_extension = "my_pkg.extension:install"
 
 Each ``install`` callable is invoked with the FastAPI ``app`` and the
@@ -25,8 +25,8 @@ audit gets installed in the same environment (e.g., as a transitive dep).
 
 Enabling extensions:
 
-  * CLI:  ``headroom proxy --proxy-extension myorg_ext,mypkg``
-  * Env:  ``HEADROOM_PROXY_EXTENSIONS=myorg_ext,mypkg``
+  * CLI:  ``legroom proxy --proxy-extension myorg_ext,mypkg``
+  * Env:  ``LEGROOM_PROXY_EXTENSIONS=myorg_ext,mypkg``
   * Wildcard: ``--proxy-extension '*'`` enables every discovered extension
     (use only when you trust everything in your environment).
 
@@ -46,8 +46,8 @@ from typing import Any
 
 log = logging.getLogger(__name__)
 
-ENTRY_POINT_GROUP = "headroom.proxy_extension"
-ENV_VAR = "HEADROOM_PROXY_EXTENSIONS"
+ENTRY_POINT_GROUP = "legroom.proxy_extension"
+ENV_VAR = "LEGROOM_PROXY_EXTENSIONS"
 
 ProxyExtension = Callable[[Any, Any], None]
 """Signature: ``install(app: FastAPI, config: ProxyConfig) -> None``."""
@@ -78,7 +78,7 @@ def discover() -> Iterator[tuple[str, ProxyExtension]]:
 def _resolve_enabled(enabled: Iterable[str] | None) -> set[str]:
     """Resolve the set of enabled extension names.
 
-    Precedence: explicit ``enabled`` argument > ``HEADROOM_PROXY_EXTENSIONS``
+    Precedence: explicit ``enabled`` argument > ``LEGROOM_PROXY_EXTENSIONS``
     env var > empty (no extensions). Empty strings and whitespace are
     stripped. The literal ``*`` enables all discovered extensions.
     """
@@ -156,7 +156,7 @@ def install_all(
         # skip would otherwise only appear if logging is configured to show this
         # logger. Surface it on the console unconditionally.
         print(
-            f"[headroom] proxy extensions SKIPPED: {skipped} "
+            f"[legroom] proxy extensions SKIPPED: {skipped} "
             f"(install failed — running without them; see logs)",
             file=sys.stderr,
         )

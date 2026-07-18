@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
-from headroom.memory.models import Memory, ScopeLevel
+from legroom.memory.models import Memory, ScopeLevel
 
 if TYPE_CHECKING:
     import numpy as np

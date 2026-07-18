@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from headroom.proxy.handlers.gemini import GeminiHandlerMixin
+from legroom.proxy.handlers.gemini import GeminiHandlerMixin
 
 
 class _FakeRequest:
@@ -69,8 +69,8 @@ async def test_generate_content_forwards_non_json_upstream_status(
         def count_messages(self, messages):  # noqa: ANN001, ANN201
             return 7
 
-    monkeypatch.setattr("headroom.proxy.helpers._read_request_json", payload)
-    monkeypatch.setattr("headroom.tokenizers.get_tokenizer", lambda model: _Tokenizer())
+    monkeypatch.setattr("legroom.proxy.helpers._read_request_json", payload)
+    monkeypatch.setattr("legroom.tokenizers.get_tokenizer", lambda model: _Tokenizer())
 
     handler = _Handler()
     response = await handler.handle_gemini_generate_content(_FakeRequest(), "gemini-pro")
@@ -78,7 +78,7 @@ async def test_generate_content_forwards_non_json_upstream_status(
     assert response.status_code == 503
     assert response.body == _NonJsonResponse.content
     assert response.headers["content-type"] == "text/html"
-    assert response.headers["x-headroom-tokens-before"] == "7"
-    assert response.headers["x-headroom-tokens-after"] == "7"
+    assert response.headers["x-legroom-tokens-before"] == "7"
+    assert response.headers["x-legroom-tokens-after"] == "7"
     assert handler.metrics.failed == []
     assert handler.outcomes[0].status_code == 503

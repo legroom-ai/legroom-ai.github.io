@@ -12,7 +12,7 @@
 //! `HeaderMap` is constructed once outside the timing loop.
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use headroom_core::auth_mode::classify;
+use legroom_core::auth_mode::classify;
 use http::{HeaderMap, HeaderValue};
 
 fn build_headers(pairs: &[(&str, &str)]) -> HeaderMap {

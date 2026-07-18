@@ -10,20 +10,20 @@ default flip).
    from the same word-count metric as original_tokens, not the compressor's
    own (differently-scaled) estimator, or real savings get misread as none.
 4. prefer_code_aware_for_code defaults to True, both on the dataclass and via
-   the HEADROOM_PREFER_CODE_AWARE_FOR_CODE env var.
+   the LEGROOM_PREFER_CODE_AWARE_FOR_CODE env var.
 """
 
 from __future__ import annotations
 
 import pytest
 
-from headroom.proxy.server import HeadroomProxy, ProxyConfig
-from headroom.transforms.code_compressor import (
+from legroom.proxy.server import LegroomProxy, ProxyConfig
+from legroom.transforms.code_compressor import (
     CodeAwareCompressor,
     CodeCompressorConfig,
     _check_tree_sitter_available,
 )
-from headroom.transforms.content_router import (
+from legroom.transforms.content_router import (
     CompressionStrategy,
     ContentRouter,
     ContentRouterConfig,
@@ -31,7 +31,7 @@ from headroom.transforms.content_router import (
 
 pytestmark = pytest.mark.skipif(
     not _check_tree_sitter_available(),
-    reason="tree-sitter not installed (pip install headroom-ai[code])",
+    reason="tree-sitter not installed (pip install legroom-ai[code])",
 )
 
 GO_FUNC = """package main
@@ -128,7 +128,7 @@ def test_prefer_code_aware_for_code_dataclass_defaults_true() -> None:
 
 
 def test_prefer_code_aware_for_code_env_var_defaults_true(monkeypatch) -> None:
-    monkeypatch.delenv("HEADROOM_PREFER_CODE_AWARE_FOR_CODE", raising=False)
+    monkeypatch.delenv("LEGROOM_PREFER_CODE_AWARE_FOR_CODE", raising=False)
 
     config = ProxyConfig(
         optimize=False,
@@ -137,7 +137,7 @@ def test_prefer_code_aware_for_code_env_var_defaults_true(monkeypatch) -> None:
         cost_tracking_enabled=False,
         code_aware_enabled=False,
     )
-    proxy = HeadroomProxy(config)
+    proxy = LegroomProxy(config)
     router = proxy.anthropic_pipeline.transforms[-1]
 
     assert router.config.prefer_code_aware_for_code is True

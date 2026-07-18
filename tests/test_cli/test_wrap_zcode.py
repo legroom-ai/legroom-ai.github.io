@@ -1,4 +1,4 @@
-"""Tests for `headroom wrap zcode` and `headroom unwrap zcode` commands.
+"""Tests for `legroom wrap zcode` and `legroom unwrap zcode` commands.
 
 ZCode is a desktop Electron app (zcode.z.ai) with no CLI binary. The wrap
 command follows the Pattern-B (proxy-only watcher) approach: it starts the
@@ -14,14 +14,14 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner
 
-from headroom.cli import wrap as wrap_mod
-from headroom.cli.main import main
+from legroom.cli import wrap as wrap_mod
+from legroom.cli.main import main
 
 
 @pytest.fixture(autouse=True)
 def _enable_rtk(monkeypatch: pytest.MonkeyPatch) -> None:
     # RTK is opt-in (off by default); these tests exercise the RTK-on injection path.
-    monkeypatch.setenv("HEADROOM_RTK", "1")
+    monkeypatch.setenv("LEGROOM_RTK", "1")
 
 
 @pytest.fixture
@@ -41,7 +41,7 @@ def test_prepare_only_injects_rtk_into_agents_md(
 ) -> None:
     """``wrap zcode --prepare-only`` writes the RTK block to AGENTS.md at cwd."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
 
     with patch.object(wrap_mod, "_ensure_rtk_binary", return_value=Path("/tmp/rtk")):
         result = runner.invoke(main, ["wrap", "zcode", "--prepare-only"])
@@ -61,7 +61,7 @@ def test_prepare_only_idempotent_no_duplicate_block(
 ) -> None:
     """Running prepare-only twice must not duplicate the RTK block in AGENTS.md."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
 
     with patch.object(wrap_mod, "_ensure_rtk_binary", return_value=Path("/tmp/rtk")):
         runner.invoke(main, ["wrap", "zcode", "--prepare-only"])
@@ -94,7 +94,7 @@ def test_preserves_existing_agents_md_content(
 ) -> None:
     """Pre-existing AGENTS.md content must be preserved when RTK is appended."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
     agents_md = tmp_path / "AGENTS.md"
     original = "# Project conventions\n\nAlways use Python 3.12.\n"
     agents_md.write_text(original, encoding="utf-8")
@@ -120,7 +120,7 @@ def test_wrap_prints_proxy_urls(
 ) -> None:
     """The wrap command must print the proxy URLs for ZCode configuration."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
 
     fake_rtk = Path("/tmp/rtk")
 
@@ -161,7 +161,7 @@ def test_unwrap_removes_rtk_from_agents_md(
         result = runner.invoke(main, ["unwrap", "zcode"])
 
     assert result.exit_code == 0, result.output
-    assert "Removed Headroom rtk instructions" in result.output
+    assert "Removed Legroom rtk instructions" in result.output
     content = agents_md.read_text(encoding="utf-8")
     assert wrap_mod._RTK_MARKER not in content
     assert "Some content." in content
@@ -189,7 +189,7 @@ def test_unwrap_noop_when_no_markers(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """``unwrap zcode`` is a safe no-op when AGENTS.md has no Headroom markers."""
+    """``unwrap zcode`` is a safe no-op when AGENTS.md has no Legroom markers."""
     monkeypatch.chdir(tmp_path)
     agents_md = tmp_path / "AGENTS.md"
     agents_md.write_text("# Project\n\nSome content.\n", encoding="utf-8")
@@ -225,7 +225,7 @@ def test_unwrap_noop_when_no_agents_md(
 
 def test_build_proxy_targets() -> None:
     """build_proxy_targets returns correct OpenAI and Anthropic URLs."""
-    from headroom.providers.zcode.runtime import build_proxy_targets
+    from legroom.providers.zcode.runtime import build_proxy_targets
 
     targets = build_proxy_targets(8787)
     assert targets.openai_base_url == "http://127.0.0.1:8787/v1"
@@ -234,7 +234,7 @@ def test_build_proxy_targets() -> None:
 
 def test_build_proxy_targets_custom_port() -> None:
     """build_proxy_targets respects custom port."""
-    from headroom.providers.zcode.runtime import build_proxy_targets
+    from legroom.providers.zcode.runtime import build_proxy_targets
 
     targets = build_proxy_targets(9999)
     assert targets.openai_base_url == "http://127.0.0.1:9999/v1"
@@ -243,11 +243,11 @@ def test_build_proxy_targets_custom_port() -> None:
 
 def test_render_setup_lines_includes_mcp_instruction() -> None:
     """render_setup_lines includes the MCP paste JSON for user convenience."""
-    from headroom.providers.zcode.runtime import render_setup_lines
+    from legroom.providers.zcode.runtime import render_setup_lines
 
     lines = render_setup_lines(8787)
     joined = "\n".join(lines)
-    assert "headroom" in joined.lower()
+    assert "legroom" in joined.lower()
     assert "MCP" in joined
     assert '"stdio"' in joined
 
@@ -259,7 +259,7 @@ def test_render_setup_lines_includes_mcp_instruction() -> None:
 
 def test_detect_upstream_from_config(tmp_path: Path) -> None:
     """detect_upstream reads config.json and returns the enabled provider."""
-    from headroom.providers.zcode.runtime import detect_upstream
+    from legroom.providers.zcode.runtime import detect_upstream
 
     config = tmp_path / "config.json"
     config.write_text(
@@ -275,7 +275,7 @@ def test_detect_upstream_from_config(tmp_path: Path) -> None:
 
 def test_detect_upstream_openai_compatible(tmp_path: Path) -> None:
     """detect_upstream handles OpenAI-compatible providers."""
-    from headroom.providers.zcode.runtime import detect_upstream
+    from legroom.providers.zcode.runtime import detect_upstream
 
     config = tmp_path / "config.json"
     config.write_text(
@@ -290,7 +290,7 @@ def test_detect_upstream_openai_compatible(tmp_path: Path) -> None:
 
 def test_detect_upstream_disabled_provider_ignored(tmp_path: Path) -> None:
     """detect_upstream skips disabled providers."""
-    from headroom.providers.zcode.runtime import detect_upstream
+    from legroom.providers.zcode.runtime import detect_upstream
 
     config = tmp_path / "config.json"
     config.write_text(
@@ -305,7 +305,7 @@ def test_detect_upstream_disabled_provider_ignored(tmp_path: Path) -> None:
 
 def test_detect_upstream_no_baseurl_skips(tmp_path: Path) -> None:
     """detect_upstream skips providers with empty or missing baseURL."""
-    from headroom.providers.zcode.runtime import detect_upstream
+    from legroom.providers.zcode.runtime import detect_upstream
 
     config = tmp_path / "config.json"
     config.write_text(
@@ -332,7 +332,7 @@ def test_detect_upstream_malformed_options_skips(tmp_path: Path, bad_options: ob
     """detect_upstream falls back when provider options is not a dict."""
     import json as _json
 
-    from headroom.providers.zcode.runtime import detect_upstream
+    from legroom.providers.zcode.runtime import detect_upstream
 
     config = tmp_path / "config.json"
     config.write_text(
@@ -357,7 +357,7 @@ def test_detect_upstream_malformed_options_skips(tmp_path: Path, bad_options: ob
 
 def test_detect_upstream_missing_file_fallback(tmp_path: Path) -> None:
     """detect_upstream falls back to default when config file is missing."""
-    from headroom.providers.zcode.runtime import detect_upstream
+    from legroom.providers.zcode.runtime import detect_upstream
 
     config = tmp_path / "nonexistent.json"
     upstream = detect_upstream(config)
@@ -368,7 +368,7 @@ def test_detect_upstream_missing_file_fallback(tmp_path: Path) -> None:
 
 def test_detect_upstream_invalid_json_fallback(tmp_path: Path) -> None:
     """detect_upstream falls back to default on malformed JSON."""
-    from headroom.providers.zcode.runtime import detect_upstream
+    from legroom.providers.zcode.runtime import detect_upstream
 
     config = tmp_path / "config.json"
     config.write_text("not json at all", encoding="utf-8")
@@ -379,7 +379,7 @@ def test_detect_upstream_invalid_json_fallback(tmp_path: Path) -> None:
 
 def test_detect_upstream_no_providers_fallback(tmp_path: Path) -> None:
     """detect_upstream falls back when config has no provider section."""
-    from headroom.providers.zcode.runtime import detect_upstream
+    from legroom.providers.zcode.runtime import detect_upstream
 
     config = tmp_path / "config.json"
     config.write_text('{"settings": {}}', encoding="utf-8")
@@ -395,7 +395,7 @@ def test_detect_upstream_no_providers_fallback(tmp_path: Path) -> None:
 
 def test_upstream_to_proxy_urls_anthropic() -> None:
     """upstream_to_proxy_urls returns (url, None) for anthropic upstream."""
-    from headroom.providers.zcode.runtime import ZCodeUpstream, upstream_to_proxy_urls
+    from legroom.providers.zcode.runtime import ZCodeUpstream, upstream_to_proxy_urls
 
     upstream = ZCodeUpstream(
         provider_name="Z.ai", base_url="https://api.z.ai/api/anthropic", kind="anthropic"
@@ -407,7 +407,7 @@ def test_upstream_to_proxy_urls_anthropic() -> None:
 
 def test_upstream_to_proxy_urls_openai() -> None:
     """upstream_to_proxy_urls returns (None, url) for openai-compatible upstream."""
-    from headroom.providers.zcode.runtime import ZCodeUpstream, upstream_to_proxy_urls
+    from legroom.providers.zcode.runtime import ZCodeUpstream, upstream_to_proxy_urls
 
     upstream = ZCodeUpstream(
         provider_name="Custom",
@@ -431,7 +431,7 @@ def test_wrap_zcode_detects_upstream(
 ) -> None:
     """wrap zcode detects upstream and prints detected provider in setup."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
 
     config = tmp_path / "config.json"
     config.write_text(
@@ -440,7 +440,7 @@ def test_wrap_zcode_detects_upstream(
         encoding="utf-8",
     )
 
-    from headroom.providers.zcode.runtime import detect_upstream, upstream_to_proxy_urls
+    from legroom.providers.zcode.runtime import detect_upstream, upstream_to_proxy_urls
 
     upstream = detect_upstream(config)
     assert upstream.provider_name == "Z.ai Coding"
@@ -458,9 +458,9 @@ def test_wrap_zcode_passes_upstream_to_watcher(
 ) -> None:
     """wrap zcode forwards detected upstream URLs to _run_proxy_only_watcher."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
 
-    from headroom.providers.zcode.runtime import ZCodeUpstream
+    from legroom.providers.zcode.runtime import ZCodeUpstream
 
     captured: dict[str, object] = {}
 
@@ -488,9 +488,9 @@ def test_wrap_zcode_passes_openai_upstream(
 ) -> None:
     """wrap zcode forwards OpenAI-compatible upstream URLs correctly."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
 
-    from headroom.providers.zcode.runtime import ZCodeUpstream
+    from legroom.providers.zcode.runtime import ZCodeUpstream
 
     captured: dict[str, object] = {}
 

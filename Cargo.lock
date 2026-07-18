@@ -1863,7 +1863,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "headroom-core"
+name = "legroom-core"
 version = "0.1.0"
 dependencies = [
  "aho-corasick",
@@ -1897,19 +1897,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "headroom-parity"
+name = "legroom-parity"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
- "headroom-core",
+ "legroom-core",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
 ]
 
 [[package]]
-name = "headroom-proxy"
+name = "legroom-proxy"
 version = "0.1.0"
 dependencies = [
  "async-trait",
@@ -1925,8 +1925,8 @@ dependencies = [
  "futures",
  "futures-util",
  "gcp_auth",
- "headroom-core",
- "headroom-simulators",
+ "legroom-core",
+ "legroom-simulators",
  "http 1.4.2",
  "http-body-util",
  "humantime",
@@ -1956,18 +1956,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "headroom-py"
+name = "legroom-py"
 version = "0.1.0"
 dependencies = [
  "cc",
- "headroom-core",
+ "legroom-core",
  "pyo3",
  "pyo3-log",
  "serde_json",
 ]
 
 [[package]]
-name = "headroom-simulators"
+name = "legroom-simulators"
 version = "0.1.0"
 dependencies = [
  "axum",

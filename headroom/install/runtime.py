@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, cast
 
-from headroom._subprocess import pid_alive, run
+from legroom._subprocess import pid_alive, run
 
 from .health import probe_ready
 from .models import DeploymentManifest, InstallPreset, RuntimeKind, SupervisorKind
@@ -28,7 +28,7 @@ CONTAINER_BIND_HOST = "0.0.0.0"  # noqa: S104 — container-internal bind, publi
 _PROXY_ARGS_HOST_PAIR_LEN = 2
 
 PASSTHROUGH_ENV_PREFIXES = (
-    "HEADROOM_",
+    "LEGROOM_",
     "ANTHROPIC_",
     "OPENAI_",
     "GEMINI_",
@@ -58,21 +58,21 @@ def _is_windows() -> bool:
 
 def _deployment_env(manifest: DeploymentManifest) -> dict[str, str]:
     return {
-        "HEADROOM_DEPLOYMENT_PROFILE": manifest.profile,
-        "HEADROOM_DEPLOYMENT_PRESET": manifest.preset,
-        "HEADROOM_DEPLOYMENT_RUNTIME": manifest.runtime_kind,
-        "HEADROOM_DEPLOYMENT_SUPERVISOR": manifest.supervisor_kind,
-        "HEADROOM_DEPLOYMENT_SCOPE": manifest.scope,
+        "LEGROOM_DEPLOYMENT_PROFILE": manifest.profile,
+        "LEGROOM_DEPLOYMENT_PRESET": manifest.preset,
+        "LEGROOM_DEPLOYMENT_RUNTIME": manifest.runtime_kind,
+        "LEGROOM_DEPLOYMENT_SUPERVISOR": manifest.supervisor_kind,
+        "LEGROOM_DEPLOYMENT_SCOPE": manifest.scope,
     }
 
 
-def resolve_headroom_command() -> list[str]:
-    """Resolve the most reliable command to invoke headroom."""
+def resolve_legroom_command() -> list[str]:
+    """Resolve the most reliable command to invoke legroom."""
 
-    headroom_bin = shutil.which("headroom")
-    if headroom_bin:
-        return [headroom_bin]
-    return [sys.executable, "-m", "headroom.cli"]
+    legroom_bin = shutil.which("legroom")
+    if legroom_bin:
+        return [legroom_bin]
+    return [sys.executable, "-m", "legroom.cli"]
 
 
 def _runtime_env(manifest: DeploymentManifest) -> dict[str, str]:
@@ -83,7 +83,7 @@ def _runtime_env(manifest: DeploymentManifest) -> dict[str, str]:
 
 
 def _ensure_host_dirs() -> None:
-    for subdir in (".headroom", ".claude", ".codex", ".gemini", ".config/opencode"):
+    for subdir in (".legroom", ".claude", ".codex", ".gemini", ".config/opencode"):
         (Path.home() / subdir).mkdir(parents=True, exist_ok=True)
 
 
@@ -97,11 +97,11 @@ def build_runtime_command(manifest: DeploymentManifest) -> list[str]:
     """Build the raw foreground command that runs the proxy."""
 
     if manifest.runtime_kind == RuntimeKind.PYTHON.value:
-        return [sys.executable, "-m", "headroom.cli", "proxy", *manifest.proxy_args]
+        return [sys.executable, "-m", "legroom.cli", "proxy", *manifest.proxy_args]
 
     _ensure_host_dirs()
     home = str(Path.home())
-    container_home = "/tmp/headroom-home"
+    container_home = "/tmp/legroom-home"
     command = [
         "docker",
         "run",
@@ -116,13 +116,13 @@ def build_runtime_command(manifest: DeploymentManifest) -> list[str]:
         f"HOME={container_home}",
         "--env",
         "PYTHONUNBUFFERED=1",
-        # Canonical Headroom filesystem contract (issue #175).
+        # Canonical Legroom filesystem contract (issue #175).
         "--env",
-        f"HEADROOM_WORKSPACE_DIR={container_home}/.headroom",
+        f"LEGROOM_WORKSPACE_DIR={container_home}/.legroom",
         "--env",
-        f"HEADROOM_CONFIG_DIR={container_home}/.headroom/config",
+        f"LEGROOM_CONFIG_DIR={container_home}/.legroom/config",
         "--volume",
-        f"{_mount_source(home, '.headroom')}:{container_home}/.headroom",
+        f"{_mount_source(home, '.legroom')}:{container_home}/.legroom",
         "--volume",
         f"{_mount_source(home, '.claude')}:{container_home}/.claude",
         "--volume",
@@ -132,7 +132,7 @@ def build_runtime_command(manifest: DeploymentManifest) -> list[str]:
         "--volume",
         f"{_mount_source(home, '.config/opencode')}:{container_home}/.config/opencode",
     ]
-    docker_gpus = manifest.base_env.get("HEADROOM_DOCKER_GPUS", "").strip()
+    docker_gpus = manifest.base_env.get("LEGROOM_DOCKER_GPUS", "").strip()
     if docker_gpus:
         command.extend(["--gpus", docker_gpus])
     if not _is_windows():
@@ -145,16 +145,16 @@ def build_runtime_command(manifest: DeploymentManifest) -> list[str]:
         command.extend(["--env", f"{name}={value}"])
     for name in sorted(os.environ):
         # Skip any name the manifest already pinned above: Docker resolves
-        # duplicate `--env` last-wins, so a bare `--env HEADROOM_BACKEND`
+        # duplicate `--env` last-wins, so a bare `--env LEGROOM_BACKEND`
         # passthrough (which reads the host process env at
         # `start_persistent_docker` time) would silently override the manifest's
-        # `--env HEADROOM_BACKEND=<value>`, diverging the container from its
+        # `--env LEGROOM_BACKEND=<value>`, diverging the container from its
         # deployment config.
         if name.startswith(PASSTHROUGH_ENV_PREFIXES) and name not in runtime_env:
             command.extend(["--env", name])
-    # The image ENTRYPOINT already runs `headroom proxy` (see Dockerfile), so
+    # The image ENTRYPOINT already runs `legroom proxy` (see Dockerfile), so
     # the args appended after the image name are only the proxy flags — never
-    # `headroom proxy` again, or Docker would run `headroom proxy headroom
+    # `legroom proxy` again, or Docker would run `legroom proxy legroom
     # proxy ...` and Click aborts on the extra arguments (issue #833).
     command.extend(
         [
@@ -271,9 +271,9 @@ def run_foreground(manifest: DeploymentManifest) -> int:
 
 
 def start_detached_agent(profile: str) -> subprocess.Popen[str]:
-    """Start `headroom install agent run` detached for the given profile."""
+    """Start `legroom install agent run` detached for the given profile."""
 
-    command = [*resolve_headroom_command(), "install", "agent", "run", "--profile", profile]
+    command = [*resolve_legroom_command(), "install", "agent", "run", "--profile", profile]
     log_file_path = log_path(profile)
     log_file_path.parent.mkdir(parents=True, exist_ok=True)
     log_file = open(log_file_path, "a", encoding="utf-8", errors="replace")  # noqa: SIM115
@@ -290,7 +290,7 @@ def start_detached_agent(profile: str) -> subprocess.Popen[str]:
     finally:
         # The child has inherited the log file descriptor, so the parent's
         # copy is dead weight. Closing it (even when Popen raises) avoids
-        # leaking one fd per `headroom install start` and lets the log file
+        # leaking one fd per `legroom install start` and lets the log file
         # be rotated. Wrapped in try/finally so a Popen failure can't leak.
         log_file.close()
     return proc
@@ -384,15 +384,15 @@ def detect_current_deployment() -> tuple[DeploymentManifest | None, str]:
     * ``"docker"``     — persistent-docker deployment. Cannot self-restart:
       there is no docker socket/CLI inside the container.
     * ``"service"``    — any other persistent (supervised) deployment; can
-      self-restart via ``headroom install restart``.
-    * ``"foreground"`` — a plain ``headroom proxy`` (or unknown); not
+      self-restart via ``legroom install restart``.
+    * ``"foreground"`` — a plain ``legroom proxy`` (or unknown); not
       self-restartable.
 
-    Keys off the ``HEADROOM_DEPLOYMENT_*`` env vars the supervisor injects at
+    Keys off the ``LEGROOM_DEPLOYMENT_*`` env vars the supervisor injects at
     launch (see :func:`_deployment_env`); a foreground proxy has none set.
     """
-    profile = os.environ.get("HEADROOM_DEPLOYMENT_PROFILE")
-    preset = os.environ.get("HEADROOM_DEPLOYMENT_PRESET")
+    profile = os.environ.get("LEGROOM_DEPLOYMENT_PROFILE")
+    preset = os.environ.get("LEGROOM_DEPLOYMENT_PRESET")
     if not profile:
         return None, "foreground"
     manifest = load_manifest(profile)
@@ -406,12 +406,12 @@ def detect_current_deployment() -> tuple[DeploymentManifest | None, str]:
 
 
 def _spawn_detached_restart(profile: str) -> None:
-    """Spawn a detached ``headroom install restart --profile <p>`` process.
+    """Spawn a detached ``legroom install restart --profile <p>`` process.
 
     Detached (``start_new_session`` on POSIX) so it outlives this process being
     torn down by the very restart it triggers.
     """
-    command = [*resolve_headroom_command(), "install", "restart", "--profile", profile]
+    command = [*resolve_legroom_command(), "install", "restart", "--profile", profile]
     popen_kwargs: dict[str, Any] = {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
     if not _is_windows():
         popen_kwargs["start_new_session"] = True
@@ -423,12 +423,12 @@ def restart_current_deployment() -> dict[str, Any]:
 
     * service -> spawn a detached restart, return ``{restarted: True, ...}``.
     * docker  -> not restartable in-container; return the host command to run.
-    * task    -> not restartable via the CLI (``headroom install`` rejects
+    * task    -> not restartable via the CLI (``legroom install`` rejects
       lifecycle ops for task-scheduled deployments); return an instruction.
     * foreground/unknown -> return a manual-restart instruction.
     """
     manifest, mode = detect_current_deployment()
-    profile = os.environ.get("HEADROOM_DEPLOYMENT_PROFILE") or (
+    profile = os.environ.get("LEGROOM_DEPLOYMENT_PROFILE") or (
         manifest.profile if manifest else "default"
     )
     if mode == "service":
@@ -438,7 +438,7 @@ def restart_current_deployment() -> dict[str, Any]:
         return {
             "restarted": False,
             "mode": "docker",
-            "command": f"headroom install restart --profile {profile}",
+            "command": f"legroom install restart --profile {profile}",
         }
     if mode == "task":
         return {
@@ -446,7 +446,7 @@ def restart_current_deployment() -> dict[str, Any]:
             "mode": "task",
             "instruction": (
                 "This deployment is managed by an OS task scheduler, not "
-                "`headroom install`; stop the running process so it is "
+                "`legroom install`; stop the running process so it is "
                 "relaunched (with the new settings) on its next scheduled "
                 "trigger, or restart it via your OS task scheduler."
             ),

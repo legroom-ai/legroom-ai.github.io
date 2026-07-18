@@ -1,7 +1,7 @@
 name: OpenCode Plugin
 
 # The OpenCode plugin (plugins/opencode) is the routing shim that carries
-# `headroom wrap opencode` traffic through the proxy, yet nothing in CI ever
+# `legroom wrap opencode` traffic through the proxy, yet nothing in CI ever
 # compiled it — so TypeScript / @types/node major bumps and source changes had
 # zero build evidence. This gate runs the plugin's own typecheck + build + test
 # whenever it (or this workflow) changes.

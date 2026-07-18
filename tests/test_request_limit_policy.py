@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from headroom.proxy.request_limit_policy import (
+from legroom.proxy.request_limit_policy import (
     BODY_TOO_LARGE_STATUS_DEFAULT,
     SSE_EVENT_MAX_BYTES_DEFAULT,
     resolve_body_too_large_status,

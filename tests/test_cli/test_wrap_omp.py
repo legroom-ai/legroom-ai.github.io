@@ -1,4 +1,4 @@
-"""Tests for `headroom wrap omp` / `headroom unwrap omp`.
+"""Tests for `legroom wrap omp` / `legroom unwrap omp`.
 
 Covers the omp runtime override contract (fresh-create vs merge-preserving
 injection, pristine backups, re-injection idempotency, restore statuses) and
@@ -16,9 +16,9 @@ import pytest
 import yaml
 from click.testing import CliRunner
 
-from headroom.cli.main import main
-from headroom.cli.wrap import _inject_rtk_instructions
-from headroom.providers.omp import (
+from legroom.cli.main import main
+from legroom.cli.wrap import _inject_rtk_instructions
+from legroom.providers.omp import (
     MANAGED_MARKER,
     backup_path,
     build_launch_env,
@@ -185,7 +185,7 @@ def test_build_launch_env_passes_env_through_and_emits_display(omp_home: Path) -
 
 
 def test_wrap_omp_missing_binary_exits_with_install_hint(runner: CliRunner, omp_home: Path) -> None:
-    with patch("headroom.cli.wrap.shutil.which", return_value=None):
+    with patch("legroom.cli.wrap.shutil.which", return_value=None):
         result = runner.invoke(main, ["wrap", "omp", "--no-rtk"])
 
     assert result.exit_code == 1
@@ -205,8 +205,8 @@ def test_wrap_omp_happy_path_injects_before_launch(runner: CliRunner, omp_home: 
         )
 
     with (
-        patch("headroom.cli.wrap.shutil.which", return_value="omp"),
-        patch("headroom.cli.wrap._launch_tool", side_effect=fake_launch_tool),
+        patch("legroom.cli.wrap.shutil.which", return_value="omp"),
+        patch("legroom.cli.wrap._launch_tool", side_effect=fake_launch_tool),
     ):
         result = runner.invoke(main, ["wrap", "omp", "--no-rtk", "--", "-p", "fix the bug"])
 
@@ -228,8 +228,8 @@ def test_wrap_omp_happy_path_injects_before_launch(runner: CliRunner, omp_home: 
 
 def test_wrap_omp_no_rtk_skips_agents_md(runner: CliRunner, omp_home: Path, tmp_path: Path) -> None:
     with (
-        patch("headroom.cli.wrap.shutil.which", return_value="omp"),
-        patch("headroom.cli.wrap._launch_tool"),
+        patch("legroom.cli.wrap.shutil.which", return_value="omp"),
+        patch("legroom.cli.wrap._launch_tool"),
     ):
         result = runner.invoke(main, ["wrap", "omp", "--no-rtk"])
 
@@ -240,19 +240,19 @@ def test_wrap_omp_no_rtk_skips_agents_md(runner: CliRunner, omp_home: Path, tmp_
 def test_wrap_omp_rtk_injects_into_cwd_agents_md(
     runner: CliRunner, omp_home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("HEADROOM_CONTEXT_TOOL", "rtk")
-    monkeypatch.setenv("HEADROOM_RTK", "1")
+    monkeypatch.setenv("LEGROOM_CONTEXT_TOOL", "rtk")
+    monkeypatch.setenv("LEGROOM_RTK", "1")
     with (
-        patch("headroom.cli.wrap.shutil.which", return_value="omp"),
-        patch("headroom.cli.wrap._launch_tool"),
-        patch("headroom.cli.wrap._ensure_rtk_binary", return_value=tmp_path / "rtk"),
+        patch("legroom.cli.wrap.shutil.which", return_value="omp"),
+        patch("legroom.cli.wrap._launch_tool"),
+        patch("legroom.cli.wrap._ensure_rtk_binary", return_value=tmp_path / "rtk"),
     ):
         result = runner.invoke(main, ["wrap", "omp"])
 
     assert result.exit_code == 0, result.output
     agents_md = tmp_path / "AGENTS.md"
     assert agents_md.exists()
-    assert "headroom:rtk-instructions" in agents_md.read_text(encoding="utf-8")
+    assert "legroom:rtk-instructions" in agents_md.read_text(encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -263,7 +263,7 @@ def test_wrap_omp_rtk_injects_into_cwd_agents_md(
 def test_unwrap_omp_restored_and_cleans_agents_md(
     runner: CliRunner, omp_home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("HEADROOM_RTK", "1")
+    monkeypatch.setenv("LEGROOM_RTK", "1")
     original = "providers:\n  anthropic:\n    apiKey: sk-user-secret\n"
     omp_home.write_bytes(original.encode("utf-8"))
     inject_models_override(8787, "proj")
@@ -274,7 +274,7 @@ def test_unwrap_omp_restored_and_cleans_agents_md(
 
     stopped: list[int] = []
     with patch(
-        "headroom.cli.wrap._stop_local_proxy_for_unwrap",
+        "legroom.cli.wrap._stop_local_proxy_for_unwrap",
         side_effect=lambda port: stopped.append(port) or "not_running",
     ):
         result = runner.invoke(main, ["unwrap", "omp"])
@@ -286,7 +286,7 @@ def test_unwrap_omp_restored_and_cleans_agents_md(
 
     # Only the marker-fenced rtk block is scrubbed; user content survives.
     remaining = agents_md.read_text(encoding="utf-8")
-    assert "headroom:rtk-instructions" not in remaining
+    assert "legroom:rtk-instructions" not in remaining
     assert "Be nice." in remaining
 
     # A real restore (not a noop) attempts to stop the proxy on the given port.
@@ -298,7 +298,7 @@ def test_unwrap_omp_removes_wrap_created_file(runner: CliRunner, omp_home: Path)
 
     stopped: list[int] = []
     with patch(
-        "headroom.cli.wrap._stop_local_proxy_for_unwrap",
+        "legroom.cli.wrap._stop_local_proxy_for_unwrap",
         side_effect=lambda port: stopped.append(port) or "not_running",
     ):
         result = runner.invoke(main, ["unwrap", "omp", "--port", "9191"])
@@ -315,7 +315,7 @@ def test_unwrap_omp_noop_leaves_unmanaged_and_skips_proxy_stop(
     user_content = "providers:\n  anthropic:\n    apiKey: sk-user-secret\n"
     omp_home.write_bytes(user_content.encode("utf-8"))
 
-    with patch("headroom.cli.wrap._stop_local_proxy_for_unwrap") as stop_proxy:
+    with patch("legroom.cli.wrap._stop_local_proxy_for_unwrap") as stop_proxy:
         result = runner.invoke(main, ["unwrap", "omp"])
 
     assert result.exit_code == 0, result.output

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from headroom.proxy.loop_callback_failure_policy import (
+from legroom.proxy.loop_callback_failure_policy import (
     KNOWN_WEBSOCKET_CALLBACK_EXCEPTION,
     KNOWN_WEBSOCKET_CALLBACK_MESSAGE,
     is_known_websocket_callback_failure,

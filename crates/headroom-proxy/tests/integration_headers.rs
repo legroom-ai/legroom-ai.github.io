@@ -1,10 +1,10 @@
 //! Header passthrough + hop-by-hop filtering + X-Forwarded-* injection +
-//! internal `x-headroom-*` strip (PR-A5, fixes P5-49).
+//! internal `x-legroom-*` strip (PR-A5, fixes P5-49).
 
 mod common;
 
 use common::{start_proxy, start_proxy_with};
-use headroom_proxy::config::StripInternalHeaders;
+use legroom_proxy::config::StripInternalHeaders;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -64,23 +64,23 @@ async fn custom_headers_pass_through_both_ways() {
 }
 
 #[tokio::test]
-async fn x_headroom_request_headers_stripped() {
+async fn x_legroom_request_headers_stripped() {
     let upstream = MockServer::start().await;
     Mock::given(method("POST"))
         .and(path("/v1/messages"))
         .respond_with(move |req: &wiremock::Request| {
-            // PR-A5: internal x-headroom-* must NOT reach upstream.
+            // PR-A5: internal x-legroom-* must NOT reach upstream.
             assert!(
-                req.headers.get("x-headroom-bypass").is_none(),
-                "x-headroom-bypass leaked upstream"
+                req.headers.get("x-legroom-bypass").is_none(),
+                "x-legroom-bypass leaked upstream"
             );
             assert!(
-                req.headers.get("x-headroom-mode").is_none(),
-                "x-headroom-mode leaked upstream"
+                req.headers.get("x-legroom-mode").is_none(),
+                "x-legroom-mode leaked upstream"
             );
             assert!(
-                req.headers.get("x-headroom-user-id").is_none(),
-                "x-headroom-user-id leaked upstream"
+                req.headers.get("x-legroom-user-id").is_none(),
+                "x-legroom-user-id leaked upstream"
             );
             // Legitimate headers must still arrive.
             assert_eq!(req.headers.get("authorization").unwrap(), "Bearer sk-x");
@@ -95,9 +95,9 @@ async fn x_headroom_request_headers_stripped() {
         .post(format!("{}/v1/messages", proxy.url()))
         .header("authorization", "Bearer sk-x")
         .header("anthropic-version", "2023-06-01")
-        .header("x-headroom-bypass", "true")
-        .header("x-headroom-mode", "passthrough")
-        .header("x-headroom-user-id", "alice")
+        .header("x-legroom-bypass", "true")
+        .header("x-legroom-mode", "passthrough")
+        .header("x-legroom-user-id", "alice")
         .body("{}")
         .send()
         .await
@@ -107,18 +107,18 @@ async fn x_headroom_request_headers_stripped() {
 }
 
 #[tokio::test]
-async fn x_headroom_case_insensitive_stripped() {
+async fn x_legroom_case_insensitive_stripped() {
     let upstream = MockServer::start().await;
     Mock::given(method("POST"))
         .and(path("/v1/messages"))
         .respond_with(move |req: &wiremock::Request| {
             // Mixed-case variants — all should be stripped.
             for hdr in [
-                "x-headroom-foo",
-                "x-headroom-bar",
-                "x-headroom-baz",
-                "X-Headroom-Foo",
-                "X-HEADROOM-BAR",
+                "x-legroom-foo",
+                "x-legroom-bar",
+                "x-legroom-baz",
+                "X-Legroom-Foo",
+                "X-LEGROOM-BAR",
             ] {
                 assert!(
                     req.headers.get(hdr).is_none(),
@@ -133,9 +133,9 @@ async fn x_headroom_case_insensitive_stripped() {
     let proxy = start_proxy(&upstream.uri()).await;
     let resp = reqwest::Client::new()
         .post(format!("{}/v1/messages", proxy.url()))
-        .header("X-Headroom-Foo", "1")
-        .header("x-Headroom-Bar", "2")
-        .header("X-HEADROOM-BAZ", "3")
+        .header("X-Legroom-Foo", "1")
+        .header("x-Legroom-Bar", "2")
+        .header("X-LEGROOM-BAZ", "3")
         .body("{}")
         .send()
         .await
@@ -156,7 +156,7 @@ async fn legitimate_headers_passthrough_with_strip_enabled() {
             assert_eq!(req.headers.get("authorization").unwrap(), "Bearer x");
             assert_eq!(req.headers.get("anthropic-version").unwrap(), "2023-06-01");
             // Strip happened — internal flag absent.
-            assert!(req.headers.get("x-headroom-bypass").is_none());
+            assert!(req.headers.get("x-legroom-bypass").is_none());
             ResponseTemplate::new(200)
         })
         .mount(&upstream)
@@ -169,7 +169,7 @@ async fn legitimate_headers_passthrough_with_strip_enabled() {
         .header("x-trace-id", "trace-1")
         .header("authorization", "Bearer x")
         .header("anthropic-version", "2023-06-01")
-        .header("x-headroom-bypass", "true")
+        .header("x-legroom-bypass", "true")
         .body("{}")
         .send()
         .await
@@ -185,8 +185,8 @@ async fn disabled_mode_passes_internal_headers_through() {
         .and(path("/v1/messages"))
         .respond_with(move |req: &wiremock::Request| {
             // Operator opt-in: internal header IS forwarded.
-            assert_eq!(req.headers.get("x-headroom-bypass").unwrap(), "true");
-            assert_eq!(req.headers.get("x-headroom-mode").unwrap(), "passthrough");
+            assert_eq!(req.headers.get("x-legroom-bypass").unwrap(), "true");
+            assert_eq!(req.headers.get("x-legroom-mode").unwrap(), "passthrough");
             ResponseTemplate::new(200).set_body_string("{}")
         })
         .mount(&upstream)
@@ -198,8 +198,8 @@ async fn disabled_mode_passes_internal_headers_through() {
     .await;
     let resp = reqwest::Client::new()
         .post(format!("{}/v1/messages", proxy.url()))
-        .header("x-headroom-bypass", "true")
-        .header("x-headroom-mode", "passthrough")
+        .header("x-legroom-bypass", "true")
+        .header("x-legroom-mode", "passthrough")
         .body("{}")
         .send()
         .await

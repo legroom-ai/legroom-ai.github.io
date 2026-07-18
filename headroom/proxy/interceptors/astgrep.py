@@ -19,9 +19,9 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from headroom import binaries
-from headroom._subprocess import run
-from headroom.proxy import runtime_env
+from legroom import binaries
+from legroom._subprocess import run
+from legroom.proxy import runtime_env
 
 from . import base
 
@@ -33,10 +33,10 @@ logger = logging.getLogger(__name__)
 # rejects any rewrite that doesn't actually shrink tokens, so we don't need
 # a "big enough to matter" check here, only a "big enough to justify the
 # fork()" check. Read live (not as a module constant) so a hot-reload or a
-# reused proxy re-synced by ``headroom wrap`` takes effect without a restart.
+# reused proxy re-synced by ``legroom wrap`` takes effect without a restart.
 def _min_chars_to_rewrite() -> int:
     try:
-        return int(runtime_env.getenv("HEADROOM_INTERCEPT_READ_MIN_CHARS", "500"))
+        return int(runtime_env.getenv("LEGROOM_INTERCEPT_READ_MIN_CHARS", "500"))
     except (TypeError, ValueError):
         return 500
 
@@ -86,7 +86,7 @@ _PATTERNS: dict[str, list[str]] = {
     "cpp": ["$RET $NAME($$$ARGS) { $$$BODY }"],
 }
 
-OUTLINE_MARKER = "    # ... (body elided by Headroom; Read a specific line range to see it)\n"
+OUTLINE_MARKER = "    # ... (body elided by Legroom; Read a specific line range to see it)\n"
 
 
 class AstGrepReadOutline:
@@ -187,7 +187,7 @@ def _run_ast_grep(
     # Write into a private mode-0700 temp dir — /tmp is shared on multi-tenant
     # systems and tool_output is untrusted content.
     ext = next((e for e, L in _EXT_TO_LANG.items() if L == lang), ".txt")
-    tmp_dir = Path(tempfile.mkdtemp(prefix="headroom-sg-"))
+    tmp_dir = Path(tempfile.mkdtemp(prefix="legroom-sg-"))
     try:
         os.chmod(tmp_dir, 0o700)
     except OSError as e:
@@ -293,7 +293,7 @@ def _build_outline(matches: list[dict[str, Any]], source: str) -> str | None:
     if not outline_chunks:
         return None
     header = (
-        "[headroom: outlined by ast-grep — "
+        "[legroom: outlined by ast-grep — "
         f"{len(seen_starts)} definition(s); "
         "bodies elided. Re-read the file with a line range to see a specific body.]\n"
     )

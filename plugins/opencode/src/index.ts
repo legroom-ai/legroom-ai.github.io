@@ -3,21 +3,21 @@ export {
   DEFAULT_MODELS,
   buildOpencodeConfigContent,
   buildOpencodeConfigContentJson,
-  createHeadroomProvider,
+  createLegroomProvider,
 } from "./provider.js";
 export type {
-  HeadroomModelMapping,
-  HeadroomProvider,
-  HeadroomProviderOptions,
+  LegroomModelMapping,
+  LegroomProvider,
+  LegroomProviderOptions,
 } from "./provider.js";
 export {
-  compressWithHeadroom,
-  createHeadroomRetrieveTool,
+  compressWithLegroom,
+  createLegroomRetrieveTool,
   getDefaultProxyUrl,
   setDefaultProxyUrl,
 } from "./retrieve.js";
 export type { RetrieveToolConfig } from "./retrieve.js";
-export { HeadroomPlugin, default } from "./plugin.js";
-export type { HeadroomOpenCodePluginOptions } from "./plugin.js";
+export { LegroomPlugin, default } from "./plugin.js";
+export type { LegroomOpenCodePluginOptions } from "./plugin.js";
 
-export { installHeadroomTransport } from "./transport.js";
+export { installLegroomTransport } from "./transport.js";

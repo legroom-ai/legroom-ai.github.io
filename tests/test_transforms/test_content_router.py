@@ -14,15 +14,15 @@ from types import SimpleNamespace
 
 import pytest
 
-from headroom.transforms.content_detector import ContentType
-from headroom.transforms.content_router import (
+from legroom.transforms.content_detector import ContentType
+from legroom.transforms.content_router import (
     CompressionStrategy,
     ContentRouter,
     ContentRouterConfig,
     RouterCompressionResult,
     RoutingDecision,
 )
-from headroom.transforms.lossless_compaction import search_unheading
+from legroom.transforms.lossless_compaction import search_unheading
 
 # =============================================================================
 # Test Fixtures
@@ -46,8 +46,8 @@ def router(default_config):
 @pytest.fixture
 def tokenizer():
     """Get a tokenizer for Transform interface tests."""
-    from headroom.providers import OpenAIProvider
-    from headroom.tokenizer import Tokenizer
+    from legroom.providers import OpenAIProvider
+    from legroom.tokenizer import Tokenizer
 
     provider = OpenAIProvider()
     token_counter = provider.get_token_counter("gpt-4o")
@@ -540,7 +540,7 @@ class TestContentRouter:
         diff = "diff --git a/file.py b/file.py\n@@ -1 +1 @@\n-old\n+new\n"
         router._diff_compressor = FakeDiffCompressor()
 
-        caplog.set_level(logging.DEBUG, logger="headroom.transforms.content_router")
+        caplog.set_level(logging.DEBUG, logger="legroom.transforms.content_router")
         result = router.compress(diff, context=None)
 
         assert result.compressed == "diff summary"
@@ -741,8 +741,8 @@ class TestExcludeTools:
     @pytest.fixture
     def tokenizer(self):
         """Get a tokenizer for tests."""
-        from headroom.providers import OpenAIProvider
-        from headroom.tokenizer import Tokenizer
+        from legroom.providers import OpenAIProvider
+        from legroom.tokenizer import Tokenizer
 
         provider = OpenAIProvider()
         token_counter = provider.get_token_counter("gpt-4o")
@@ -868,7 +868,7 @@ class TestExcludeTools:
                         "type": "tool_use",
                         "id": "toolu_mcp_1",
                         "name": "mcp_CursorTaskRegistry_cursor_list_tasks",
-                        "input": {"project": "headroom"},
+                        "input": {"project": "legroom"},
                     }
                 ],
             },
@@ -896,7 +896,7 @@ class TestExcludeTools:
         """Bare tool exclusions match custom-agent MCP wrappers (#1822)."""
         config = ContentRouterConfig(
             min_section_tokens=10,
-            exclude_tools={"headroom_retrieve"},
+            exclude_tools={"legroom_retrieve"},
         )
         router = ContentRouter(config)
 
@@ -907,7 +907,7 @@ class TestExcludeTools:
                     {
                         "type": "tool_use",
                         "id": "toolu_retrieve_1",
-                        "name": "mcp_HeadroomZai_headroom_retrieve",
+                        "name": "mcp_LegroomZai_legroom_retrieve",
                         "input": {"key": "abc123"},
                     }
                 ],
@@ -934,7 +934,7 @@ class TestExcludeTools:
 
     def test_is_tool_excluded_helper(self):
         """is_tool_excluded: exact (case-insensitive) and glob matching."""
-        from headroom.config import is_tool_excluded
+        from legroom.config import is_tool_excluded
 
         # Glob entry covers a whole MCP server; unrelated tools are untouched.
         assert is_tool_excluded("mcp__build123d__measure", {"mcp__*"})
@@ -944,8 +944,8 @@ class TestExcludeTools:
         assert is_tool_excluded("Read", {"read"})
         assert is_tool_excluded("MCP__X", {"mcp__*"})
         # MCP wrapper aliases can still be excluded by their bare tool name.
-        assert is_tool_excluded("mcp_HeadroomZai_headroom_retrieve", {"headroom_retrieve"})
-        assert is_tool_excluded("mcp__Headroom__headroom_retrieve", {"headroom_retrieve"})
+        assert is_tool_excluded("mcp_LegroomZai_legroom_retrieve", {"legroom_retrieve"})
+        assert is_tool_excluded("mcp__Legroom__legroom_retrieve", {"legroom_retrieve"})
         # Empty set never excludes.
         assert not is_tool_excluded("Read", set())
 
@@ -1216,7 +1216,7 @@ class TestExcludeTools:
         This test validates the DEFAULT_EXCLUDE_TOOLS frozenset directly
         (pure config check — no Rust dependency).
         """
-        from headroom.config import DEFAULT_EXCLUDE_TOOLS
+        from legroom.config import DEFAULT_EXCLUDE_TOOLS
 
         assert "Bash" not in DEFAULT_EXCLUDE_TOOLS, (
             "Bash should NOT be in DEFAULT_EXCLUDE_TOOLS — "
@@ -1226,13 +1226,13 @@ class TestExcludeTools:
 
     def test_bash_lowercase_not_in_exclude_tools(self):
         """Lowercase 'bash' is also NOT in default exclude tools."""
-        from headroom.config import DEFAULT_EXCLUDE_TOOLS
+        from legroom.config import DEFAULT_EXCLUDE_TOOLS
 
         assert "bash" not in DEFAULT_EXCLUDE_TOOLS
 
     def test_default_exclude_tools_membership(self):
         """Verify all expected exclude tools and their lowercase variants."""
-        from headroom.config import DEFAULT_EXCLUDE_TOOLS
+        from legroom.config import DEFAULT_EXCLUDE_TOOLS
 
         # Tools that SHOULD be excluded (fresh Read/Write/Edit/Glob/Grep outputs)
         for tool in ("Read", "Glob", "Grep", "Write", "Edit"):
@@ -1272,12 +1272,12 @@ class TestSmartCrusherFallback:
         Monkeypatches ``_get_smart_crusher`` to return a mock whose
         ``crush()`` returns *content* unchanged — this simulates "ran
         but produced no savings" without depending on the Rust
-        ``headroom._core`` extension or an LLM round-trip.
+        ``legroom._core`` extension or an LLM round-trip.
         """
         from unittest.mock import MagicMock
 
-        import headroom.transforms.content_router as crm
-        from headroom.transforms.smart_crusher import CrushResult
+        import legroom.transforms.content_router as crm
+        from legroom.transforms.smart_crusher import CrushResult
 
         content = "this is repetitive text. " * 300
 
@@ -1327,13 +1327,13 @@ class TestSmartCrusherFallback:
         just [smart_crusher] with no fallback entries.
 
         Uses a mock SmartCrusher to avoid depending on the Rust
-        ``headroom._core`` extension in test environments.
+        ``legroom._core`` extension in test environments.
         """
         import json
         from unittest.mock import MagicMock
 
-        import headroom.transforms.content_router as crm
-        from headroom.transforms.smart_crusher import CrushResult
+        import legroom.transforms.content_router as crm
+        from legroom.transforms.smart_crusher import CrushResult
 
         content = json.dumps([{"id": i, "name": f"item_{i}", "value": i * 10} for i in range(100)])
 
@@ -1375,12 +1375,12 @@ class TestSmartCrusherFallback:
 
         Uses a mock SmartCrusher returning no savings so the fallback
         block is entered deterministically, without depending on the
-        Rust ``headroom._core`` extension.
+        Rust ``legroom._core`` extension.
         """
         from unittest.mock import MagicMock
 
-        import headroom.transforms.content_router as crm
-        from headroom.transforms.smart_crusher import CrushResult
+        import legroom.transforms.content_router as crm
+        from legroom.transforms.smart_crusher import CrushResult
 
         repetitive = "line " * 300 + "\n"
 
@@ -1431,7 +1431,7 @@ class TestSmartCrusherFallback:
     def test_code_aware_fallback_also_uses_unified_block(self, router, monkeypatch):
         """CodeAware strategy also uses the unified fallback block.
         Verify it doesn't double-invoke Kompress either."""
-        import headroom.transforms.content_router as crm
+        import legroom.transforms.content_router as crm
 
         monkeypatch.setattr(
             crm.ContentRouter,

@@ -6,7 +6,7 @@ import textwrap
 
 import pytest
 
-from headroom.proxy.interceptors import (
+from legroom.proxy.interceptors import (
     INTERCEPTORS,
     ToolResultInterceptor,
     ToolResultInterceptorTransform,
@@ -14,9 +14,9 @@ from headroom.proxy.interceptors import (
     interceptor_failure_counts,
     register,
 )
-from headroom.proxy.interceptors.astgrep import AstGrepReadOutline
-from headroom.proxy.interceptors.base import reset_interceptor_failure_counts
-from headroom.tokenizer import Tokenizer
+from legroom.proxy.interceptors.astgrep import AstGrepReadOutline
+from legroom.proxy.interceptors.base import reset_interceptor_failure_counts
+from legroom.tokenizer import Tokenizer
 
 
 class _FakeTokenCounter:
@@ -704,13 +704,13 @@ def test_transform_adapter_tokens_before_is_baseline_not_reconstruction(tokenize
 
 
 def test_proxy_pipeline_includes_interceptor_when_env_enabled(monkeypatch):
-    """When HEADROOM_INTERCEPT_ENABLED=1, ToolResultInterceptorTransform is at index 0 in both pipelines."""
-    monkeypatch.setenv("HEADROOM_INTERCEPT_ENABLED", "1")
-    from headroom.proxy.interceptors import ToolResultInterceptorTransform
-    from headroom.proxy.models import ProxyConfig
-    from headroom.proxy.server import HeadroomProxy
+    """When LEGROOM_INTERCEPT_ENABLED=1, ToolResultInterceptorTransform is at index 0 in both pipelines."""
+    monkeypatch.setenv("LEGROOM_INTERCEPT_ENABLED", "1")
+    from legroom.proxy.interceptors import ToolResultInterceptorTransform
+    from legroom.proxy.models import ProxyConfig
+    from legroom.proxy.server import LegroomProxy
 
-    proxy = HeadroomProxy(ProxyConfig())
+    proxy = LegroomProxy(ProxyConfig())
     for pipeline in (proxy.anthropic_pipeline, proxy.openai_pipeline):
         transforms = pipeline.transforms
         assert len(transforms) > 0
@@ -718,13 +718,13 @@ def test_proxy_pipeline_includes_interceptor_when_env_enabled(monkeypatch):
 
 
 def test_proxy_pipeline_excludes_interceptor_when_env_not_set(monkeypatch):
-    """When HEADROOM_INTERCEPT_ENABLED is unset, no interceptor in either pipeline."""
-    monkeypatch.delenv("HEADROOM_INTERCEPT_ENABLED", raising=False)
-    from headroom.proxy.interceptors import ToolResultInterceptorTransform
-    from headroom.proxy.models import ProxyConfig
-    from headroom.proxy.server import HeadroomProxy
+    """When LEGROOM_INTERCEPT_ENABLED is unset, no interceptor in either pipeline."""
+    monkeypatch.delenv("LEGROOM_INTERCEPT_ENABLED", raising=False)
+    from legroom.proxy.interceptors import ToolResultInterceptorTransform
+    from legroom.proxy.models import ProxyConfig
+    from legroom.proxy.server import LegroomProxy
 
-    proxy = HeadroomProxy(ProxyConfig())
+    proxy = LegroomProxy(ProxyConfig())
     for pipeline in (proxy.anthropic_pipeline, proxy.openai_pipeline):
         transforms = pipeline.transforms
         assert not any(isinstance(t, ToolResultInterceptorTransform) for t in transforms)

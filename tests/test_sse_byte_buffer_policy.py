@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from headroom.proxy.sse_byte_buffer_policy import (
+from legroom.proxy.sse_byte_buffer_policy import (
     find_sse_event_terminator,
     parse_sse_events_from_byte_buffer,
 )

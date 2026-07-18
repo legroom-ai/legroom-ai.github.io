@@ -51,13 +51,13 @@ def audit_reads_cmd(
 
     \b
     Examples:
-        headroom audit-reads
-        headroom audit-reads --path /var/transcripts --format json
-        headroom audit-reads --codex
+        legroom audit-reads
+        legroom audit-reads --path /var/transcripts --format json
+        legroom audit-reads --codex
     """
     import json as _json
 
-    from headroom.audit.reads import audit_reads, render_text
+    from legroom.audit.reads import audit_reads, render_text
 
     if codex_mode:
         if root is None:
@@ -66,14 +66,14 @@ def audit_reads_cmd(
                 raise click.ClickException(
                     f"{root} does not exist — pass --path to the Codex sessions directory"
                 )
-        from headroom.audit.codex import audit_codex, render_codex_text
+        from legroom.audit.codex import audit_codex, render_codex_text
 
         codex_report = audit_codex(root)
         if codex_report.sessions == 0:
             raise click.ClickException(f"no *.jsonl transcripts found under {root}")
         sim = None
         if simulate_maturation:
-            from headroom.audit.maturation import render_sim_text, simulate_codex_maturation
+            from legroom.audit.maturation import render_sim_text, simulate_codex_maturation
 
             sim = simulate_codex_maturation(root)
         if output_format == "json":
@@ -101,8 +101,8 @@ def audit_reads_cmd(
 
     sim = None
     if simulate_maturation:
-        from headroom.audit.maturation import render_sim_text
-        from headroom.audit.maturation import simulate_maturation as run_sim
+        from legroom.audit.maturation import render_sim_text
+        from legroom.audit.maturation import simulate_maturation as run_sim
 
         sim = run_sim(root)
 

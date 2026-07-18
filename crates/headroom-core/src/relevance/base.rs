@@ -1,6 +1,6 @@
 //! Base trait and types for relevance scoring.
 //!
-//! Direct port of `headroom/relevance/base.py`. The Python version uses
+//! Direct port of `legroom/relevance/base.py`. The Python version uses
 //! ABC + abstractmethod; we use a Rust trait with the same two
 //! required methods. `default_batch_score` is provided as a free
 //! function so concrete scorers without an optimized batch impl can

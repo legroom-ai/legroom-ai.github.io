@@ -125,7 +125,7 @@ MODEL_TO_TOKENIZER: dict[str, str] = {
 # Bound the first (network) load of a HuggingFace tokenizer. Without a bound,
 # huggingface_hub download retries can block for many minutes (GH #1701: 610s
 # on a restricted Windows network). 0 disables network loads entirely.
-_LOAD_TIMEOUT_ENV = "HEADROOM_HF_TOKENIZER_LOAD_TIMEOUT_SECS"
+_LOAD_TIMEOUT_ENV = "LEGROOM_HF_TOKENIZER_LOAD_TIMEOUT_SECS"
 _LOAD_TIMEOUT_DEFAULT = 10.0
 
 
@@ -142,7 +142,7 @@ def _load_tokenizer(tokenizer_name: str):
 
     The first attempt is cache-only (``local_files_only=True``) so a warm
     HF cache never touches the network. A cache miss falls through to a
-    network download bounded by ``HEADROOM_HF_TOKENIZER_LOAD_TIMEOUT_SECS``
+    network download bounded by ``LEGROOM_HF_TOKENIZER_LOAD_TIMEOUT_SECS``
     (default 10s) on a daemon thread — the download itself cannot be
     cancelled, but the caller unblocks and falls back to estimation.
     Failures are cached by ``lru_cache`` (returns ``None``), so a slow or
@@ -189,7 +189,7 @@ def _load_tokenizer(tokenizer_name: str):
 
     thread = threading.Thread(
         target=_download,
-        name=f"headroom-hf-tokenizer-load-{tokenizer_name}",
+        name=f"legroom-hf-tokenizer-load-{tokenizer_name}",
         daemon=True,
     )
     thread.start()

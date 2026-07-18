@@ -1,6 +1,6 @@
-"""Benchmark scenario generators for Headroom SDK.
+"""Benchmark scenario generators for Legroom SDK.
 
-This package provides realistic data generators for benchmarking Headroom
+This package provides realistic data generators for benchmarking Legroom
 transforms and relevance scorers.
 
 Modules:

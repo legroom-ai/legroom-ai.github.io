@@ -95,7 +95,7 @@ def download_cbm(version: str | None = None) -> Path:
 
     # Verify
     try:
-        from headroom._subprocess import run
+        from legroom._subprocess import run
 
         result = run(
             [str(target_path), "--version"],

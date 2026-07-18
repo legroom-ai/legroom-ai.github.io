@@ -1,14 +1,14 @@
 # API Reference
 
-## HeadroomClient
+## LegroomClient
 
-The main entry point for Headroom SDK.
+The main entry point for Legroom SDK.
 
 ```python
-from headroom import HeadroomClient
+from legroom import LegroomClient
 from openai import OpenAI
 
-client = HeadroomClient(
+client = LegroomClient(
     original_client=OpenAI(),
     default_mode="optimize",
 )
@@ -35,7 +35,7 @@ Create a chat completion with optional optimization.
 response = client.chat.completions.create(
     model="gpt-4o",
     messages=[...],
-    headroom_mode="optimize",  # Override default mode
+    legroom_mode="optimize",  # Override default mode
 )
 ```
 
@@ -43,8 +43,8 @@ response = client.chat.completions.create(
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `headroom_mode` | `str` | Override mode for this request |
-| `headroom_query` | `str` | Query for relevance scoring |
+| `legroom_mode` | `str` | Override mode for this request |
+| `legroom_query` | `str` | Query for relevance scoring |
 
 #### `chat.completions.simulate(**kwargs)`
 
@@ -70,7 +70,7 @@ print(f"Savings: {plan.savings_percent:.1f}%")
 ### SmartCrusherConfig
 
 ```python
-from headroom import SmartCrusherConfig
+from legroom import SmartCrusherConfig
 
 config = SmartCrusherConfig(
     min_tokens_to_crush=200,
@@ -86,7 +86,7 @@ config = SmartCrusherConfig(
 ### CacheAlignerConfig
 
 ```python
-from headroom import CacheAlignerConfig
+from legroom import CacheAlignerConfig
 
 config = CacheAlignerConfig(
     extract_dates=True,
@@ -98,7 +98,7 @@ config = CacheAlignerConfig(
 ### RelevanceScorerConfig
 
 ```python
-from headroom import RelevanceScorerConfig
+from legroom import RelevanceScorerConfig
 
 config = RelevanceScorerConfig(
     scorer_type="bm25",      # "bm25", "embedding", or "hybrid"
@@ -165,7 +165,7 @@ class WasteSignals:
 ### OpenAIProvider
 
 ```python
-from headroom import OpenAIProvider
+from legroom import OpenAIProvider
 
 provider = OpenAIProvider()
 
@@ -187,7 +187,7 @@ cost = provider.estimate_cost(
 ### AnthropicProvider
 
 ```python
-from headroom import AnthropicProvider
+from legroom import AnthropicProvider
 from anthropic import Anthropic
 
 provider = AnthropicProvider(client=Anthropic())
@@ -205,7 +205,7 @@ tokens = counter.count_messages(messages)  # Accurate count via API
 Fast keyword-based scoring (zero dependencies).
 
 ```python
-from headroom import BM25Scorer
+from legroom import BM25Scorer
 
 scorer = BM25Scorer()
 scores = scorer.score_items(
@@ -219,7 +219,7 @@ scores = scorer.score_items(
 Semantic similarity scoring (requires `sentence-transformers`).
 
 ```python
-from headroom import EmbeddingScorer, embedding_available
+from legroom import EmbeddingScorer, embedding_available
 
 if embedding_available():
     scorer = EmbeddingScorer(model="all-MiniLM-L6-v2")
@@ -231,7 +231,7 @@ if embedding_available():
 Combines BM25 and embeddings.
 
 ```python
-from headroom import HybridScorer
+from legroom import HybridScorer
 
 scorer = HybridScorer(alpha=0.5)  # 50% BM25, 50% embedding
 scores = scorer.score_items(items, query)
@@ -242,7 +242,7 @@ scores = scorer.score_items(items, query)
 Factory function to create scorers.
 
 ```python
-from headroom import create_scorer
+from legroom import create_scorer
 
 # Auto-select best available scorer
 scorer = create_scorer()
@@ -258,7 +258,7 @@ scorer = create_scorer(scorer_type="hybrid", alpha=0.7)
 ### SmartCrusher
 
 ```python
-from headroom import SmartCrusher
+from legroom import SmartCrusher
 
 crusher = SmartCrusher()
 result = crusher.crush(
@@ -270,7 +270,7 @@ result = crusher.crush(
 ### CacheAligner
 
 ```python
-from headroom import CacheAligner
+from legroom import CacheAligner
 
 aligner = CacheAligner()
 result = aligner.align(messages)
@@ -279,12 +279,12 @@ result = aligner.align(messages)
 > **Context management** is handled automatically inside the pipeline
 > (live-zone-only compression). The position-based `RollingWindow` and
 > score-based `IntelligentContextManager` / `MessageScorer` APIs have been
-> removed and are no longer part of Headroom.
+> removed and are no longer part of Legroom.
 
 ### TransformPipeline
 
 ```python
-from headroom import TransformPipeline
+from legroom import TransformPipeline
 
 pipeline = TransformPipeline([
     SmartCrusher(),
@@ -301,7 +301,7 @@ result = pipeline.transform(messages)
 ### Tokenizer
 
 ```python
-from headroom import Tokenizer, count_tokens_text, count_tokens_messages
+from legroom import Tokenizer, count_tokens_text, count_tokens_messages
 
 # Quick counting
 tokens = count_tokens_text("Hello, world!", model="gpt-4o")
@@ -317,10 +317,10 @@ tokens = tokenizer.count_messages(messages)
 Generate HTML/Markdown reports from stored metrics.
 
 ```python
-from headroom import generate_report
+from legroom import generate_report
 
 report = generate_report(
-    store_url="sqlite:///headroom.db",
+    store_url="sqlite:///legroom.db",
     format="html",
     period="day",
 )
@@ -332,4 +332,4 @@ report = generate_report(
 
 For the TypeScript SDK API reference, see [TypeScript SDK](typescript-sdk.md).
 
-The TypeScript SDK provides `compress()`, `HeadroomClient`, and framework adapters for Vercel AI SDK, OpenAI, and Anthropic.
+The TypeScript SDK provides `compress()`, `LegroomClient`, and framework adapters for Vercel AI SDK, OpenAI, and Anthropic.

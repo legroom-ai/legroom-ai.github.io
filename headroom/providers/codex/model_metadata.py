@@ -16,7 +16,7 @@ from .endpoints import chatgpt_backend_url, codex_backend_url
 from .headers import drop_header, header_name
 from .runtime import resolve_codex_routing
 
-logger = logging.getLogger("headroom.providers.codex.model_metadata")
+logger = logging.getLogger("legroom.providers.codex.model_metadata")
 DEFAULT_CODEX_CLIENT_VERSION = "0.130.0"
 
 

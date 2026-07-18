@@ -3,7 +3,7 @@ handler resolved the tokenizer and counted the conversation inline in the async
 handler. For HF-backed models (e.g. deepseek-*) first use triggers an unbounded
 network download, freezing the whole server (610s request, then /livez, /readyz
 and /health hang until kill). The fix routes resolution + counting through
-HeadroomProxy._count_tokens_offloaded (compression executor, bounded by
+LegroomProxy._count_tokens_offloaded (compression executor, bounded by
 COMPRESSION_TIMEOUT_SECONDS, fail-open to estimation), and offloads the inline
 batch pipeline.apply() calls the same way.
 """
@@ -15,13 +15,13 @@ import inspect
 import threading
 import time
 
-from headroom.proxy.handlers.anthropic import AnthropicHandlerMixin
-from headroom.proxy.handlers.batch import BatchHandlerMixin
-from headroom.proxy.server import ProxyConfig, create_app
-from headroom.tokenizers import EstimatingTokenCounter
+from legroom.proxy.handlers.anthropic import AnthropicHandlerMixin
+from legroom.proxy.handlers.batch import BatchHandlerMixin
+from legroom.proxy.server import ProxyConfig, create_app
+from legroom.tokenizers import EstimatingTokenCounter
 
 
-def _make_proxy():  # noqa: ANN202 — returns the internal HeadroomProxy
+def _make_proxy():  # noqa: ANN202 — returns the internal LegroomProxy
     app = create_app(
         ProxyConfig(
             optimize=True,
@@ -69,12 +69,12 @@ async def test_count_tokens_offloaded_runs_on_worker_thread(monkeypatch) -> None
             seen["thread"] = threading.current_thread().name
             return super().count_messages(messages)
 
-    monkeypatch.setattr("headroom.tokenizers.get_tokenizer", lambda *a, **k: _SpyTokenizer())
+    monkeypatch.setattr("legroom.tokenizers.get_tokenizer", lambda *a, **k: _SpyTokenizer())
 
     _, tokens = await proxy._count_tokens_offloaded("gpt-4", [{"role": "user", "content": "hi"}])
 
     assert tokens > 0
-    assert seen["thread"].startswith("headroom-compress")
+    assert seen["thread"].startswith("legroom-compress")
     assert seen["thread"] != loop_thread
 
 
@@ -95,7 +95,7 @@ async def test_count_tokens_offloaded_keeps_loop_responsive(monkeypatch) -> None
             time.sleep(0.3)
             return super().count_messages(messages)
 
-    monkeypatch.setattr("headroom.tokenizers.get_tokenizer", lambda *a, **k: _SlowTokenizer())
+    monkeypatch.setattr("legroom.tokenizers.get_tokenizer", lambda *a, **k: _SlowTokenizer())
 
     tick_task = asyncio.create_task(_ticker())
     try:
@@ -114,7 +114,7 @@ async def test_count_tokens_offloaded_fails_open(monkeypatch) -> None:  # noqa: 
     def _boom(*a, **k):  # noqa: ANN002, ANN003, ANN202
         raise RuntimeError("tokenizer backend exploded")
 
-    monkeypatch.setattr("headroom.tokenizers.get_tokenizer", _boom)
+    monkeypatch.setattr("legroom.tokenizers.get_tokenizer", _boom)
 
     tokenizer, tokens = await proxy._count_tokens_offloaded(
         "deepseek-chat", [{"role": "user", "content": "hello world"}]

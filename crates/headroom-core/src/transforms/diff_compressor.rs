@@ -1,4 +1,4 @@
-//! Unified-diff compressor — Rust port of `headroom.transforms.diff_compressor`.
+//! Unified-diff compressor — Rust port of `legroom.transforms.diff_compressor`.
 //!
 //! Compresses verbose `git diff` output by:
 //! 1. Parsing the unified-diff format into files + hunks.
@@ -825,7 +825,7 @@ fn parse_diff(lines: &[&str]) -> ParsedDiff {
 
 // ─── Scoring ───────────────────────────────────────────────────────────────
 
-/// Priority patterns matching `headroom.transforms.error_detection.PRIORITY_PATTERNS_DIFF`:
+/// Priority patterns matching `legroom.transforms.error_detection.PRIORITY_PATTERNS_DIFF`:
 /// ERROR + IMPORTANCE + SECURITY. Used in scoring so error-relevant hunks
 /// survive `max_hunks_per_file` capping.
 fn priority_patterns() -> &'static [Regex] {
@@ -1174,7 +1174,7 @@ fn count_split_lines(s: &str) -> usize {
 
 /// MD5 of `s`'s UTF-8 bytes, hex-encoded, truncated to 24 chars. Matches
 /// `hashlib.md5(s.encode()).hexdigest()[:24]` from
-/// `headroom.cache.compression_store.CompressionStore.store`.
+/// `legroom.cache.compression_store.CompressionStore.store`.
 fn md5_hex_24(s: &str) -> String {
     let mut hasher = Md5::new();
     hasher.update(s.as_bytes());

@@ -36,12 +36,12 @@ import pytest
 
 pytest.importorskip("fastapi")
 
-from headroom.proxy.helpers import COMPRESSION_TIMEOUT_SECONDS  # noqa: F401
-from headroom.proxy.server import ProxyConfig, create_app
+from legroom.proxy.helpers import COMPRESSION_TIMEOUT_SECONDS  # noqa: F401
+from legroom.proxy.server import ProxyConfig, create_app
 
 
 def _make_proxy(compression_max_workers: int | None = None):
-    """Construct a HeadroomProxy with a no-op pipeline. Returns the proxy."""
+    """Construct a LegroomProxy with a no-op pipeline. Returns the proxy."""
     config = ProxyConfig(
         optimize=False,
         cache_enabled=False,
@@ -272,8 +272,8 @@ def test_timeout_quarantines_new_work_until_timed_out_worker_finishes() -> None:
         return await proxy.metrics.export()
 
     prometheus_text = asyncio.run(_drive())
-    assert 'headroom_compression_quarantine_total{event="activated"} 1' in prometheus_text
-    assert 'headroom_compression_quarantine_total{event="skipped"} 1' in prometheus_text
+    assert 'legroom_compression_quarantine_total{event="activated"} 1' in prometheus_text
+    assert 'legroom_compression_quarantine_total{event="skipped"} 1' in prometheus_text
 
 
 def test_timeout_before_worker_start_does_not_leak_in_flight() -> None:

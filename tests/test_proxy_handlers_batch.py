@@ -6,8 +6,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from headroom.proxy.handlers import batch as batch_module
-from headroom.proxy.handlers.gemini import GeminiHandlerMixin
+from legroom.proxy.handlers import batch as batch_module
+from legroom.proxy.handlers.gemini import GeminiHandlerMixin
 
 
 class FakeResponse:
@@ -98,27 +98,27 @@ class DummyBatchHandler(batch_module.BatchHandlerMixin, GeminiHandlerMixin):
         return f"req-{self._request_counter}"
 
     async def _record_request_outcome(self, outcome) -> None:  # noqa: ANN001
-        # Mirror of HeadroomProxy._record_request_outcome for the batch
+        # Mirror of LegroomProxy._record_request_outcome for the batch
         # mixin tests. Delegates to the free funnel so the wire shape
         # matches production.
-        from headroom.proxy.outcome import emit_request_outcome
+        from legroom.proxy.outcome import emit_request_outcome
 
         await emit_request_outcome(self, outcome)
 
     def _extract_tags(self, headers: dict) -> dict[str, str]:
-        # Mirror of HeadroomProxy._extract_tags. Handlers now call this
-        # at entry to capture x-headroom-* slicing tags into the outcome.
+        # Mirror of LegroomProxy._extract_tags. Handlers now call this
+        # at entry to capture x-legroom-* slicing tags into the outcome.
         return {
-            k.lower().replace("x-headroom-", ""): v
+            k.lower().replace("x-legroom-", ""): v
             for k, v in headers.items()
-            if k.lower().startswith("x-headroom-")
+            if k.lower().startswith("x-legroom-")
         }
 
     async def handle_passthrough(self, request, base_url):  # noqa: ANN001, ANN201
         return {"request": request, "base_url": base_url}
 
     async def _run_compression_in_executor(self, fn, *, timeout):  # noqa: ANN001, ANN201
-        # Mirror of HeadroomProxy._run_compression_in_executor: batch handlers
+        # Mirror of LegroomProxy._run_compression_in_executor: batch handlers
         # offload pipeline.apply() off the event loop (#1701). Inline is fine
         # for tests — only the call contract matters here.
         return fn()
@@ -172,15 +172,15 @@ def install_batch_support_modules(
         def count_messages(self, messages) -> int:  # noqa: ANN001
             return tokenizer_count
 
-    monkeypatch.setitem(sys.modules, "headroom.ccr", SimpleNamespace(CCRToolInjector=FakeInjector))
+    monkeypatch.setitem(sys.modules, "legroom.ccr", SimpleNamespace(CCRToolInjector=FakeInjector))
     monkeypatch.setitem(
         sys.modules,
-        "headroom.tokenizers",
+        "legroom.tokenizers",
         SimpleNamespace(get_tokenizer=lambda model: FakeTokenizer()),
     )
     monkeypatch.setitem(
         sys.modules,
-        "headroom.utils",
+        "legroom.utils",
         SimpleNamespace(extract_user_query=lambda messages: "query"),
     )
 
@@ -310,7 +310,7 @@ async def test_handle_batch_create_validates_json_and_required_fields(
     async def raise_bad_json(request):  # noqa: ANN001
         raise ValueError("bad json")
 
-    monkeypatch.setattr("headroom.proxy.helpers._read_request_json", raise_bad_json)
+    monkeypatch.setattr("legroom.proxy.helpers._read_request_json", raise_bad_json)
 
     bad = await handler.handle_batch_create(FakeRequest("{}"))
     assert bad.status_code == 400
@@ -319,7 +319,7 @@ async def test_handle_batch_create_validates_json_and_required_fields(
     async def missing_file_payload(request):  # noqa: ANN001
         return {"endpoint": "/v1/chat/completions"}
 
-    monkeypatch.setattr("headroom.proxy.helpers._read_request_json", missing_file_payload)
+    monkeypatch.setattr("legroom.proxy.helpers._read_request_json", missing_file_payload)
     missing_file = await handler.handle_batch_create(FakeRequest("{}"))
     assert missing_file.status_code == 400
     assert missing_file.body.decode().find("input_file_id is required") > 0
@@ -327,7 +327,7 @@ async def test_handle_batch_create_validates_json_and_required_fields(
     async def missing_endpoint_payload(request):  # noqa: ANN001
         return {"input_file_id": "file-1"}
 
-    monkeypatch.setattr("headroom.proxy.helpers._read_request_json", missing_endpoint_payload)
+    monkeypatch.setattr("legroom.proxy.helpers._read_request_json", missing_endpoint_payload)
     missing_endpoint = await handler.handle_batch_create(FakeRequest("{}"))
     assert missing_endpoint.status_code == 400
     assert missing_endpoint.body.decode().find("endpoint is required") > 0
@@ -348,7 +348,7 @@ async def test_handle_batch_create_passthrough_and_download_failure(
     async def passthrough_payload(request):  # noqa: ANN001
         return {"input_file_id": "file-1", "endpoint": "/v1/responses"}
 
-    monkeypatch.setattr("headroom.proxy.helpers._read_request_json", passthrough_payload)
+    monkeypatch.setattr("legroom.proxy.helpers._read_request_json", passthrough_payload)
     assert await handler.handle_batch_create(FakeRequest("{}")) is passthrough_response
 
     async def download_missing_payload(request):  # noqa: ANN001
@@ -357,7 +357,7 @@ async def test_handle_batch_create_passthrough_and_download_failure(
     async def missing_download(file_id, headers):  # noqa: ANN001
         return None
 
-    monkeypatch.setattr("headroom.proxy.helpers._read_request_json", download_missing_payload)
+    monkeypatch.setattr("legroom.proxy.helpers._read_request_json", download_missing_payload)
     monkeypatch.setattr(handler, "_download_openai_file", missing_download)
     missing = await handler.handle_batch_create(FakeRequest("{}"))
     assert missing.status_code == 404
@@ -378,7 +378,7 @@ async def test_handle_batch_create_handles_empty_upload_failure_and_success(
             "metadata": {"source": "test"},
         }
 
-    monkeypatch.setattr("headroom.proxy.helpers._read_request_json", request_payload)
+    monkeypatch.setattr("legroom.proxy.helpers._read_request_json", request_payload)
 
     async def fake_download(file_id, headers):  # noqa: ANN001
         return "downloaded"
@@ -437,8 +437,8 @@ async def test_handle_batch_create_handles_empty_upload_failure_and_success(
 
     assert success.status_code == 200
     success_headers = dict(success.headers)
-    assert success_headers["x-headroom-tokens-saved"] == "10"
-    assert success_headers["x-headroom-savings-percent"] == "50.0"
+    assert success_headers["x-legroom-tokens-saved"] == "10"
+    assert success_headers["x-legroom-savings-percent"] == "50.0"
     assert success_headers["x-openai"] == "1"
     # PR-A3: byte-faithful forwarder writes ``content`` (raw bytes), not
     # ``json``. Round-trip the captured bytes back to a dict for assertion.
@@ -447,8 +447,8 @@ async def test_handle_batch_create_handles_empty_upload_failure_and_success(
         sent_body = last_post["json"]
     else:
         sent_body = json.loads(last_post["content"].decode("utf-8"))
-    assert sent_body["metadata"]["headroom_compressed"] == "true"
-    assert sent_body["metadata"]["headroom_original_file_id"] == "file-1"
+    assert sent_body["metadata"]["legroom_compressed"] == "true"
+    assert sent_body["metadata"]["legroom_original_file_id"] == "file-1"
     assert handler.metrics.record_calls[-1]["provider"] == "openai"
 
 
@@ -464,7 +464,7 @@ async def test_handle_batch_create_records_failure_on_exception(
     async def boom(file_id, headers):  # noqa: ANN001
         raise RuntimeError("boom")
 
-    monkeypatch.setattr("headroom.proxy.helpers._read_request_json", request_payload)
+    monkeypatch.setattr("legroom.proxy.helpers._read_request_json", request_payload)
     monkeypatch.setattr(handler, "_download_openai_file", boom)
 
     response = await handler.handle_batch_create(FakeRequest("{}"))
@@ -529,7 +529,7 @@ async def test_store_google_batch_context_persists_transformed_requests(
 
     monkeypatch.setitem(
         sys.modules,
-        "headroom.ccr",
+        "legroom.ccr",
         SimpleNamespace(
             BatchContext=FakeBatchContext,
             BatchRequestContext=FakeBatchRequestContext,
@@ -571,7 +571,7 @@ async def test_handle_google_batch_results_passes_through_early_exit_cases(
 
     monkeypatch.setitem(
         sys.modules,
-        "headroom.ccr",
+        "legroom.ccr",
         SimpleNamespace(
             BatchResultProcessor=lambda http_client: None,
             get_batch_context_store=lambda: FakeStore(),
@@ -660,7 +660,7 @@ async def test_handle_google_batch_results_processes_completed_results(
 
     monkeypatch.setitem(
         sys.modules,
-        "headroom.ccr",
+        "legroom.ccr",
         SimpleNamespace(
             BatchResultProcessor=FakeProcessor,
             get_batch_context_store=lambda: FakeStore(),
@@ -750,7 +750,7 @@ async def test_handle_google_batch_create_validates_and_passthroughs(
     async def bad_json(request):  # noqa: ANN001
         raise ValueError("bad json")
 
-    monkeypatch.setattr("headroom.proxy.helpers._read_request_json", bad_json)
+    monkeypatch.setattr("legroom.proxy.helpers._read_request_json", bad_json)
     invalid = await handler.handle_google_batch_create(FakeRequest("{}"), "gemini-pro")
     assert invalid.status_code == 400
 
@@ -762,7 +762,7 @@ async def test_handle_google_batch_create_validates_and_passthroughs(
     async def no_inline(request):  # noqa: ANN001
         return {"batch": {"input_config": {"requests": {"requests": []}}}}
 
-    monkeypatch.setattr("headroom.proxy.helpers._read_request_json", no_inline)
+    monkeypatch.setattr("legroom.proxy.helpers._read_request_json", no_inline)
     monkeypatch.setattr(handler, "_google_batch_passthrough", fake_google_passthrough)
     assert (
         await handler.handle_google_batch_create(FakeRequest("{}"), "gemini-pro")
@@ -798,7 +798,7 @@ async def test_handle_google_batch_create_success_and_failure_paths(
                 True,
             )
 
-    monkeypatch.setitem(sys.modules, "headroom.ccr", SimpleNamespace(CCRToolInjector=FakeInjector))
+    monkeypatch.setitem(sys.modules, "legroom.ccr", SimpleNamespace(CCRToolInjector=FakeInjector))
 
     stored: list[tuple[str, list[dict[str, object]], str, str | None]] = []
 
@@ -832,7 +832,7 @@ async def test_handle_google_batch_create_success_and_failure_paths(
             }
         }
 
-    monkeypatch.setattr("headroom.proxy.helpers._read_request_json", good_payload)
+    monkeypatch.setattr("legroom.proxy.helpers._read_request_json", good_payload)
     monkeypatch.setattr(handler, "_retry_request", fake_retry)
     monkeypatch.setattr(handler, "_store_google_batch_context", fake_store)
 
@@ -924,7 +924,7 @@ async def test_handle_google_batch_create_covers_passthrough_revert_and_store_fa
     async def broken_store(batch_name, requests_list, model, api_key):  # noqa: ANN001
         raise RuntimeError("store failed")
 
-    monkeypatch.setattr("headroom.proxy.helpers._read_request_json", payload)
+    monkeypatch.setattr("legroom.proxy.helpers._read_request_json", payload)
     monkeypatch.setattr(handler, "_gemini_contents_to_messages", fake_to_messages)
     monkeypatch.setattr(handler, "_messages_to_gemini_contents", fake_to_gemini)
     monkeypatch.setattr(handler, "_retry_request", retry)
@@ -1017,7 +1017,7 @@ async def test_handle_google_batch_create_preserves_functioncall_response_order(
     async def payload(request):  # noqa: ANN001, ANN201
         return batch_body
 
-    monkeypatch.setattr("headroom.proxy.helpers._read_request_json", payload)
+    monkeypatch.setattr("legroom.proxy.helpers._read_request_json", payload)
 
     resp = await handler.handle_google_batch_create(FakeRequest("{}"), "gemini-pro")
     assert resp.status_code == 200
@@ -1107,7 +1107,7 @@ async def test_handle_google_batch_create_preserves_sibling_tools(
     async def payload(request):  # noqa: ANN001, ANN201
         return batch_body
 
-    monkeypatch.setattr("headroom.proxy.helpers._read_request_json", payload)
+    monkeypatch.setattr("legroom.proxy.helpers._read_request_json", payload)
 
     resp = await handler.handle_google_batch_create(FakeRequest("{}"), "gemini-pro")
     assert resp.status_code == 200
@@ -1197,7 +1197,7 @@ async def test_store_google_batch_context_without_system_text(
     handler = DummyBatchHandler()
     monkeypatch.setitem(
         sys.modules,
-        "headroom.ccr",
+        "legroom.ccr",
         SimpleNamespace(
             BatchContext=FakeBatchContext,
             BatchRequestContext=FakeBatchRequestContext,

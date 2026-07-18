@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from headroom.providers.route_specs import (
+from legroom.providers.route_specs import (
     ANTHROPIC_BATCH_ROUTES,
     ANTHROPIC_HANDLER_ROUTES,
     ANTHROPIC_PASSTHROUGH_ROUTES,

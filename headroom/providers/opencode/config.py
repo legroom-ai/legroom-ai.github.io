@@ -11,16 +11,16 @@ from typing import Any
 
 import click
 
-from headroom import fsutil
-from headroom.install.paths import opencode_config_path
+from legroom import fsutil
+from legroom.install.paths import opencode_config_path
 
-# Headroom-managed JSON marker comments for idempotent block injection.
-_PROVIDER_MARKER_START = "// --- Headroom proxy provider ---"
-_PROVIDER_MARKER_END = "// --- end Headroom proxy provider ---"
-_MCP_MARKER_START = "// --- Headroom MCP server ---"
-_MCP_MARKER_END = "// --- end Headroom MCP server ---"
+# Legroom-managed JSON marker comments for idempotent block injection.
+_PROVIDER_MARKER_START = "// --- Legroom proxy provider ---"
+_PROVIDER_MARKER_END = "// --- end Legroom proxy provider ---"
+_MCP_MARKER_START = "// --- Legroom MCP server ---"
+_MCP_MARKER_END = "// --- end Legroom MCP server ---"
 
-# Regex to strip headroom blocks (including the marker comments).
+# Regex to strip legroom blocks (including the marker comments).
 _PROVIDER_BLOCK_RE = re.compile(
     re.escape(_PROVIDER_MARKER_START) + r".*?" + re.escape(_PROVIDER_MARKER_END),
     re.DOTALL,
@@ -29,14 +29,14 @@ _MCP_BLOCK_RE = re.compile(
     re.escape(_MCP_MARKER_START) + r".*?" + re.escape(_MCP_MARKER_END),
     re.DOTALL,
 )
-HEADROOM_OPENCODE_PLUGIN = "headroom-opencode"
+LEGROOM_OPENCODE_PLUGIN = "legroom-opencode"
 
-# Models exposed by the injected `headroom` provider. OpenCode only resolves
-# `headroom/<id>` for ids listed in the provider's `models` map, so an empty
-# map means every documented `headroom/*` model fails with "Model not found".
+# Models exposed by the injected `legroom` provider. OpenCode only resolves
+# `legroom/<id>` for ids listed in the provider's `models` map, so an empty
+# map means every documented `legroom/*` model fails with "Model not found".
 # Keep in sync with DEFAULT_MODELS in plugins/opencode/src/provider.ts and the
 # table in plugins/opencode/README.md.
-HEADROOM_OPENCODE_MODELS: dict[str, Any] = {
+LEGROOM_OPENCODE_MODELS: dict[str, Any] = {
     "claude-sonnet-4-6": {
         "name": "Claude Sonnet 4.6",
         "limit": {"context": 200000, "output": 16384},
@@ -60,13 +60,13 @@ HEADROOM_OPENCODE_MODELS: dict[str, Any] = {
 }
 
 
-def headroom_provider_entry(port: int) -> dict[str, Any]:
-    """Return the `headroom` provider block pointed at the local proxy."""
+def legroom_provider_entry(port: int) -> dict[str, Any]:
+    """Return the `legroom` provider block pointed at the local proxy."""
     return {
         "npm": "@ai-sdk/openai-compatible",
-        "name": "Headroom Proxy",
+        "name": "Legroom Proxy",
         "options": {"baseURL": f"http://127.0.0.1:{port}/v1"},
-        "models": HEADROOM_OPENCODE_MODELS,
+        "models": LEGROOM_OPENCODE_MODELS,
     }
 
 
@@ -81,14 +81,14 @@ def _opencode_home_dir() -> Path:
 def opencode_config_paths() -> tuple[Path, Path]:
     """Return ``(config_file, backup_file)`` for OpenCode."""
     config_file = opencode_config_path()
-    backup_file = config_file.with_name(config_file.name + ".headroom-backup")
+    backup_file = config_file.with_name(config_file.name + ".legroom-backup")
     return config_file, backup_file
 
 
 def snapshot_opencode_config_if_unwrapped(config_file: Path, backup_file: Path) -> None:
     """Snapshot ``opencode.json`` to ``backup_file`` before the first injection.
 
-    Guarantees that ``headroom unwrap opencode`` can restore the user's
+    Guarantees that ``legroom unwrap opencode`` can restore the user's
     original file byte-for-byte.
     """
     if backup_file.exists():
@@ -105,8 +105,8 @@ def snapshot_opencode_config_if_unwrapped(config_file: Path, backup_file: Path) 
     shutil.copy2(config_file, backup_file)
 
 
-def strip_opencode_headroom_blocks(content: str, *, remove_mcp: bool = True) -> str:
-    """Remove all Headroom-managed blocks from opencode JSON text.
+def strip_opencode_legroom_blocks(content: str, *, remove_mcp: bool = True) -> str:
+    """Remove all Legroom-managed blocks from opencode JSON text.
 
     Preserves user content. Returns the cleaned string.
     """
@@ -119,8 +119,8 @@ def strip_opencode_headroom_blocks(content: str, *, remove_mcp: bool = True) -> 
 
 
 def _render_provider_block(port: int) -> str:
-    """Render a Headroom provider block as a JSON comment-wrapped snippet."""
-    provider = {"headroom": headroom_provider_entry(port)}
+    """Render a Legroom provider block as a JSON comment-wrapped snippet."""
+    provider = {"legroom": legroom_provider_entry(port)}
     lines = [
         _PROVIDER_MARKER_START,
         f'"provider": {json.dumps(provider, indent=2)},',
@@ -164,33 +164,33 @@ def _inject_key_into_json(data: dict[str, Any], key: str, value: Any) -> dict[st
     return data
 
 
-def append_headroom_plugin(config: dict[str, object]) -> bool:
+def append_legroom_plugin(config: dict[str, object]) -> bool:
     """Append the optional OpenCode plugin entry if it is not already present."""
     plugin = config.get("plugin")
     if plugin is None:
-        config["plugin"] = [HEADROOM_OPENCODE_PLUGIN]
+        config["plugin"] = [LEGROOM_OPENCODE_PLUGIN]
         return True
 
     if not isinstance(plugin, list):
         return False
 
     for entry in plugin:
-        if entry == HEADROOM_OPENCODE_PLUGIN:
+        if entry == LEGROOM_OPENCODE_PLUGIN:
             return False
-        if isinstance(entry, list) and entry and entry[0] == HEADROOM_OPENCODE_PLUGIN:
+        if isinstance(entry, list) and entry and entry[0] == LEGROOM_OPENCODE_PLUGIN:
             return False
 
-    plugin.append(HEADROOM_OPENCODE_PLUGIN)
+    plugin.append(LEGROOM_OPENCODE_PLUGIN)
     return True
 
 
 def inject_opencode_provider_config(port: int) -> None:
-    """Inject a Headroom model provider into OpenCode's config file.
+    """Inject a Legroom model provider into OpenCode's config file.
 
     Safe to call multiple times — the injected block is fully replaced on
     each call, so re-running with a different ``port`` updates the config.
     Before the first injection, the pre-wrap file is snapshotted to
-    ``opencode.json.headroom-backup`` so ``headroom unwrap opencode``
+    ``opencode.json.legroom-backup`` so ``legroom unwrap opencode``
     can restore it byte-for-byte.
     """
     config_file, backup_file = opencode_config_paths()
@@ -207,13 +207,13 @@ def inject_opencode_provider_config(port: int) -> None:
             content = ""
             data = {}
 
-        # Strip any prior Headroom-managed blocks before re-injecting.
+        # Strip any prior Legroom-managed blocks before re-injecting.
         if _PROVIDER_MARKER_START in content or _MCP_MARKER_START in content:
-            content = strip_opencode_headroom_blocks(content)
+            content = strip_opencode_legroom_blocks(content)
             data = _parse_json_loose(content)
 
         # Merge provider into the JSON data structure.
-        provider = {"headroom": headroom_provider_entry(port)}
+        provider = {"legroom": legroom_provider_entry(port)}
         data = _inject_key_into_json(data, "provider", provider)
 
         # Write back as formatted JSON (opencode uses standard JSON with comments).

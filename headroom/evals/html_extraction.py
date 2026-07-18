@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from headroom.transforms.html_extractor import HTMLExtractor
+    from legroom.transforms.html_extractor import HTMLExtractor
 
 logger = logging.getLogger(__name__)
 
@@ -228,7 +228,7 @@ class HTMLExtractionEvaluator:
     def extractor(self) -> HTMLExtractor:
         """Lazy-load HTMLExtractor."""
         if self._extractor is None:
-            from headroom.transforms.html_extractor import HTMLExtractor
+            from legroom.transforms.html_extractor import HTMLExtractor
 
             self._extractor = HTMLExtractor()
         return self._extractor
@@ -238,7 +238,7 @@ class HTMLExtractionEvaluator:
         """Lazy-load Kompress compressor for baseline."""
         if self._kompress is None and self.compare_baseline:
             try:
-                from headroom.transforms.kompress_compressor import KompressCompressor
+                from legroom.transforms.kompress_compressor import KompressCompressor
 
                 self._kompress = KompressCompressor()
             except ImportError:

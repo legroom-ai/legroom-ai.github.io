@@ -1,4 +1,4 @@
-"""HNSW vector index for Headroom Memory using hnswlib.
+"""HNSW vector index for Legroom Memory using hnswlib.
 
 Provides fast approximate nearest neighbor search with cosine similarity
 for semantic memory retrieval. Supports filtering by user_id, session_id,
@@ -7,8 +7,8 @@ agent_id, category, and entity references.
 Note: hnswlib is an optional dependency. Install with:
     pip install hnswlib
 
-Or via headroom extras:
-    pip install "headroom-ai[memory]"
+Or via legroom extras:
+    pip install "legroom-ai[memory]"
 """
 
 from __future__ import annotations

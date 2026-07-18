@@ -3,7 +3,7 @@ title: Cache Optimization
 description: Stabilize message prefixes for provider KV cache hits and configure provider-specific caching strategies.
 ---
 
-LLM providers cache prompt prefixes to avoid reprocessing identical input on repeated calls. Headroom's **CacheAligner** is detector-only, so it surfaces prefix drift, reports observability data, and leaves message assembly to the caller.
+LLM providers cache prompt prefixes to avoid reprocessing identical input on repeated calls. Legroom's **CacheAligner** is detector-only, so it surfaces prefix drift, reports observability data, and leaves message assembly to the caller.
 
 ## What CacheAligner reports
 
@@ -24,13 +24,13 @@ The prefix must stay byte-identical across requests for provider KV caches to re
 
 ## Provider-specific strategies
 
-Each LLM provider implements caching differently. Headroom applies the optimal strategy for each.
+Each LLM provider implements caching differently. Legroom applies the optimal strategy for each.
 
 ### Anthropic
 
 Anthropic supports explicit `cache_control` blocks that mark content as cacheable. Cached input tokens cost **90% less** than regular input tokens.
 
-Keep the stable prefix byte-identical, then place provider cache markers where your client or orchestrator already assembles the request. Headroom's job is to surface prefix instability, not repair it.
+Keep the stable prefix byte-identical, then place provider cache markers where your client or orchestrator already assembles the request. Legroom's job is to surface prefix instability, not repair it.
 
 | Metric | Value |
 |---|---|
@@ -54,7 +54,7 @@ CacheAligner tells you when the prefix changed, which is the only signal you nee
 
 Google provides the **CachedContent API**, which lets you explicitly cache large context (system instructions, documents, tools) and reference it across requests. Cached tokens cost **75% less**.
 
-Keep the prefix stable in your integration layer; Headroom reports when the cacheable zone drifts. The CachedContent lifecycle itself also stays in your integration layer.
+Keep the prefix stable in your integration layer; Legroom reports when the cacheable zone drifts. The CachedContent lifecycle itself also stays in your integration layer.
 
 | Metric | Value |
 |---|---|

@@ -13,8 +13,8 @@ The anchor selection strategy is configurable via AnchorConfig and adapts
 to both the data characteristics and the user's query context.
 
 Example usage:
-    from headroom.config import AnchorConfig
-    from headroom.transforms.anchor_selector import (
+    from legroom.config import AnchorConfig
+    from legroom.transforms.anchor_selector import (
         AnchorSelector,
         AnchorStrategy,
         DataPattern,

@@ -10,7 +10,7 @@
 //!
 //! # The shape we follow
 //!
-//! Detection in Headroom matures along a known curve:
+//! Detection in Legroom matures along a known curve:
 //!
 //! 1. **Pattern fallback** — keyword/regex scanning. Cheap, brittle, the
 //!    starting point for every detector. This is what

@@ -1,4 +1,4 @@
-"""Cache alignment detector for Headroom SDK.
+"""Cache alignment detector for Legroom SDK.
 
 PR-A2 / P2-23 fix: This module is now a **detector-only** transform.
 
@@ -270,7 +270,7 @@ class CacheAligner(Transform):
         warning log line is emitted on every relevant turn.
 
         Phase F PR-F2.1 c4/5: when the request's
-        :class:`~headroom.transforms.compression_policy.CompressionPolicy`
+        :class:`~legroom.transforms.compression_policy.CompressionPolicy`
         is passed via ``kwargs["compression_policy"]`` and has
         ``cache_aligner_enabled=False`` (Subscription auth mode under
         the enforcement flag), this method returns ``False`` so the

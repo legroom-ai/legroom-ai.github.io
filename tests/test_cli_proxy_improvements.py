@@ -24,7 +24,7 @@ pytest.importorskip("fastapi")
 
 from click.testing import CliRunner  # noqa: E402
 
-from headroom.cli.main import main  # noqa: E402
+from legroom.cli.main import main  # noqa: E402
 
 
 @pytest.fixture
@@ -41,7 +41,7 @@ def mock_run_server():
         captured["config"] = config
         captured["kwargs"] = kwargs
 
-    with patch("headroom.proxy.server.run_server", _mock):
+    with patch("legroom.proxy.server.run_server", _mock):
         yield captured
 
 
@@ -105,17 +105,17 @@ class TestHttpProxyOption:
         result = runner.invoke(
             main,
             ["proxy"],
-            env={"HEADROOM_HTTP_PROXY": "http://proxy.local:8080"},
+            env={"LEGROOM_HTTP_PROXY": "http://proxy.local:8080"},
             catch_exceptions=False,
         )
         assert result.exit_code == 0, result.output
         assert mock_run_server["config"].http_proxy == "http://proxy.local:8080"
 
     def test_direct_server_env_http_proxy(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        import headroom.proxy.server as server_mod
+        import legroom.proxy.server as server_mod
 
         monkeypatch.delenv(server_mod._MULTI_WORKER_CONFIG_ENV, raising=False)
-        monkeypatch.setenv("HEADROOM_HTTP_PROXY", "http://proxy.local:8080")
+        monkeypatch.setenv("LEGROOM_HTTP_PROXY", "http://proxy.local:8080")
 
         config = server_mod._proxy_config_from_env()
         assert config.http_proxy == "http://proxy.local:8080"
@@ -302,7 +302,7 @@ class TestMissingProxyDepsError:
     def test_import_error_exits_nonzero(self, runner: CliRunner) -> None:
         with patch.dict(
             "sys.modules",
-            {"headroom.proxy.server": None},
+            {"legroom.proxy.server": None},
         ):
             result = runner.invoke(main, ["proxy"])
         # Click CliRunner may raise SystemExit or catch it; exit code must be non-zero
@@ -315,8 +315,8 @@ class TestMissingProxyDepsError:
         )
 
         def patched_import(name, *args, **kwargs):
-            if name == "headroom.proxy.server":
-                raise ImportError("No module named 'headroom.proxy.server'")
+            if name == "legroom.proxy.server":
+                raise ImportError("No module named 'legroom.proxy.server'")
             return original_import(name, *args, **kwargs)
 
         with patch("builtins.__import__", side_effect=patched_import):
@@ -334,7 +334,7 @@ class TestKeyboardInterruptExitCode:
         def _run_server_raises(*args, **kwargs):
             raise KeyboardInterrupt
 
-        with patch("headroom.proxy.server.run_server", _run_server_raises):
+        with patch("legroom.proxy.server.run_server", _run_server_raises):
             result = runner.invoke(main, ["proxy"])
 
         assert result.exit_code == 130
@@ -343,37 +343,37 @@ class TestKeyboardInterruptExitCode:
 class TestNewEnvVarWiring:
     """Verify newly-added envvar= wiring works for options that lacked it."""
 
-    def test_headroom_memory_db_path_from_env(
+    def test_legroom_memory_db_path_from_env(
         self, runner: CliRunner, mock_run_server: dict
     ) -> None:
         result = runner.invoke(
             main,
             ["proxy", "--memory"],
-            env={"HEADROOM_MEMORY_DB_PATH": "/tmp/test-memory.db"},
+            env={"LEGROOM_MEMORY_DB_PATH": "/tmp/test-memory.db"},
             catch_exceptions=False,
         )
         assert result.exit_code == 0, result.output
         assert mock_run_server["config"].memory_db_path == "/tmp/test-memory.db"
 
-    def test_headroom_retry_max_attempts_from_env(
+    def test_legroom_retry_max_attempts_from_env(
         self, runner: CliRunner, mock_run_server: dict
     ) -> None:
         result = runner.invoke(
             main,
             ["proxy"],
-            env={"HEADROOM_RETRY_MAX_ATTEMPTS": "5"},
+            env={"LEGROOM_RETRY_MAX_ATTEMPTS": "5"},
             catch_exceptions=False,
         )
         assert result.exit_code == 0, result.output
         assert mock_run_server["config"].retry_max_attempts == 5
 
-    def test_headroom_retry_delays_from_env(self, runner: CliRunner, mock_run_server: dict) -> None:
+    def test_legroom_retry_delays_from_env(self, runner: CliRunner, mock_run_server: dict) -> None:
         result = runner.invoke(
             main,
             ["proxy"],
             env={
-                "HEADROOM_RETRY_BASE_DELAY_MS": "125",
-                "HEADROOM_RETRY_MAX_DELAY_MS": "8000",
+                "LEGROOM_RETRY_BASE_DELAY_MS": "125",
+                "LEGROOM_RETRY_MAX_DELAY_MS": "8000",
             },
             catch_exceptions=False,
         )
@@ -381,25 +381,25 @@ class TestNewEnvVarWiring:
         assert mock_run_server["config"].retry_base_delay_ms == 125
         assert mock_run_server["config"].retry_max_delay_ms == 8000
 
-    def test_headroom_connect_timeout_from_env(
+    def test_legroom_connect_timeout_from_env(
         self, runner: CliRunner, mock_run_server: dict
     ) -> None:
         result = runner.invoke(
             main,
             ["proxy"],
-            env={"HEADROOM_CONNECT_TIMEOUT_SECONDS": "30"},
+            env={"LEGROOM_CONNECT_TIMEOUT_SECONDS": "30"},
             catch_exceptions=False,
         )
         assert result.exit_code == 0, result.output
         assert mock_run_server["config"].connect_timeout_seconds == 30
 
-    def test_headroom_anthropic_buffered_timeout_from_env(
+    def test_legroom_anthropic_buffered_timeout_from_env(
         self, runner: CliRunner, mock_run_server: dict
     ) -> None:
         result = runner.invoke(
             main,
             ["proxy"],
-            env={"HEADROOM_ANTHROPIC_BUFFERED_REQUEST_TIMEOUT_SECONDS": "900"},
+            env={"LEGROOM_ANTHROPIC_BUFFERED_REQUEST_TIMEOUT_SECONDS": "900"},
             catch_exceptions=False,
         )
         assert result.exit_code == 0, result.output
@@ -419,10 +419,10 @@ class TestNewEnvVarWiring:
     def test_direct_server_env_timeout_zero_falls_back_to_default(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        import headroom.proxy.server as server_mod
+        import legroom.proxy.server as server_mod
 
         monkeypatch.delenv(server_mod._MULTI_WORKER_CONFIG_ENV, raising=False)
-        monkeypatch.setenv("HEADROOM_ANTHROPIC_BUFFERED_REQUEST_TIMEOUT_SECONDS", "0")
+        monkeypatch.setenv("LEGROOM_ANTHROPIC_BUFFERED_REQUEST_TIMEOUT_SECONDS", "0")
 
         config = server_mod._proxy_config_from_env()
         assert config.anthropic_buffered_request_timeout_seconds == 600
@@ -430,37 +430,37 @@ class TestNewEnvVarWiring:
     def test_direct_server_timeout_parser_rejects_zero(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        import headroom.proxy.server as server_mod
+        import legroom.proxy.server as server_mod
 
         with pytest.raises(argparse.ArgumentTypeError):
             server_mod._positive_int_arg("0")
 
-    def test_headroom_backend_from_env(self, runner: CliRunner, mock_run_server: dict) -> None:
+    def test_legroom_backend_from_env(self, runner: CliRunner, mock_run_server: dict) -> None:
         result = runner.invoke(
             main,
             ["proxy"],
-            env={"HEADROOM_BACKEND": "bedrock"},
+            env={"LEGROOM_BACKEND": "bedrock"},
             catch_exceptions=False,
         )
         assert result.exit_code == 0, result.output
         assert mock_run_server["config"].backend == "bedrock"
 
-    def test_headroom_region_from_env(self, runner: CliRunner, mock_run_server: dict) -> None:
+    def test_legroom_region_from_env(self, runner: CliRunner, mock_run_server: dict) -> None:
         result = runner.invoke(
             main,
             ["proxy"],
-            env={"HEADROOM_REGION": "eu-west-1"},
+            env={"LEGROOM_REGION": "eu-west-1"},
             catch_exceptions=False,
         )
         assert result.exit_code == 0, result.output
         # bedrock_region falls back to region
         assert mock_run_server["config"].bedrock_region == "eu-west-1"
 
-    def test_headroom_memory_top_k_from_env(self, runner: CliRunner, mock_run_server: dict) -> None:
+    def test_legroom_memory_top_k_from_env(self, runner: CliRunner, mock_run_server: dict) -> None:
         result = runner.invoke(
             main,
             ["proxy", "--memory"],
-            env={"HEADROOM_MEMORY_TOP_K": "20"},
+            env={"LEGROOM_MEMORY_TOP_K": "20"},
             catch_exceptions=False,
         )
         assert result.exit_code == 0, result.output
@@ -519,7 +519,7 @@ class TestHelpTextCompleteness:
 
 
 class TestCompressionMaxWorkers:
-    """--compression-max-workers / HEADROOM_COMPRESSION_MAX_WORKERS must reach ProxyConfig.
+    """--compression-max-workers / LEGROOM_COMPRESSION_MAX_WORKERS must reach ProxyConfig.
 
     Regression: the field was documented in ProxyConfig and consumed by the
     server, but the CLI never defined the option or passed it through, so it
@@ -537,7 +537,7 @@ class TestCompressionMaxWorkers:
         result = runner.invoke(
             main,
             ["proxy"],
-            env={"HEADROOM_COMPRESSION_MAX_WORKERS": "5"},
+            env={"LEGROOM_COMPRESSION_MAX_WORKERS": "5"},
             catch_exceptions=False,
         )
         assert result.exit_code == 0, result.output

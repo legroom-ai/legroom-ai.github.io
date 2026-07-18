@@ -1,21 +1,21 @@
-"""ASGI Middleware — add Headroom compression to any Python proxy.
+"""ASGI Middleware — add Legroom compression to any Python proxy.
 
 Drop-in middleware for FastAPI, Starlette, LiteLLM proxy, or any ASGI app.
 Intercepts LLM requests, compresses messages, forwards the smaller payload.
 
 Local mode (compression runs in-process):
 
-    from headroom.integrations.asgi import CompressionMiddleware
+    from legroom.integrations.asgi import CompressionMiddleware
     app.add_middleware(CompressionMiddleware)
 
-Cloud mode (managed CCR, TOIN, analytics via Headroom Cloud):
+Cloud mode (managed CCR, TOIN, analytics via Legroom Cloud):
 
     app.add_middleware(CompressionMiddleware, api_key="hdr_xxx")
 
 Usage with LiteLLM proxy:
 
     from litellm.proxy.proxy_server import app
-    from headroom.integrations.asgi import CompressionMiddleware
+    from legroom.integrations.asgi import CompressionMiddleware
 
     app.add_middleware(CompressionMiddleware)  # local
     # OR
@@ -36,7 +36,7 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_CLOUD_URL = "https://api.headroomlabs.ai"
+_DEFAULT_CLOUD_URL = "https://api.legroom.ai"
 
 # Paths that contain LLM messages to compress
 _LLM_PATHS = (
@@ -51,15 +51,15 @@ class CompressionMiddleware:
     """ASGI middleware that compresses LLM request messages.
 
     Two modes:
-    - Local (default): Compresses in-process using headroom.compress().
-    - Cloud (api_key set): Calls Headroom Cloud API for managed compression
+    - Local (default): Compresses in-process using legroom.compress().
+    - Cloud (api_key set): Calls Legroom Cloud API for managed compression
       with org-scoped CCR, TOIN learning, and analytics dashboards.
 
     Response headers include compression metrics:
-    - x-headroom-tokens-before: original token count
-    - x-headroom-tokens-after: compressed token count
-    - x-headroom-tokens-saved: tokens removed
-    - x-headroom-compressed: "true" if compression occurred
+    - x-legroom-tokens-before: original token count
+    - x-legroom-tokens-after: compressed token count
+    - x-legroom-tokens-saved: tokens removed
+    - x-legroom-compressed: "true" if compression occurred
     """
 
     def __init__(
@@ -76,10 +76,10 @@ class CompressionMiddleware:
         self._model_limit = model_limit
         self._hooks = hooks
 
-        # Cloud mode: if api_key is set, compress via Headroom Cloud API
-        self._api_key = api_key or os.environ.get("HEADROOM_API_KEY", "").strip() or None
+        # Cloud mode: if api_key is set, compress via Legroom Cloud API
+        self._api_key = api_key or os.environ.get("LEGROOM_API_KEY", "").strip() or None
         self._api_url = (
-            api_url or os.environ.get("HEADROOM_API_URL", "").strip() or _DEFAULT_CLOUD_URL
+            api_url or os.environ.get("LEGROOM_API_URL", "").strip() or _DEFAULT_CLOUD_URL
         ).rstrip("/")
         self._client: Any = None  # Lazy-initialized httpx.AsyncClient
 
@@ -150,7 +150,7 @@ class CompressionMiddleware:
                     tokens_after = result.get("tokens_after", 0)
 
                     logger.info(
-                        "Headroom%s: %d→%d tokens (saved %d, %.0f%%)",
+                        "Legroom%s: %d→%d tokens (saved %d, %.0f%%)",
                         " Cloud" if self._api_key else "",
                         tokens_before,
                         tokens_after,
@@ -159,7 +159,7 @@ class CompressionMiddleware:
                     )
 
         except (json.JSONDecodeError, TypeError, KeyError) as e:
-            logger.debug("Headroom middleware: skipping non-JSON request: %s", e)
+            logger.debug("Legroom middleware: skipping non-JSON request: %s", e)
 
         # Create a new receive that returns the (possibly modified) body
         body_sent = False
@@ -176,18 +176,18 @@ class CompressionMiddleware:
         async def metrics_send(message: MutableMapping[str, Any]) -> None:
             if message["type"] == "http.response.start" and tokens_saved > 0:
                 headers = list(message.get("headers", []))
-                headers.append((b"x-headroom-compressed", b"true"))
-                headers.append((b"x-headroom-tokens-before", str(tokens_before).encode()))
-                headers.append((b"x-headroom-tokens-after", str(tokens_after).encode()))
-                headers.append((b"x-headroom-tokens-saved", str(tokens_saved).encode()))
+                headers.append((b"x-legroom-compressed", b"true"))
+                headers.append((b"x-legroom-tokens-before", str(tokens_before).encode()))
+                headers.append((b"x-legroom-tokens-after", str(tokens_after).encode()))
+                headers.append((b"x-legroom-tokens-saved", str(tokens_saved).encode()))
                 message = {**message, "headers": headers}
             await send(message)
 
         await self.app(scope, modified_receive, metrics_send)
 
     def _local_compress(self, messages: list[dict], model: str) -> dict[str, Any] | None:
-        """Compress locally using headroom.compress()."""
-        from headroom.compress import compress
+        """Compress locally using legroom.compress()."""
+        from legroom.compress import compress
 
         result = compress(
             messages=messages,
@@ -204,13 +204,13 @@ class CompressionMiddleware:
         }
 
     async def _cloud_compress(self, messages: list[dict], model: str) -> dict[str, Any] | None:
-        """Compress via Headroom Cloud API (managed CCR, TOIN, analytics)."""
+        """Compress via Legroom Cloud API (managed CCR, TOIN, analytics)."""
         if self._client is None:
             try:
                 import httpx
             except ImportError as e:
                 raise ImportError(
-                    "httpx is required for Headroom Cloud mode: pip install httpx"
+                    "httpx is required for Legroom Cloud mode: pip install httpx"
                 ) from e
             self._client = httpx.AsyncClient(timeout=30.0)
 
@@ -219,7 +219,7 @@ class CompressionMiddleware:
         resp = await client.post(
             f"{self._api_url}/v1/saas/compress",
             headers={
-                "X-Headroom-Key": self._api_key,
+                "X-Legroom-Key": self._api_key,
                 "Content-Type": "application/json",
             },
             content=json.dumps(
@@ -232,7 +232,7 @@ class CompressionMiddleware:
         )
 
         if resp.status_code != 200:
-            logger.warning("Headroom Cloud API error: %d %s", resp.status_code, resp.text[:200])
+            logger.warning("Legroom Cloud API error: %d %s", resp.status_code, resp.text[:200])
             return None
 
         result: dict[str, Any] = resp.json()

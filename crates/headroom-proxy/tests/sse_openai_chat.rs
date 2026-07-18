@@ -13,8 +13,8 @@
 //!   - The `refusal` field (GPT-4o safety-class responses) carries
 //!     fragments to concatenate just like `content`.
 
-use headroom_proxy::sse::openai_chat::{ChunkState, StreamStatus};
-use headroom_proxy::sse::SseFramer;
+use legroom_proxy::sse::openai_chat::{ChunkState, StreamStatus};
+use legroom_proxy::sse::SseFramer;
 
 fn run(state: &mut ChunkState, raw: &[u8]) {
     let mut framer = SseFramer::new();

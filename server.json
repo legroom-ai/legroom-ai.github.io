@@ -1,11 +1,11 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.headroomlabs-ai/headroom",
-  "description": "Headroom MCP server for compression, retrieval, and stats in MCP-compatible hosts.",
-  "title": "Headroom",
-  "websiteUrl": "https://headroomlabs-ai.github.io/headroom/",
+  "name": "io.github.legroom-ai/legroom",
+  "description": "Legroom MCP server for compression, retrieval, and stats in MCP-compatible hosts.",
+  "title": "Legroom",
+  "websiteUrl": "https://legroom-ai.github.io/legroom/",
   "repository": {
-    "url": "https://github.com/headroomlabs-ai/headroom",
+    "url": "https://github.com/legroom-ai/legroom",
     "source": "github",
     "id": "1129940957"
   },
@@ -14,14 +14,14 @@
     {
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
-      "identifier": "headroom-ai",
+      "identifier": "legroom-ai",
       "version": "0.32.0",
       "runtimeHint": "uvx",
       "runtimeArguments": [
         {
           "type": "named",
           "name": "--from",
-          "value": "headroom-ai[mcp]"
+          "value": "legroom-ai[mcp]"
         }
       ],
       "transport": {
@@ -30,7 +30,7 @@
       "packageArguments": [
         {
           "type": "positional",
-          "value": "headroom"
+          "value": "legroom"
         },
         {
           "type": "positional",

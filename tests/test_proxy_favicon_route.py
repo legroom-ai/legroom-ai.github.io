@@ -7,12 +7,12 @@ pytest.importorskip("httpx")
 
 from fastapi.testclient import TestClient
 
-from headroom.proxy.server import ProxyConfig, create_app
+from legroom.proxy.server import ProxyConfig, create_app
 
 
 def test_favicon_is_served_locally_and_never_reaches_passthrough(monkeypatch) -> None:
     """GH #1787: /favicon.ico must not be tunneled to the upstream provider."""
-    monkeypatch.setenv("HEADROOM_SKIP_UPSTREAM_CHECK", "1")
+    monkeypatch.setenv("LEGROOM_SKIP_UPSTREAM_CHECK", "1")
     config = ProxyConfig(
         optimize=False,
         cache_enabled=False,

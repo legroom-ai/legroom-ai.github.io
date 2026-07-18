@@ -15,7 +15,7 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from headroom.proxy.server import ProxyConfig, create_app
+from legroom.proxy.server import ProxyConfig, create_app
 
 
 def _make_client() -> TestClient:
@@ -54,7 +54,7 @@ def _preflight(client: TestClient, origin: str) -> httpx.Response:
     ],
 )
 def test_loopback_origins_allowed_on_any_port(monkeypatch: pytest.MonkeyPatch, origin: str) -> None:
-    monkeypatch.delenv("HEADROOM_CORS_ORIGINS", raising=False)
+    monkeypatch.delenv("LEGROOM_CORS_ORIGINS", raising=False)
     resp = _preflight(_make_client(), origin)
     assert resp.status_code == 200, resp.text
     assert resp.headers.get("access-control-allow-origin") == origin
@@ -73,14 +73,14 @@ def test_loopback_origins_allowed_on_any_port(monkeypatch: pytest.MonkeyPatch, o
     ],
 )
 def test_cross_origin_pages_rejected(monkeypatch: pytest.MonkeyPatch, origin: str) -> None:
-    monkeypatch.delenv("HEADROOM_CORS_ORIGINS", raising=False)
+    monkeypatch.delenv("LEGROOM_CORS_ORIGINS", raising=False)
     resp = _preflight(_make_client(), origin)
     # A disallowed origin is never echoed back, so the browser blocks the read.
     assert resp.headers.get("access-control-allow-origin") != origin
 
 
 def test_explicit_allowlist_override(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("HEADROOM_CORS_ORIGINS", "https://dash.example.com, http://10.0.0.5:3000")
+    monkeypatch.setenv("LEGROOM_CORS_ORIGINS", "https://dash.example.com, http://10.0.0.5:3000")
     client = _make_client()
 
     allowed = _preflight(client, "https://dash.example.com")
@@ -93,7 +93,7 @@ def test_explicit_allowlist_override(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_wildcard_optback(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("HEADROOM_CORS_ORIGINS", "*")
+    monkeypatch.setenv("LEGROOM_CORS_ORIGINS", "*")
     resp = _preflight(_make_client(), "http://evil.com")
     assert resp.status_code == 200
     assert resp.headers.get("access-control-allow-origin") == "*"

@@ -47,7 +47,7 @@ fn response_from(simulated: SimulatedResponse) -> Response<Body> {
     let mut builder = Response::builder()
         .status(status)
         .header(http::header::CONTENT_TYPE, simulated.content_type)
-        .header("x-headroom-simulator", "true");
+        .header("x-legroom-simulator", "true");
     for (name, value) in simulated.headers {
         match HeaderName::from_bytes(name.as_bytes()) {
             Ok(header_name) => {

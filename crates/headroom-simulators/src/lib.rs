@@ -1,7 +1,7 @@
-//! Deterministic provider simulators for local and CI Headroom validation.
+//! Deterministic provider simulators for local and CI Legroom validation.
 //!
 //! The crate is intentionally standalone: it behaves like a provider upstream
-//! that Headroom can proxy to, but it never calls a real LLM service.
+//! that Legroom can proxy to, but it never calls a real LLM service.
 
 pub mod application;
 pub mod config;

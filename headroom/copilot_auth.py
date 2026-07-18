@@ -19,10 +19,10 @@ from urllib import error as urllib_error
 from urllib import request as urllib_request
 from urllib.parse import urlparse
 
-from headroom import paths
-from headroom._subprocess import run
-from headroom.copilot_linux_secret import read_copilot_oauth_token as read_linux_secret_token
-from headroom.copilot_macos_keychain import read_copilot_oauth_token as read_macos_keychain_token
+from legroom import paths
+from legroom._subprocess import run
+from legroom.copilot_linux_secret import read_copilot_oauth_token as read_linux_secret_token
+from legroom.copilot_macos_keychain import read_copilot_oauth_token as read_macos_keychain_token
 
 logger = logging.getLogger(__name__)
 
@@ -112,10 +112,10 @@ def _github_host() -> str:
     return (os.environ.get("GITHUB_COPILOT_HOST") or DEFAULT_GITHUB_HOST).strip().lower()
 
 
-def headroom_copilot_auth_path() -> Path:
-    """Return the path where Headroom stores its Copilot OAuth token."""
+def legroom_copilot_auth_path() -> Path:
+    """Return the path where Legroom stores its Copilot OAuth token."""
 
-    override = os.environ.get("HEADROOM_COPILOT_AUTH_FILE", "").strip()
+    override = os.environ.get("LEGROOM_COPILOT_AUTH_FILE", "").strip()
     if override:
         return Path(override).expanduser()
     return paths.workspace_dir() / "copilot_auth.json"
@@ -414,15 +414,15 @@ def _entry_expired(entry: dict[str, Any]) -> bool:
     return False
 
 
-def read_headroom_copilot_oauth_token() -> str | None:
-    """Return Headroom's saved Copilot OAuth token, if one is available."""
+def read_legroom_copilot_oauth_token() -> str | None:
+    """Return Legroom's saved Copilot OAuth token, if one is available."""
 
     try:
-        payload = json.loads(headroom_copilot_auth_path().read_text(encoding="utf-8"))
+        payload = json.loads(legroom_copilot_auth_path().read_text(encoding="utf-8"))
     except FileNotFoundError:
         return None
     except Exception as exc:
-        logger.debug("Unable to read Headroom Copilot auth file: %s", exc)
+        logger.debug("Unable to read Legroom Copilot auth file: %s", exc)
         return None
 
     if not isinstance(payload, dict) or payload.get("type") != "oauth":
@@ -431,7 +431,7 @@ def read_headroom_copilot_oauth_token() -> str | None:
     return token.strip() if isinstance(token, str) and token.strip() else None
 
 
-def save_headroom_copilot_oauth_token(
+def save_legroom_copilot_oauth_token(
     token: str,
     *,
     domain: str = DEFAULT_GITHUB_HOST,
@@ -442,7 +442,7 @@ def save_headroom_copilot_oauth_token(
     if not token:
         raise ValueError("Copilot OAuth token must not be empty.")
 
-    path = headroom_copilot_auth_path()
+    path = legroom_copilot_auth_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     body: dict[str, Any] = {
         "type": "oauth",
@@ -596,12 +596,12 @@ def iter_oauth_token_candidates() -> list[CopilotTokenCandidate]:
 
     candidates: list[CopilotTokenCandidate] = []
 
-    headroom_copilot_token = read_headroom_copilot_oauth_token()
-    if headroom_copilot_token:
+    legroom_copilot_token = read_legroom_copilot_oauth_token()
+    if legroom_copilot_token:
         candidates.append(
             CopilotTokenCandidate(
-                token=headroom_copilot_token,
-                source=f"headroom-copilot-auth:{headroom_copilot_auth_path()}",
+                token=legroom_copilot_token,
+                source=f"legroom-copilot-auth:{legroom_copilot_auth_path()}",
                 confidence="copilot-oauth",
             )
         )
@@ -1150,14 +1150,14 @@ def _is_forwardable_copilot_bearer_token(token: str) -> bool:
 
     Verified live in two independent reports that a caller-supplied `gho_`
     token is already valid and correctly entitled when sent directly to
-    the real Copilot inference API, and that replacing it with Headroom's
+    the real Copilot inference API, and that replacing it with Legroom's
     own independently-fetched/exchanged token is actively harmful:
 
     - A live Copilot CLI session's own `gho_`-prefixed token worked
       end-to-end for model "claude-sonnet-5" when forwarded unchanged, but
-      got `400 model_not_supported` once Headroom swapped in a different,
+      got `400 model_not_supported` once Legroom swapped in a different,
       less-entitled re-exchanged token for the exact same request.
-    - headroomlabs-ai/headroom#1813: OpenCode's native Copilot integration
+    - legroom-ai/legroom#1813: OpenCode's native Copilot integration
       sends its own `gho_` token directly; replacing it changes the
       effective client/integrator lane Copilot's backend sees, breaking
       model discovery/inference parity with native (non-proxied) behavior.

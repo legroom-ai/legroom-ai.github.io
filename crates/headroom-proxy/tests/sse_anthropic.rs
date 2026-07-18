@@ -2,7 +2,7 @@
 //!
 //! Each test feeds a curated event stream through `SseFramer +
 //! AnthropicStreamState` and asserts the structured state matches what
-//! the Anthropic Messages spec (and the Headroom realignment guide
+//! the Anthropic Messages spec (and the Legroom realignment guide
 //! §5.1) requires.
 //!
 //! These tests retire P1-8 (`thinking_delta`), P1-9 (`signature_delta`),
@@ -10,8 +10,8 @@
 //! mishandled in production telemetry.
 
 use bytes::Bytes;
-use headroom_proxy::sse::anthropic::{AnthropicStreamState, StreamStatus};
-use headroom_proxy::sse::SseFramer;
+use legroom_proxy::sse::anthropic::{AnthropicStreamState, StreamStatus};
+use legroom_proxy::sse::SseFramer;
 
 /// Push raw bytes into a framer and drain all framed events through
 /// the state machine. Test failure on any framing OR state-machine
@@ -273,8 +273,8 @@ fn split_chunks_preserve_event_boundaries() {
 
 /// Reference SseEvent used to verify Bytes payload typing in this file.
 #[allow(dead_code)]
-fn _ref_event() -> headroom_proxy::sse::SseEvent {
-    headroom_proxy::sse::SseEvent {
+fn _ref_event() -> legroom_proxy::sse::SseEvent {
+    legroom_proxy::sse::SseEvent {
         event_name: None,
         data: Bytes::from_static(b""),
     }

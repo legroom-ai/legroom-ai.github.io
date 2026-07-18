@@ -1,6 +1,6 @@
 """AutoGen agent tool integration with output compression.
 
-This module provides HeadroomToolWrapper and wrap_tools_with_headroom
+This module provides LegroomToolWrapper and wrap_tools_with_legroom
 for wrapping AutoGen FunctionTool instances to automatically compress
 their outputs and track per-tool compression metrics.
 
@@ -20,14 +20,14 @@ is the only clean, version-stable hook.
 
 Example:
     from autogen_core.tools import FunctionTool
-    from headroom.integrations.autogen import wrap_tools_with_headroom
+    from legroom.integrations.autogen import wrap_tools_with_legroom
 
     def search_database(query: str) -> str:
         \"\"\"Search the database.\"\"\"
         return json.dumps({"results": [...], "total": 1000})
 
     tool = FunctionTool(search_database, description="Search")
-    wrapped = wrap_tools_with_headroom([tool])
+    wrapped = wrap_tools_with_legroom([tool])
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ except ImportError:
     AUTOGEN_AVAILABLE = False
     FunctionTool = object  # type: ignore[misc,assignment]
 
-from headroom.integrations.mcp import compress_tool_result
+from legroom.integrations.mcp import compress_tool_result
 
 logger = logging.getLogger(__name__)
 
@@ -238,7 +238,7 @@ def _record_metrics(
 
     if was_compressed and chars_saved > 0:
         logger.info(
-            "HeadroomToolWrapper[%s]: %d -> %d chars (%d saved, %.1f%% of original)",
+            "LegroomToolWrapper[%s]: %d -> %d chars (%d saved, %.1f%% of original)",
             tool_name,
             chars_before,
             chars_after,
@@ -247,7 +247,7 @@ def _record_metrics(
         )
 
 
-class HeadroomToolWrapper:
+class LegroomToolWrapper:
     """Wraps an AutoGen FunctionTool to compress its output.
 
     Creates a new FunctionTool whose internal function calls the original,
@@ -256,13 +256,13 @@ class HeadroomToolWrapper:
 
     Example:
         from autogen_core.tools import FunctionTool
-        from headroom.integrations.autogen import HeadroomToolWrapper
+        from legroom.integrations.autogen import LegroomToolWrapper
 
         def search(query: str) -> str:
             return json.dumps({"results": [...]})
 
         tool = FunctionTool(search, description="Search")
-        wrapper = HeadroomToolWrapper(tool)
+        wrapper = LegroomToolWrapper(tool)
         wrapped_tool = wrapper.as_function_tool()
 
     Attributes:
@@ -277,7 +277,7 @@ class HeadroomToolWrapper:
         min_chars_to_compress: int = 1000,
         metrics_collector: ToolMetricsCollector | None = None,
     ) -> None:
-        """Initialize HeadroomToolWrapper.
+        """Initialize LegroomToolWrapper.
 
         Args:
             tool: The AutoGen FunctionTool to wrap.
@@ -336,12 +336,12 @@ class HeadroomToolWrapper:
         return self.wrapped_tool
 
 
-def wrap_tools_with_headroom(
+def wrap_tools_with_legroom(
     tools: list[FunctionTool],
     min_chars_to_compress: int = 1000,
     metrics_collector: ToolMetricsCollector | None = None,
 ) -> list[FunctionTool]:
-    """Wrap multiple AutoGen FunctionTools with Headroom compression.
+    """Wrap multiple AutoGen FunctionTools with Legroom compression.
 
     Convenience function to wrap all tools in a list at once.
     Each wrapped tool preserves the original's name, description,
@@ -358,13 +358,13 @@ def wrap_tools_with_headroom(
     Example:
         from autogen_agentchat.agents import AssistantAgent
         from autogen_core.tools import FunctionTool
-        from headroom.integrations.autogen import wrap_tools_with_headroom
+        from legroom.integrations.autogen import wrap_tools_with_legroom
 
         def search(query: str) -> str:
             return json.dumps(results)
 
         tool = FunctionTool(search, description="Search")
-        wrapped = wrap_tools_with_headroom([tool])
+        wrapped = wrap_tools_with_legroom([tool])
 
         agent = AssistantAgent(
             name="researcher",
@@ -377,7 +377,7 @@ def wrap_tools_with_headroom(
     collector = metrics_collector or _global_metrics
 
     return [
-        HeadroomToolWrapper(
+        LegroomToolWrapper(
             tool=t,
             min_chars_to_compress=min_chars_to_compress,
             metrics_collector=collector,

@@ -30,8 +30,8 @@ mod common;
 
 use bytes::Bytes;
 use common::start_proxy_with;
-use headroom_proxy::sse::framing::SseFramer;
-use headroom_proxy::sse::openai_chat::ChunkState;
+use legroom_proxy::sse::framing::SseFramer;
+use legroom_proxy::sse::openai_chat::ChunkState;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::sync::{Arc, Mutex};
@@ -86,7 +86,7 @@ fn assert_byte_equal_sha256(inbound: &[u8], received: &[u8]) {
 
 /// Build a JSON-array tool message payload large enough to trigger
 /// SmartCrusher compression. Uses 1500 dict rows with low uniqueness
-/// (matches the headroom-core dispatch test fixture's compressibility
+/// (matches the legroom-core dispatch test fixture's compressibility
 /// profile).
 fn compressible_tool_array_payload() -> String {
     let array_of_dicts: Vec<Value> = (0..1500)
@@ -110,7 +110,7 @@ async fn passthrough_no_compression_byte_equal() {
     let captured = mount_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -154,7 +154,7 @@ async fn tool_message_compressed() {
     let captured = mount_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -212,7 +212,7 @@ async fn n_greater_than_one_passthrough() {
     let captured = mount_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -255,7 +255,7 @@ async fn stream_options_include_usage_preserved() {
     let captured = mount_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -301,7 +301,7 @@ async fn tool_choice_change_passthrough_no_mutation() {
     let captured = mount_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 

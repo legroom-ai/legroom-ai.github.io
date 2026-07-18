@@ -5,8 +5,8 @@
 //!
 //! Bedrock's `/model/{id}/invoke-with-response-stream` returns
 //! `application/vnd.amazon.eventstream` — a binary, length-prefixed,
-//! CRC-checksummed framing format. Most clients of Headroom (Claude
-//! Code, the Anthropic SDK in non-Bedrock mode, the Headroom Python
+//! CRC-checksummed framing format. Most clients of Legroom (Claude
+//! Code, the Anthropic SDK in non-Bedrock mode, the Legroom Python
 //! SDK) speak SSE (`text/event-stream`). When the client requested
 //! Bedrock-compatible output via `Accept: application/vnd.amazon.eventstream`
 //! we pass the upstream bytes through unchanged. When the client wants
@@ -248,7 +248,7 @@ pub fn header_value_preview(v: &HeaderValue) -> String {
                 // split a multi-byte codepoint. UTF-8 chars are at most 4 bytes,
                 // so this loop runs at most 3 times.
                 // (`str::floor_char_boundary` would do this in one call but it
-                // was only stabilised in Rust 1.91; headroom's MSRV is 1.80.)
+                // was only stabilised in Rust 1.91; legroom's MSRV is 1.80.)
                 let mut end = 64;
                 while !s.is_char_boundary(end) {
                     end -= 1;

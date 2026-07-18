@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from headroom.transforms.error_detection import content_has_strong_error_indicators
+from legroom.transforms.error_detection import content_has_strong_error_indicators
 
 
 def test_real_error_output_is_detected() -> None:

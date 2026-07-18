@@ -8,7 +8,7 @@ from typing import Any, cast
 from fastapi import Request
 from fastapi.responses import Response
 
-from headroom.providers.codex.model_metadata import handle_chatgpt_model_metadata
+from legroom.providers.codex.model_metadata import handle_chatgpt_model_metadata
 
 
 @dataclass(frozen=True, slots=True)

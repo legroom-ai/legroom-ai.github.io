@@ -1,14 +1,14 @@
-"""Strands SDK hook provider for Headroom tool output compression.
+"""Strands SDK hook provider for Legroom tool output compression.
 
-This module provides HeadroomHookProvider, which implements Strands' HookProvider
-interface to intercept tool outputs and compress them using Headroom's SmartCrusher.
+This module provides LegroomHookProvider, which implements Strands' HookProvider
+interface to intercept tool outputs and compress them using Legroom's SmartCrusher.
 
 Example:
     from strands import Agent
-    from headroom.integrations.strands import HeadroomHookProvider
+    from legroom.integrations.strands import LegroomHookProvider
 
     # Create the hook provider
-    hook_provider = HeadroomHookProvider(
+    hook_provider = LegroomHookProvider(
         compress_tool_outputs=True,
         min_tokens_to_compress=100,
     )
@@ -47,8 +47,8 @@ except ImportError:
     BeforeToolCallEvent = object  # type: ignore[misc,assignment]
     ToolResult = dict  # type: ignore[misc,assignment]
 
-from headroom import HeadroomConfig
-from headroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
+from legroom import LegroomConfig
+from legroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
 
 logger = logging.getLogger(__name__)
 
@@ -87,11 +87,11 @@ class CompressionMetrics:
 
 
 @dataclass
-class HeadroomHookProvider(HookProvider):  # type: ignore[misc]
-    """Strands HookProvider that compresses tool outputs using Headroom.
+class LegroomHookProvider(HookProvider):  # type: ignore[misc]
+    """Strands HookProvider that compresses tool outputs using Legroom.
 
     This hook provider intercepts tool call results via AfterToolCallEvent
-    and applies Headroom's SmartCrusher to compress large outputs, reducing
+    and applies Legroom's SmartCrusher to compress large outputs, reducing
     token usage while preserving important information.
 
     The compression is intelligent and preserves:
@@ -104,16 +104,16 @@ class HeadroomHookProvider(HookProvider):  # type: ignore[misc]
     Attributes:
         compress_tool_outputs: Whether to compress tool outputs.
         min_tokens_to_compress: Minimum token count before compression is applied.
-        config: Headroom configuration.
+        config: Legroom configuration.
         preserve_errors: If True, never compress results with error status.
         total_tokens_saved: Running total of tokens saved across all compressions.
         metrics_history: List of CompressionMetrics from recent compressions.
 
     Example:
         from strands import Agent
-        from headroom.integrations.strands import HeadroomHookProvider
+        from legroom.integrations.strands import LegroomHookProvider
 
-        hook = HeadroomHookProvider(min_tokens_to_compress=50)
+        hook = LegroomHookProvider(min_tokens_to_compress=50)
         agent = Agent(hooks=[hook])
 
         # After running agent tasks...
@@ -123,7 +123,7 @@ class HeadroomHookProvider(HookProvider):  # type: ignore[misc]
 
     compress_tool_outputs: bool = True
     min_tokens_to_compress: int = 100
-    config: HeadroomConfig | None = field(default=None)
+    config: LegroomConfig | None = field(default=None)
     preserve_errors: bool = True
 
     # Internal state (not part of dataclass comparison)
@@ -140,11 +140,11 @@ class HeadroomHookProvider(HookProvider):  # type: ignore[misc]
         _check_strands_available()
 
         if self.config is None:
-            self.config = HeadroomConfig()
+            self.config = LegroomConfig()
 
         self._initialized = True
         logger.debug(
-            "HeadroomHookProvider initialized: compress=%s, min_tokens=%d, preserve_errors=%s",
+            "LegroomHookProvider initialized: compress=%s, min_tokens=%d, preserve_errors=%s",
             self.compress_tool_outputs,
             self.min_tokens_to_compress,
             self.preserve_errors,
@@ -161,7 +161,7 @@ class HeadroomHookProvider(HookProvider):  # type: ignore[misc]
             with self._lock:
                 # Double-check after acquiring lock
                 if self._crusher is None:
-                    # Use config from HeadroomConfig if available
+                    # Use config from LegroomConfig if available
                     if self.config and self.config.smart_crusher:
                         crusher_config = SmartCrusherConfig(
                             min_tokens_to_crush=self.min_tokens_to_compress,
@@ -211,7 +211,7 @@ class HeadroomHookProvider(HookProvider):  # type: ignore[misc]
         # Register the after-tool-call hook for compression
         registry.add_callback(AfterToolCallEvent, self._compress_tool_result)
         logger.info(
-            "HeadroomHookProvider registered: compressing tool outputs >= %d tokens",
+            "LegroomHookProvider registered: compressing tool outputs >= %d tokens",
             self.min_tokens_to_compress,
         )
 
@@ -537,4 +537,4 @@ class HeadroomHookProvider(HookProvider):  # type: ignore[misc]
         with self._lock:
             self._metrics_history = []
             self._total_tokens_saved = 0
-        logger.debug("HeadroomHookProvider metrics reset")
+        logger.debug("LegroomHookProvider metrics reset")

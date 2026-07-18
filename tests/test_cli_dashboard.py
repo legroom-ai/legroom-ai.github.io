@@ -1,4 +1,4 @@
-"""Tests for the `headroom dashboard` command (#1277)."""
+"""Tests for the `legroom dashboard` command (#1277)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import webbrowser
 
 from click.testing import CliRunner
 
-from headroom.cli.main import main
+from legroom.cli.main import main
 
 
 def test_dashboard_no_open_prints_url(monkeypatch):

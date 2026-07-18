@@ -1,11 +1,11 @@
 [package]
-name = "headroom-core"
+name = "legroom-core"
 version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Core Headroom types and compression transform traits (Rust)."
+description = "Core Legroom types and compression transform traits (Rust)."
 
 [dependencies]
 serde = { workspace = true }
@@ -116,7 +116,7 @@ toml = "1.1"
 # and produces collision-resistant 24-char prefixes for the CCR
 # `<<ccr:HASH>>` marker. Pinning the algorithm + truncation length here
 # keeps Rust and Python in lockstep — Python parses the same 24-char
-# hex via `headroom/ccr/tool_injection.py` regex. Pure-Rust by default,
+# hex via `legroom/ccr/tool_injection.py` regex. Pure-Rust by default,
 # no system dep, no SIMD-feature-gated flag (the crate auto-detects).
 blake3 = "1"
 # `rusqlite` for the SQLite-backed CCR store (the production default).
@@ -141,10 +141,10 @@ http = "1"
 # Load ONNX Runtime dynamically on every platform. The alternative,
 # `ort-download-binaries-*`, statically links Microsoft's prebuilt ORT:
 # on Windows it emits DirectML link libs (`DXCORE`, `DXGI`, `D3D12`,
-# `DirectML`) that sdist installs of `headroom-ai[all]` often lack, and
+# `DirectML`) that sdist installs of `legroom-ai[all]` often lack, and
 # on x86_64 Linux/macOS the prebuilt binary requires AVX2 — its code is
-# mapped and initialized as soon as the `headroom._core` extension
-# loads, so importing headroom SIGILLed on pre-AVX2 CPUs before the
+# mapped and initialized as soon as the `legroom._core` extension
+# loads, so importing legroom SIGILLed on pre-AVX2 CPUs before the
 # runtime AVX2 guard could run (#1278). With `ort-load-dynamic` the
 # library is only dlopen'd at first use, where the AVX2 guard falls
 # back to the non-ONNX detection tiers.

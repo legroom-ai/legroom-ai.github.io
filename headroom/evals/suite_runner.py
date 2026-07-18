@@ -5,7 +5,7 @@ Orchestrates all benchmark tiers, dispatches to the correct runner
 enforces cost budgets, and produces a unified SuiteResult.
 
 Usage:
-    from headroom.evals.suite_runner import SuiteRunner
+    from legroom.evals.suite_runner import SuiteRunner
     runner = SuiteRunner(model="gpt-4o-mini", tiers=[1])
     result = runner.run()
     result.print_summary()
@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
-    from headroom.evals.reports.report_card import SuiteResult
+    from legroom.evals.reports.report_card import SuiteResult
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class BenchmarkSpec:
     dataset_name: str | None = None  # For before_after runner
     lm_eval_tasks: list[str] | None = None  # For lm_eval runner
     primary_metric: str = "accuracy"
-    pass_threshold: float = 0.98  # Headroom score >= baseline - (1-threshold)
+    pass_threshold: float = 0.98  # Legroom score >= baseline - (1-threshold)
     estimated_cost_usd: float = 0.50
     avg_input_tokens: int = 500  # Per sample, for cost estimation
     provider: Literal["anthropic", "openai", "ollama"] = "openai"  # LLM provider
@@ -57,7 +57,7 @@ BENCHMARK_SUITE: list[BenchmarkSpec] = [
     # -----------------------------------------------------------------------
     # TIER 1: Core Report Card (~$3, ~30 min)
     # -----------------------------------------------------------------------
-    # Standard benchmarks via lm-eval harness (through Headroom proxy)
+    # Standard benchmarks via lm-eval harness (through Legroom proxy)
     BenchmarkSpec(
         name="GSM8K",
         category="reasoning",
@@ -261,7 +261,7 @@ def _load_env() -> None:
 
 
 def _check_proxy(port: int) -> bool:
-    """Check if Headroom proxy is running on given port."""
+    """Check if Legroom proxy is running on given port."""
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.settimeout(1)
@@ -272,11 +272,11 @@ def _check_proxy(port: int) -> bool:
 
 
 def _start_proxy(port: int) -> subprocess.Popen | None:
-    """Start Headroom proxy as a subprocess. Returns process handle."""
-    logger.info(f"Starting Headroom proxy on port {port}...")
+    """Start Legroom proxy as a subprocess. Returns process handle."""
+    logger.info(f"Starting Legroom proxy on port {port}...")
     try:
         proc = subprocess.Popen(
-            [sys.executable, "-m", "headroom.proxy.server", "--port", str(port)],
+            [sys.executable, "-m", "legroom.proxy.server", "--port", str(port)],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
@@ -284,7 +284,7 @@ def _start_proxy(port: int) -> subprocess.Popen | None:
         for _ in range(30):
             time.sleep(1)
             if _check_proxy(port):
-                logger.info(f"Headroom proxy ready on port {port}")
+                logger.info(f"Legroom proxy ready on port {port}")
                 return proc
         logger.error("Proxy failed to start within 30 seconds")
         proc.kill()
@@ -308,13 +308,13 @@ class SuiteRunner:
         model: str = "gpt-4o-mini",
         tiers: list[int] | None = None,
         budget_usd: float = 20.0,
-        headroom_port: int = 8787,
+        legroom_port: int = 8787,
         auto_start_proxy: bool = True,
     ):
         self.model = model
         self.tiers = tiers or [1]
         self.budget_usd = budget_usd
-        self.headroom_port = headroom_port
+        self.legroom_port = legroom_port
         self.auto_start_proxy = auto_start_proxy
         self._proxy_proc: subprocess.Popen | None = None
 
@@ -326,18 +326,18 @@ class SuiteRunner:
         return [s for s in BENCHMARK_SUITE if s.tier in self.tiers]
 
     def _ensure_proxy(self) -> bool:
-        """Ensure the Headroom proxy is running (needed for lm-eval benchmarks)."""
-        if _check_proxy(self.headroom_port):
+        """Ensure the Legroom proxy is running (needed for lm-eval benchmarks)."""
+        if _check_proxy(self.legroom_port):
             return True
         if self.auto_start_proxy:
-            self._proxy_proc = _start_proxy(self.headroom_port)
+            self._proxy_proc = _start_proxy(self.legroom_port)
             return self._proxy_proc is not None
         return False
 
     def _cleanup_proxy(self) -> None:
         """Stop proxy if we started it."""
         if self._proxy_proc:
-            logger.info("Stopping Headroom proxy...")
+            logger.info("Stopping Legroom proxy...")
             self._proxy_proc.send_signal(signal.SIGTERM)
             try:
                 self._proxy_proc.wait(timeout=5)
@@ -351,10 +351,10 @@ class SuiteRunner:
         tracker: Any,
     ) -> dict[str, Any]:
         """Run a benchmark via EleutherAI lm-evaluation-harness."""
-        from headroom.evals.comprehensive_benchmark import (
+        from legroom.evals.comprehensive_benchmark import (
             compare_results,
             run_baseline_benchmark,
-            run_headroom_benchmark,
+            run_legroom_benchmark,
         )
 
         tasks = spec.lm_eval_tasks or [spec.name.lower()]
@@ -368,34 +368,34 @@ class SuiteRunner:
             limit=limit,
         )
 
-        # Run through Headroom proxy
-        print("    Running through Headroom proxy...")
-        headroom_results = run_headroom_benchmark(
+        # Run through Legroom proxy
+        print("    Running through Legroom proxy...")
+        legroom_results = run_legroom_benchmark(
             model=spec.model or self.model,
             tasks=tasks,
             limit=limit,
-            headroom_port=self.headroom_port,
+            legroom_port=self.legroom_port,
         )
 
         # Compare
-        comparisons = compare_results(baseline_results, headroom_results)
+        comparisons = compare_results(baseline_results, legroom_results)
 
         # Extract primary result
         baseline_score = None
-        headroom_score = None
+        legroom_score = None
         delta = None
         passed = True
 
         if comparisons:
             c = comparisons[0]  # Primary comparison
             baseline_score = c.baseline_score
-            headroom_score = c.headroom_score
+            legroom_score = c.legroom_score
             delta = c.delta
             passed = c.accuracy_preserved
 
         return {
             "baseline_score": baseline_score,
-            "headroom_score": headroom_score,
+            "legroom_score": legroom_score,
             "delta": delta,
             "passed": passed,
             "n_samples": limit,
@@ -407,9 +407,9 @@ class SuiteRunner:
         tracker: Any,
     ) -> dict[str, Any]:
         """Run a benchmark via BeforeAfterRunner."""
-        from headroom.evals.core import EvalMode
-        from headroom.evals.datasets import load_dataset_by_name, load_tool_output_samples
-        from headroom.evals.runners.before_after import BeforeAfterRunner, LLMConfig
+        from legroom.evals.core import EvalMode
+        from legroom.evals.datasets import load_dataset_by_name, load_tool_output_samples
+        from legroom.evals.runners.before_after import BeforeAfterRunner, LLMConfig
 
         # Load dataset
         if spec.dataset_name == "tool_outputs":
@@ -419,14 +419,14 @@ class SuiteRunner:
 
         # Configure runner — use proxy for full-stack eval (compression + CCR)
         proxy_url = (
-            f"http://localhost:{self.headroom_port}" if _check_proxy(self.headroom_port) else None
+            f"http://localhost:{self.legroom_port}" if _check_proxy(self.legroom_port) else None
         )
         runner = BeforeAfterRunner(
             llm_config=LLMConfig(
                 provider=spec.provider,
                 model=spec.model or self.model,
                 temperature=0.0,
-                headroom_proxy_url=proxy_url,
+                legroom_proxy_url=proxy_url,
             ),
             use_semantic_similarity=False,  # Faster
         )
@@ -462,7 +462,7 @@ class SuiteRunner:
         spec: BenchmarkSpec,
     ) -> dict[str, Any]:
         """Run a compression-only benchmark (zero LLM cost)."""
-        from headroom.evals.runners.compression_only import CompressionOnlyRunner
+        from legroom.evals.runners.compression_only import CompressionOnlyRunner
 
         runner = CompressionOnlyRunner()
 
@@ -486,8 +486,8 @@ class SuiteRunner:
 
     def run(self) -> SuiteResult:
         """Run the full evaluation suite."""
-        from headroom.evals.cost_tracker import CostTracker
-        from headroom.evals.reports.report_card import BenchmarkRunResult, SuiteResult
+        from legroom.evals.cost_tracker import CostTracker
+        from legroom.evals.reports.report_card import BenchmarkRunResult, SuiteResult
 
         specs = self._get_specs()
         tracker = CostTracker(budget_usd=self.budget_usd)
@@ -500,8 +500,8 @@ class SuiteRunner:
         if has_lm_eval:
             proxy_available = self._ensure_proxy()
             if not proxy_available:
-                print("WARNING: Headroom proxy not available. Skipping lm-eval benchmarks.")
-                print("  Start with: headroom proxy --port 8787")
+                print("WARNING: Legroom proxy not available. Skipping lm-eval benchmarks.")
+                print("  Start with: legroom proxy --port 8787")
 
         try:
             for i, spec in enumerate(specs):
@@ -556,7 +556,7 @@ class SuiteRunner:
                                 category=spec.category,
                                 tier=spec.tier,
                                 baseline_score=raw.get("baseline_score"),
-                                headroom_score=raw.get("headroom_score"),
+                                legroom_score=raw.get("legroom_score"),
                                 delta=raw.get("delta"),
                                 passed=raw.get("passed", False),
                                 n_samples=raw.get("n_samples", 0),
@@ -634,7 +634,7 @@ class SuiteRunner:
 
     def _print_summary(self, result: SuiteResult, tracker: Any) -> None:
         """Print formatted summary to stdout."""
-        from headroom.evals.reports.report_card import generate_markdown
+        from legroom.evals.reports.report_card import generate_markdown
 
         print("\n" + "=" * 60)
         print(generate_markdown(result))

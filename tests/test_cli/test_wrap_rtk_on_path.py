@@ -3,7 +3,7 @@
 ``rtk init --global --auto-patch`` writes ``~/.claude/hooks/rtk-rewrite.sh``,
 and ``rtk rewrite`` emits a bare ``rtk`` token at runtime that the hook feeds
 back to the shell — so bare ``rtk`` must resolve on PATH. Since
-``~/.headroom/bin`` is not on PATH by default, that lookup fails and token
+``~/.legroom/bin`` is not on PATH by default, that lookup fails and token
 compression never runs (issue #487).
 
 The earlier fix rewrote the generated hook to hard-code rtk's absolute path,
@@ -19,13 +19,13 @@ from pathlib import Path
 
 import pytest
 
-from headroom.cli import wrap
-from headroom.cli.wrap import _ensure_rtk_on_path
+from legroom.cli import wrap
+from legroom.cli.wrap import _ensure_rtk_on_path
 
 
 @pytest.fixture
 def rtk_binary(tmp_path: Path) -> Path:
-    managed = tmp_path / ".headroom" / "bin" / "rtk"
+    managed = tmp_path / ".legroom" / "bin" / "rtk"
     managed.parent.mkdir(parents=True)
     managed.write_text("#!/bin/sh\n")
     managed.chmod(0o755)

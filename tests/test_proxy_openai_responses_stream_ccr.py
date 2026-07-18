@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from headroom.ccr import CCR_TOOL_NAME
-from headroom.proxy.handlers.openai import _should_buffer_openai_responses_stream_ccr
+from legroom.ccr import CCR_TOOL_NAME
+from legroom.proxy.handlers.openai import _should_buffer_openai_responses_stream_ccr
 
 _TOOL_TYPE_FUNCTION = "function"
 _UNRELATED_TOOL_NAME = "unrelated_tool"

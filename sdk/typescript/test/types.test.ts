@@ -11,16 +11,16 @@ import type {
   OpenAIMessage,
   CompressOptions,
   CompressResult,
-  HeadroomClientOptions,
-  HeadroomClientInterface,
+  LegroomClientOptions,
+  LegroomClientInterface,
   ProxyCompressResponse,
   ProxyErrorResponse,
 } from "../src/types.js";
 import {
-  HeadroomError,
-  HeadroomConnectionError,
-  HeadroomAuthError,
-  HeadroomCompressError,
+  LegroomError,
+  LegroomConnectionError,
+  LegroomAuthError,
+  LegroomCompressError,
 } from "../src/types.js";
 
 describe("Message types", () => {
@@ -115,7 +115,7 @@ describe("CompressOptions", () => {
       number | undefined
     >();
     expectTypeOf<CompressOptions["client"]>().toEqualTypeOf<
-      HeadroomClientInterface | undefined
+      LegroomClientInterface | undefined
     >();
   });
 });
@@ -136,84 +136,84 @@ describe("CompressResult", () => {
   });
 });
 
-describe("HeadroomClientOptions", () => {
+describe("LegroomClientOptions", () => {
   it("all fields are optional", () => {
-    expectTypeOf<HeadroomClientOptions>().toMatchTypeOf<{}>();
+    expectTypeOf<LegroomClientOptions>().toMatchTypeOf<{}>();
   });
 
   it("has expected optional fields", () => {
-    expectTypeOf<HeadroomClientOptions["baseUrl"]>().toEqualTypeOf<
+    expectTypeOf<LegroomClientOptions["baseUrl"]>().toEqualTypeOf<
       string | undefined
     >();
-    expectTypeOf<HeadroomClientOptions["apiKey"]>().toEqualTypeOf<
+    expectTypeOf<LegroomClientOptions["apiKey"]>().toEqualTypeOf<
       string | undefined
     >();
-    expectTypeOf<HeadroomClientOptions["timeout"]>().toEqualTypeOf<
+    expectTypeOf<LegroomClientOptions["timeout"]>().toEqualTypeOf<
       number | undefined
     >();
-    expectTypeOf<HeadroomClientOptions["fallback"]>().toEqualTypeOf<
+    expectTypeOf<LegroomClientOptions["fallback"]>().toEqualTypeOf<
       boolean | undefined
     >();
-    expectTypeOf<HeadroomClientOptions["retries"]>().toEqualTypeOf<
+    expectTypeOf<LegroomClientOptions["retries"]>().toEqualTypeOf<
       number | undefined
     >();
   });
 });
 
-describe("HeadroomClientInterface", () => {
+describe("LegroomClientInterface", () => {
   it("has compress method", () => {
-    expectTypeOf<HeadroomClientInterface>().toHaveProperty("compress");
+    expectTypeOf<LegroomClientInterface>().toHaveProperty("compress");
   });
 
   it("compress returns Promise<CompressResult>", () => {
-    expectTypeOf<HeadroomClientInterface["compress"]>().returns.toEqualTypeOf<
+    expectTypeOf<LegroomClientInterface["compress"]>().returns.toEqualTypeOf<
       Promise<CompressResult>
     >();
   });
 
   it("compress accepts messages and optional options", () => {
-    expectTypeOf<HeadroomClientInterface["compress"]>().parameters.toEqualTypeOf<
+    expectTypeOf<LegroomClientInterface["compress"]>().parameters.toEqualTypeOf<
       [OpenAIMessage[], ({ model?: string } | undefined)?]
     >();
   });
 });
 
 describe("Error classes", () => {
-  it("HeadroomError extends Error", () => {
-    expectTypeOf<HeadroomError>().toMatchTypeOf<Error>();
+  it("LegroomError extends Error", () => {
+    expectTypeOf<LegroomError>().toMatchTypeOf<Error>();
   });
 
-  it("HeadroomConnectionError extends HeadroomError", () => {
-    expectTypeOf<HeadroomConnectionError>().toMatchTypeOf<HeadroomError>();
+  it("LegroomConnectionError extends LegroomError", () => {
+    expectTypeOf<LegroomConnectionError>().toMatchTypeOf<LegroomError>();
   });
 
-  it("HeadroomAuthError extends HeadroomError", () => {
-    expectTypeOf<HeadroomAuthError>().toMatchTypeOf<HeadroomError>();
+  it("LegroomAuthError extends LegroomError", () => {
+    expectTypeOf<LegroomAuthError>().toMatchTypeOf<LegroomError>();
   });
 
-  it("HeadroomCompressError extends HeadroomError", () => {
-    expectTypeOf<HeadroomCompressError>().toMatchTypeOf<HeadroomError>();
+  it("LegroomCompressError extends LegroomError", () => {
+    expectTypeOf<LegroomCompressError>().toMatchTypeOf<LegroomError>();
   });
 
-  it("HeadroomCompressError has statusCode and errorType", () => {
-    expectTypeOf<HeadroomCompressError>().toHaveProperty("statusCode");
-    expectTypeOf<HeadroomCompressError["statusCode"]>().toBeNumber();
-    expectTypeOf<HeadroomCompressError>().toHaveProperty("errorType");
-    expectTypeOf<HeadroomCompressError["errorType"]>().toBeString();
+  it("LegroomCompressError has statusCode and errorType", () => {
+    expectTypeOf<LegroomCompressError>().toHaveProperty("statusCode");
+    expectTypeOf<LegroomCompressError["statusCode"]>().toBeNumber();
+    expectTypeOf<LegroomCompressError>().toHaveProperty("errorType");
+    expectTypeOf<LegroomCompressError["errorType"]>().toBeString();
   });
 
   it("error classes are constructable", () => {
-    const err = new HeadroomError("test");
+    const err = new LegroomError("test");
     expectTypeOf(err).toMatchTypeOf<Error>();
 
-    const connErr = new HeadroomConnectionError("test");
-    expectTypeOf(connErr).toMatchTypeOf<HeadroomError>();
+    const connErr = new LegroomConnectionError("test");
+    expectTypeOf(connErr).toMatchTypeOf<LegroomError>();
 
-    const authErr = new HeadroomAuthError("test");
-    expectTypeOf(authErr).toMatchTypeOf<HeadroomError>();
+    const authErr = new LegroomAuthError("test");
+    expectTypeOf(authErr).toMatchTypeOf<LegroomError>();
 
-    const compressErr = new HeadroomCompressError(500, "server_error", "test");
-    expectTypeOf(compressErr).toMatchTypeOf<HeadroomError>();
+    const compressErr = new LegroomCompressError(500, "server_error", "test");
+    expectTypeOf(compressErr).toMatchTypeOf<LegroomError>();
     expectTypeOf(compressErr.statusCode).toBeNumber();
     expectTypeOf(compressErr.errorType).toBeString();
   });

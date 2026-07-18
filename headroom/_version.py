@@ -9,7 +9,7 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 UNKNOWN_VERSION = "unknown"
-VERSION_ENV_VARS = ("HEADROOM_VERSION", "HEADROOM_BUILD_VERSION")
+VERSION_ENV_VARS = ("LEGROOM_VERSION", "LEGROOM_BUILD_VERSION")
 RELEASE_VERSION_RE = re.compile(r"^v?\d+\.\d+\.\d+$")
 
 
@@ -55,7 +55,7 @@ def _env_version() -> str | None:
 def _packaged_build_version() -> str | None:
     """Return Docker/image build metadata baked into the installed package."""
     try:
-        build_info = importlib.import_module("headroom._build_info")
+        build_info = importlib.import_module("legroom._build_info")
     except ModuleNotFoundError:
         return None
     return _clean_version(getattr(build_info, "BUILD_VERSION", None))
@@ -72,7 +72,7 @@ def _source_root() -> Path | None:
 def _source_tree_version(root: Path) -> str | None:
     """Compute the version release automation would assign to this checkout."""
     try:
-        from headroom.release_version import (
+        from legroom.release_version import (
             compute_release_version,
             determine_bump_level,
             get_canonical_version,
@@ -98,7 +98,7 @@ def _source_tree_version(root: Path) -> str | None:
 
 
 def get_version() -> str:
-    """Return Headroom's runtime version."""
+    """Return Legroom's runtime version."""
     env_version = _env_version()
     if env_version:
         return env_version
@@ -117,7 +117,7 @@ def get_version() -> str:
         return build_version
 
     try:
-        return version("headroom-ai")
+        return version("legroom-ai")
     except PackageNotFoundError:
         return UNKNOWN_VERSION
 

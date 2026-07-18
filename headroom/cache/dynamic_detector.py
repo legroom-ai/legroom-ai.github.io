@@ -18,7 +18,7 @@ Tiers (configurable, each adds latency):
     Tier 3: Semantic (~20-50ms) - Embedding similarity to known dynamic patterns
 
 Usage:
-    from headroom.cache.dynamic_detector import DynamicContentDetector
+    from legroom.cache.dynamic_detector import DynamicContentDetector
 
     detector = DynamicContentDetector(tiers=["regex", "ner"])
     result = detector.detect("Session: abc123. User: John paid $500.")
@@ -39,7 +39,7 @@ from enum import Enum
 from importlib.util import find_spec
 from typing import Any, Literal
 
-from headroom.models.config import ML_MODEL_DEFAULTS
+from legroom.models.config import ML_MODEL_DEFAULTS
 
 # Optional ML dependencies are checked without importing them so this module
 # stays cheap to import during proxy startup.
@@ -609,7 +609,7 @@ class NERDetector:
 
         try:
             # Use centralized registry for shared model instances
-            from headroom.models.ml_models import MLModelRegistry
+            from legroom.models.ml_models import MLModelRegistry
 
             self._nlp = MLModelRegistry.get_spacy(config.spacy_model)
         except ImportError:
@@ -739,7 +739,7 @@ class SemanticDetector:
 
         try:
             # Use centralized registry for shared model instances
-            from headroom.models.ml_models import MLModelRegistry
+            from legroom.models.ml_models import MLModelRegistry
 
             self._model = MLModelRegistry.get_sentence_transformer(config.embedding_model)
             # Pre-compute exemplar embeddings. normalize_embeddings=True is

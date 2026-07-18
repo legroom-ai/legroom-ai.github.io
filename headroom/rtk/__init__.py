@@ -1,7 +1,7 @@
-"""rtk (Rust Token Killer) integration for Headroom.
+"""rtk (Rust Token Killer) integration for Legroom.
 
 rtk compresses CLI output (test results, git diffs, log dumps) before it
-enters the LLM context window. Headroom downloads and manages the rtk binary.
+enters the LLM context window. Legroom downloads and manages the rtk binary.
 """
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ import platform
 import shutil
 from pathlib import Path
 
-from headroom import paths as _paths
+from legroom import paths as _paths
 
 RTK_VERSION = "v0.42.4"
 RTK_BIN_DIR = _paths.bin_dir()
@@ -19,7 +19,7 @@ RTK_BIN_PATH = RTK_BIN_DIR / _RTK_NAME
 
 
 def _managed_rtk_candidates() -> list[Path]:
-    """Return known Headroom-managed rtk binary paths."""
+    """Return known Legroom-managed rtk binary paths."""
     candidates = [RTK_BIN_DIR / _RTK_NAME]
     for name in ("rtk", "rtk.exe"):
         path = RTK_BIN_DIR / name
@@ -29,13 +29,13 @@ def _managed_rtk_candidates() -> list[Path]:
 
 
 def get_rtk_path() -> Path | None:
-    """Get path to rtk binary — check PATH first, then ~/.headroom/bin/."""
+    """Get path to rtk binary — check PATH first, then ~/.legroom/bin/."""
     # Check if rtk is already in PATH (e.g., installed via brew)
     system_rtk = shutil.which("rtk")
     if system_rtk:
         return Path(system_rtk)
 
-    # Check Headroom-managed install
+    # Check Legroom-managed install
     for candidate in _managed_rtk_candidates():
         if candidate.exists() and candidate.is_file():
             return candidate

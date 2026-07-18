@@ -1,7 +1,7 @@
 """Byte-faithful outbound request body forwarding policy.
 
 This module owns the small algebra used by Python proxy forwarders to decide
-which bytes leave Headroom:
+which bytes leave Legroom:
 
 * unmutated body with original bytes -> byte-for-byte passthrough
 * mutated body or missing original bytes -> canonical JSON bytes
@@ -15,7 +15,7 @@ import os
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from headroom.proxy import python_forwarder_mode_policy
+from legroom.proxy import python_forwarder_mode_policy
 
 _PYTHON_FORWARDER_MODE_ENV = python_forwarder_mode_policy.PYTHON_FORWARDER_MODE_ENV
 

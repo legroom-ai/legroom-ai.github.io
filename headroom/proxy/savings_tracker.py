@@ -2,7 +2,7 @@
 
 Persists cumulative proxy compression savings plus a canonical display session
 window to a local JSON file so historical charts and dashboard session stats
-survive proxy restarts and can be shared by multiple Headroom frontends.
+survive proxy restarts and can be shared by multiple Legroom frontends.
 """
 
 from __future__ import annotations
@@ -20,17 +20,17 @@ from io import StringIO
 from pathlib import Path
 from typing import Any
 
-from headroom import paths as _paths
-from headroom.proxy import project_name_policy
-from headroom.proxy.persistent_metrics import PersistentMetricsState
+from legroom import paths as _paths
+from legroom.proxy import project_name_policy
+from legroom.proxy.persistent_metrics import PersistentMetricsState
 
 PROJECT_NAME_MAX_LENGTH = project_name_policy.PROJECT_NAME_MAX_LENGTH
 sanitize_project_name = project_name_policy.sanitize_project_name
 
 logger = logging.getLogger(__name__)
 
-HEADROOM_SAVINGS_PATH_ENV_VAR = _paths.HEADROOM_SAVINGS_PATH_ENV
-DEFAULT_SAVINGS_DIR = ".headroom"
+LEGROOM_SAVINGS_PATH_ENV_VAR = _paths.LEGROOM_SAVINGS_PATH_ENV
+DEFAULT_SAVINGS_DIR = ".legroom"
 DEFAULT_SAVINGS_FILE = "proxy_savings.json"
 SCHEMA_VERSION = 5
 DEFAULT_MAX_HISTORY_POINTS = 5000
@@ -66,10 +66,10 @@ def _get_litellm_module() -> Any | None:
 
 def get_default_savings_storage_path() -> str:
     """Return the configured savings storage path."""
-    # Preserve legacy behavior: when HEADROOM_SAVINGS_PATH is set we return
+    # Preserve legacy behavior: when LEGROOM_SAVINGS_PATH is set we return
     # the raw string exactly as supplied (no tilde expansion, no
     # path-separator normalization) to match prior behavior and existing tests.
-    env_path = os.environ.get(HEADROOM_SAVINGS_PATH_ENV_VAR, "").strip()
+    env_path = os.environ.get(LEGROOM_SAVINGS_PATH_ENV_VAR, "").strip()
     if env_path:
         return env_path
     return str(_paths.savings_path())
@@ -259,7 +259,7 @@ def _estimate_cache_savings_usd(model: str, cache_read_tokens: int) -> float:
     falls back to ``DEFAULT_FALLBACK_INPUT_COST_PER_TOKEN``, matching
     ``_estimate_input_cost_usd``/``_estimate_compression_savings_usd`` — otherwise
     cache_savings_usd silently reads as $0 forever on any install without
-    litellm (e.g. Python 3.14, where headroom's own dependency spec excludes it).
+    litellm (e.g. Python 3.14, where legroom's own dependency spec excludes it).
 
     Deliberately diverges from ``proxy/cost.py``'s session-scoped provider
     multipliers (``_CACHE_ECONOMICS``): this lifetime figure follows the
@@ -554,7 +554,7 @@ class SavingsTracker:
         save_flush_every: int = 1,
     ) -> None:
         # In stateless mode the tracker keeps live counters in memory but never
-        # writes proxy_savings.json (honors HeadroomConfig.stateless, which
+        # writes proxy_savings.json (honors LegroomConfig.stateless, which
         # disables all filesystem writes for read-only / container deployments).
         self._stateless = stateless
         self._path = Path(path or get_default_savings_storage_path())
@@ -809,7 +809,7 @@ class SavingsTracker:
                 input_cost_usd_delta=delta_input_cost_usd,
             )
 
-            # In --mode cache, headroom's own compression (tokens_saved) is
+            # In --mode cache, legroom's own compression (tokens_saved) is
             # near-always 0 by design — the frozen prefix is byte-replayed,
             # not lossy-compressed, to keep Bedrock's prompt cache warm. Gating
             # on tokens_saved alone silently dropped every history point on

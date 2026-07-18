@@ -1,6 +1,6 @@
-"""Backwards compatibility - CLI moved to headroom.cli package."""
+"""Backwards compatibility - CLI moved to legroom.cli package."""
 
-from headroom.cli import main
+from legroom.cli import main
 
 if __name__ == "__main__":
     main()

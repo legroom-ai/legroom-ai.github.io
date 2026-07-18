@@ -10,10 +10,10 @@ from pathlib import Path
 
 import pytest
 
-from headroom.cli import wrap as wrap_cli
-from headroom.mcp_registry import build_tokensave_spec
-from headroom.mcp_registry.base import RegisterResult, RegisterStatus, ServerSpec
-from headroom.mcp_registry.ledger import headroom_installed_matching, record_install
+from legroom.cli import wrap as wrap_cli
+from legroom.mcp_registry import build_tokensave_spec
+from legroom.mcp_registry.base import RegisterResult, RegisterStatus, ServerSpec
+from legroom.mcp_registry.ledger import legroom_installed_matching, record_install
 
 _FAKE_BIN = Path("/usr/local/bin/tokensave")
 
@@ -54,7 +54,7 @@ class _FakeRegistrar:
 
 @pytest.fixture(autouse=True)
 def _workspace(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    monkeypatch.setenv("HEADROOM_WORKSPACE_DIR", str(tmp_path / ".headroom"))
+    monkeypatch.setenv("LEGROOM_WORKSPACE_DIR", str(tmp_path / ".legroom"))
     # Never touch the network or run the real binary during these unit tests.
     monkeypatch.setattr(wrap_cli, "_index_tokensave_project", lambda *a, **k: None)
 
@@ -74,8 +74,8 @@ def test_setup_registers_and_records_when_binary_available(
     assert registrar._server is not None
     assert registrar._server.name == "tokensave"
     assert registrar._server.command == str(_FAKE_BIN)
-    # Ledger now proves Headroom owns the entry.
-    assert headroom_installed_matching("claude", registrar.get_server("tokensave"))
+    # Ledger now proves Legroom owns the entry.
+    assert legroom_installed_matching("claude", registrar.get_server("tokensave"))
 
 
 def test_setup_returns_false_when_binary_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -100,9 +100,9 @@ def test_setup_skips_when_agent_not_detected(monkeypatch: pytest.MonkeyPatch) ->
     assert sentinel["called"] is False  # never even fetched the binary
 
 
-def test_setup_migrates_stale_headroom_entry(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_setup_migrates_stale_legroom_entry(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(wrap_cli, "_ensure_tokensave_binary", lambda verbose=False: _FAKE_BIN)
-    # A stale Headroom-installed entry (different binary path) is on disk.
+    # A stale Legroom-installed entry (different binary path) is on disk.
     stale = build_tokensave_spec("/old/path/tokensave")
     record_install("claude", stale)
     registrar = _FakeRegistrar(server=stale)
@@ -130,7 +130,7 @@ def test_setup_preserves_user_managed_mismatch(monkeypatch: pytest.MonkeyPatch) 
 # ---------------------------------------------------------------------------
 
 
-def test_disable_removes_headroom_installed(capsys: pytest.CaptureFixture[str]) -> None:
+def test_disable_removes_legroom_installed(capsys: pytest.CaptureFixture[str]) -> None:
     spec = build_tokensave_spec(str(_FAKE_BIN))
     record_install("claude", spec)
     registrar = _FakeRegistrar(server=spec)

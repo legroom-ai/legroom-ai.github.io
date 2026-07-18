@@ -1,7 +1,7 @@
-"""Generic OAuth2 client-credentials upstream-auth extension for the Headroom proxy.
+"""Generic OAuth2 client-credentials upstream-auth extension for the Legroom proxy.
 
-Enable: `--proxy-extension oauth2` (or HEADROOM_PROXY_EXTENSIONS=oauth2).
-No-op unless HEADROOM_OAUTH2_TOKEN_URL is set. See README for env config.
+Enable: `--proxy-extension oauth2` (or LEGROOM_PROXY_EXTENSIONS=oauth2).
+No-op unless LEGROOM_OAUTH2_TOKEN_URL is set. See README for env config.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from .provider import OAuth2ClientCredentials, OAuth2Error
 
 __all__ = ["install", "OAuth2ClientCredentials", "OAuth2Error", "OAuth2Middleware", "parse_headers"]
 __version__ = "0.1.0"
-log = logging.getLogger("headroom_oauth2")
+log = logging.getLogger("legroom_oauth2")
 
 
 def _split(s):
@@ -38,7 +38,7 @@ def parse_headers(s: str | None) -> dict[str, str]:
         if not k:
             continue
         if _ctrl(k) or _ctrl(v) or " " in k or ":" in k:
-            log.warning("headroom-oauth2: dropping malformed static header: %r", k)
+            log.warning("legroom-oauth2: dropping malformed static header: %r", k)
             continue
         out[k] = v
     return out
@@ -55,24 +55,24 @@ def _int(env, key):
 
 
 def provider_from_env(env: dict | None = None) -> OAuth2ClientCredentials | None:
-    """Build a provider from ``HEADROOM_OAUTH2_*`` env vars, or None if TOKEN_URL is unset.
+    """Build a provider from ``LEGROOM_OAUTH2_*`` env vars, or None if TOKEN_URL is unset.
 
     Raises ValueError on malformed config so callers can fail closed.
     """
     env = os.environ if env is None else env
-    token_url = env.get("HEADROOM_OAUTH2_TOKEN_URL")
+    token_url = env.get("LEGROOM_OAUTH2_TOKEN_URL")
     if not token_url:
         return None
-    allow_insecure = env.get("HEADROOM_OAUTH2_ALLOW_INSECURE", "").strip().lower() in (
+    allow_insecure = env.get("LEGROOM_OAUTH2_ALLOW_INSECURE", "").strip().lower() in (
         "1",
         "true",
         "yes",
     )
     if allow_insecure:
-        log.warning("headroom-oauth2: ALLOW_INSECURE set -- token endpoint TLS check disabled")
-    resource = env.get("HEADROOM_OAUTH2_RESOURCE")  # RFC 8707 target service
-    timeout = _int(env, "HEADROOM_OAUTH2_TIMEOUT")
-    skew = _int(env, "HEADROOM_OAUTH2_SKEW")
+        log.warning("legroom-oauth2: ALLOW_INSECURE set -- token endpoint TLS check disabled")
+    resource = env.get("LEGROOM_OAUTH2_RESOURCE")  # RFC 8707 target service
+    timeout = _int(env, "LEGROOM_OAUTH2_TIMEOUT")
+    skew = _int(env, "LEGROOM_OAUTH2_SKEW")
     kwargs = {}
     if timeout is not None:
         kwargs["timeout_seconds"] = float(timeout)
@@ -80,12 +80,12 @@ def provider_from_env(env: dict | None = None) -> OAuth2ClientCredentials | None
         kwargs["skew_seconds"] = skew
     return OAuth2ClientCredentials(
         token_url=token_url,
-        client_id=env.get("HEADROOM_OAUTH2_CLIENT_ID", ""),
-        client_secret=env.get("HEADROOM_OAUTH2_CLIENT_SECRET", ""),
-        scopes=_split(env.get("HEADROOM_OAUTH2_SCOPES")),
-        audience=env.get("HEADROOM_OAUTH2_AUDIENCE") or None,
-        grant_type=env.get("HEADROOM_OAUTH2_GRANT_TYPE", "client_credentials"),
-        auth_style=env.get("HEADROOM_OAUTH2_AUTH_STYLE", "post"),
+        client_id=env.get("LEGROOM_OAUTH2_CLIENT_ID", ""),
+        client_secret=env.get("LEGROOM_OAUTH2_CLIENT_SECRET", ""),
+        scopes=_split(env.get("LEGROOM_OAUTH2_SCOPES")),
+        audience=env.get("LEGROOM_OAUTH2_AUDIENCE") or None,
+        grant_type=env.get("LEGROOM_OAUTH2_GRANT_TYPE", "client_credentials"),
+        auth_style=env.get("LEGROOM_OAUTH2_AUTH_STYLE", "post"),
         extra_params={"resource": resource} if resource else None,
         allow_insecure=allow_insecure,
         **kwargs,
@@ -93,15 +93,15 @@ def provider_from_env(env: dict | None = None) -> OAuth2ClientCredentials | None
 
 
 def install(app: Any, config: Any) -> None:
-    """Headroom proxy-extension entry point: install(app, config) -> None."""
+    """Legroom proxy-extension entry point: install(app, config) -> None."""
     try:
         provider = provider_from_env()
     except ValueError as e:
-        raise RuntimeError(f"headroom-oauth2 misconfigured: {e}") from None  # fail-closed
+        raise RuntimeError(f"legroom-oauth2 misconfigured: {e}") from None  # fail-closed
     if provider is None:
-        log.info("headroom-oauth2 loaded but HEADROOM_OAUTH2_TOKEN_URL unset; no-op")
+        log.info("legroom-oauth2 loaded but LEGROOM_OAUTH2_TOKEN_URL unset; no-op")
         return
-    static = parse_headers(os.environ.get("HEADROOM_OAUTH2_HEADERS"))
+    static = parse_headers(os.environ.get("LEGROOM_OAUTH2_HEADERS"))
     if static:
         try:
             # litellm's import runs load_dotenv and can inject .env values into os.environ;
@@ -115,22 +115,22 @@ def install(app: Any, config: Any) -> None:
                     del os.environ[k]
             os.environ.update(_before)
             litellm.headers = {**(getattr(litellm, "headers", None) or {}), **static}
-            log.info("headroom-oauth2: static upstream headers: %s", list(static))
+            log.info("legroom-oauth2: static upstream headers: %s", list(static))
         except Exception as e:  # pragma: no cover
-            log.warning("headroom-oauth2: could not set litellm.headers: %s", e)
+            log.warning("legroom-oauth2: could not set litellm.headers: %s", e)
     # The litellm backend auths bedrock/vertex/sagemaker from env and ignores a forwarded
     # bearer, so this extension is a no-op there -- warn loudly rather than silently do nothing.
     backend = str(getattr(config, "backend", "") or "").lower()
     if any(p in backend for p in ("bedrock", "vertex", "sagemaker")):
         log.warning(
-            "headroom-oauth2: backend %r authenticates from env (bedrock/vertex/sagemaker) and "
+            "legroom-oauth2: backend %r authenticates from env (bedrock/vertex/sagemaker) and "
             "ignores the injected bearer -- this extension will have NO effect. Use an "
             "OpenAI-compatible / passthrough backend (e.g. --backend litellm-openai).",
             backend or "<default>",
         )
     app.add_middleware(OAuth2Middleware, provider=provider)
     log.info(
-        "headroom-oauth2: client-credentials auth installed (token_url=%s, style=%s)",
+        "legroom-oauth2: client-credentials auth installed (token_url=%s, style=%s)",
         provider.token_url,
         provider.auth_style,
     )

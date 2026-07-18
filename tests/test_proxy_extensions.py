@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from headroom.proxy import extensions
+from legroom.proxy import extensions
 
 
 def test_install_all_skips_failed_extension_and_continues(

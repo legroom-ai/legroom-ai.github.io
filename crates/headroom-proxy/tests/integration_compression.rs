@@ -286,7 +286,7 @@ async fn passthrough_mode_off_byte_equal_sha256() {
     let captured = mount_anthropic_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::Off;
+        c.compression_mode = legroom_proxy::config::CompressionMode::Off;
     })
     .await;
 
@@ -338,7 +338,7 @@ async fn passthrough_mode_live_zone_currently_passthrough_byte_equal_sha256() {
     let captured = mount_anthropic_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -624,7 +624,7 @@ mod tracing_capture {
         let _captured = mount_anthropic_capture(&upstream).await;
         let proxy = start_proxy_with(&upstream.uri(), |c| {
             c.compression = true;
-            c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+            c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
             c.log_level = "info".into();
         })
         .await;
@@ -654,7 +654,7 @@ mod tracing_capture {
         // had no compressible blocks (or every compressor declined
         // / produced larger output). The `decision="compressed"`
         // path is exercised by
-        // `crates/headroom-core/tests/live_zone_dispatch.rs`.
+        // `crates/legroom-core/tests/live_zone_dispatch.rs`.
         assert!(
             logs.contains(r#""decision":"no_change""#),
             "decision field missing or wrong; logs: {logs}",

@@ -25,7 +25,7 @@ import re
 import sys
 import time
 
-from headroom.transforms.text_crusher import TextCrusher
+from legroom.transforms.text_crusher import TextCrusher
 
 _REDACT = [
     (re.compile(r"/Users/[^/\s]+"), "/Users/USER"),
@@ -237,7 +237,7 @@ def eval_multiwiki(
         from datasets import load_dataset
     except ImportError:
         print(
-            "\n=== Part A: `datasets` not installed; skipping (pip install headroom-ai[evals]) ==="
+            "\n=== Part A: `datasets` not installed; skipping (pip install legroom-ai[evals]) ==="
         )
         return
     tc = TextCrusher()
@@ -273,7 +273,7 @@ if __name__ == "__main__":
     eval_synthetic()
     tx = sys.argv[1] if len(sys.argv) > 1 else None
     if tx is None:
-        found = glob.glob(os.path.expanduser("~/.claude/projects/*headroom*/*.jsonl"))
+        found = glob.glob(os.path.expanduser("~/.claude/projects/*legroom*/*.jsonl"))
         tx = max(found, key=os.path.getsize) if found else None
     if tx and os.path.exists(tx):
         eval_transcript(tx)

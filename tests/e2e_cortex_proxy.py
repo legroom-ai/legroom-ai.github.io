@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Proxy-in-the-loop integration test: Cortex Code + Headroom Proxy
+Proxy-in-the-loop integration test: Cortex Code + Legroom Proxy
 
 Tests the FULL path:
-  Cortex Code (simulated) → headroom FastAPI proxy → Snowflake Cortex
+  Cortex Code (simulated) → legroom FastAPI proxy → Snowflake Cortex
 
-Key insight: headroom compresses CONVERSATION HISTORY.
+Key insight: legroom compresses CONVERSATION HISTORY.
   Turn 1: nothing to compress yet — baseline
   Turn 2: proxy compresses turn 1 history before sending
   Turn 3: proxy compresses turns 1+2 history
@@ -31,7 +31,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 _VENV_SITE = REPO_ROOT / ".venv" / "lib"
 try:
-    from headroom import compress as _hc_check  # noqa: F401
+    from legroom import compress as _hc_check  # noqa: F401
 except ImportError:
     sys.path.insert(0, str(REPO_ROOT))
     for _d in _VENV_SITE.glob("python*/site-packages"):
@@ -85,7 +85,7 @@ def _call(url: str, messages: list[dict], token: str) -> dict:
         headers={
             "Authorization": auth_header,
             "Content-Type": "application/json",
-            "User-Agent": "headroom-proxy-test/1.0",
+            "User-Agent": "legroom-proxy-test/1.0",
         },
         method="POST",
     )
@@ -199,7 +199,7 @@ class TurnResult:
 def main() -> int:
     print()
     print("╔═══════════════════════════════════════════════════════════════╗")
-    print("║  Cortex Code × Headroom  —  Proxy-in-the-Loop  (Multi-Turn)  ║")
+    print("║  Cortex Code × Legroom  —  Proxy-in-the-Loop  (Multi-Turn)  ║")
     print("║  Agent → FastAPI proxy → Snowflake Cortex                    ║")
     print("╚═══════════════════════════════════════════════════════════════╝")
     print()
@@ -222,14 +222,14 @@ def main() -> int:
     cortex_base = f"https://{host}/api/v2/cortex"
     proxy_url = f"http://127.0.0.1:{_PROXY_PORT}/v1/chat/completions"
 
-    print(f"  [2/4] Starting headroom proxy on :{_PROXY_PORT} ...", end=" ", flush=True)
+    print(f"  [2/4] Starting legroom proxy on :{_PROXY_PORT} ...", end=" ", flush=True)
     proxy_env = os.environ.copy()
-    proxy_log = open("/tmp/headroom_proxy.log", "w")
+    proxy_log = open("/tmp/legroom_proxy.log", "w")
     proxy_proc = subprocess.Popen(
         [
             sys.executable,
             "-m",
-            "headroom.proxy.server",
+            "legroom.proxy.server",
             "--port",
             str(_PROXY_PORT),
             "--openai-api-url",
@@ -275,7 +275,7 @@ def main() -> int:
                 print(f"  Direct turn {t} FAILED: {e}")
                 break
 
-            # ── Proxy: send history through headroom proxy ──────────────────
+            # ── Proxy: send history through legroom proxy ──────────────────
             proxy_history.append({"role": "user", "content": question})
             try:
                 pr = _call(proxy_url, proxy_history, token)
@@ -323,7 +323,7 @@ def main() -> int:
 
     if avg_saving > 5:
         print("  ✓  PROXY COMPRESSION CONFIRMED")
-        print("     headroom proxy transparently compresses conversation history")
+        print("     legroom proxy transparently compresses conversation history")
         print(f"     Average {avg_saving:.0f}% token reduction from turn 2 onwards")
     else:
         print("  ⚠  Low compression — proxy routed correctly but history")

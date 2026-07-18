@@ -1,4 +1,4 @@
-"""SQLite memory store for Headroom's hierarchical memory system.
+"""SQLite memory store for Legroom's hierarchical memory system.
 
 Provides persistent storage for Memory objects with full support for:
 - Hierarchical scope filtering (user/session/agent/turn)
@@ -64,7 +64,7 @@ class SQLiteMemoryStore:
         for efficient querying by scope, category, importance, and time.
     """
 
-    def __init__(self, db_path: str | Path = "headroom_memory.db") -> None:
+    def __init__(self, db_path: str | Path = "legroom_memory.db") -> None:
         """Initialize the SQLite memory store.
 
         Args:

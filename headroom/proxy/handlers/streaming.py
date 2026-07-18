@@ -1,4 +1,4 @@
-"""Streaming handler mixin for HeadroomProxy.
+"""Streaming handler mixin for LegroomProxy.
 
 Contains SSE parsing, streaming response generation, and related utilities.
 """
@@ -12,8 +12,8 @@ import logging
 import time
 from typing import TYPE_CHECKING, Any
 
-from headroom.proxy.auth_mode import classify_client
-from headroom.proxy.helpers import (
+from legroom.proxy.auth_mode import classify_client
+from legroom.proxy.helpers import (
     RETRYABLE_OVERLOAD_STATUSES,
     jitter_delay_ms,
     retry_after_ms,
@@ -25,9 +25,9 @@ if TYPE_CHECKING:
 
 import httpx
 
-from headroom.copilot_auth import apply_copilot_api_auth
+from legroom.copilot_auth import apply_copilot_api_auth
 
-logger = logging.getLogger("headroom.proxy")
+logger = logging.getLogger("legroom.proxy")
 
 
 def _parse_completion_tokens_from_sse_chunk(chunk_bytes: bytes) -> int | None:
@@ -61,7 +61,7 @@ def _parse_completion_tokens_from_sse_chunk(chunk_bytes: bytes) -> int | None:
 
 
 class StreamingMixin:
-    """Mixin providing streaming response methods for HeadroomProxy."""
+    """Mixin providing streaming response methods for LegroomProxy."""
 
     _mid_turn_queues: dict[str, asyncio.Queue] = {}
     _active_streams: set[str] = set()
@@ -98,16 +98,16 @@ class StreamingMixin:
         if session_key not in self._mid_turn_queues:
             self._mid_turn_queues[session_key] = asyncio.Queue()
         self._mid_turn_queues[session_key].put_nowait(body)
-        return {"status": 202, "event": "headroom_queued"}
+        return {"status": 202, "event": "legroom_queued"}
 
     def _should_queue_mid_turn(self, session_key: str, explicit_session_header: str | None) -> bool:
         """Return True only when a follow-up should be queued as a mid-turn message.
 
-        Mid-turn steering is a private Headroom protocol: a queued message is
+        Mid-turn steering is a private Legroom protocol: a queued message is
         only ever drained back to the client via the custom
-        ``headroom_pending_messages`` SSE event, which a standard Anthropic SDK
+        ``legroom_pending_messages`` SSE event, which a standard Anthropic SDK
         does not understand. We therefore only engage it for clients that
-        *opt in* by sending an explicit ``x-headroom-session-id`` header.
+        *opt in* by sending an explicit ``x-legroom-session-id`` header.
 
         Without that header the session identity falls back to
         ``md5(model + system[:500])`` (see ``_get_session_key`` /
@@ -165,7 +165,7 @@ class StreamingMixin:
         bytes are dropped (this method is single-chunk only — the buffered
         path is in ``_parse_sse_usage_from_buffer``).
         """
-        from headroom.proxy.helpers import parse_sse_events_from_byte_buffer
+        from legroom.proxy.helpers import parse_sse_events_from_byte_buffer
 
         try:
             buf = bytearray(chunk)
@@ -255,7 +255,7 @@ class StreamingMixin:
         located. Invalid UTF-8 in a *complete* event raises (operator-
         visible diagnostic, not silent corruption).
         """
-        from headroom.proxy.helpers import parse_sse_events_from_byte_buffer
+        from legroom.proxy.helpers import parse_sse_events_from_byte_buffer
 
         buffer = stream_state["sse_buffer"]
         usage_found: dict[str, int] = {}
@@ -688,12 +688,12 @@ class StreamingMixin:
     def _record_ccr_feedback_from_response(
         self, response: dict, provider: str, request_id: str
     ) -> None:
-        """Extract headroom_retrieve tool calls from a response and record feedback.
+        """Extract legroom_retrieve tool calls from a response and record feedback.
 
         This closes the TOIN feedback loop for streaming responses where
         the proxy can't intercept and handle retrieval calls inline.
         """
-        from headroom.cache.compression_store import get_compression_store
+        from legroom.cache.compression_store import get_compression_store
 
         content = response.get("content", [])
         if not isinstance(content, list):
@@ -706,7 +706,7 @@ class StreamingMixin:
                 continue
             if block.get("type") != "tool_use":
                 continue
-            if block.get("name") != "headroom_retrieve":
+            if block.get("name") != "legroom_retrieve":
                 continue
 
             input_data = block.get("input", {})
@@ -726,17 +726,17 @@ class StreamingMixin:
                 logger.debug(f"[{request_id}] CCR Feedback recording failed: {e}")
 
     def _record_ccr_feedback_from_openai_sse(self, full_sse_data: str, request_id: str) -> None:
-        """Record headroom_retrieve feedback from OpenAI Chat Completions SSE.
+        """Record legroom_retrieve feedback from OpenAI Chat Completions SSE.
 
         OpenAI streams tool_calls incrementally via
         ``choices[0].delta.tool_calls[*].function.arguments`` (chunked
         JSON string). We accumulate per-call-index and finalize on
         stream completion. The accumulator records each completed
-        ``headroom_retrieve`` invocation as a no-op store call for the
+        ``legroom_retrieve`` invocation as a no-op store call for the
         TOIN feedback side effect (matches the Anthropic streaming
         feedback path).
         """
-        from headroom.cache.compression_store import get_compression_store
+        from legroom.cache.compression_store import get_compression_store
 
         # tool_call_index -> {"name": str, "args_buf": str}
         tool_calls: dict[int, dict[str, str]] = {}
@@ -777,7 +777,7 @@ class StreamingMixin:
 
         store = get_compression_store()
         for slot in tool_calls.values():
-            if slot["name"] != "headroom_retrieve":
+            if slot["name"] != "legroom_retrieve":
                 continue
             try:
                 input_data = json.loads(slot["args_buf"]) if slot["args_buf"] else {}
@@ -822,7 +822,7 @@ class StreamingMixin:
         client: str | None = None,
         waste_signals: dict[str, int] | None = None,
     ) -> None:
-        from headroom.proxy.outcome import RequestOutcome
+        from legroom.proxy.outcome import RequestOutcome
 
         outcome_provider = outcome_provider or provider
         total_latency = (time.time() - start_time) * 1000
@@ -1079,7 +1079,7 @@ class StreamingMixin:
         """Actual streaming implementation, guarded by _stream_response's cleanup wrapper."""
         from fastapi.responses import Response, StreamingResponse
 
-        from headroom.proxy.helpers import MAX_SSE_BUFFER_SIZE
+        from legroom.proxy.helpers import MAX_SSE_BUFFER_SIZE
 
         # Identify the harness (codex / claude-code / aider / cursor /
         # ...) from the *client's* User-Agent before copilot-auth
@@ -1092,8 +1092,8 @@ class StreamingMixin:
         # bytes once before entering the connection-retry loop. When a
         # transform mutated the body we re-serialize canonically; otherwise
         # we forward the original client bytes verbatim.
-        from headroom.proxy.body_forwarding import prepare_outbound_body_bytes
-        from headroom.proxy.helpers import (
+        from legroom.proxy.body_forwarding import prepare_outbound_body_bytes
+        from legroom.proxy.helpers import (
             capture_codex_wire_debug,
             codex_wire_debug_enabled,
             log_outbound_request,
@@ -1123,7 +1123,7 @@ class StreamingMixin:
                 "http_stream_upstream_request",
                 request_id=request_id,
                 transport="http_sse",
-                direction="headroom_to_upstream",
+                direction="legroom_to_upstream",
                 method="POST",
                 url=url,
                 headers=outbound_headers,
@@ -1181,7 +1181,7 @@ class StreamingMixin:
                             "http_stream_upstream_response_headers",
                             request_id=request_id,
                             transport="http_sse",
-                            direction="upstream_to_headroom",
+                            direction="upstream_to_legroom",
                             method="POST",
                             url=url,
                             headers=dict(upstream_response.headers),
@@ -1266,7 +1266,7 @@ class StreamingMixin:
         # ``update_from_headers`` is a no-op when the response carries no
         # ``x-codex-*`` headers (e.g. the Anthropic streaming path), so this is
         # safe to call unconditionally.
-        from headroom.subscription.codex_rate_limits import (
+        from legroom.subscription.codex_rate_limits import (
             get_codex_rate_limit_state,
         )
 
@@ -1321,7 +1321,7 @@ class StreamingMixin:
                     "http_stream_upstream_error_response",
                     request_id=request_id,
                     transport="http_sse",
-                    direction="upstream_to_headroom",
+                    direction="upstream_to_legroom",
                     method="POST",
                     url=url,
                     headers=response_headers,
@@ -1428,7 +1428,7 @@ class StreamingMixin:
                                 "http_stream_upstream_chunk",
                                 request_id=request_id,
                                 transport="http_sse",
-                                direction="upstream_to_headroom",
+                                direction="upstream_to_legroom",
                                 method="POST",
                                 url=url,
                                 raw_text=chunk.decode("utf-8", errors="replace"),
@@ -1527,7 +1527,7 @@ class StreamingMixin:
                                 "continuation handled by client)"
                             )
 
-                # CCR Feedback: Record headroom_retrieve tool calls for TOIN learning.
+                # CCR Feedback: Record legroom_retrieve tool calls for TOIN learning.
                 # In streaming mode, the client handles actual retrieval, but we
                 # still need to record the event so TOIN learns which fields matter.
                 if self.config.ccr_inject_tool and full_sse_data:
@@ -1550,7 +1550,7 @@ class StreamingMixin:
                         "http_stream_upstream_complete",
                         request_id=request_id,
                         transport="http_sse",
-                        direction="upstream_to_headroom",
+                        direction="upstream_to_legroom",
                         method="POST",
                         url=url,
                         headers=dict(upstream_response.headers),
@@ -1632,9 +1632,9 @@ class StreamingMixin:
                 )
                 if pending_messages:
                     pending_event = json.dumps(
-                        {"type": "headroom_pending_messages", "messages": pending_messages}
+                        {"type": "legroom_pending_messages", "messages": pending_messages}
                     )
-                    yield f"event: headroom_pending_messages\ndata: {pending_event}\n\n".encode()
+                    yield f"event: legroom_pending_messages\ndata: {pending_event}\n\n".encode()
 
         return StreamingResponse(
             generate(),
@@ -1675,7 +1675,7 @@ class StreamingMixin:
         """
         from fastapi.responses import StreamingResponse
 
-        from headroom.proxy.outcome import RequestOutcome
+        from legroom.proxy.outcome import RequestOutcome
 
         client = classify_client(headers)
 
@@ -1714,7 +1714,7 @@ class StreamingMixin:
                     # message_start with usage.input_tokens=0. Anthropic clients
                     # (e.g. Claude Code) read input_tokens from message_start and
                     # would otherwise report ~0 input for every request. Inject
-                    # the token count Headroom actually sent upstream
+                    # the token count Legroom actually sent upstream
                     # (optimized_tokens) when the backend left it unset/zero, so
                     # downstream metrics reflect real usage. A non-zero value
                     # already reported by the backend is preserved untouched.
@@ -1911,8 +1911,8 @@ class StreamingMixin:
         """
         from fastapi.responses import StreamingResponse
 
-        from headroom.proxy.handlers.openai import _infer_openai_cache_write_tokens
-        from headroom.proxy.outcome import RequestOutcome
+        from legroom.proxy.handlers.openai import _infer_openai_cache_write_tokens
+        from legroom.proxy.outcome import RequestOutcome
 
         assert self.anthropic_backend is not None
         client = classify_client(headers)
@@ -2023,7 +2023,7 @@ class StreamingMixin:
                         messages=tracker_messages,
                     )
 
-                # CCR Feedback: record headroom_retrieve tool calls so
+                # CCR Feedback: record legroom_retrieve tool calls so
                 # TOIN learns which fields matter. Streaming path can't
                 # do request-level intercept (would require buffering
                 # the full stream), so we just close the feedback loop.

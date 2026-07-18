@@ -30,8 +30,8 @@ use crate::websocket::ws_handler;
 // site self-documenting. `AuthMode` is re-exported under the same
 // path for downstream handlers that read the value back out of
 // `req.extensions()` (Phase F PR-F2/F3/F4).
-use headroom_core::auth_mode::{classify as classify_auth_mode, AuthMode};
-use headroom_core::compression_policy::CompressionPolicy;
+use legroom_core::auth_mode::{classify as classify_auth_mode, AuthMode};
+use legroom_core::compression_policy::CompressionPolicy;
 
 /// Shared state passed to every handler.
 ///
@@ -481,7 +481,7 @@ pub(crate) async fn forward_http(
 
     // Build the outgoing headers off the incoming ones, then optionally drop
     // Host (rewrite_host=true => let reqwest set its own Host for the upstream).
-    // PR-A5 (P5-49): strip internal `x-headroom-*` from upstream-bound
+    // PR-A5 (P5-49): strip internal `x-legroom-*` from upstream-bound
     // requests when `Config::strip_internal_headers == Enabled` (default).
     let strip_internal = state.config.strip_internal_headers.is_enabled();
     let pre_strip_internal_count = req
@@ -503,7 +503,7 @@ pub(crate) async fn forward_http(
             forwarder = "rust_proxy",
             stripped_count = pre_strip_internal_count,
             request_id = %request_id,
-            "stripped internal x-headroom-* headers from upstream-bound request"
+            "stripped internal x-legroom-* headers from upstream-bound request"
         );
     } else if !strip_internal && pre_strip_internal_count > 0 {
         tracing::warn!(
@@ -512,8 +512,8 @@ pub(crate) async fn forward_http(
             mode = "disabled",
             internal_count = pre_strip_internal_count,
             request_id = %request_id,
-            "HEADROOM_PROXY_STRIP_INTERNAL_HEADERS=disabled; \
-             internal x-headroom-* headers forwarded to upstream"
+            "LEGROOM_PROXY_STRIP_INTERNAL_HEADERS=disabled; \
+             internal x-legroom-* headers forwarded to upstream"
         );
     }
     if !state.config.rewrite_host {
@@ -639,7 +639,7 @@ pub(crate) async fn forward_http(
 
         // PR-2027: strip the `[1m]` context-window tier suffix from
         // the request body for Anthropic messages only. The
-        // Headroom CLI appends `[1m]` to model IDs (e.g.
+        // Legroom CLI appends `[1m]` to model IDs (e.g.
         // `glm-5.2[1m]`, `claude-3-7-sonnet[1m]`) to signal 1M
         // context to Claude Code; the upstream Anthropic API does
         // not recognize the suffix and rejects the request. The
@@ -947,7 +947,7 @@ pub(crate) async fn forward_http(
     // emits `request-id` (lowercase, no `x-`); OpenAI emits
     // `x-request-id`. We forward both to the client unchanged in
     // `resp_headers` and additionally surface a side-channel
-    // `headroom-request-id` header so callers can correlate proxy
+    // `legroom-request-id` header so callers can correlate proxy
     // logs without conflating with the proxy's own `x-request-id`.
     let upstream_request_id_anthropic = upstream_resp
         .headers()
@@ -1096,7 +1096,7 @@ pub(crate) async fn forward_http(
         // header so it's never conflated with the proxy's own.
         if let Some(uid) = upstream_request_id.as_deref() {
             if let Ok(v) = http::HeaderValue::from_str(uid) {
-                h.insert(HeaderName::from_static("headroom-upstream-request-id"), v);
+                h.insert(HeaderName::from_static("legroom-upstream-request-id"), v);
             }
         }
     }

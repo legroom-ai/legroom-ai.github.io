@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from headroom.providers.codex import threads
+from legroom.providers.codex import threads
 
 
 def _seed(path: Path, rows: list[tuple[str, str]]) -> None:
@@ -67,38 +67,38 @@ def test_retag_thread_providers_discovers_later_state_store_and_skips_adjacent_f
     nested_store = nested / "state_7.sqlite"
 
     _seed(later, [("a", "openai"), ("b", "openai"), ("c", "anthropic")])
-    _seed(legacy, [("d", "openai"), ("e", "headroom")])
+    _seed(legacy, [("d", "openai"), ("e", "legroom")])
     _seed(backup, [("f", "openai")])
     sidecar.write_text("wal", encoding="utf-8")
     _seed(nested_store, [("g", "openai")])
 
-    threads.retag_to_headroom(tmp_path)
+    threads.retag_to_legroom(tmp_path)
 
-    assert _count(later, "headroom") == 2
+    assert _count(later, "legroom") == 2
     assert _count(later, "openai") == 0
     assert _count(later, "anthropic") == 1
-    assert _count(legacy, "headroom") == 2
+    assert _count(legacy, "legroom") == 2
     assert _count(legacy, "openai") == 0
     assert _count(backup, "openai") == 1
-    assert _count(backup, "headroom") == 0
+    assert _count(backup, "legroom") == 0
     assert _count(nested_store, "openai") == 1
-    assert _count(nested_store, "headroom") == 0
+    assert _count(nested_store, "legroom") == 0
 
 
 def test_retag_one_moves_only_matching_provider(tmp_path: Path) -> None:
     db = tmp_path / "state_5.sqlite"
-    _seed(db, [("a", "openai"), ("b", "openai"), ("c", "headroom"), ("d", "anthropic")])
+    _seed(db, [("a", "openai"), ("b", "openai"), ("c", "legroom"), ("d", "anthropic")])
 
-    moved = threads._retag_one(db, frm="openai", to="headroom")
+    moved = threads._retag_one(db, frm="openai", to="legroom")
     assert moved == 2
     assert _count(db, "openai") == 0
-    assert _count(db, "headroom") == 3
+    assert _count(db, "legroom") == 3
     # Third-party providers are left alone.
     assert _count(db, "anthropic") == 1
 
-    back = threads._retag_one(db, frm="headroom", to="openai")
+    back = threads._retag_one(db, frm="legroom", to="openai")
     assert back == 3
-    assert _count(db, "headroom") == 0
+    assert _count(db, "legroom") == 0
     assert _count(db, "openai") == 3
     assert _count(db, "anthropic") == 1
 
@@ -106,12 +106,12 @@ def test_retag_one_moves_only_matching_provider(tmp_path: Path) -> None:
 def test_retag_one_noop_without_threads_table(tmp_path: Path) -> None:
     db = tmp_path / "state_5.sqlite"
     sqlite3.connect(str(db)).close()  # empty schema, no threads table
-    assert threads._retag_one(db, frm="openai", to="headroom") == 0
+    assert threads._retag_one(db, frm="openai", to="legroom") == 0
 
 
 def test_retag_thread_providers_silent_when_no_store(tmp_path: Path) -> None:
     # No stores exist under this codex_home: must not raise.
-    threads.retag_thread_providers(tmp_path, frm="openai", to="headroom")
+    threads.retag_thread_providers(tmp_path, frm="openai", to="legroom")
 
 
 def test_retag_thread_providers_skips_unreadable_store_directory(
@@ -131,9 +131,9 @@ def test_retag_thread_providers_skips_unreadable_store_directory(
 
     monkeypatch.setattr(Path, "iterdir", fail_for_sqlite)
 
-    threads.retag_to_headroom(tmp_path)
+    threads.retag_to_legroom(tmp_path)
 
-    assert _count(fallback, "headroom") == 1
+    assert _count(fallback, "legroom") == 1
     assert _count(sqlite_home / "state_6.sqlite", "openai") == 1
 
 
@@ -141,7 +141,7 @@ def test_retag_thread_providers_best_effort_on_corrupt_store(tmp_path: Path) -> 
     bad = tmp_path / "state_5.sqlite"
     bad.write_text("not a sqlite database", encoding="utf-8")
     # A corrupt store is logged and skipped, never raised.
-    threads.retag_thread_providers(tmp_path, frm="openai", to="headroom")
+    threads.retag_thread_providers(tmp_path, frm="openai", to="legroom")
 
 
 def test_retag_thread_providers_skips_corrupt_discovered_store_and_continues(
@@ -155,9 +155,9 @@ def test_retag_thread_providers_skips_corrupt_discovered_store_and_continues(
     bad.write_text("not a sqlite database", encoding="utf-8")
     _seed(later, [("a", "openai"), ("b", "anthropic")])
 
-    threads.retag_to_headroom(tmp_path)
+    threads.retag_to_legroom(tmp_path)
 
-    assert _count(later, "headroom") == 1
+    assert _count(later, "legroom") == 1
     assert _count(later, "openai") == 0
     assert _count(later, "anthropic") == 1
 
@@ -180,21 +180,21 @@ def test_retag_thread_providers_skips_os_error_store_and_continues(
 
     monkeypatch.setattr(threads, "_retag_one", fail_for_locked)
 
-    threads.retag_to_headroom(tmp_path)
+    threads.retag_to_legroom(tmp_path)
 
     assert _count(locked, "openai") == 1
-    assert _count(later, "headroom") == 1
+    assert _count(later, "legroom") == 1
     assert _count(later, "anthropic") == 1
 
 
 def test_enable_disable_wrappers_retag_expected_direction(tmp_path: Path) -> None:
     db = tmp_path / "state_5.sqlite"
-    _seed(db, [("a", "openai"), ("b", "headroom")])
+    _seed(db, [("a", "openai"), ("b", "legroom")])
 
-    threads.retag_to_headroom(tmp_path)
-    assert _count(db, "headroom") == 2
+    threads.retag_to_legroom(tmp_path)
+    assert _count(db, "legroom") == 2
     assert _count(db, "openai") == 0
 
     threads.retag_to_native(tmp_path)
     assert _count(db, "openai") == 2
-    assert _count(db, "headroom") == 0
+    assert _count(db, "legroom") == 0

@@ -10,9 +10,9 @@ from dataclasses import dataclass
 
 import click
 
-from headroom._subprocess import run
-from headroom.install.health import probe_json, probe_ready
-from headroom.install.models import (
+from legroom._subprocess import run
+from legroom.install.health import probe_json, probe_ready
+from legroom.install.models import (
     ConfigScope,
     DeploymentManifest,
     InstallPreset,
@@ -20,9 +20,9 @@ from headroom.install.models import (
     RuntimeKind,
     SupervisorKind,
 )
-from headroom.install.planner import build_manifest
-from headroom.install.providers import apply_mutations, revert_mutations
-from headroom.install.runtime import (
+from legroom.install.planner import build_manifest
+from legroom.install.providers import apply_mutations, revert_mutations
+from legroom.install.runtime import (
     acquire_runtime_start_lock,
     run_foreground,
     runtime_status,
@@ -31,13 +31,13 @@ from headroom.install.runtime import (
     stop_runtime,
     wait_ready,
 )
-from headroom.install.state import (
+from legroom.install.state import (
     ManifestError,
     delete_manifest,
     load_manifest,
     save_manifest,
 )
-from headroom.install.supervisors import (
+from legroom.install.supervisors import (
     install_supervisor,
     remove_supervisor,
     start_supervisor,
@@ -60,7 +60,7 @@ class TurnkeyPlan:
 
 @main.group()
 def install() -> None:
-    """Install and manage persistent Headroom deployments."""
+    """Install and manage persistent Legroom deployments."""
 
 
 def _require_manifest(profile: str) -> DeploymentManifest:
@@ -165,7 +165,7 @@ def _reject_task_lifecycle(manifest: DeploymentManifest, action: str) -> None:
     if manifest.supervisor_kind == SupervisorKind.TASK.value:
         raise click.ClickException(
             f"Deployment '{manifest.profile}' uses persistent-task scheduling; "
-            f"`headroom install {action}` is not supported for task deployments."
+            f"`legroom install {action}` is not supported for task deployments."
         )
 
 
@@ -217,7 +217,7 @@ def _select_turnkey_plan(*, prefer_docker: bool = True) -> TurnkeyPlan:
             runtime=RuntimeKind.DOCKER.value,
             supervisor_kind=SupervisorKind.NONE.value,
             reason=f"NVIDIA GPU available ({gpu_summary}); using Docker GPU passthrough.",
-            base_env={"HEADROOM_DOCKER_GPUS": "all"},
+            base_env={"LEGROOM_DOCKER_GPUS": "all"},
         )
 
     if prefer_docker and _command_available("docker"):
@@ -225,7 +225,7 @@ def _select_turnkey_plan(*, prefer_docker: bool = True) -> TurnkeyPlan:
             preset=InstallPreset.PERSISTENT_DOCKER.value,
             runtime=RuntimeKind.DOCKER.value,
             supervisor_kind=SupervisorKind.NONE.value,
-            reason="Docker is available, so Headroom can run in a restartable container.",
+            reason="Docker is available, so Legroom can run in a restartable container.",
         )
 
     if sys.platform == "darwin" and _command_available("launchctl"):
@@ -256,7 +256,7 @@ def _select_turnkey_plan(*, prefer_docker: bool = True) -> TurnkeyPlan:
         preset=InstallPreset.PERSISTENT_TASK.value,
         runtime=RuntimeKind.PYTHON.value,
         supervisor_kind=SupervisorKind.NONE.value,
-        reason="No supported supervisor was detected; Headroom will start a managed detached runtime.",
+        reason="No supported supervisor was detected; Legroom will start a managed detached runtime.",
     )
 
 
@@ -368,7 +368,7 @@ def _echo_installed(manifest: DeploymentManifest, *, prefix: str = "Installed pe
     type=click.Choice([runtime.value for runtime in RuntimeKind]),
     default=RuntimeKind.PYTHON.value,
     show_default=True,
-    help="Runtime used to execute Headroom for service/task modes.",
+    help="Runtime used to execute Legroom for service/task modes.",
 )
 @click.option(
     "--scope",
@@ -431,7 +431,7 @@ def _echo_installed(manifest: DeploymentManifest, *, prefix: str = "Installed pe
 )
 @click.option(
     "--image",
-    default="ghcr.io/headroomlabs-ai/headroom:latest",
+    default="ghcr.io/legroom-ai/legroom:latest",
     show_default=True,
     help="Docker image to use when runtime=docker or preset=persistent-docker.",
 )
@@ -446,8 +446,8 @@ def _echo_installed(manifest: DeploymentManifest, *, prefix: str = "Installed pe
     default=None,
     help=(
         "Enable/disable AST-based code compression in the persistent runtime. "
-        "Requires the optional tree-sitter dependency: pip install headroom-ai[code]. "
-        "Default: disabled, matching `headroom proxy`."
+        "Requires the optional tree-sitter dependency: pip install legroom-ai[code]. "
+        "Default: disabled, matching `legroom proxy`."
     ),
 )
 @click.option(
@@ -478,7 +478,7 @@ def _echo_installed(manifest: DeploymentManifest, *, prefix: str = "Installed pe
     metavar="KEY=VALUE",
     help=(
         "Extra environment variable for the supervised process, e.g. "
-        "--env HEADROOM_WORKSPACE_DIR=/path. Supervisors (launchd, systemd, cron) "
+        "--env LEGROOM_WORKSPACE_DIR=/path. Supervisors (launchd, systemd, cron) "
         "start with a bare environment and do not inherit the interactive shell's "
         "exports, so anything the runtime needs beyond the flags above must be set "
         "here. Repeatable."
@@ -507,7 +507,7 @@ def install_apply(
     bedrock_profile: str | None,
     extra_env: tuple[str, ...],
 ) -> None:
-    """Install a persistent Headroom deployment."""
+    """Install a persistent Legroom deployment."""
 
     if anyllm_provider and backend != "anyllm":
         click.echo(
@@ -608,7 +608,7 @@ def install_apply(
 )
 @click.option(
     "--image",
-    default="ghcr.io/ghaliba3/headroom:latest",
+    default="ghcr.io/ghaliba3/legroom:latest",
     show_default=True,
     help="Docker image to use when Docker is selected.",
 )
@@ -639,7 +639,7 @@ def deploy(
     no_docker: bool,
     no_http2: bool,
 ) -> None:
-    """Deploy a turnkey local Headroom proxy and configure detected tools."""
+    """Deploy a turnkey local Legroom proxy and configure detected tools."""
 
     plan = _select_turnkey_plan(prefer_docker=not no_docker)
     click.echo(f"Selected {plan.preset} ({plan.runtime}): {plan.reason}")

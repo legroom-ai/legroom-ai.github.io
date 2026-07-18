@@ -6,10 +6,10 @@ const https = nodeRequire("node:https") as typeof import("node:https");
 const http2 = nodeRequire("node:http2") as typeof import("node:http2");
 const childProcess = nodeRequire("node:child_process") as typeof import("node:child_process");
 
-const BASE_URL_HEADER = "x-headroom-base-url";
-const ORIGINAL_PATH_HEADER = "x-headroom-original-path";
-const PROXY_ENV = "HEADROOM_OPENCODE_TRANSPORT_PROXY_URL";
-const STATE_KEY = Symbol.for("headroom.opencode.transport");
+const BASE_URL_HEADER = "x-legroom-base-url";
+const ORIGINAL_PATH_HEADER = "x-legroom-original-path";
+const PROXY_ENV = "LEGROOM_OPENCODE_TRANSPORT_PROXY_URL";
+const STATE_KEY = Symbol.for("legroom.opencode.transport");
 
 type FetchArgs = Parameters<typeof fetch>;
 type HttpRequest = typeof http.request;
@@ -43,7 +43,7 @@ interface TransportState {
   originalChildFork: ChildFork;
 }
 
-interface GlobalWithHeadroomTransport {
+interface GlobalWithLegroomTransport {
   [STATE_KEY]?: TransportState;
 }
 
@@ -54,11 +54,11 @@ interface NodeRequestParts {
 }
 
 function getState(): TransportState | undefined {
-  return (globalThis as GlobalWithHeadroomTransport)[STATE_KEY];
+  return (globalThis as GlobalWithLegroomTransport)[STATE_KEY];
 }
 
 function setState(state: TransportState | undefined): void {
-  (globalThis as GlobalWithHeadroomTransport)[STATE_KEY] = state;
+  (globalThis as GlobalWithLegroomTransport)[STATE_KEY] = state;
 }
 
 function shimImportSpecifier(): string {
@@ -111,7 +111,7 @@ function injectOptionsEnv(args: unknown[], optionIndex: number, proxyUrl: string
 }
 
 function wrapSpawn(originalSpawn: ChildSpawn): ChildSpawn {
-  return function headroomSpawn(this: unknown, ...args: unknown[]) {
+  return function legroomSpawn(this: unknown, ...args: unknown[]) {
     const state = getState();
     if (!state) {
       return Reflect.apply(originalSpawn, this, args);
@@ -122,7 +122,7 @@ function wrapSpawn(originalSpawn: ChildSpawn): ChildSpawn {
 }
 
 function wrapExec(originalExec: ChildExec): ChildExec {
-  return function headroomExec(this: unknown, ...args: unknown[]) {
+  return function legroomExec(this: unknown, ...args: unknown[]) {
     const state = getState();
     if (!state) {
       return Reflect.apply(originalExec, this, args);
@@ -132,7 +132,7 @@ function wrapExec(originalExec: ChildExec): ChildExec {
 }
 
 function wrapExecFile(originalExecFile: ChildExecFile): ChildExecFile {
-  return function headroomExecFile(this: unknown, ...args: unknown[]) {
+  return function legroomExecFile(this: unknown, ...args: unknown[]) {
     const state = getState();
     if (!state) {
       return Reflect.apply(originalExecFile, this, args);
@@ -143,7 +143,7 @@ function wrapExecFile(originalExecFile: ChildExecFile): ChildExecFile {
 }
 
 function wrapFork(originalFork: ChildFork): ChildFork {
-  return function headroomFork(this: unknown, ...args: unknown[]) {
+  return function legroomFork(this: unknown, ...args: unknown[]) {
     const state = getState();
     if (!state) {
       return Reflect.apply(originalFork, this, args);
@@ -357,7 +357,7 @@ function wrapRequest(
   originalHttpsRequest: HttpsRequest,
   originalRequest: HttpRequest | HttpsRequest,
 ): HttpRequest | HttpsRequest {
-  return function headroomRequest(this: unknown, ...args: unknown[]) {
+  return function legroomRequest(this: unknown, ...args: unknown[]) {
     const state = getState();
     if (!state) {
       return Reflect.apply(originalRequest, this, args);
@@ -377,7 +377,7 @@ function wrapRequest(
 }
 
 function wrapGet(request: HttpRequest | HttpsRequest): HttpGet | HttpsGet {
-  return function headroomGet(this: unknown, ...args: unknown[]) {
+  return function legroomGet(this: unknown, ...args: unknown[]) {
     const req = Reflect.apply(request, this, args);
     req.end();
     return req;
@@ -385,15 +385,15 @@ function wrapGet(request: HttpRequest | HttpsRequest): HttpGet | HttpsGet {
 }
 
 function wrapHttp2Connect(originalConnect: Http2Connect): Http2Connect {
-  return function headroomHttp2Connect(this: unknown, authority: string | URL, ...args: unknown[]) {
+  return function legroomHttp2Connect(this: unknown, authority: string | URL, ...args: unknown[]) {
     const state = getState();
     if (state) {
       const proxy = normalizeProxyUrl(state.proxyUrl);
       const upstream = authority instanceof URL ? authority : new URL(String(authority));
       if (shouldRoute(upstream, proxy)) {
         throw new Error(
-          `Headroom OpenCode wrap blocked direct HTTP/2 connection to ${upstream.origin}. ` +
-            "Use fetch, http, or https so traffic can be routed through Headroom.",
+          `Legroom OpenCode wrap blocked direct HTTP/2 connection to ${upstream.origin}. ` +
+            "Use fetch, http, or https so traffic can be routed through Legroom.",
         );
       }
     }
@@ -401,14 +401,14 @@ function wrapHttp2Connect(originalConnect: Http2Connect): Http2Connect {
   } as Http2Connect;
 }
 
-export function installHeadroomTransport(options: InstallOptions): () => void {
+export function installLegroomTransport(options: InstallOptions): () => void {
   const existing = getState();
   if (existing) {
     existing.refs += 1;
     existing.proxyUrl = options.proxyUrl;
     existing.debug = Boolean(options.debug);
     installProcessEnv(options.proxyUrl);
-    return () => uninstallHeadroomTransport();
+    return () => uninstallLegroomTransport();
   }
 
   const state: TransportState = {
@@ -450,10 +450,10 @@ export function installHeadroomTransport(options: InstallOptions): () => void {
   childProcess.fork = wrapFork(state.originalChildFork);
   syncBuiltinESMExports();
 
-  return () => uninstallHeadroomTransport();
+  return () => uninstallLegroomTransport();
 }
 
-export function uninstallHeadroomTransport(): void {
+export function uninstallLegroomTransport(): void {
   const state = getState();
   if (!state) {
     return;

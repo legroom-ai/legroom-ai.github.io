@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from headroom.mcp_registry.base import RegisterStatus, ServerSpec
-from headroom.mcp_registry.codex import CodexRegistrar
-from headroom.mcp_registry.install import build_headroom_spec
+from legroom.mcp_registry.base import RegisterStatus, ServerSpec
+from legroom.mcp_registry.codex import CodexRegistrar
+from legroom.mcp_registry.install import build_legroom_spec
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -17,8 +17,8 @@ else:  # pragma: no cover
     import tomli as tomllib
 
 
-_RESOLVED_COMMAND = ("/usr/bin/python", "-m", "headroom.cli")
-_RESOLVED_ARGS = ("-m", "headroom.cli", "mcp", "serve")
+_RESOLVED_COMMAND = ("/usr/bin/python", "-m", "legroom.cli")
+_RESOLVED_ARGS = ("-m", "legroom.cli", "mcp", "serve")
 
 
 def _make_registrar(tmp_path: Path) -> CodexRegistrar:
@@ -27,7 +27,7 @@ def _make_registrar(tmp_path: Path) -> CodexRegistrar:
 
 def _spec(env: dict[str, str] | None = None) -> ServerSpec:
     return ServerSpec(
-        name="headroom",
+        name="legroom",
         command=_RESOLVED_COMMAND[0],
         args=_RESOLVED_ARGS,
         env=env or {},
@@ -36,10 +36,10 @@ def _spec(env: dict[str, str] | None = None) -> ServerSpec:
 
 def _install_spec(monkeypatch: pytest.MonkeyPatch) -> ServerSpec:
     monkeypatch.setattr(
-        "headroom.mcp_registry.install.resolve_headroom_command",
+        "legroom.mcp_registry.install.resolve_legroom_command",
         lambda: list(_RESOLVED_COMMAND),
     )
-    return build_headroom_spec()
+    return build_legroom_spec()
 
 
 def _serena_spec() -> ServerSpec:
@@ -100,7 +100,7 @@ def test_register_uses_codex_home_env(monkeypatch: pytest.MonkeyPatch, tmp_path:
     assert _codex_home_config_path(codex_home).exists()
     assert not _config_path(tmp_path).exists()
     text = _codex_home_config_path(codex_home).read_text()
-    assert "[mcp_servers.headroom]" in text
+    assert "[mcp_servers.legroom]" in text
 
 
 # ----------------------------------------------------------------------
@@ -109,39 +109,39 @@ def test_register_uses_codex_home_env(monkeypatch: pytest.MonkeyPatch, tmp_path:
 
 
 def test_get_server_returns_none_when_config_missing(tmp_path: Path) -> None:
-    assert _make_registrar(tmp_path).get_server("headroom") is None
+    assert _make_registrar(tmp_path).get_server("legroom") is None
 
 
 def test_get_server_returns_none_when_no_table(tmp_path: Path) -> None:
     cfg = _config_path(tmp_path)
     cfg.parent.mkdir()
     cfg.write_text('model = "gpt-4o"\n')
-    assert _make_registrar(tmp_path).get_server("headroom") is None
+    assert _make_registrar(tmp_path).get_server("legroom") is None
 
 
 def test_get_server_returns_spec_when_table_present(tmp_path: Path) -> None:
     cfg = _config_path(tmp_path)
     cfg.parent.mkdir()
     cfg.write_text(
-        "[mcp_servers.headroom]\n"
+        "[mcp_servers.legroom]\n"
         f"command = {_RESOLVED_COMMAND[0]!r}\n"
         f"args = {list(_RESOLVED_ARGS)!r}\n"
         "\n"
-        "[mcp_servers.headroom.env]\n"
-        'HEADROOM_PROXY_URL = "http://127.0.0.1:9000"\n'
+        "[mcp_servers.legroom.env]\n"
+        'LEGROOM_PROXY_URL = "http://127.0.0.1:9000"\n'
     )
-    got = _make_registrar(tmp_path).get_server("headroom")
+    got = _make_registrar(tmp_path).get_server("legroom")
     assert got is not None
     assert got.command == _RESOLVED_COMMAND[0]
     assert got.args == _RESOLVED_ARGS
-    assert got.env == {"HEADROOM_PROXY_URL": "http://127.0.0.1:9000"}
+    assert got.env == {"LEGROOM_PROXY_URL": "http://127.0.0.1:9000"}
 
 
 def test_get_server_robust_to_unparseable_toml(tmp_path: Path) -> None:
     cfg = _config_path(tmp_path)
     cfg.parent.mkdir()
     cfg.write_text("this = is = not = valid\n")
-    assert _make_registrar(tmp_path).get_server("headroom") is None
+    assert _make_registrar(tmp_path).get_server("legroom") is None
 
 
 def test_register_refuses_unparseable_config(tmp_path: Path) -> None:
@@ -160,11 +160,11 @@ def test_register_refuses_unparseable_config(tmp_path: Path) -> None:
 
 
 def test_register_refuses_non_table_mcp_servers_entry(tmp_path: Path) -> None:
-    """A valid config whose mcp_servers.headroom is a non-table must not get a
-    duplicate `[mcp_servers.headroom]` table appended (which tomllib rejects)."""
+    """A valid config whose mcp_servers.legroom is a non-table must not get a
+    duplicate `[mcp_servers.legroom]` table appended (which tomllib rejects)."""
     cfg = _config_path(tmp_path)
     cfg.parent.mkdir()
-    original = '[mcp_servers]\nheadroom = "not-a-table"\n'
+    original = '[mcp_servers]\nlegroom = "not-a-table"\n'
     cfg.write_text(original)
 
     result = _make_registrar(tmp_path).register_server(_spec())
@@ -202,11 +202,11 @@ def test_register_creates_config_when_missing(
     cfg = _config_path(tmp_path)
     assert cfg.exists()
     text = cfg.read_text()
-    assert "# --- Headroom MCP server ---" in text
-    assert "[mcp_servers.headroom]" in text
+    assert "# --- Legroom MCP server ---" in text
+    assert "[mcp_servers.legroom]" in text
     parsed = tomllib.loads(text)
-    assert parsed["mcp_servers"]["headroom"]["command"] == _RESOLVED_COMMAND[0]
-    assert parsed["mcp_servers"]["headroom"]["args"] == list(_RESOLVED_ARGS)
+    assert parsed["mcp_servers"]["legroom"]["command"] == _RESOLVED_COMMAND[0]
+    assert parsed["mcp_servers"]["legroom"]["args"] == list(_RESOLVED_ARGS)
 
 
 def test_register_appends_to_existing_config_preserves_other_keys(tmp_path: Path) -> None:
@@ -221,45 +221,45 @@ def test_register_appends_to_existing_config_preserves_other_keys(tmp_path: Path
     assert 'model = "gpt-4o"' in text
     assert "[other_section]" in text
     # Plus our block.
-    assert "[mcp_servers.headroom]" in text
+    assert "[mcp_servers.legroom]" in text
     parsed = tomllib.loads(text)
     assert parsed["model"] == "gpt-4o"
     assert parsed["other_section"]["value"] == 42
-    assert parsed["mcp_servers"]["headroom"]["command"] == _RESOLVED_COMMAND[0]
+    assert parsed["mcp_servers"]["legroom"]["command"] == _RESOLVED_COMMAND[0]
 
 
 def test_register_includes_env_subtable(tmp_path: Path) -> None:
-    spec = _spec(env={"HEADROOM_PROXY_URL": "http://127.0.0.1:9000"})
+    spec = _spec(env={"LEGROOM_PROXY_URL": "http://127.0.0.1:9000"})
     _make_registrar(tmp_path).register_server(spec)
     text = _config_path(tmp_path).read_text()
-    assert "[mcp_servers.headroom.env]" in text
+    assert "[mcp_servers.legroom.env]" in text
     parsed = tomllib.loads(text)
-    assert parsed["mcp_servers"]["headroom"]["env"] == {
-        "HEADROOM_PROXY_URL": "http://127.0.0.1:9000"
+    assert parsed["mcp_servers"]["legroom"]["env"] == {
+        "LEGROOM_PROXY_URL": "http://127.0.0.1:9000"
     }
 
 
-def test_register_headroom_and_serena_coexist(tmp_path: Path) -> None:
+def test_register_legroom_and_serena_coexist(tmp_path: Path) -> None:
     reg = _make_registrar(tmp_path)
 
     assert reg.register_server(_spec()).status == RegisterStatus.REGISTERED
     assert reg.register_server(_serena_spec()).status == RegisterStatus.REGISTERED
 
     text = _config_path(tmp_path).read_text()
-    assert "[mcp_servers.headroom]" in text
+    assert "[mcp_servers.legroom]" in text
     assert "[mcp_servers.serena]" in text
-    assert "# --- Headroom MCP server ---" in text
-    assert "# --- Headroom MCP server: serena ---" in text
+    assert "# --- Legroom MCP server ---" in text
+    assert "# --- Legroom MCP server: serena ---" in text
 
     parsed = tomllib.loads(text)
-    assert parsed["mcp_servers"]["headroom"]["command"] == _RESOLVED_COMMAND[0]
+    assert parsed["mcp_servers"]["legroom"]["command"] == _RESOLVED_COMMAND[0]
     assert parsed["mcp_servers"]["serena"]["command"] == "uvx"
 
 
 def test_register_omits_env_subtable_when_env_empty(tmp_path: Path) -> None:
     _make_registrar(tmp_path).register_server(_spec())
     text = _config_path(tmp_path).read_text()
-    assert "[mcp_servers.headroom.env]" not in text
+    assert "[mcp_servers.legroom.env]" not in text
 
 
 # ----------------------------------------------------------------------
@@ -279,7 +279,7 @@ def test_register_already_when_block_matches_spec(tmp_path: Path) -> None:
 
 def test_register_mismatch_when_block_differs_no_force(tmp_path: Path) -> None:
     reg = _make_registrar(tmp_path)
-    reg.register_server(_spec(env={"HEADROOM_PROXY_URL": "http://127.0.0.1:9999"}))
+    reg.register_server(_spec(env={"LEGROOM_PROXY_URL": "http://127.0.0.1:9999"}))
     text_before = _config_path(tmp_path).read_text()
 
     result = reg.register_server(_spec())  # no env
@@ -290,7 +290,7 @@ def test_register_mismatch_when_block_differs_no_force(tmp_path: Path) -> None:
 
 def test_register_force_overwrites_block(tmp_path: Path) -> None:
     reg = _make_registrar(tmp_path)
-    reg.register_server(_spec(env={"HEADROOM_PROXY_URL": "http://127.0.0.1:9999"}))
+    reg.register_server(_spec(env={"LEGROOM_PROXY_URL": "http://127.0.0.1:9999"}))
     result = reg.register_server(_spec(), force=True)
     assert result.status == RegisterStatus.REGISTERED
     text = _config_path(tmp_path).read_text()
@@ -301,29 +301,29 @@ def test_register_force_preserves_user_managed_entry(tmp_path: Path) -> None:
     cfg = _config_path(tmp_path)
     cfg.parent.mkdir()
     cfg.write_text(
-        '[mcp_servers.headroom]\ncommand = "/usr/local/bin/custom-headroom"\nargs = ["serve"]\n'
+        '[mcp_servers.legroom]\ncommand = "/usr/local/bin/custom-legroom"\nargs = ["serve"]\n'
     )
 
     result = _make_registrar(tmp_path).register_server(_spec(), force=True)
 
     assert result.status == RegisterStatus.MISMATCH
     assert "user-managed" in (result.detail or "").lower()
-    assert "/usr/local/bin/custom-headroom" in cfg.read_text()
-    assert cfg.read_text().count("[mcp_servers.headroom]") == 1
+    assert "/usr/local/bin/custom-legroom" in cfg.read_text()
+    assert cfg.read_text().count("[mcp_servers.legroom]") == 1
 
 
 def test_register_mismatch_when_user_managed_outside_markers(tmp_path: Path) -> None:
     cfg = _config_path(tmp_path)
     cfg.parent.mkdir()
-    # User has manually put [mcp_servers.headroom] with different config — no markers.
+    # User has manually put [mcp_servers.legroom] with different config — no markers.
     cfg.write_text(
-        '[mcp_servers.headroom]\ncommand = "/usr/local/bin/custom-headroom"\nargs = ["serve"]\n'
+        '[mcp_servers.legroom]\ncommand = "/usr/local/bin/custom-legroom"\nargs = ["serve"]\n'
     )
     result = _make_registrar(tmp_path).register_server(_spec())
     assert result.status == RegisterStatus.MISMATCH
     assert "user-managed" in (result.detail or "").lower()
     # Don't overwrite.
-    assert "/usr/local/bin/custom-headroom" in cfg.read_text()
+    assert "/usr/local/bin/custom-legroom" in cfg.read_text()
 
 
 # ----------------------------------------------------------------------
@@ -337,44 +337,44 @@ def test_unregister_removes_marker_block(tmp_path: Path) -> None:
     cfg.parent.mkdir()
     cfg.write_text("[other_section]\nvalue = 42\n")
     reg.register_server(_spec())
-    assert "[mcp_servers.headroom]" in cfg.read_text()
+    assert "[mcp_servers.legroom]" in cfg.read_text()
 
-    assert reg.unregister_server("headroom") is True
+    assert reg.unregister_server("legroom") is True
     text = cfg.read_text()
-    assert "[mcp_servers.headroom]" not in text
-    assert "# --- Headroom MCP server ---" not in text
+    assert "[mcp_servers.legroom]" not in text
+    assert "# --- Legroom MCP server ---" not in text
     # Surrounding content survives.
     assert "[other_section]" in text
 
 
-def test_unregister_serena_preserves_headroom_block(tmp_path: Path) -> None:
+def test_unregister_serena_preserves_legroom_block(tmp_path: Path) -> None:
     reg = _make_registrar(tmp_path)
     reg.register_server(_spec())
     reg.register_server(_serena_spec())
 
     assert reg.unregister_server("serena") is True
     text = _config_path(tmp_path).read_text()
-    assert "[mcp_servers.headroom]" in text
+    assert "[mcp_servers.legroom]" in text
     assert "[mcp_servers.serena]" not in text
-    assert "# --- Headroom MCP server ---" in text
-    assert "# --- Headroom MCP server: serena ---" not in text
+    assert "# --- Legroom MCP server ---" in text
+    assert "# --- Legroom MCP server: serena ---" not in text
 
 
 def test_unregister_returns_false_when_no_block(tmp_path: Path) -> None:
     cfg = _config_path(tmp_path)
     cfg.parent.mkdir()
     cfg.write_text('model = "gpt-4o"\n')
-    assert _make_registrar(tmp_path).unregister_server("headroom") is False
+    assert _make_registrar(tmp_path).unregister_server("legroom") is False
 
 
 def test_unregister_preserves_user_managed_entry(tmp_path: Path) -> None:
-    """User-managed [mcp_servers.headroom] without our markers stays put."""
+    """User-managed [mcp_servers.legroom] without our markers stays put."""
     cfg = _config_path(tmp_path)
     cfg.parent.mkdir()
-    cfg.write_text('[mcp_servers.headroom]\ncommand = "/custom/headroom"\n')
+    cfg.write_text('[mcp_servers.legroom]\ncommand = "/custom/legroom"\n')
     # No markers => unregister is a no-op.
-    assert _make_registrar(tmp_path).unregister_server("headroom") is False
-    assert "/custom/headroom" in cfg.read_text()
+    assert _make_registrar(tmp_path).unregister_server("legroom") is False
+    assert "/custom/legroom" in cfg.read_text()
 
 
 # ----------------------------------------------------------------------
@@ -385,20 +385,20 @@ def test_unregister_preserves_user_managed_entry(tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     "spec",
     [
-        ServerSpec(name="headroom", command=_RESOLVED_COMMAND[0], args=_RESOLVED_ARGS),
+        ServerSpec(name="legroom", command=_RESOLVED_COMMAND[0], args=_RESOLVED_ARGS),
         ServerSpec(
-            name="headroom",
+            name="legroom",
             command=_RESOLVED_COMMAND[0],
             args=_RESOLVED_ARGS,
-            env={"HEADROOM_PROXY_URL": "http://127.0.0.1:9000"},
+            env={"LEGROOM_PROXY_URL": "http://127.0.0.1:9000"},
         ),
-        ServerSpec(name="headroom", command="/usr/bin/headroom", args=()),
+        ServerSpec(name="legroom", command="/usr/bin/legroom", args=()),
     ],
 )
 def test_round_trip(tmp_path: Path, spec: ServerSpec) -> None:
     reg = _make_registrar(tmp_path)
     reg.register_server(spec)
-    got = reg.get_server("headroom")
+    got = reg.get_server("legroom")
     assert got is not None
     assert got.command == spec.command
     assert got.args == spec.args
@@ -439,4 +439,4 @@ def test_register_preserves_non_ascii_values(tmp_path: Path) -> None:
     assert result.status == RegisterStatus.REGISTERED
     data = tomllib.loads(cfg.read_text(encoding="utf-8"))
     assert data["project"] == "比赛/机器人"
-    assert "headroom" in data.get("mcp_servers", {})
+    assert "legroom" in data.get("mcp_servers", {})

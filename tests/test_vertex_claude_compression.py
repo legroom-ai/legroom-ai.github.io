@@ -1,6 +1,6 @@
 """Turnkey Claude Code + Vertex compression wiring.
 
-Covers the fixes that let `headroom wrap claude` + Vertex actually deliver
+Covers the fixes that let `legroom wrap claude` + Vertex actually deliver
 compression:
 
 - `litellm-vertex` -> `vertex_ai` provider alias (registry),
@@ -21,9 +21,9 @@ from typing import Any
 from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 
-from headroom.providers import proxy_routes, registry
-from headroom.providers.registry import DEFAULT_VERTEX_API_URL
-from headroom.proxy.server import HeadroomProxy, ProxyConfig, create_app
+from legroom.providers import proxy_routes, registry
+from legroom.providers.registry import DEFAULT_VERTEX_API_URL
+from legroom.proxy.server import LegroomProxy, ProxyConfig, create_app
 
 
 # --------------------------------------------------------------------------
@@ -125,7 +125,7 @@ def test_vertex_rawpredict_anthropic_runs_compression_handler(monkeypatch) -> No
         captured.update(base_url=str(base_url), provider=str(provider), model=str(model))
         return JSONResponse({"ok": True})
 
-    monkeypatch.setattr(HeadroomProxy, "handle_anthropic_messages", fake)
+    monkeypatch.setattr(LegroomProxy, "handle_anthropic_messages", fake)
 
     with TestClient(_default_vertex_app()) as client:
         resp = client.post(
@@ -153,7 +153,7 @@ def test_vertex_google_generate_content_uses_region_derived_host(monkeypatch) ->
         captured.update(base_url=str(base_url), provider=str(provider), model=str(model))
         return JSONResponse({"ok": True})
 
-    monkeypatch.setattr(HeadroomProxy, "handle_gemini_generate_content", fake)
+    monkeypatch.setattr(LegroomProxy, "handle_gemini_generate_content", fake)
 
     with TestClient(_default_vertex_app()) as client:
         resp = client.post(
@@ -175,7 +175,7 @@ def test_vertex_google_count_tokens_uses_region_derived_host(monkeypatch) -> Non
         captured.update(base_url=str(base_url), provider=str(provider))
         return JSONResponse({"ok": True})
 
-    monkeypatch.setattr(HeadroomProxy, "handle_gemini_count_tokens", fake)
+    monkeypatch.setattr(LegroomProxy, "handle_gemini_count_tokens", fake)
 
     with TestClient(_default_vertex_app()) as client:
         resp = client.post(
@@ -209,7 +209,7 @@ def test_vertex_rawpredict_versionless_anthropic_rewrites_to_v1(monkeypatch) -> 
         )
         return JSONResponse({"ok": True})
 
-    monkeypatch.setattr(HeadroomProxy, "handle_anthropic_messages", fake)
+    monkeypatch.setattr(LegroomProxy, "handle_anthropic_messages", fake)
 
     with TestClient(_default_vertex_app()) as client:
         resp = client.post(
@@ -255,7 +255,7 @@ def test_vertex_stream_rawpredict_versionless_anthropic_forces_stream(monkeypatc
         )
         return JSONResponse({"ok": True})
 
-    monkeypatch.setattr(HeadroomProxy, "handle_anthropic_messages", fake)
+    monkeypatch.setattr(LegroomProxy, "handle_anthropic_messages", fake)
 
     with TestClient(_default_vertex_app()) as client:
         resp = client.post(

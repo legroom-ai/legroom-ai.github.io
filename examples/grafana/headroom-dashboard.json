@@ -1,5 +1,5 @@
 {
-  "__note": "Headroom compression dashboard. Built on the headroom_* Prometheus metrics exposed at GET /metrics (verified against the running proxy): counters for requests/tokens and the headroom_overhead_ms_* millisecond summary. No histograms are used because the proxy emits none. The pool/source template variables use regex matchers (=~) so they are optional: they match series with no such label as well, and let multi-tenant scrapers that add a per-source label filter by it. Import: Grafana -> Dashboards -> New -> Import -> Upload this file, then pick your Prometheus datasource.",
+  "__note": "Legroom compression dashboard. Built on the legroom_* Prometheus metrics exposed at GET /metrics (verified against the running proxy): counters for requests/tokens and the legroom_overhead_ms_* millisecond summary. No histograms are used because the proxy emits none. The pool/source template variables use regex matchers (=~) so they are optional: they match series with no such label as well, and let multi-tenant scrapers that add a per-source label filter by it. Import: Grafana -> Dashboards -> New -> Import -> Upload this file, then pick your Prometheus datasource.",
   "annotations": {
     "list": [
       {
@@ -13,7 +13,7 @@
       }
     ]
   },
-  "description": "Tokens saved, request throughput, and processing overhead for the Headroom compression proxy, read from the headroom_* Prometheus metrics.",
+  "description": "Tokens saved, request throughput, and processing overhead for the Legroom compression proxy, read from the legroom_* Prometheus metrics.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -22,7 +22,7 @@
   "liveNow": false,
   "refresh": "30s",
   "schemaVersion": 39,
-  "tags": ["headroom", "compression", "llm"],
+  "tags": ["legroom", "compression", "llm"],
   "templating": {
     "list": [
       {
@@ -42,14 +42,14 @@
         "allValue": ".*",
         "current": { "text": "All", "value": "$__all" },
         "datasource": { "type": "prometheus", "uid": "${datasource}" },
-        "definition": "label_values(headroom_requests_total, pool)",
+        "definition": "label_values(legroom_requests_total, pool)",
         "hide": 0,
         "includeAll": true,
         "label": "Pool",
         "multi": true,
         "name": "pool",
         "options": [],
-        "query": { "query": "label_values(headroom_requests_total, pool)", "refId": "PoolQuery" },
+        "query": { "query": "label_values(legroom_requests_total, pool)", "refId": "PoolQuery" },
         "refresh": 2,
         "regex": "",
         "sort": 1,
@@ -59,15 +59,15 @@
         "allValue": ".*",
         "current": { "text": "All", "value": "$__all" },
         "datasource": { "type": "prometheus", "uid": "${datasource}" },
-        "definition": "label_values(headroom_requests_total, hook)",
-        "description": "Optional. Present when a multi-tenant scraper re-exposes headroom_* with a per-source 'hook' label; empty against Headroom's own /metrics.",
+        "definition": "label_values(legroom_requests_total, hook)",
+        "description": "Optional. Present when a multi-tenant scraper re-exposes legroom_* with a per-source 'hook' label; empty against Legroom's own /metrics.",
         "hide": 0,
         "includeAll": true,
         "label": "Source",
         "multi": true,
         "name": "hook",
         "options": [],
-        "query": { "query": "label_values(headroom_requests_total, hook)", "refId": "HookQuery" },
+        "query": { "query": "label_values(legroom_requests_total, hook)", "refId": "HookQuery" },
         "refresh": 2,
         "regex": "",
         "sort": 1,
@@ -78,8 +78,8 @@
   "time": { "from": "now-6h", "to": "now" },
   "timepicker": {},
   "timezone": "",
-  "title": "Headroom — Compression",
-  "uid": "headroom-compression",
+  "title": "Legroom — Compression",
+  "uid": "legroom-compression",
   "version": 1,
   "weekStart": "",
   "panels": [
@@ -109,7 +109,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(headroom_tokens_saved_total{pool=~\"$pool\", hook=~\"$hook\"})",
+          "expr": "sum(legroom_tokens_saved_total{pool=~\"$pool\", hook=~\"$hook\"})",
           "legendFormat": "Tokens saved",
           "refId": "A"
         }
@@ -143,7 +143,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(headroom_tokens_input_total{pool=~\"$pool\", hook=~\"$hook\"})",
+          "expr": "sum(legroom_tokens_input_total{pool=~\"$pool\", hook=~\"$hook\"})",
           "legendFormat": "Input tokens",
           "refId": "A"
         }
@@ -177,7 +177,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(headroom_requests_total{pool=~\"$pool\", hook=~\"$hook\"}[$__rate_interval]))",
+          "expr": "sum(rate(legroom_requests_total{pool=~\"$pool\", hook=~\"$hook\"}[$__rate_interval]))",
           "legendFormat": "req/s",
           "refId": "A"
         }
@@ -187,7 +187,7 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "description": "Mean Headroom processing overhead — overhead_ms_sum / overhead_ms_count over the window.",
+      "description": "Mean Legroom processing overhead — overhead_ms_sum / overhead_ms_count over the window.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -218,7 +218,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(headroom_overhead_ms_sum{pool=~\"$pool\", hook=~\"$hook\"}[$__rate_interval])) / clamp_min(sum(rate(headroom_overhead_ms_count{pool=~\"$pool\", hook=~\"$hook\"}[$__rate_interval])), 1)",
+          "expr": "sum(rate(legroom_overhead_ms_sum{pool=~\"$pool\", hook=~\"$hook\"}[$__rate_interval])) / clamp_min(sum(rate(legroom_overhead_ms_count{pool=~\"$pool\", hook=~\"$hook\"}[$__rate_interval])), 1)",
           "legendFormat": "mean overhead",
           "refId": "A"
         }
@@ -260,7 +260,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(headroom_tokens_saved_total{pool=~\"$pool\", hook=~\"$hook\"}[$__rate_interval])) by (pool)",
+          "expr": "sum(rate(legroom_tokens_saved_total{pool=~\"$pool\", hook=~\"$hook\"}[$__rate_interval])) by (pool)",
           "legendFormat": "{{pool}}",
           "refId": "A"
         }
@@ -270,7 +270,7 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "description": "Headroom processing overhead in milliseconds: mean (overhead_ms_sum/overhead_ms_count) with the reported min and max.",
+      "description": "Legroom processing overhead in milliseconds: mean (overhead_ms_sum/overhead_ms_count) with the reported min and max.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -302,19 +302,19 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(headroom_overhead_ms_sum{pool=~\"$pool\", hook=~\"$hook\"}[$__rate_interval])) / clamp_min(sum(rate(headroom_overhead_ms_count{pool=~\"$pool\", hook=~\"$hook\"}[$__rate_interval])), 1)",
+          "expr": "sum(rate(legroom_overhead_ms_sum{pool=~\"$pool\", hook=~\"$hook\"}[$__rate_interval])) / clamp_min(sum(rate(legroom_overhead_ms_count{pool=~\"$pool\", hook=~\"$hook\"}[$__rate_interval])), 1)",
           "legendFormat": "mean",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "max(headroom_overhead_ms_max{pool=~\"$pool\", hook=~\"$hook\"})",
+          "expr": "max(legroom_overhead_ms_max{pool=~\"$pool\", hook=~\"$hook\"})",
           "legendFormat": "max",
           "refId": "B"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "min(headroom_overhead_ms_min{pool=~\"$pool\", hook=~\"$hook\"})",
+          "expr": "min(legroom_overhead_ms_min{pool=~\"$pool\", hook=~\"$hook\"})",
           "legendFormat": "min",
           "refId": "C"
         }
@@ -356,7 +356,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(headroom_requests_total{pool=~\"$pool\", hook=~\"$hook\"}[$__rate_interval])) by (pool)",
+          "expr": "sum(rate(legroom_requests_total{pool=~\"$pool\", hook=~\"$hook\"}[$__rate_interval])) by (pool)",
           "legendFormat": "{{pool}}",
           "refId": "A"
         }

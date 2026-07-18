@@ -31,7 +31,7 @@ from contextlib import AbstractAsyncContextManager, AbstractContextManager
 from types import TracebackType
 from typing import Any
 
-logger = logging.getLogger("headroom.proxy")
+logger = logging.getLogger("legroom.proxy")
 
 __all__ = ["StageTimer", "StageMeasurement", "emit_stage_timings_log"]
 
@@ -155,7 +155,7 @@ async def emit_stage_timings_log(
 
     ``metrics`` (optional) is anything with an
     ``async record_stage_timings(path, timings)`` method — typically
-    ``HeadroomProxy.metrics``. Errors from the metrics sink are logged
+    ``LegroomProxy.metrics``. Errors from the metrics sink are logged
     at DEBUG and do not propagate.
     """
     summary = stage_timer.summary()

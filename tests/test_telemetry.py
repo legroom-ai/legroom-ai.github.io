@@ -5,7 +5,7 @@ import tempfile
 
 import pytest
 
-from headroom.telemetry import (
+from legroom.telemetry import (
     AnonymizedToolStats,
     FieldDistribution,
     RetrievalStats,
@@ -568,45 +568,45 @@ class TestGlobalTelemetryCollector:
         assert stats["total_compressions"] == 0
 
     def test_env_var_disables_telemetry(self, monkeypatch):
-        """HEADROOM_TELEMETRY_DISABLED environment variable disables telemetry."""
+        """LEGROOM_TELEMETRY_DISABLED environment variable disables telemetry."""
         reset_telemetry_collector()
-        monkeypatch.setenv("HEADROOM_TELEMETRY_DISABLED", "1")
+        monkeypatch.setenv("LEGROOM_TELEMETRY_DISABLED", "1")
 
         collector = get_telemetry_collector()
 
         assert collector._config.enabled is False
 
     @pytest.mark.parametrize("off_value", ["off", "false", "0", "no", "disable", "disabled"])
-    def test_headroom_telemetry_off_disables_collector(self, monkeypatch, off_value):
-        """HEADROOM_TELEMETRY=off (and other documented opt-out values) disables
+    def test_legroom_telemetry_off_disables_collector(self, monkeypatch, off_value):
+        """LEGROOM_TELEMETRY=off (and other documented opt-out values) disables
         the collector — closes #390.
 
-        Pre-#390 the collector only honoured HEADROOM_TELEMETRY_DISABLED, which
-        is undocumented. Users following the docs set HEADROOM_TELEMETRY=off and
+        Pre-#390 the collector only honoured LEGROOM_TELEMETRY_DISABLED, which
+        is undocumented. Users following the docs set LEGROOM_TELEMETRY=off and
         watched /v1/telemetry continue to report enabled=true. The collector now
         consults `is_telemetry_enabled()` (the documented opt-in predicate),
         so both env vars take effect.
         """
         reset_telemetry_collector()
-        monkeypatch.delenv("HEADROOM_TELEMETRY_DISABLED", raising=False)
-        monkeypatch.setenv("HEADROOM_TELEMETRY", off_value)
+        monkeypatch.delenv("LEGROOM_TELEMETRY_DISABLED", raising=False)
+        monkeypatch.setenv("LEGROOM_TELEMETRY", off_value)
 
         collector = get_telemetry_collector()
 
         assert collector._config.enabled is False, (
-            f"HEADROOM_TELEMETRY={off_value!r} must disable the collector — "
+            f"LEGROOM_TELEMETRY={off_value!r} must disable the collector — "
             "this is the documented opt-out path. If this assertion fails the "
             "collector is silently ignoring the user's opt-out and /v1/telemetry "
             "will report enabled=true even when telemetry is supposed to be off."
         )
 
-    def test_headroom_telemetry_on_keeps_collector_enabled(self, monkeypatch):
-        """Sanity check: the explicit opt-in path (HEADROOM_TELEMETRY=on) leaves
+    def test_legroom_telemetry_on_keeps_collector_enabled(self, monkeypatch):
+        """Sanity check: the explicit opt-in path (LEGROOM_TELEMETRY=on) leaves
         the collector enabled. Telemetry is off by default, so this requires the
         user to have turned it on."""
         reset_telemetry_collector()
-        monkeypatch.delenv("HEADROOM_TELEMETRY_DISABLED", raising=False)
-        monkeypatch.setenv("HEADROOM_TELEMETRY", "on")
+        monkeypatch.delenv("LEGROOM_TELEMETRY_DISABLED", raising=False)
+        monkeypatch.setenv("LEGROOM_TELEMETRY", "on")
 
         collector = get_telemetry_collector()
 

@@ -4,12 +4,12 @@ import logging
 
 import pytest
 
-from headroom.proxy.helpers import log_tool_injection_decision as helper_log_tool_injection_decision
-from headroom.proxy.tool_injection_logging import log_tool_injection_decision
+from legroom.proxy.helpers import log_tool_injection_decision as helper_log_tool_injection_decision
+from legroom.proxy.tool_injection_logging import log_tool_injection_decision
 
 
 def test_logs_tool_injection_decision_without_contents(caplog: pytest.LogCaptureFixture) -> None:
-    logger = logging.getLogger("headroom.proxy.test_tool_injection_logging")
+    logger = logging.getLogger("legroom.proxy.test_tool_injection_logging")
 
     with caplog.at_level(logging.INFO, logger=logger.name):
         log_tool_injection_decision(
@@ -30,11 +30,11 @@ def test_logs_tool_injection_decision_without_contents(caplog: pytest.LogCapture
     assert "tool_definition_bytes_count=123" in message
     assert "request_id=req-1" in message
     assert "memory_save" not in message
-    assert "headroom_retrieve" not in message
+    assert "legroom_retrieve" not in message
 
 
 def test_helper_wrapper_uses_proxy_logger(caplog: pytest.LogCaptureFixture) -> None:
-    with caplog.at_level(logging.INFO, logger="headroom.proxy"):
+    with caplog.at_level(logging.INFO, logger="legroom.proxy"):
         helper_log_tool_injection_decision(
             provider="openai",
             session_id=None,
@@ -44,5 +44,5 @@ def test_helper_wrapper_uses_proxy_logger(caplog: pytest.LogCaptureFixture) -> N
         )
 
     assert len(caplog.records) == 1
-    assert caplog.records[0].name == "headroom.proxy"
+    assert caplog.records[0].name == "legroom.proxy"
     assert "session_id= decision=skip" in caplog.records[0].getMessage()

@@ -1,60 +1,60 @@
 # CLI Reference
 
-This page is the authoritative reference for the **Python Headroom CLI** exposed by the `headroom` console script.
+This page is the authoritative reference for the **Python Legroom CLI** exposed by the `legroom` console script.
 
 ## Global behavior
 
 ### Entry points
 
-- Console script: `headroom`
-- Python module entrypoint: `python -m headroom.cli`
+- Console script: `legroom`
+- Python module entrypoint: `python -m legroom.cli`
 
 ### Global options
 
 | Option | Scope | Meaning |
 |---|---|---|
 | `--help`, `-?` | root, groups, commands | Show help and exit |
-| `--version`, `-v` | root only | Show the Headroom version and exit |
+| `--version`, `-v` | root only | Show the Legroom version and exit |
 
-> `-v` is a **root-level version alias**. Inside subcommands such as `headroom wrap claude -v`, `-v` keeps its subcommand meaning (`--verbose`), not version.
+> `-v` is a **root-level version alias**. Inside subcommands such as `legroom wrap claude -v`, `-v` keeps its subcommand meaning (`--verbose`), not version.
 
 ## Command index
 
 | Command | Purpose | Docker-native parity |
 |---|---|---|
-| `headroom install ...` | Install and manage persistent deployments | **python-native; Docker-native wrapper supports `persistent-docker` lifecycle subset** |
-| `headroom proxy` | Run the Headroom proxy server | **native in container** |
-| `headroom learn` | Learn from past tool-call failures | **native in container** |
-| `headroom perf` | Summarize recent proxy performance | **native in container** |
-| `headroom inspect` | Show original vs compressed content for recent requests | **native in container** |
-| `headroom evals ...` | Run memory evaluation workflows | **native in container** |
-| `headroom memory ...` | Inspect and manage stored memories | **native in container** |
-| `headroom mcp ...` | Install, inspect, remove, or serve MCP integration | **native in container** |
-| `headroom wrap claude` | Start proxy and launch Claude Code | **host-bridged** |
-| `headroom wrap copilot` | Start proxy and launch GitHub Copilot CLI | **python-native only** |
-| `headroom wrap codex` | Start proxy and launch Codex CLI | **host-bridged** |
-| `headroom wrap aider` | Start proxy and launch Aider | **host-bridged** |
-| `headroom wrap cursor` | Start proxy and print Cursor config guidance | **host-bridged** |
-| `headroom wrap openclaw` | Install and configure the OpenClaw plugin | **host-bridged** |
-| `headroom unwrap openclaw` | Disable the Headroom OpenClaw plugin | **host-bridged** |
+| `legroom install ...` | Install and manage persistent deployments | **python-native; Docker-native wrapper supports `persistent-docker` lifecycle subset** |
+| `legroom proxy` | Run the Legroom proxy server | **native in container** |
+| `legroom learn` | Learn from past tool-call failures | **native in container** |
+| `legroom perf` | Summarize recent proxy performance | **native in container** |
+| `legroom inspect` | Show original vs compressed content for recent requests | **native in container** |
+| `legroom evals ...` | Run memory evaluation workflows | **native in container** |
+| `legroom memory ...` | Inspect and manage stored memories | **native in container** |
+| `legroom mcp ...` | Install, inspect, remove, or serve MCP integration | **native in container** |
+| `legroom wrap claude` | Start proxy and launch Claude Code | **host-bridged** |
+| `legroom wrap copilot` | Start proxy and launch GitHub Copilot CLI | **python-native only** |
+| `legroom wrap codex` | Start proxy and launch Codex CLI | **host-bridged** |
+| `legroom wrap aider` | Start proxy and launch Aider | **host-bridged** |
+| `legroom wrap cursor` | Start proxy and print Cursor config guidance | **host-bridged** |
+| `legroom wrap openclaw` | Install and configure the OpenClaw plugin | **host-bridged** |
+| `legroom unwrap openclaw` | Disable the Legroom OpenClaw plugin | **host-bridged** |
 
 ## Captured `--help` output
 
 The sections below capture the current top-level help output from the live CLI.
 
-### `headroom --help`
+### `legroom --help`
 
 ```text
-Usage: headroom [OPTIONS] COMMAND [ARGS]...
+Usage: legroom [OPTIONS] COMMAND [ARGS]...
 
-  Headroom - The Context Optimization Layer for LLM Applications.
+  Legroom - The Context Optimization Layer for LLM Applications.
 
   Manage memories, run the optimization proxy, and analyze metrics.
 
   Examples:
-      headroom proxy              Start the optimization proxy
-      headroom memory list        List stored memories
-      headroom memory stats       Show memory statistics
+      legroom proxy              Start the optimization proxy
+      legroom memory list        List stored memories
+      legroom memory stats       Show memory statistics
 
 Options:
   -v, --version  Show the version and exit.
@@ -62,30 +62,30 @@ Options:
 
 Commands:
   evals   Memory evaluation commands.
-  install Install and manage persistent Headroom deployments.
+  install Install and manage persistent Legroom deployments.
   learn   Learn from past tool call failures to prevent future ones.
   mcp     MCP server for Claude Code integration.
-  memory  Manage memories stored in Headroom.
+  memory  Manage memories stored in Legroom.
   perf    Analyze proxy performance from logs.
   proxy   Start the optimization proxy server.
-  unwrap  Undo durable Headroom wrapping for supported tools.
-  wrap    Wrap CLI tools to run through Headroom.
+  unwrap  Undo durable Legroom wrapping for supported tools.
+  wrap    Wrap CLI tools to run through Legroom.
 ```
 
 ### Top-level command help snapshots
 
 <details>
-<summary><code>headroom proxy --help</code></summary>
+<summary><code>legroom proxy --help</code></summary>
 
 ```text
-Usage: headroom proxy [OPTIONS]
+Usage: legroom proxy [OPTIONS]
 
   Start the optimization proxy server.
 
   Examples:
-      headroom proxy                    Start proxy on port 8787
-      headroom proxy --port 8080        Start proxy on port 8080
-      headroom proxy --no-optimize      Passthrough mode (no optimization)
+      legroom proxy                    Start proxy on port 8787
+      legroom proxy --port 8080        Start proxy on port 8080
+      legroom proxy --no-optimize      Passthrough mode (no optimization)
 
   Usage with Claude Code:
       ANTHROPIC_BASE_URL=http://localhost:8787 claude
@@ -97,10 +97,10 @@ Usage: headroom proxy [OPTIONS]
 </details>
 
 <details>
-<summary><code>headroom learn --help</code></summary>
+<summary><code>legroom learn --help</code></summary>
 
 ```text
-Usage: headroom learn [OPTIONS]
+Usage: legroom learn [OPTIONS]
 
   Learn from past tool call failures to prevent future ones.
 ```
@@ -108,10 +108,10 @@ Usage: headroom learn [OPTIONS]
 </details>
 
 <details>
-<summary><code>headroom perf --help</code></summary>
+<summary><code>legroom perf --help</code></summary>
 
 ```text
-Usage: headroom perf [OPTIONS]
+Usage: legroom perf [OPTIONS]
 
   Analyze proxy performance from logs.
 ```
@@ -119,10 +119,10 @@ Usage: headroom perf [OPTIONS]
 </details>
 
 <details>
-<summary><code>headroom evals --help</code></summary>
+<summary><code>legroom evals --help</code></summary>
 
 ```text
-Usage: headroom evals [OPTIONS] COMMAND [ARGS]...
+Usage: legroom evals [OPTIONS] COMMAND [ARGS]...
 
   Memory evaluation commands.
 
@@ -134,12 +134,12 @@ Commands:
 </details>
 
 <details>
-<summary><code>headroom memory --help</code></summary>
+<summary><code>legroom memory --help</code></summary>
 
 ```text
-Usage: headroom memory [OPTIONS] COMMAND [ARGS]...
+Usage: legroom memory [OPTIONS] COMMAND [ARGS]...
 
-  Manage memories stored in Headroom.
+  Manage memories stored in Legroom.
 
 Commands:
   delete  Delete one or more memories by ID.
@@ -156,35 +156,35 @@ Commands:
 </details>
 
 <details>
-<summary><code>headroom mcp --help</code></summary>
+<summary><code>legroom mcp --help</code></summary>
 
 ```text
-Usage: headroom mcp [OPTIONS] COMMAND [ARGS]...
+Usage: legroom mcp [OPTIONS] COMMAND [ARGS]...
 
   MCP server for Claude Code integration.
 
 Commands:
-  install    Install Headroom MCP server into Claude Code config.
+  install    Install Legroom MCP server into Claude Code config.
   serve      Start the MCP server (called by Claude Code).
-  status     Check Headroom MCP configuration status.
-  uninstall  Remove Headroom MCP server from Claude Code config.
+  status     Check Legroom MCP configuration status.
+  uninstall  Remove Legroom MCP server from Claude Code config.
 ```
 
 </details>
 
 <details>
-<summary><code>headroom install --help</code></summary>
+<summary><code>legroom install --help</code></summary>
 
 ```text
-Usage: headroom install [OPTIONS] COMMAND [ARGS]...
+Usage: legroom install [OPTIONS] COMMAND [ARGS]...
 
-  Install and manage persistent Headroom deployments.
+  Install and manage persistent Legroom deployments.
 
 Options:
   -?, --help  Show this message and exit.
 
 Commands:
-  apply    Install a persistent Headroom deployment.
+  apply    Install a persistent Legroom deployment.
   remove   Remove a persistent deployment and undo managed config.
   restart  Restart a persistent deployment.
   start    Start a persistent deployment.
@@ -195,53 +195,53 @@ Commands:
 </details>
 
 <details>
-<summary><code>headroom wrap --help</code></summary>
+<summary><code>legroom wrap --help</code></summary>
 
 ```text
-Usage: headroom wrap [OPTIONS] COMMAND [ARGS]...
+Usage: legroom wrap [OPTIONS] COMMAND [ARGS]...
 
-  Wrap CLI tools to run through Headroom.
+  Wrap CLI tools to run through Legroom.
 
 Commands:
-  aider     Launch aider through Headroom proxy.
-  claude    Launch Claude Code through Headroom proxy.
-  copilot   Launch GitHub Copilot CLI through Headroom proxy.
-  codex     Launch OpenAI Codex CLI through Headroom proxy.
-  cursor    Start Headroom proxy for use with Cursor.
-  openclaw  Install and configure Headroom OpenClaw plugin in one command.
+  aider     Launch aider through Legroom proxy.
+  claude    Launch Claude Code through Legroom proxy.
+  copilot   Launch GitHub Copilot CLI through Legroom proxy.
+  codex     Launch OpenAI Codex CLI through Legroom proxy.
+  cursor    Start Legroom proxy for use with Cursor.
+  openclaw  Install and configure Legroom OpenClaw plugin in one command.
 ```
 
 </details>
 
 <details>
-<summary><code>headroom unwrap --help</code></summary>
+<summary><code>legroom unwrap --help</code></summary>
 
 ```text
-Usage: headroom unwrap [OPTIONS] COMMAND [ARGS]...
+Usage: legroom unwrap [OPTIONS] COMMAND [ARGS]...
 
-  Undo durable Headroom wrapping for supported tools.
+  Undo durable Legroom wrapping for supported tools.
 
 Commands:
-  openclaw  Disable the Headroom OpenClaw plugin and restore the legacy engine slot.
+  openclaw  Disable the Legroom OpenClaw plugin and restore the legacy engine slot.
 ```
 
 </details>
 
-## `headroom proxy`
+## `legroom proxy`
 
 Start the optimization proxy server.
 
 ```bash
-headroom proxy
-headroom proxy --port 8787
-headroom proxy --mode cache
+legroom proxy
+legroom proxy --port 8787
+legroom proxy --mode cache
 ```
 
 | Option | Default | Meaning |
 |---|---|---|
 | `--host` | `127.0.0.1` | Host interface to bind |
 | `--port`, `-p` | `8787` | Port to bind |
-| `--mode` | runtime default | Optimization mode: `token`, `cache`, `token_mode`, `cache_mode`, `token_savings`, `cost_savings`, `token_headroom` |
+| `--mode` | runtime default | Optimization mode: `token`, `cache`, `token_mode`, `cache_mode`, `token_savings`, `cost_savings`, `token_legroom` |
 | `--no-optimize` | off | Disable optimization and operate in passthrough mode |
 | `--no-cache` | off | Disable semantic caching |
 | `--no-rate-limit` | off | Disable rate limiting |
@@ -254,12 +254,12 @@ headroom proxy --mode cache
 | `--log-file` | unset | JSONL log output path |
 | `--budget` | unset | Daily USD budget limit |
 | `--no-code-aware` | off | Disable AST-aware code compression |
-| `--code-aware` | off | Enable code-aware compression in the proxy (env: HEADROOM_CODE_AWARE_ENABLED) |
+| `--code-aware` | off | Enable code-aware compression in the proxy (env: LEGROOM_CODE_AWARE_ENABLED) |
 | `--no-read-lifecycle` | off | Disable stale/superseded read compression |
-| `--no-ccr` | off | Disable CCR entirely — no retrieval markers in content and no injected `headroom_retrieve` tool (lossy, no recovery path) |
+| `--no-ccr` | off | Disable CCR entirely — no retrieval markers in content and no injected `legroom_retrieve` tool (lossy, no recovery path) |
 | `--no-ccr-proactive-expansion` | off | Disable proactive CCR context expansion |
 | `--memory` | off | Enable persistent user memory |
-| `--memory-db-path` | `""` | Override memory DB path (help text: `{cwd}/.headroom/memory.db`) |
+| `--memory-db-path` | `""` | Override memory DB path (help text: `{cwd}/.legroom/memory.db`) |
 | `--no-memory-tools` | off | Disable automatic memory tool injection |
 | `--no-memory-context` | off | Disable automatic memory context injection |
 | `--memory-top-k` | `10` | Number of memories to inject |
@@ -281,19 +281,19 @@ headroom proxy --mode cache
 Notes:
 
 - `--learn` implies memory unless `--no-learn` is also set.
-- Proxy startup can also read environment variables such as `HEADROOM_HOST`, `HEADROOM_PORT`, `HEADROOM_BUDGET`, `HEADROOM_MODE`, `HEADROOM_ANYLLM_PROVIDER`, `HEADROOM_ANTHROPIC_PRE_UPSTREAM_CONCURRENCY`, `HEADROOM_ANTHROPIC_PRE_UPSTREAM_ACQUIRE_TIMEOUT_SECONDS`, `HEADROOM_REQUEST_TIMEOUT`, `HEADROOM_ANTHROPIC_PRE_UPSTREAM_MEMORY_CONTEXT_TIMEOUT_SECONDS`, `ANTHROPIC_TARGET_API_URL`, `OPENAI_TARGET_API_URL`, `GEMINI_TARGET_API_URL`, `ANTHROPIC_TARGET_API_HEADERS`, and `OPENAI_TARGET_API_HEADERS`. CLI flags take precedence over environment variables.
+- Proxy startup can also read environment variables such as `LEGROOM_HOST`, `LEGROOM_PORT`, `LEGROOM_BUDGET`, `LEGROOM_MODE`, `LEGROOM_ANYLLM_PROVIDER`, `LEGROOM_ANTHROPIC_PRE_UPSTREAM_CONCURRENCY`, `LEGROOM_ANTHROPIC_PRE_UPSTREAM_ACQUIRE_TIMEOUT_SECONDS`, `LEGROOM_REQUEST_TIMEOUT`, `LEGROOM_ANTHROPIC_PRE_UPSTREAM_MEMORY_CONTEXT_TIMEOUT_SECONDS`, `ANTHROPIC_TARGET_API_URL`, `OPENAI_TARGET_API_URL`, `GEMINI_TARGET_API_URL`, `ANTHROPIC_TARGET_API_HEADERS`, and `OPENAI_TARGET_API_HEADERS`. CLI flags take precedence over environment variables.
 - The default Anthropic pre-upstream cap is intentionally conservative for CPU/ONNX-heavy work. Larger containers may want to raise it after checking the resolved runtime values on `/readyz` or `/debug/warmup`.
 
 See also: [Proxy Server](proxy.md), [Configuration](configuration.md)
 
-## `headroom learn`
+## `legroom learn`
 
 Learn from past tool-call failures and produce agent guidance.
 
 ```bash
-headroom learn
-headroom learn --apply
-headroom learn --agent codex --all
+legroom learn
+legroom learn --apply
+legroom learn --agent codex --all
 ```
 
 | Option | Default | Meaning |
@@ -307,19 +307,19 @@ headroom learn --agent codex --all
 Notes:
 
 - `--agent auto` scans all detected agent data sources.
-- If `--project` is omitted, Headroom resolves from the current directory upward.
-- External agent integrations register through the `headroom.learn_plugin` entry point.
+- If `--project` is omitted, Legroom resolves from the current directory upward.
+- External agent integrations register through the `legroom.learn_plugin` entry point.
 
 See also: [Failure Learning](learn.md)
 
-## `headroom perf`
+## `legroom perf`
 
 Summarize recent proxy performance from the local proxy log.
 
 ```bash
-headroom perf
-headroom perf --hours 24
-headroom perf --raw
+legroom perf
+legroom perf --hours 24
+legroom perf --raw
 ```
 
 | Option | Default | Meaning |
@@ -327,26 +327,26 @@ headroom perf --raw
 | `--hours` | `168.0` | Time window in hours |
 | `--raw` | off | Print raw PERF records instead of the summarized report |
 
-The command reads `${HEADROOM_WORKSPACE_DIR}/logs/proxy.log` (defaults
-to `~/.headroom/logs/proxy.log` — see the
+The command reads `${LEGROOM_WORKSPACE_DIR}/logs/proxy.log` (defaults
+to `~/.legroom/logs/proxy.log` — see the
 [Filesystem Contract](filesystem-contract.md)).
 
-## `headroom inspect`
+## `legroom inspect`
 
 Show the original vs compressed content for recent requests so you can *see*
 what the compressor changed (not just the token counts). Useful for building
 trust in compression and debugging quality regressions.
 
 ```bash
-headroom inspect                 # inspect the most recent request
-headroom inspect --last 5        # inspect the 5 most recent requests
-headroom inspect --full          # include unchanged messages
-headroom inspect --format json   # raw feed for piping into another tool
+legroom inspect                 # inspect the most recent request
+legroom inspect --last 5        # inspect the 5 most recent requests
+legroom inspect --full          # include unchanged messages
+legroom inspect --format json   # raw feed for piping into another tool
 ```
 
 | Option | Default | Meaning |
 |---|---|---|
-| `--port` / `-p` | `8787` | Proxy port to query (env: `HEADROOM_PORT`) |
+| `--port` / `-p` | `8787` | Proxy port to query (env: `LEGROOM_PORT`) |
 | `--last` | `1` | Number of most-recent requests to show |
 | `--format` | `text` | `text` renders a highlighted diff; `json` emits the raw feed |
 | `--full` | off | Include messages the compressor left unchanged |
@@ -355,17 +355,17 @@ headroom inspect --format json   # raw feed for piping into another tool
 so the proxy must be started with `--log-messages` (or `--log-file`) for the
 pre/post-compression snapshots to be captured.
 
-## `headroom evals`
+## `legroom evals`
 
 Memory evaluation command group.
 
-### `headroom evals memory`
+### `legroom evals memory`
 
 Run the LoCoMo memory evaluation benchmark.
 
 ```bash
-headroom evals memory -n 3
-headroom evals memory --answer-model gpt-4o --llm-judge
+legroom evals memory -n 3
+legroom evals memory --answer-model gpt-4o --llm-judge
 ```
 
 | Option | Default | Meaning |
@@ -386,13 +386,13 @@ headroom evals memory --answer-model gpt-4o --llm-judge
 | `--parallel` | `10` | Parallel worker count |
 | `--debug` | off | Enable debug output |
 
-### `headroom evals memory-v2`
+### `legroom evals memory-v2`
 
 Run the V2 memory evaluation flow with LLM-controlled tools.
 
 ```bash
-headroom evals memory-v2
-headroom evals memory-v2 --save-model gpt-4o-mini --llm-judge
+legroom evals memory-v2
+legroom evals memory-v2 --save-model gpt-4o-mini --llm-judge
 ```
 
 | Option | Default | Meaning |
@@ -413,94 +413,94 @@ headroom evals memory-v2 --save-model gpt-4o-mini --llm-judge
 
 Hidden compatibility shims exist for older command paths:
 
-- `headroom memory-eval`
-- `headroom memory-eval-v2`
+- `legroom memory-eval`
+- `legroom memory-eval-v2`
 
 These are intentionally omitted from normal usage docs.
 
-## `headroom memory`
+## `legroom memory`
 
 Memory management command group. This group is only registered when the optional memory dependencies import successfully.
 
-### `headroom memory list`
+### `legroom memory list`
 
 ```bash
-headroom memory list
-headroom memory list --scope USER --since 7d
-headroom memory list -q "budget"
+legroom memory list
+legroom memory list --scope USER --since 7d
+legroom memory list -q "budget"
 ```
 
 | Option | Default | Meaning |
 |---|---|---|
-| `--db-path` | `./.headroom/memory.db` if present, else `~/.headroom/memory.db` | Memory database path |
+| `--db-path` | `./.legroom/memory.db` if present, else `~/.legroom/memory.db` | Memory database path |
 | `--limit`, `-n` | `50` | Maximum memories to show |
 | `--session`, `-s` | unset | Filter by session ID |
 | `--scope` | unset | `USER`, `SESSION`, `AGENT`, or `TURN` |
 | `--since` | unset | Age filter using duration syntax such as `7d`, `2w`, `1m` |
 | `--search`, `-q` | unset | Content search query |
 
-### `headroom memory show <memory_id>`
+### `legroom memory show <memory_id>`
 
 ```bash
-headroom memory show 1234abcd
-headroom memory show 1234abcd --json
+legroom memory show 1234abcd
+legroom memory show 1234abcd --json
 ```
 
 | Argument / option | Default | Meaning |
 |---|---|---|
 | `memory_id` | required | Full or partial memory ID |
-| `--db-path` | `./.headroom/memory.db` if present, else `~/.headroom/memory.db` | Memory database path |
+| `--db-path` | `./.legroom/memory.db` if present, else `~/.legroom/memory.db` | Memory database path |
 | `--json` | off | Emit raw JSON |
 
-### `headroom memory stats`
+### `legroom memory stats`
 
 ```bash
-headroom memory stats
+legroom memory stats
 ```
 
 | Option | Default | Meaning |
 |---|---|---|
-| `--db-path` | `./.headroom/memory.db` if present, else `~/.headroom/memory.db` | Memory database path |
+| `--db-path` | `./.legroom/memory.db` if present, else `~/.legroom/memory.db` | Memory database path |
 
-### `headroom memory edit <memory_id>`
+### `legroom memory edit <memory_id>`
 
 ```bash
-headroom memory edit 1234abcd --content "Updated note"
-headroom memory edit 1234abcd --importance 0.9
+legroom memory edit 1234abcd --content "Updated note"
+legroom memory edit 1234abcd --importance 0.9
 ```
 
 | Argument / option | Default | Meaning |
 |---|---|---|
 | `memory_id` | required | Full or partial memory ID |
-| `--db-path` | `./.headroom/memory.db` if present, else `~/.headroom/memory.db` | Memory database path |
+| `--db-path` | `./.legroom/memory.db` if present, else `~/.legroom/memory.db` | Memory database path |
 | `--content`, `-c` | unset | New memory content |
 | `--importance`, `-i` | unset | New importance score (`0.0` to `1.0`) |
 
 At least one of `--content` or `--importance` is required.
 
-### `headroom memory delete <memory_ids...>`
+### `legroom memory delete <memory_ids...>`
 
 ```bash
-headroom memory delete 1234abcd 5678efgh
-headroom memory delete 1234abcd --force
+legroom memory delete 1234abcd 5678efgh
+legroom memory delete 1234abcd --force
 ```
 
 | Argument / option | Default | Meaning |
 |---|---|---|
 | `memory_ids...` | required | One or more memory IDs |
-| `--db-path` | `./.headroom/memory.db` if present, else `~/.headroom/memory.db` | Memory database path |
+| `--db-path` | `./.legroom/memory.db` if present, else `~/.legroom/memory.db` | Memory database path |
 | `--force`, `-f` | off | Skip confirmation |
 
-### `headroom memory prune`
+### `legroom memory prune`
 
 ```bash
-headroom memory prune --older-than 30d --dry-run
-headroom memory prune --scope SESSION --force
+legroom memory prune --older-than 30d --dry-run
+legroom memory prune --scope SESSION --force
 ```
 
 | Option | Default | Meaning |
 |---|---|---|
-| `--db-path` | `./.headroom/memory.db` if present, else `~/.headroom/memory.db` | Memory database path |
+| `--db-path` | `./.legroom/memory.db` if present, else `~/.legroom/memory.db` | Memory database path |
 | `--older-than` | unset | Age threshold |
 | `--scope` | unset | Scope filter: `USER`, `SESSION`, `AGENT`, `TURN` |
 | `--low-importance` | unset | Importance cutoff |
@@ -510,86 +510,86 @@ headroom memory prune --scope SESSION --force
 
 At least one filter is required. Filters combine with **AND** semantics.
 
-### `headroom memory purge`
+### `legroom memory purge`
 
 ```bash
-headroom memory purge --confirm
+legroom memory purge --confirm
 ```
 
 | Option | Default | Meaning |
 |---|---|---|
-| `--db-path` | `./.headroom/memory.db` if present, else `~/.headroom/memory.db` | Memory database path |
+| `--db-path` | `./.legroom/memory.db` if present, else `~/.legroom/memory.db` | Memory database path |
 | `--confirm` | off | Required confirmation flag |
 
-### `headroom memory export`
+### `legroom memory export`
 
 ```bash
-headroom memory export
-headroom memory export --output export.json
+legroom memory export
+legroom memory export --output export.json
 ```
 
 | Option | Default | Meaning |
 |---|---|---|
-| `--db-path` | `./.headroom/memory.db` if present, else `~/.headroom/memory.db` | Memory database path |
+| `--db-path` | `./.legroom/memory.db` if present, else `~/.legroom/memory.db` | Memory database path |
 | `--output`, `-o` | stdout | Output path |
 
-### `headroom memory import <file>`
+### `legroom memory import <file>`
 
 ```bash
-headroom memory import export.json
-headroom memory import export.json --force
+legroom memory import export.json
+legroom memory import export.json --force
 ```
 
 | Argument / option | Default | Meaning |
 |---|---|---|
 | `file` | required | JSON file containing exported memories |
-| `--db-path` | `./.headroom/memory.db` if present, else `~/.headroom/memory.db` | Memory database path |
+| `--db-path` | `./.legroom/memory.db` if present, else `~/.legroom/memory.db` | Memory database path |
 | `--force`, `-f` | off | Skip confirmation |
 
 The import expects a JSON array. Malformed entries are skipped.
 
-## `headroom mcp`
+## `legroom mcp`
 
-Manage the Headroom MCP server integration.
+Manage the Legroom MCP server integration.
 
-### `headroom mcp install`
+### `legroom mcp install`
 
 ```bash
-headroom mcp install
-headroom mcp install --proxy-url http://127.0.0.1:9000
+legroom mcp install
+legroom mcp install --proxy-url http://127.0.0.1:9000
 ```
 
 | Option | Default | Meaning |
 |---|---|---|
 | `--proxy-url` | `http://127.0.0.1:8787` | Proxy URL written into MCP config |
-| `--force` | off | Overwrite an existing Headroom MCP config |
+| `--force` | off | Overwrite an existing Legroom MCP config |
 
-### `headroom mcp uninstall`
+### `legroom mcp uninstall`
 
 ```bash
-headroom mcp uninstall
+legroom mcp uninstall
 ```
 
-This removes the Headroom MCP server entry from the Claude configuration.
+This removes the Legroom MCP server entry from the Claude configuration.
 
-### `headroom mcp status`
+### `legroom mcp status`
 
 ```bash
-headroom mcp status
+legroom mcp status
 ```
 
 This inspects MCP SDK availability, Claude config state, and proxy reachability.
 
-### `headroom mcp serve`
+### `legroom mcp serve`
 
 ```bash
-headroom mcp serve
-headroom mcp serve --proxy-url http://127.0.0.1:9000 --debug
+legroom mcp serve
+legroom mcp serve --proxy-url http://127.0.0.1:9000 --debug
 ```
 
 | Option | Default | Meaning |
 |---|---|---|
-| `--proxy-url` | `http://127.0.0.1:8787` | Proxy URL (also reads `HEADROOM_PROXY_URL`) |
+| `--proxy-url` | `http://127.0.0.1:8787` | Proxy URL (also reads `LEGROOM_PROXY_URL`) |
 | `--direct` | off | Disable stdio transport wrapping |
 | `--debug` | off | Enable debug logging |
 
@@ -597,22 +597,22 @@ headroom mcp serve --proxy-url http://127.0.0.1:9000 --debug
 
 See also: [MCP Tools](mcp.md)
 
-## `headroom install`
+## `legroom install`
 
-Install and manage persistent local Headroom deployments.
+Install and manage persistent local Legroom deployments.
 
-### `headroom install apply --help`
+### `legroom install apply --help`
 
 ```text
-Usage: headroom install apply [OPTIONS]
+Usage: legroom install apply [OPTIONS]
 
-  Install a persistent Headroom deployment.
+  Install a persistent Legroom deployment.
 
 Options:
   --preset [persistent-service|persistent-task|persistent-docker]
                                   Persistent runtime preset to install.
                                   [default: persistent-service]
-  --runtime [python|docker]       Runtime used to execute Headroom for
+  --runtime [python|docker]       Runtime used to execute Legroom for
                                   service/task modes.  [default: python]
   --scope [provider|user|system]  Where to apply persistent configuration.
                                   [default: user]
@@ -637,16 +637,16 @@ Options:
                                   (already the default).
   --image TEXT                    Docker image to use when runtime=docker or
                                   preset=persistent-docker.  [default:
-                                  ghcr.io/ghaliba3/headroom:latest]
+                                  ghcr.io/ghaliba3/legroom:latest]
   -?, --help                      Show this message and exit.
 ```
 
-### `headroom install apply`
+### `legroom install apply`
 
 ```bash
-headroom install apply --preset persistent-service --providers auto
-headroom install apply --preset persistent-task --providers manual --target claude --target codex
-headroom install apply --preset persistent-docker --scope user
+legroom install apply --preset persistent-service --providers auto
+legroom install apply --preset persistent-task --providers manual --target claude --target codex
+legroom install apply --preset persistent-docker --scope user
 ```
 
 | Option | Default | Meaning |
@@ -665,62 +665,62 @@ headroom install apply --preset persistent-docker --scope user
 | `--memory` | off | Enable persistent memory in the managed runtime |
 | `--telemetry` | off | Opt in to anonymous telemetry (off by default) |
 | `--no-telemetry` | off | Force anonymous telemetry off (already the default) |
-| `--image` | `ghcr.io/ghaliba3/headroom:latest` | Docker image for Docker-backed installs |
+| `--image` | `ghcr.io/ghaliba3/legroom:latest` | Docker image for Docker-backed installs |
 
 `apply` stores a manifest under
-`${HEADROOM_WORKSPACE_DIR}/deploy/<profile>/manifest.json` (default
-`~/.headroom/deploy/<profile>/manifest.json`), applies managed tool
+`${LEGROOM_WORKSPACE_DIR}/deploy/<profile>/manifest.json` (default
+`~/.legroom/deploy/<profile>/manifest.json`), applies managed tool
 configuration, starts the chosen runtime, and waits for `readyz`.
 
-Docker-native host wrappers expose a narrower `headroom install` subset for `persistent-docker` only: `apply`, `status`, `start`, `stop`, `restart`, and `remove`. Those wrapper flows preserve the same port and manifest behavior, but they intentionally reject `persistent-service`, `persistent-task`, and provider mutation flags like `--scope`, `--providers`, and `--target`.
+Docker-native host wrappers expose a narrower `legroom install` subset for `persistent-docker` only: `apply`, `status`, `start`, `stop`, `restart`, and `remove`. Those wrapper flows preserve the same port and manifest behavior, but they intentionally reject `persistent-service`, `persistent-task`, and provider mutation flags like `--scope`, `--providers`, and `--target`.
 
-### `headroom install status`
+### `legroom install status`
 
 ```bash
-headroom install status
-headroom install status --profile default
+legroom install status
+legroom install status --profile default
 ```
 
 Shows the stored profile, preset, runtime, supervisor kind, scope, port, runtime status, readiness, and backend from `/health`.
 
-### `headroom install start`
+### `legroom install start`
 
 ```bash
-headroom install start
-headroom install start --profile default
+legroom install start
+legroom install start --profile default
 ```
 
 Starts a previously installed deployment profile without reapplying mutations.
 
-### `headroom install stop`
+### `legroom install stop`
 
 ```bash
-headroom install stop
+legroom install stop
 ```
 
 Stops the managed runtime for an installed deployment profile.
 
-### `headroom install restart`
+### `legroom install restart`
 
 ```bash
-headroom install restart
+legroom install restart
 ```
 
 Stops and starts the selected deployment profile.
 
-### `headroom install remove`
+### `legroom install remove`
 
 ```bash
-headroom install remove
+legroom install remove
 ```
 
 Stops the runtime, removes installed supervisor artifacts, reverts managed configuration changes, and deletes the stored manifest.
 
 See also: [Persistent Installs](persistent-installs.md)
 
-## `headroom wrap`
+## `legroom wrap`
 
-Wrap external coding tools so their traffic flows through Headroom.
+Wrap external coding tools so their traffic flows through Legroom.
 
 ### Shared semantics
 
@@ -730,12 +730,12 @@ Wrap external coding tools so their traffic flows through Headroom.
 - `-v`, `--verbose` means **verbose output**
 - Hidden `--prepare-only` exists for internal Docker-native bridge flows and is intentionally omitted from normal usage
 
-### `headroom wrap claude`
+### `legroom wrap claude`
 
 ```bash
-headroom wrap claude
-headroom wrap claude --resume <session-id>
-headroom wrap claude --port 9999
+legroom wrap claude
+legroom wrap claude --resume <session-id>
+legroom wrap claude --port 9999
 ```
 
 | Option / arg | Default | Meaning |
@@ -749,12 +749,12 @@ headroom wrap claude --port 9999
 
 Requires the `claude` binary on the host.
 
-### `headroom wrap codex`
+### `legroom wrap codex`
 
 ```bash
-headroom wrap codex
-headroom wrap codex -- "fix the bug"
-headroom wrap codex --backend anyllm --anyllm-provider groq
+legroom wrap codex
+legroom wrap codex -- "fix the bug"
+legroom wrap codex --backend anyllm --anyllm-provider groq
 ```
 
 | Option / arg | Default | Meaning |
@@ -771,11 +771,11 @@ headroom wrap codex --backend anyllm --anyllm-provider groq
 
 Requires the `codex` binary on the host.
 
-### `headroom wrap copilot`
+### `legroom wrap copilot`
 
 ```bash
-headroom wrap copilot -- --model claude-sonnet-4-20250514
-headroom wrap copilot --backend anyllm --anyllm-provider groq -- --model gpt-4o
+legroom wrap copilot -- --model claude-sonnet-4-20250514
+legroom wrap copilot --backend anyllm --anyllm-provider groq -- --model gpt-4o
 ```
 
 | Option / arg | Default | Meaning |
@@ -794,12 +794,12 @@ headroom wrap copilot --backend anyllm --anyllm-provider groq -- --model gpt-4o
 
 Requires the `copilot` binary on the host. When a matching persistent deployment exists on the requested port, `wrap copilot` reuses or recovers it before falling back to an ephemeral proxy.
 
-### `headroom wrap aider`
+### `legroom wrap aider`
 
 ```bash
-headroom wrap aider
-headroom wrap aider -- --model gpt-4o
-headroom wrap aider --backend litellm-vertex --region us-central1
+legroom wrap aider
+legroom wrap aider -- --model gpt-4o
+legroom wrap aider --backend litellm-vertex --region us-central1
 ```
 
 | Option / arg | Default | Meaning |
@@ -816,12 +816,12 @@ headroom wrap aider --backend litellm-vertex --region us-central1
 
 Requires the `aider` binary on the host.
 
-### `headroom wrap cursor`
+### `legroom wrap cursor`
 
 ```bash
-headroom wrap cursor
-headroom wrap cursor --port 9999
-headroom wrap cursor --no-rtk
+legroom wrap cursor
+legroom wrap cursor --port 9999
+legroom wrap cursor --no-rtk
 ```
 
 | Option | Default | Meaning |
@@ -834,38 +834,38 @@ headroom wrap cursor --no-rtk
 
 This command prints Cursor configuration instructions and waits while the proxy stays up. It does **not** launch Cursor directly.
 
-### `headroom wrap openclaw`
+### `legroom wrap openclaw`
 
 ```bash
-headroom wrap openclaw
-headroom wrap openclaw --plugin-path ./plugins/openclaw
+legroom wrap openclaw
+legroom wrap openclaw --plugin-path ./plugins/openclaw
 ```
 
 | Option | Default | Meaning |
 |---|---|---|
 | `--plugin-path` | unset | Local plugin source directory |
-| `--plugin-spec` | `headroom-ai/openclaw` | NPM plugin spec |
+| `--plugin-spec` | `legroom-ai/openclaw` | NPM plugin spec |
 | `--skip-build` | off | Skip local `npm install` / build steps |
 | `--copy` | off | Copy plugin instead of linked install |
-| `--proxy-port` | `8787` | Headroom proxy port |
+| `--proxy-port` | `8787` | Legroom proxy port |
 | `--startup-timeout-ms` | `20000` | Proxy startup timeout |
-| `--gateway-provider-id` | repeatable | OpenClaw provider IDs routed through Headroom |
+| `--gateway-provider-id` | repeatable | OpenClaw provider IDs routed through Legroom |
 | `--python-path` | unset | Python launcher override |
 | `--no-auto-start` | off | Disable plugin auto-start behavior |
 | `--no-restart` | off | Do not restart the OpenClaw gateway |
 | `--verbose`, `-v` | off | Verbose output |
 
-Requires the `openclaw` binary on the host, and local-source mode may also require `npm`. In Docker-native mode, the installed host wrapper drives the host `openclaw` CLI while the plugin auto-starts the host `headroom` wrapper from `PATH`.
+Requires the `openclaw` binary on the host, and local-source mode may also require `npm`. In Docker-native mode, the installed host wrapper drives the host `openclaw` CLI while the plugin auto-starts the host `legroom` wrapper from `PATH`.
 
-## `headroom unwrap`
+## `legroom unwrap`
 
 Undo durable wrapping for supported tools.
 
-### `headroom unwrap openclaw`
+### `legroom unwrap openclaw`
 
 ```bash
-headroom unwrap openclaw
-headroom unwrap openclaw --no-restart
+legroom unwrap openclaw
+legroom unwrap openclaw --no-restart
 ```
 
 | Option | Default | Meaning |
@@ -873,7 +873,7 @@ headroom unwrap openclaw --no-restart
 | `--no-restart` | off | Do not restart the OpenClaw gateway |
 | `--verbose`, `-v` | off | Verbose output |
 
-This disables the Headroom OpenClaw plugin and restores the legacy context engine slot.
+This disables the Legroom OpenClaw plugin and restores the legacy context engine slot.
 
 ## Docker-native parity matrix
 
@@ -881,29 +881,29 @@ This matrix compares the **Python CLI contract** to the Docker-native host wrapp
 
 Legend:
 
-- **native in container** — the command runs entirely inside the Headroom container
-- **host-bridged** — Headroom runs in Docker, but the wrapped external tool still runs on the host
+- **native in container** — the command runs entirely inside the Legroom container
+- **host-bridged** — Legroom runs in Docker, but the wrapped external tool still runs on the host
 
 | Command path | Python CLI | Docker-native wrapper | Parity |
 |---|---|---|---|
-| `headroom proxy` | native | native in container | full |
-| `headroom learn` | native | native in container | full |
-| `headroom perf` | native | native in container | full |
-| `headroom evals memory` | native | native in container | full |
-| `headroom evals memory-v2` | native | native in container | full |
-| `headroom memory ...` | native (when memory deps are available) | native in container | full |
-| `headroom mcp install` | native | native in container | full |
-| `headroom mcp uninstall` | native | native in container | full |
-| `headroom mcp status` | native | native in container | full |
-| `headroom mcp serve` | native | native in container | full |
-| `headroom install apply|status|start|stop|restart|remove` | native | Docker-native wrapper for `persistent-docker`; compose remains an alternative | partial |
-| `headroom wrap claude` | native | host-bridged | partial |
-| `headroom wrap copilot` | native | not implemented in Docker-native wrapper | none |
-| `headroom wrap codex` | native | host-bridged | partial |
-| `headroom wrap aider` | native | host-bridged | partial |
-| `headroom wrap cursor` | native | host-bridged | partial |
-| `headroom wrap openclaw` | native | host-bridged | partial |
-| `headroom unwrap openclaw` | native | host-bridged | partial |
+| `legroom proxy` | native | native in container | full |
+| `legroom learn` | native | native in container | full |
+| `legroom perf` | native | native in container | full |
+| `legroom evals memory` | native | native in container | full |
+| `legroom evals memory-v2` | native | native in container | full |
+| `legroom memory ...` | native (when memory deps are available) | native in container | full |
+| `legroom mcp install` | native | native in container | full |
+| `legroom mcp uninstall` | native | native in container | full |
+| `legroom mcp status` | native | native in container | full |
+| `legroom mcp serve` | native | native in container | full |
+| `legroom install apply|status|start|stop|restart|remove` | native | Docker-native wrapper for `persistent-docker`; compose remains an alternative | partial |
+| `legroom wrap claude` | native | host-bridged | partial |
+| `legroom wrap copilot` | native | not implemented in Docker-native wrapper | none |
+| `legroom wrap codex` | native | host-bridged | partial |
+| `legroom wrap aider` | native | host-bridged | partial |
+| `legroom wrap cursor` | native | host-bridged | partial |
+| `legroom wrap openclaw` | native | host-bridged | partial |
+| `legroom unwrap openclaw` | native | host-bridged | partial |
 
 For the Docker-native execution model itself, see [Docker-Native Install](docker-install.md). For persistent service/task/docker lifecycle management, see [Persistent Installs](persistent-installs.md).
 
@@ -911,8 +911,8 @@ For the Docker-native execution model itself, see [Docker-Native Install](docker
 
 These exist in code but are intentionally excluded from normal user docs:
 
-- `headroom memory-eval`
-- `headroom memory-eval-v2`
+- `legroom memory-eval`
+- `legroom memory-eval-v2`
 - hidden internal `--prepare-only` flags on `wrap` subcommands
 
-If you are documenting operational behavior or debugging internal wrapper flows, refer to the implementation in `headroom/cli/wrap.py`.
+If you are documenting operational behavior or debugging internal wrapper flows, refer to the implementation in `legroom/cli/wrap.py`.

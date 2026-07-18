@@ -4,7 +4,7 @@ Tracks provider prefix cache state between turns so the transform pipeline
 can freeze already-cached messages and only compress new content.
 
 Problem: Clients like Claude Code already manage prefix caching (up to 4
-cache_control breakpoints, growing-prefix strategy). If Headroom compresses
+cache_control breakpoints, growing-prefix strategy). If Legroom compresses
 or modifies messages in the cached prefix, it invalidates the cache —
 replacing a 90% read discount (Anthropic) or 50% (OpenAI) with a 25%
 write penalty.
@@ -47,7 +47,7 @@ _PROVIDER_WRITE_PENALTY = {
 # `classify_cache_miss` to decide whether a miss is most likely a TTL
 # lapse (idle longer than this) versus a prefix-content change. Anthropic's
 # default ephemeral cache is 5 minutes (matches
-# headroom.cache.anthropic.ANTHROPIC_CACHE_TTL_SECONDS); the others are best-
+# legroom.cache.anthropic.ANTHROPIC_CACHE_TTL_SECONDS); the others are best-
 # effort defaults and only matter once those providers are wired in. A
 # session that opts into Anthropic's 1h cache breakpoint can override this
 # via the tracker config (see PrefixFreezeConfig.cache_ttl_seconds).
@@ -795,7 +795,7 @@ def _lineage_snapshot(obj: Any) -> Any:
 class SessionTrackerStore:
     """Manages PrefixCacheTracker instances across sessions.
 
-    Keyed by session ID (from x-headroom-session-id header or computed hash).
+    Keyed by session ID (from x-legroom-session-id header or computed hash).
     Within one session id, ``resolve_tracker`` keys trackers by conversation
     lineage so concurrent conversations sharing a fallback id do not thrash
     one tracker's frozen-prefix state (#2085).
@@ -813,7 +813,7 @@ class SessionTrackerStore:
         # sessions behave exactly as before); later lineages get unique
         # "<session_id>\x00<n>" keys — NUL cannot appear in an HTTP header
         # value, so a synthetic key can never collide with a client-supplied
-        # x-headroom-session-id.
+        # x-legroom-session-id.
         self._lineages: dict[str, OrderedDict[str, list[Any]]] = {}
         self._lineage_counter = itertools.count(1)
 
@@ -960,7 +960,7 @@ class SessionTrackerStore:
         """Compute a session ID from the request.
 
         Priority:
-        1. x-headroom-session-id header (explicit)
+        1. x-legroom-session-id header (explicit)
         2. Hash of (model + system prompt) — stable per conversation
 
         The system prompt is harvested from the LEADING run of ``role:"system"``
@@ -980,7 +980,7 @@ class SessionTrackerStore:
         """
         # Check for explicit session header
         if hasattr(request, "headers"):
-            session_header = request.headers.get("x-headroom-session-id")
+            session_header = request.headers.get("x-legroom-session-id")
             if session_header:
                 return str(session_header)
 

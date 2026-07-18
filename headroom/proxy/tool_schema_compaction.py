@@ -1,4 +1,4 @@
-"""Shared tool-schema compaction for Headroom proxy handlers.
+"""Shared tool-schema compaction for Legroom proxy handlers.
 
 Strips JSON Schema annotation keys ($schema, title, examples, etc.)
 and normalises description whitespace to reduce the token cost of
@@ -12,14 +12,14 @@ logic from this module.
 Truncates tool and parameter ``description`` strings to a configurable
 maximum length, preserving the first complete sentence so that the model
 can still select the right tool.  Opt-in via
-``HEADROOM_TOOL_DESC_MAX_CHARS`` (default ``0`` = disabled).
+``LEGROOM_TOOL_DESC_MAX_CHARS`` (default ``0`` = disabled).
 
 **Layer 3 — Semantic Parameter Description Removal**
 
 When a parameter name is self-explanatory (e.g. ``query``, ``owner``,
 ``repo``), the ``description`` field adds little value — the model can
 infer the meaning from the name alone.  Opt-in via
-``HEADROOM_TOOL_DESC_STRIP_SEMANTIC=1`` (default disabled).
+``LEGROOM_TOOL_DESC_STRIP_SEMANTIC=1`` (default disabled).
 
 **Caching**
 
@@ -140,12 +140,12 @@ _STRIP_SEMANTIC: bool | None = None
 def tool_desc_max_chars() -> int:
     """Return the configured max description length (cached per-process).
 
-    ``HEADROOM_TOOL_DESC_MAX_CHARS=0`` (default) disables truncation.
+    ``LEGROOM_TOOL_DESC_MAX_CHARS=0`` (default) disables truncation.
     """
     global _TOOL_DESC_MAX_CHARS
     if _TOOL_DESC_MAX_CHARS is None:
         try:
-            _TOOL_DESC_MAX_CHARS = int(os.environ.get("HEADROOM_TOOL_DESC_MAX_CHARS", "0"))
+            _TOOL_DESC_MAX_CHARS = int(os.environ.get("LEGROOM_TOOL_DESC_MAX_CHARS", "0"))
         except ValueError:
             _TOOL_DESC_MAX_CHARS = 0
     return _TOOL_DESC_MAX_CHARS
@@ -155,7 +155,7 @@ def strip_semantic_params() -> bool:
     """Return whether Layer 3 (semantic param removal) is enabled."""
     global _STRIP_SEMANTIC
     if _STRIP_SEMANTIC is None:
-        _STRIP_SEMANTIC = os.environ.get("HEADROOM_TOOL_DESC_STRIP_SEMANTIC", "0") == "1"
+        _STRIP_SEMANTIC = os.environ.get("LEGROOM_TOOL_DESC_STRIP_SEMANTIC", "0") == "1"
     return _STRIP_SEMANTIC
 
 
@@ -379,7 +379,7 @@ def compact_tool_descriptions(
     If *max_chars* is 0 (default) or compaction doesn't reduce size,
     the original payload is returned unchanged.
 
-    When ``HEADROOM_TOOL_DESC_STRIP_SEMANTIC=1``, descriptions on
+    When ``LEGROOM_TOOL_DESC_STRIP_SEMANTIC=1``, descriptions on
     self-explanatory parameters (e.g. ``query``, ``owner``) are
     removed entirely instead of truncated.
 

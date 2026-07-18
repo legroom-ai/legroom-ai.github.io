@@ -1,11 +1,11 @@
 """Centralized error/importance detection — thin Python shim over Rust.
 
 Phase 3e.1 ported the keyword data + scoring logic to
-``crates/headroom-core/src/signals/`` (see the trait architecture in
+``crates/legroom-core/src/signals/`` (see the trait architecture in
 ``signals/README.md``). This module is now a compatibility surface that:
 
 1. Pulls the keyword tables out of Rust via
-   ``headroom._core.keyword_registry_snapshot()`` so the Python side
+   ``legroom._core.keyword_registry_snapshot()`` so the Python side
    never re-declares them and cannot drift from the Rust source of
    truth.
 2. Re-exports the legacy ``frozenset`` and compiled-regex names
@@ -38,13 +38,13 @@ from __future__ import annotations
 import re
 from typing import cast
 
-from headroom._core import (
+from legroom._core import (
     content_has_error_indicators as _rust_content_has_error_indicators,
 )
-from headroom._core import (
+from legroom._core import (
     keyword_registry_snapshot as _rust_keyword_registry_snapshot,
 )
-from headroom._core import (
+from legroom._core import (
     score_line as _rust_score_line,
 )
 
@@ -137,7 +137,7 @@ def content_has_error_indicators(text: str) -> bool:
     """Fast keyword check — does `text` contain any error indicator?
 
     Substring match (no word boundary). Distinct from the strict line
-    scoring in :mod:`headroom._core.score_line` because the triage
+    scoring in :mod:`legroom._core.score_line` because the triage
     callsite (e.g. message-signature classification) cares about
     Python tracebacks and similar substrings more than connection
     states.

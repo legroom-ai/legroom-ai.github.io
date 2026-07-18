@@ -1,4 +1,4 @@
-"""Memory adapters for Headroom's hierarchical memory system.
+"""Memory adapters for Legroom's hierarchical memory system.
 
 This module provides concrete implementations of the memory system's ports:
 - SQLiteMemoryStore: SQLite-based memory persistence
@@ -17,11 +17,11 @@ deferred until the adapter is actually used.
 """
 
 # Core adapters (no external dependencies beyond sqlite3)
-from headroom.memory.adapters.cache import LRUMemoryCache
-from headroom.memory.adapters.fts5 import FTS5TextIndex
-from headroom.memory.adapters.graph import InMemoryGraphStore
-from headroom.memory.adapters.sqlite import SQLiteMemoryStore
-from headroom.memory.adapters.sqlite_graph import SQLiteGraphStore
+from legroom.memory.adapters.cache import LRUMemoryCache
+from legroom.memory.adapters.fts5 import FTS5TextIndex
+from legroom.memory.adapters.graph import InMemoryGraphStore
+from legroom.memory.adapters.sqlite import SQLiteMemoryStore
+from legroom.memory.adapters.sqlite_graph import SQLiteGraphStore
 
 # Check for optional dependencies availability
 # Note: We don't import from hnsw.py here because hnswlib may crash with
@@ -48,7 +48,7 @@ def __getattr__(name: str) -> type | bool:
     if name == "HNSW_AVAILABLE":
         # Lazily check hnswlib availability
         if _HNSW_AVAILABLE is None:
-            from headroom.memory.adapters.hnsw import _check_hnswlib_available
+            from legroom.memory.adapters.hnsw import _check_hnswlib_available
 
             _HNSW_AVAILABLE = _check_hnswlib_available()
         return _HNSW_AVAILABLE
@@ -56,42 +56,42 @@ def __getattr__(name: str) -> type | bool:
     if name == "SQLITE_VEC_AVAILABLE":
         # Lazily check sqlite-vec availability
         if _SQLITE_VEC_AVAILABLE is None:
-            from headroom.memory.adapters.sqlite_vector import is_sqlite_vec_available
+            from legroom.memory.adapters.sqlite_vector import is_sqlite_vec_available
 
             _SQLITE_VEC_AVAILABLE = is_sqlite_vec_available()
         return _SQLITE_VEC_AVAILABLE
 
     if name == "HNSWVectorIndex":
         if _HNSWVectorIndex is None:
-            from headroom.memory.adapters.hnsw import HNSWVectorIndex
+            from legroom.memory.adapters.hnsw import HNSWVectorIndex
 
             _HNSWVectorIndex = HNSWVectorIndex
         return _HNSWVectorIndex
 
     if name == "SQLiteVectorIndex":
         if _SQLiteVectorIndex is None:
-            from headroom.memory.adapters.sqlite_vector import SQLiteVectorIndex
+            from legroom.memory.adapters.sqlite_vector import SQLiteVectorIndex
 
             _SQLiteVectorIndex = SQLiteVectorIndex
         return _SQLiteVectorIndex
 
     if name == "LocalEmbedder":
         if _LocalEmbedder is None:
-            from headroom.memory.adapters.embedders import LocalEmbedder
+            from legroom.memory.adapters.embedders import LocalEmbedder
 
             _LocalEmbedder = LocalEmbedder
         return _LocalEmbedder
 
     if name == "OpenAIEmbedder":
         if _OpenAIEmbedder is None:
-            from headroom.memory.adapters.embedders import OpenAIEmbedder
+            from legroom.memory.adapters.embedders import OpenAIEmbedder
 
             _OpenAIEmbedder = OpenAIEmbedder
         return _OpenAIEmbedder
 
     if name == "OllamaEmbedder":
         if _OllamaEmbedder is None:
-            from headroom.memory.adapters.embedders import OllamaEmbedder
+            from legroom.memory.adapters.embedders import OllamaEmbedder
 
             _OllamaEmbedder = OllamaEmbedder
         return _OllamaEmbedder

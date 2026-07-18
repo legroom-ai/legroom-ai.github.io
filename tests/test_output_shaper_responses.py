@@ -1,4 +1,4 @@
-"""Tests for the OpenAI Responses side of headroom.proxy.output_shaper.
+"""Tests for the OpenAI Responses side of legroom.proxy.output_shaper.
 
 Covers turn classification on the Responses ``input`` item list (structural
 only, incl. the JSON-field error sniff on tool outputs), cache-safe verbosity
@@ -12,9 +12,9 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from headroom.proxy.handlers.openai import _shape_openai_responses_payload
-from headroom.proxy.output_savings import conversation_key_from_responses_body
-from headroom.proxy.output_shaper import (
+from legroom.proxy.handlers.openai import _shape_openai_responses_payload
+from legroom.proxy.output_savings import conversation_key_from_responses_body
+from legroom.proxy.output_shaper import (
     OutputShaperSettings,
     TurnKind,
     apply_responses_verbosity_steering,
@@ -158,7 +158,7 @@ class TestResponsesVerbositySteering:
         body = {"instructions": "You are Codex."}
         apply_responses_verbosity_steering(body, 2)
         assert apply_responses_verbosity_steering(body, 3) is True
-        assert body["instructions"].count("<headroom_output_shaping>") == 1
+        assert body["instructions"].count("<legroom_output_shaping>") == 1
         assert steering_text(3) in body["instructions"]
         assert body["instructions"].startswith("You are Codex.")
 
@@ -301,16 +301,16 @@ class TestResponsesConversationKey:
 
 class TestShapeHandlerHelper:
     def test_disabled_returns_nothing(self, monkeypatch):
-        monkeypatch.delenv("HEADROOM_OUTPUT_SHAPER", raising=False)
+        monkeypatch.delenv("LEGROOM_OUTPUT_SHAPER", raising=False)
         labels, mutated = _shape_openai_responses_payload(
             _mechanical_body(), model="gpt-5.5", request_id="t1"
         )
         assert labels == [] and mutated is False
 
     def test_treatment_shapes_and_labels(self, monkeypatch):
-        monkeypatch.setenv("HEADROOM_OUTPUT_SHAPER", "1")
-        monkeypatch.setenv("HEADROOM_VERBOSITY_LEVEL", "2")
-        monkeypatch.delenv("HEADROOM_OUTPUT_HOLDOUT", raising=False)
+        monkeypatch.setenv("LEGROOM_OUTPUT_SHAPER", "1")
+        monkeypatch.setenv("LEGROOM_VERBOSITY_LEVEL", "2")
+        monkeypatch.delenv("LEGROOM_OUTPUT_HOLDOUT", raising=False)
         body = _mechanical_body()
         labels, mutated = _shape_openai_responses_payload(body, model="gpt-5.5", request_id="t2")
         assert mutated is True
@@ -319,8 +319,8 @@ class TestShapeHandlerHelper:
         assert body["reasoning"]["effort"] == "low"
 
     def test_full_holdout_labels_without_mutation(self, monkeypatch):
-        monkeypatch.setenv("HEADROOM_OUTPUT_SHAPER", "1")
-        monkeypatch.setenv("HEADROOM_OUTPUT_HOLDOUT", "1.0")
+        monkeypatch.setenv("LEGROOM_OUTPUT_SHAPER", "1")
+        monkeypatch.setenv("LEGROOM_OUTPUT_HOLDOUT", "1.0")
         body = _mechanical_body()
         snapshot = json.dumps(body, sort_keys=True)
         labels, mutated = _shape_openai_responses_payload(body, model="gpt-5.5", request_id="t3")
@@ -344,9 +344,9 @@ class TestHandlerPathControlLabels:
             _DummyTokenizer,
         )
 
-        monkeypatch.setenv("HEADROOM_OUTPUT_SHAPER", "1")
-        monkeypatch.setenv("HEADROOM_OUTPUT_HOLDOUT", "1.0")
-        monkeypatch.setattr("headroom.tokenizers.get_tokenizer", lambda model: _DummyTokenizer())
+        monkeypatch.setenv("LEGROOM_OUTPUT_SHAPER", "1")
+        monkeypatch.setenv("LEGROOM_OUTPUT_HOLDOUT", "1.0")
+        monkeypatch.setattr("legroom.tokenizers.get_tokenizer", lambda model: _DummyTokenizer())
 
         body = _mechanical_body()
         snapshot = json.dumps(body, sort_keys=True)

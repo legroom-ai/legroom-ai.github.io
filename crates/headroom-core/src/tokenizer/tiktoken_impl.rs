@@ -105,7 +105,7 @@ impl Tokenizer for TiktokenCounter {
 }
 
 /// Map model → encoding name. Mirrors `MODEL_ENCODINGS` and the prefix
-/// fallbacks in `headroom/tokenizers/tiktoken_counter.py`.
+/// fallbacks in `legroom/tokenizers/tiktoken_counter.py`.
 fn encoding_for(model: &str) -> Result<&'static str, TiktokenError> {
     let m = model.to_ascii_lowercase();
 

@@ -1,4 +1,4 @@
-"""LiteLLM-based backend for Headroom.
+"""LiteLLM-based backend for Legroom.
 
 Uses LiteLLM to support 100+ providers with minimal code:
 - AWS Bedrock: model="bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0"
@@ -51,7 +51,7 @@ _OPENAI_CONSUMED_BODY_KEYS = frozenset(
 # the project `.env` into `os.environ`. We don't want that side effect —
 # importing a backend module should not silently leak API keys into the
 # process. Snapshot `os.environ` around the import and undo any keys
-# litellm added. Same pattern as `headroom/pricing/litellm_pricing.py`.
+# litellm added. Same pattern as `legroom/pricing/litellm_pricing.py`.
 try:
     import os as _os
 
@@ -167,8 +167,8 @@ def _build_openai_extra_body(body: dict[str, Any]) -> dict[str, Any]:
         key: value
         for key, value in body.items()
         if key not in _OPENAI_CONSUMED_BODY_KEYS
-        and not key.startswith("x-headroom-")
-        and not key.startswith("x_headroom_")
+        and not key.startswith("x-legroom-")
+        and not key.startswith("x_legroom_")
     }
 
 
@@ -260,7 +260,7 @@ def _fetch_bedrock_inference_profiles(
 
 
 def _parse_bedrock_model_overrides(raw: str | None) -> dict[str, str]:
-    """Parse the ``HEADROOM_BEDROCK_MODEL_MAP`` operator override.
+    """Parse the ``LEGROOM_BEDROCK_MODEL_MAP`` operator override.
 
     AWS discovery keys the model map by the *normalized model name*, so it
     cannot disambiguate application inference profiles that share one
@@ -275,7 +275,7 @@ def _parse_bedrock_model_overrides(raw: str | None) -> dict[str, str]:
     any LiteLLM model string. Whitespace around pairs is ignored; blank
     entries are skipped.
 
-        HEADROOM_BEDROCK_MODEL_MAP="claude-sonnet-5=arn:aws:bedrock:...:application-inference-profile/x57j1esjrt66,claude-opus-4-8=arn:aws:bedrock:...:application-inference-profile/3dy9ytxuq2ci"
+        LEGROOM_BEDROCK_MODEL_MAP="claude-sonnet-5=arn:aws:bedrock:...:application-inference-profile/x57j1esjrt66,claude-opus-4-8=arn:aws:bedrock:...:application-inference-profile/3dy9ytxuq2ci"
     """
     overrides: dict[str, str] = {}
     if not raw:
@@ -561,7 +561,7 @@ class LiteLLMBackend(Backend):
                 raise ImportError(
                     "Bedrock with temporary credentials (AWS_SESSION_TOKEN) requires "
                     "botocore, which is not installed. Install the bedrock extra: "
-                    "pip install 'headroom-ai[bedrock]' (or pip install botocore)."
+                    "pip install 'legroom-ai[bedrock]' (or pip install botocore)."
                 )
             self._model_map = _fetch_bedrock_inference_profiles(region, profile_name=profile_name)
             litellm.set_verbose = False  # Reduce noise
@@ -574,12 +574,12 @@ class LiteLLMBackend(Backend):
         # inference profile ARN for cost attribution. See
         # `_parse_bedrock_model_overrides`.
         self._model_overrides = _parse_bedrock_model_overrides(
-            os.environ.get("HEADROOM_BEDROCK_MODEL_MAP")
+            os.environ.get("LEGROOM_BEDROCK_MODEL_MAP")
         )
         if self._model_overrides:
             logger.info(
                 f"Loaded {len(self._model_overrides)} Bedrock model override(s) "
-                f"from HEADROOM_BEDROCK_MODEL_MAP: {sorted(self._model_overrides)}"
+                f"from LEGROOM_BEDROCK_MODEL_MAP: {sorted(self._model_overrides)}"
             )
 
         logger.info(f"LiteLLM backend initialized (provider={provider}, region={region})")

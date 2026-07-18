@@ -13,7 +13,7 @@ from .endpoints import codex_backend_url, codex_backend_ws_url
 from .headers import drop_header, header_name
 from .runtime import resolve_codex_routing
 
-logger = logging.getLogger("headroom.providers.codex.responses")
+logger = logging.getLogger("legroom.providers.codex.responses")
 
 
 class CodexResponsesPassthroughResponse(Protocol):

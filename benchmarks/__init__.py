@@ -1,6 +1,6 @@
-"""Headroom SDK Benchmark Suite.
+"""Legroom SDK Benchmark Suite.
 
-This package provides performance benchmarks for Headroom transforms and relevance
+This package provides performance benchmarks for Legroom transforms and relevance
 scorers. Benchmarks use pytest-benchmark for accurate timing measurements.
 
 Usage:

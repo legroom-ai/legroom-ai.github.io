@@ -1,4 +1,4 @@
-"""Reporting module for Headroom SDK."""
+"""Reporting module for Legroom SDK."""
 
 from .generator import generate_report
 

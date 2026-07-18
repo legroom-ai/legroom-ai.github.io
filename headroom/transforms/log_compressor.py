@@ -1,7 +1,7 @@
 """Rust-backed log/build-output compressor.
 
 Phase 3e.5 ported the implementation to
-`crates/headroom-core/src/transforms/log_compressor.rs`. This module
+`crates/legroom-core/src/transforms/log_compressor.rs`. This module
 is now a thin shim that:
 
 1. Keeps the public dataclass and enum surface (`LogLevel`,
@@ -166,10 +166,10 @@ class LogCompressor:
     def __init__(self, config: LogCompressorConfig | None = None) -> None:
         # Hard import — no fallback. If the wheel is missing, the user
         # must build it. See feedback memory `feedback_no_silent_fallbacks.md`.
-        from headroom._core import (
+        from legroom._core import (
             LogCompressor as _RustLogCompressor,
         )
-        from headroom._core import (
+        from legroom._core import (
             LogCompressorConfig as _RustLogCompressorConfig,
         )
 
@@ -226,7 +226,7 @@ class LogCompressor:
 
     def _detect_format(self, lines: list[str]) -> LogFormat:
         """Delegate to the Rust format detector."""
-        from headroom._core import detect_log_format
+        from legroom._core import detect_log_format
 
         return _format_from_str(detect_log_format(list(lines)))
 
@@ -340,7 +340,7 @@ class LogCompressor:
 
     def _select_lines(self, log_lines: list[LogLine], bias: float = 1.0) -> list[LogLine]:
         """Select important lines using the same algorithm Rust uses."""
-        from headroom.transforms.adaptive_sizer import compute_optimal_k
+        from legroom.transforms.adaptive_sizer import compute_optimal_k
 
         all_strings = [line.content for line in log_lines]
         adaptive_max = compute_optimal_k(

@@ -1,4 +1,4 @@
-"""Relevance scoring module for Headroom SDK.
+"""Relevance scoring module for Legroom SDK.
 
 This module provides a unified interface for computing item relevance against
 query contexts. All scorers implement the RelevanceScorer protocol:
@@ -11,7 +11,7 @@ Available scorers:
    - Combines BM25 + embeddings for best accuracy
    - Adaptive alpha: more BM25 for UUIDs, more semantic for natural language
    - Falls back gracefully to BM25 if sentence-transformers not installed
-   - Install for full support: pip install headroom[relevance]
+   - Install for full support: pip install legroom[relevance]
 
 2. BM25Scorer (zero dependencies)
    - Fast keyword matching
@@ -21,7 +21,7 @@ Available scorers:
 3. EmbeddingScorer (requires sentence-transformers)
    - Pure semantic similarity
    - Best for natural language queries
-   - Install: pip install headroom[relevance]
+   - Install: pip install legroom[relevance]
 
 WHY HYBRID IS DEFAULT:
 - Missing important items during compression is catastrophic
@@ -30,7 +30,7 @@ WHY HYBRID IS DEFAULT:
 - 5-10ms latency is acceptable vs. losing critical data
 
 Example usage:
-    from headroom.relevance import HybridScorer, create_scorer
+    from legroom.relevance import HybridScorer, create_scorer
 
     # Default: Hybrid (recommended)
     scorer = create_scorer()  # or HybridScorer()
@@ -112,7 +112,7 @@ def create_scorer(
         if not EmbeddingScorer.is_available():
             raise RuntimeError(
                 "EmbeddingScorer requires sentence-transformers. "
-                "Install with: pip install headroom[relevance]"
+                "Install with: pip install legroom[relevance]"
             )
         return EmbeddingScorer(**kwargs)
 

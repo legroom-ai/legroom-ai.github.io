@@ -1,4 +1,4 @@
-"""Base backend interface for Headroom.
+"""Base backend interface for Legroom.
 
 Backends translate between the canonical Anthropic Messages API format
 (used by the proxy) and provider-specific APIs.

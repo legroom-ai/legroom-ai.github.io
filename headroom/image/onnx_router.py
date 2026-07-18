@@ -19,8 +19,8 @@ from typing import Any
 
 import numpy as np
 
-from headroom.image.trained_router import ImageSignals, RouteDecision, Technique
-from headroom.onnx_runtime import create_cpu_session_options, hf_hub_download_local_first
+from legroom.image.trained_router import ImageSignals, RouteDecision, Technique
+from legroom.onnx_runtime import create_cpu_session_options, hf_hub_download_local_first
 
 logger = logging.getLogger(__name__)
 

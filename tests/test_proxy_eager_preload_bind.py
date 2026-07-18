@@ -1,6 +1,6 @@
 """Startup must bind its port even when eager preload hangs (#790).
 
-``HeadroomProxy.startup()`` runs inside the ASGI lifespan, which completes
+``LegroomProxy.startup()`` runs inside the ASGI lifespan, which completes
 *before* uvicorn binds the socket. The eager compressor/parser preload used to
 run synchronously there, so a hang or an uncatchable native stall during a model
 load (observed on Windows) left the proxy "never opening its port". The preload
@@ -18,8 +18,8 @@ import pytest
 
 pytest.importorskip("fastapi")
 
-import headroom.proxy.server as server_mod
-from headroom.proxy.server import ProxyConfig, create_app
+import legroom.proxy.server as server_mod
+from legroom.proxy.server import ProxyConfig, create_app
 
 
 def _make_proxy(*, optimize: bool):

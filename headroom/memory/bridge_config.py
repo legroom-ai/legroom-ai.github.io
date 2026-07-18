@@ -1,7 +1,7 @@
 """Configuration for the Memory Bridge.
 
 The Memory Bridge provides bidirectional sync between markdown memory files
-(used by Claude Code, ChatGPT, etc.) and Headroom's semantic memory system.
+(used by Claude Code, ChatGPT, etc.) and Legroom's semantic memory system.
 """
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 
-from headroom import paths as _paths
+from legroom import paths as _paths
 
 
 class MarkdownFormat(Enum):

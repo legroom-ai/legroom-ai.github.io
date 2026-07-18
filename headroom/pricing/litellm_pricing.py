@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from headroom.pricing.litellm_model_resolution import (
+from legroom.pricing.litellm_model_resolution import (
     pricing_lookup_candidates,
     resolve_litellm_model_name,
 )

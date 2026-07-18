@@ -1,4 +1,4 @@
-"""Streamable HTTP transport helpers for the Headroom MCP server."""
+"""Streamable HTTP transport helpers for the Legroom MCP server."""
 
 from __future__ import annotations
 

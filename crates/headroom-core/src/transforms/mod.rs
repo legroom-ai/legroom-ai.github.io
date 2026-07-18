@@ -1,4 +1,4 @@
-//! Compression transforms — Rust ports of `headroom.transforms.*`.
+//! Compression transforms — Rust ports of `legroom.transforms.*`.
 //!
 //! # Guiding principle: information preservation > aggressive compression
 //!

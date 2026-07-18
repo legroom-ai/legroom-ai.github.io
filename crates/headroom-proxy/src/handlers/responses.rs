@@ -4,7 +4,7 @@
 //!
 //! The Python proxy currently flattens Responses-shape items into
 //! Chat-Completions-shape via
-//! `headroom/proxy/responses_converter.py` — a fragile shim that
+//! `legroom/proxy/responses_converter.py` — a fragile shim that
 //! silently breaks every time OpenAI lands a new item type. C3 ports
 //! this path to Rust with first-class per-item-type handling.
 //!

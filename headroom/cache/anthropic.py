@@ -12,7 +12,7 @@ Anthropic Caching Characteristics:
 - Cost: 25% MORE to write to cache, 90% LESS to read
 
 Usage:
-    from headroom.cache import AnthropicCacheOptimizer, OptimizationContext
+    from legroom.cache import AnthropicCacheOptimizer, OptimizationContext
 
     optimizer = AnthropicCacheOptimizer()
     context = OptimizationContext(provider="anthropic", model="claude-3-opus")

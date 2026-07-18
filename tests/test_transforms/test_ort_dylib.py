@@ -1,4 +1,4 @@
-"""Tests for headroom._ort -- the ORT_DYLIB_PATH auto-pin.
+"""Tests for legroom._ort -- the ORT_DYLIB_PATH auto-pin.
 
 The resolver points the Rust core's ort-load-dynamic runtime at the pip
 onnxruntime package's shared library on every platform: on Windows it
@@ -15,7 +15,7 @@ from types import SimpleNamespace
 
 import pytest
 
-import headroom._ort as _ort
+import legroom._ort as _ort
 
 
 @pytest.fixture(autouse=True)

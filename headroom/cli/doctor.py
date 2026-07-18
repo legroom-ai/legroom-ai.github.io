@@ -1,6 +1,6 @@
-"""`headroom doctor` — diagnose whether the local Headroom setup is working.
+"""`legroom doctor` — diagnose whether the local Legroom setup is working.
 
-Headroom's failure mode is silent: when a client is not routed through the
+Legroom's failure mode is silent: when a client is not routed through the
 proxy (or the proxy runs stale code), everything still works — you just
 stop saving tokens. This command correlates the state nothing else
 reconciles: the proxy process, per-client wrap configs, the current shell
@@ -22,12 +22,12 @@ from typing import Any
 
 import click
 
-from headroom._version import format_version_label, normalize_release_version
-from headroom.install.health import probe_json
-from headroom.install.paths import claude_settings_path, codex_config_path
-from headroom.install.state import list_manifests
-from headroom.paths import savings_path
-from headroom.providers.claude import (
+from legroom._version import format_version_label, normalize_release_version
+from legroom.install.health import probe_json
+from legroom.install.paths import claude_settings_path, codex_config_path
+from legroom.install.state import list_manifests
+from legroom.paths import savings_path
+from legroom.providers.claude import (
     REMOTE_CONTROL_BASE_URL_ENV,
     REMOTE_CONTROL_SIBLING_GATE_NOTE,
     detect_claude_code_version,
@@ -94,7 +94,7 @@ def check_proxy_liveness(livez: dict[str, Any] | None, base_url: str) -> CheckRe
             name="proxy",
             status=FAIL,
             summary=f"not reachable at {base_url}",
-            hint="start it with: headroom proxy",
+            hint="start it with: legroom proxy",
         )
     version = livez.get("version", "unknown")
     uptime = livez.get("uptime_seconds")
@@ -130,7 +130,7 @@ def check_version_drift(livez: dict[str, Any] | None, installed: str) -> CheckRe
             name="version",
             status=WARN,
             summary=f"version drift: proxy {running}, installed {installed}",
-            hint="restart the proxy to pick up new code: headroom proxy",
+            hint="restart the proxy to pick up new code: legroom proxy",
         )
     return CheckResult(
         name="version",
@@ -147,7 +147,7 @@ def check_claude_routing(settings_path: Path, port: int) -> CheckResult:
             name=name,
             status=WARN,
             summary="not routed (no ~/.claude/settings.json)",
-            hint="wrap it: headroom wrap claude",
+            hint="wrap it: legroom wrap claude",
         )
     try:
         payload = json.loads(settings_path.read_text(encoding="utf-8"))
@@ -166,7 +166,7 @@ def check_claude_routing(settings_path: Path, port: int) -> CheckResult:
             name=name,
             status=WARN,
             summary="not routed (no ANTHROPIC_BASE_URL in settings env)",
-            hint="wrap it: headroom wrap claude",
+            hint="wrap it: legroom wrap claude",
         )
     return _classify_routing_url(name, base_url, port, source=str(settings_path))
 
@@ -243,7 +243,7 @@ def check_claude_remote_control_gate(
 def check_wrap_marker_staleness(settings_path: Path) -> CheckResult:
     """Flag a project-local ANTHROPIC_BASE_URL left by a crashed wrap session.
 
-    A crashed ``headroom wrap claude`` (SIGKILL, OOM, reboot) can leave
+    A crashed ``legroom wrap claude`` (SIGKILL, OOM, reboot) can leave
     ``.claude/settings.local.json`` pointing at a dead proxy port, hanging
     every subsequent bare ``claude`` invocation in the project (issue #1768).
     This checks the project-local settings file — separate from the global
@@ -263,7 +263,7 @@ def check_wrap_marker_staleness(settings_path: Path) -> CheckResult:
         summary=(
             f"stale ANTHROPIC_BASE_URL from crashed wrap session "
             f"(pid {marker.get('pid')}, port {marker.get('port')}) — "
-            "run `headroom unwrap claude` to clean it up"
+            "run `legroom unwrap claude` to clean it up"
         ),
     )
 
@@ -271,7 +271,7 @@ def check_wrap_marker_staleness(settings_path: Path) -> CheckResult:
 def check_codex_routing(config_path: Path, port: int) -> CheckResult:
     """Is Codex configured to route through the proxy?
 
-    Detection keys on the ``[model_providers.headroom]`` section, which both
+    Detection keys on the ``[model_providers.legroom]`` section, which both
     writers emit (install's persistent block and wrap's auto-injected block).
     Substring matching keeps malformed TOML a WARN instead of a crash.
     """
@@ -281,18 +281,18 @@ def check_codex_routing(config_path: Path, port: int) -> CheckResult:
             name=name,
             status=WARN,
             summary="not routed (no ~/.codex/config.toml)",
-            hint="wrap it: headroom wrap codex",
+            hint="wrap it: legroom wrap codex",
         )
     try:
         text = config_path.read_text(encoding="utf-8", errors="replace")
     except OSError as exc:
         return CheckResult(name=name, status=WARN, summary=f"could not read {config_path}: {exc}")
-    if "[model_providers.headroom]" not in text:
+    if "[model_providers.legroom]" not in text:
         return CheckResult(
             name=name,
             status=WARN,
-            summary="not routed (no Headroom provider in config.toml)",
-            hint="wrap it: headroom wrap codex",
+            summary="not routed (no Legroom provider in config.toml)",
+            hint="wrap it: legroom wrap codex",
         )
     match = _CODEX_BASE_URL_RE.search(text)
     if match and int(match.group(1)) != port:
@@ -300,7 +300,7 @@ def check_codex_routing(config_path: Path, port: int) -> CheckResult:
             name=name,
             status=WARN,
             summary=f"routed to port {match.group(1)}, but doctor probed port {port}",
-            hint=f"re-run with: headroom doctor --port {match.group(1)}",
+            hint=f"re-run with: legroom doctor --port {match.group(1)}",
         )
     return CheckResult(name=name, status=PASS, summary=f"routed ({config_path})")
 
@@ -316,7 +316,7 @@ def check_shell_env(environ: Mapping[str, str], port: int) -> CheckResult:
         name=name,
         status=WARN,
         summary="ANTHROPIC_BASE_URL / OPENAI_BASE_URL unset — this shell bypasses the proxy",
-        hint=f"export ANTHROPIC_BASE_URL=http://127.0.0.1:{port} (or launch via headroom wrap)",
+        hint=f"export ANTHROPIC_BASE_URL=http://127.0.0.1:{port} (or launch via legroom wrap)",
     )
 
 
@@ -326,7 +326,7 @@ def _classify_routing_url(name: str, url: str, port: int, *, source: str) -> Che
         return CheckResult(
             name=name,
             status=WARN,
-            summary=f"points at {url}, not the local Headroom proxy ({source})",
+            summary=f"points at {url}, not the local Legroom proxy ({source})",
         )
     found_port = int(match.group(1))
     if found_port != port:
@@ -334,7 +334,7 @@ def _classify_routing_url(name: str, url: str, port: int, *, source: str) -> Che
             name=name,
             status=WARN,
             summary=f"routed to port {found_port}, but doctor probed port {port} ({source})",
-            hint=f"re-run with: headroom doctor --port {found_port}",
+            hint=f"re-run with: legroom doctor --port {found_port}",
         )
     return CheckResult(name=name, status=PASS, summary=f"routed via {source}")
 
@@ -409,7 +409,7 @@ def check_budget(stats: dict[str, Any] | None) -> CheckResult:
             name=name,
             status=WARN,
             summary="no budget configured — spend is unlimited",
-            hint="set one: headroom proxy --budget 10 (env: HEADROOM_BUDGET)",
+            hint="set one: legroom proxy --budget 10 (env: LEGROOM_BUDGET)",
         )
     period = cost.get("budget_period", "daily")
     return CheckResult(name=name, status=PASS, summary=f"${limit}/{period} budget enforced")
@@ -430,7 +430,7 @@ def check_deployments(manifests: list[Any], probe: Any = probe_json) -> CheckRes
             name="deployments",
             status=FAIL,
             summary=f"{len(down)} of {len(manifests)} deployment(s) down: {', '.join(down)}",
-            hint="inspect with: headroom install status --profile <name>",
+            hint="inspect with: legroom install status --profile <name>",
         )
     return CheckResult(
         name="deployments",
@@ -450,7 +450,7 @@ def _render(checks: list[CheckResult], port: int, installed: str) -> None:
 
     console = Console()
     console.print(
-        f"[bold]Headroom Doctor[/bold] [dim]{format_version_label(installed)} · port {port}[/dim]\n"
+        f"[bold]Legroom Doctor[/bold] [dim]{format_version_label(installed)} · port {port}[/dim]\n"
     )
     table = Table(show_header=True, header_style="bold")
     table.add_column("check")
@@ -483,12 +483,12 @@ def _render(checks: list[CheckResult], port: int, installed: str) -> None:
     "-p",
     default=8787,
     type=click.IntRange(1, 65535),
-    envvar="HEADROOM_PORT",
-    help="Proxy port to check (default: 8787, env: HEADROOM_PORT)",
+    envvar="LEGROOM_PORT",
+    help="Proxy port to check (default: 8787, env: LEGROOM_PORT)",
 )
 @click.option("--json", "emit_json", is_flag=True, help="Emit JSON instead of formatted output.")
 def doctor(port: int, emit_json: bool) -> None:
-    """Check that the Headroom proxy and client routing are working.
+    """Check that the Legroom proxy and client routing are working.
 
     \b
     Exit codes:

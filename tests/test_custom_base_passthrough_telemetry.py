@@ -10,8 +10,8 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 
-from headroom.providers.proxy_routes import register_provider_routes
-from headroom.proxy.handlers.openai import OpenAIHandlerMixin
+from legroom.providers.proxy_routes import register_provider_routes
+from legroom.proxy.handlers.openai import OpenAIHandlerMixin
 
 
 class _Runtime:
@@ -96,7 +96,7 @@ def test_custom_base_provider_prefixed_chat_completions_gets_telemetry() -> None
         ):
             response = client.post(
                 "/zen/v1/chat/completions",
-                headers={"x-headroom-base-url": base_url},
+                headers={"x-legroom-base-url": base_url},
                 json={"model": "zen"},
             )
             assert response.status_code == 200
@@ -122,7 +122,7 @@ def test_custom_base_unrelated_passthrough_paths_stay_unclassified() -> None:
         ):
             response = client.post(
                 path,
-                headers={"x-headroom-base-url": "https://opencode.ai/"},
+                headers={"x-legroom-base-url": "https://opencode.ai/"},
                 json={},
             )
             assert response.status_code == 200
@@ -142,21 +142,21 @@ def test_custom_base_chat_completions_telemetry_is_post_and_opencode_zen_only() 
     with TestClient(app) as client:
         get_response = client.get(
             "/zen/v1/chat/completions",
-            headers={"x-headroom-base-url": "https://opencode.ai/"},
+            headers={"x-legroom-base-url": "https://opencode.ai/"},
         )
         other_host_response = client.post(
             "/zen/v1/chat/completions",
-            headers={"x-headroom-base-url": "https://custom.example/"},
+            headers={"x-legroom-base-url": "https://custom.example/"},
             json={"model": "zen"},
         )
         double_slash_response = client.post(
             "/zen//v1/chat/completions",
-            headers={"x-headroom-base-url": "https://opencode.ai/"},
+            headers={"x-legroom-base-url": "https://opencode.ai/"},
             json={"model": "zen"},
         )
         trailing_slash_response = client.post(
             "/zen/v1/chat/completions/",
-            headers={"x-headroom-base-url": "https://opencode.ai/"},
+            headers={"x-legroom-base-url": "https://opencode.ai/"},
             json={"model": "zen"},
         )
 

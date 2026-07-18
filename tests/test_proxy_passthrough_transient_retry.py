@@ -1,14 +1,14 @@
 """Regression tests for GH #1112.
 
-The Headroom proxy returned an opaque HTTP 502 when an OpenAI-compatible
+The Legroom proxy returned an opaque HTTP 502 when an OpenAI-compatible
 upstream closed a pooled keep-alive connection mid-response, surfacing
 ``httpx.RemoteProtocolError`` ("peer closed connection without sending
 complete message body (incomplete chunked read)"). The same upstream answers
 a direct ``curl`` with 200 because curl opens a fresh connection per call;
-Headroom reuses pooled connections, so the first request on a stale connection
+Legroom reuses pooled connections, so the first request on a stale connection
 fails even though the upstream is healthy.
 
-The fix adds :func:`headroom.proxy.helpers.request_with_transient_retry`,
+The fix adds :func:`legroom.proxy.helpers.request_with_transient_retry`,
 which retries the buffered request once on a fresh connection, and wires it
 into ``OpenAIHandlerMixin.handle_passthrough`` with a clean 502 fallback when
 the protocol error persists.
@@ -24,8 +24,8 @@ from unittest.mock import AsyncMock
 import httpx
 import pytest
 
-from headroom.proxy.handlers.openai import OpenAIHandlerMixin
-from headroom.proxy.helpers import request_with_transient_retry
+from legroom.proxy.handlers.openai import OpenAIHandlerMixin
+from legroom.proxy.helpers import request_with_transient_retry
 
 _INCOMPLETE_CHUNKED = (
     "peer closed connection without sending complete message body (incomplete chunked read)"

@@ -24,7 +24,7 @@ import threading
 import time
 import typing
 
-from headroom._subprocess import Popen, run
+from legroom._subprocess import Popen, run
 
 from .loops import LoopPattern, apply_loop_weighting, detect_loops, format_loops_for_digest
 from .models import (
@@ -65,11 +65,11 @@ _CLI_MODEL_IDS: set[str] = {model for _, model, _ in _CLI_BACKENDS}
 _USER_PROMPT_PREFIX = "Analyze these coding agent sessions and return JSON recommendations:\n\n"  # Shared by _call_cli_llm and _call_llm
 _MAX_SNIPPET_LEN = 2000  # Max chars of CLI output (stdout/stderr) in error messages
 # Hard wall-clock cap for CLI backends (seconds). Override with
-# HEADROOM_LEARN_CLI_TIMEOUT_SECS for slow networks or large digests.
+# LEGROOM_LEARN_CLI_TIMEOUT_SECS for slow networks or large digests.
 _CLI_TIMEOUT = 300
 # Idle cap (seconds) for streaming claude-cli: kill if no output arrives for
 # this long. Lets us catch genuine hangs quickly while letting long-but-active
-# analyses run to completion. Override with HEADROOM_LEARN_CLI_IDLE_TIMEOUT_SECS.
+# analyses run to completion. Override with LEGROOM_LEARN_CLI_IDLE_TIMEOUT_SECS.
 _CLI_IDLE_TIMEOUT = 60
 
 
@@ -118,7 +118,7 @@ def _detect_default_model() -> str:
 
     Priority order:
       1. API key present → use corresponding LiteLLM model
-      2. HEADROOM_LEARN_CLI env var → use specified CLI backend
+      2. LEGROOM_LEARN_CLI env var → use specified CLI backend
       3. Auto-detect installed CLI tools (claude > gemini > codex)
       4. Raise RuntimeError with setup instructions
     """
@@ -128,15 +128,15 @@ def _detect_default_model() -> str:
             return model
 
     # 2. Explicit CLI selection via environment variable
-    cli_override = os.environ.get("HEADROOM_LEARN_CLI")
+    cli_override = os.environ.get("LEGROOM_LEARN_CLI")
     if cli_override:
         for cli_name, model, _cmd in _CLI_BACKENDS:
             if cli_name == cli_override:
-                logger.info("HEADROOM_LEARN_CLI=%s — using %s CLI backend", cli_override, cli_name)
+                logger.info("LEGROOM_LEARN_CLI=%s — using %s CLI backend", cli_override, cli_name)
                 return model
         valid = ", ".join(name for name, _, _ in _CLI_BACKENDS)
         raise ValueError(
-            f"HEADROOM_LEARN_CLI={cli_override!r} is not a supported CLI. Valid values: {valid}"
+            f"LEGROOM_LEARN_CLI={cli_override!r} is not a supported CLI. Valid values: {valid}"
         )
 
     # 3. Auto-detect installed CLI tools
@@ -146,13 +146,13 @@ def _detect_default_model() -> str:
             return model
 
     raise RuntimeError(
-        "No LLM API key found. headroom learn needs one of:\n"
+        "No LLM API key found. legroom learn needs one of:\n"
         "  export ANTHROPIC_API_KEY=sk-ant-...   → uses claude-sonnet-4-6\n"
         "  export OPENAI_API_KEY=sk-...          → uses gpt-4o\n"
         "  export GEMINI_API_KEY=...             → uses gemini-flash-latest\n"
-        "Or set HEADROOM_LEARN_CLI to a coding agent CLI (claude, gemini, codex).\n"
+        "Or set LEGROOM_LEARN_CLI to a coding agent CLI (claude, gemini, codex).\n"
         "Or install one of those CLIs for auto-detection.\n"
-        "Or specify a model directly: headroom learn --model <litellm-model-name>"
+        "Or specify a model directly: legroom learn --model <litellm-model-name>"
     )
 
 
@@ -553,10 +553,10 @@ def _call_cli_llm(digest: str, model: str) -> dict:
         raise ValueError(f"Unknown CLI model: {model}")
 
     prompt = _SYSTEM_PROMPT + "\n\n" + _USER_PROMPT_PREFIX + digest
-    hard_cap = _resolve_timeout_secs("HEADROOM_LEARN_CLI_TIMEOUT_SECS", _CLI_TIMEOUT)
+    hard_cap = _resolve_timeout_secs("LEGROOM_LEARN_CLI_TIMEOUT_SECS", _CLI_TIMEOUT)
 
     if model == "claude-cli":
-        idle_cap = _resolve_timeout_secs("HEADROOM_LEARN_CLI_IDLE_TIMEOUT_SECS", _CLI_IDLE_TIMEOUT)
+        idle_cap = _resolve_timeout_secs("LEGROOM_LEARN_CLI_IDLE_TIMEOUT_SECS", _CLI_IDLE_TIMEOUT)
         return _call_claude_cli_streaming(cmd, prompt, hard_cap=hard_cap, idle_cap=idle_cap)
 
     try:
@@ -585,7 +585,7 @@ def _call_cli_llm(digest: str, model: str) -> dict:
     except subprocess.TimeoutExpired:
         raise RuntimeError(
             f"`{' '.join(cmd)}` did not respond within {hard_cap}s. "
-            "Check network connectivity, raise HEADROOM_LEARN_CLI_TIMEOUT_SECS, "
+            "Check network connectivity, raise LEGROOM_LEARN_CLI_TIMEOUT_SECS, "
             "or try a different backend with --model <litellm-model-name>."
         ) from None
 
@@ -698,7 +698,7 @@ def _call_claude_cli_streaming(
             _kill(f"hard cap {hard_cap}s exceeded")
             raise RuntimeError(
                 f"`{' '.join(cmd)}` exceeded the {hard_cap}s hard cap. "
-                "Raise HEADROOM_LEARN_CLI_TIMEOUT_SECS for slower networks or "
+                "Raise LEGROOM_LEARN_CLI_TIMEOUT_SECS for slower networks or "
                 "larger digests, or try a different backend with "
                 "--model <litellm-model-name>."
             )
@@ -708,7 +708,7 @@ def _call_claude_cli_streaming(
             raise RuntimeError(
                 f"`{' '.join(cmd)}` produced no output for {idle_cap}s. "
                 "Check network connectivity, raise "
-                "HEADROOM_LEARN_CLI_IDLE_TIMEOUT_SECS, or try a different "
+                "LEGROOM_LEARN_CLI_IDLE_TIMEOUT_SECS, or try a different "
                 "backend with --model <litellm-model-name>."
             )
 
@@ -788,7 +788,7 @@ def _call_llm(digest: str, model: str) -> dict:
     litellm.suppress_debug_info = True
 
     # For Anthropic models, bypass ANTHROPIC_BASE_URL which may point to
-    # the user's local headroom proxy
+    # the user's local legroom proxy
     api_base = None
     if model.startswith("claude"):
         api_base = "https://api.anthropic.com"

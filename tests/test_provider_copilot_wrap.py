@@ -8,7 +8,7 @@ from unittest.mock import patch
 import click
 import pytest
 
-from headroom.providers.copilot.wrap import (
+from legroom.providers.copilot.wrap import (
     build_launch_env,
     copilot_model_from_args,
     default_wire_api_for_model,
@@ -38,7 +38,7 @@ def test_query_proxy_config_handles_success_and_invalid_payload() -> None:
 
 def test_detect_running_proxy_backend_requires_string_backend(monkeypatch) -> None:
     monkeypatch.setattr(
-        "headroom.providers.copilot.wrap.query_proxy_config",
+        "legroom.providers.copilot.wrap.query_proxy_config",
         lambda port: {"backend": 123} if port == 8787 else None,
     )
 
@@ -51,7 +51,7 @@ def test_resolve_provider_type_prefers_explicit_and_env() -> None:
         resolve_provider_type(
             "anthropic",
             "openai",
-            {"COPILOT_PROVIDER_TYPE": "anthropic", "HEADROOM_BACKEND": "anthropic"},
+            {"COPILOT_PROVIDER_TYPE": "anthropic", "LEGROOM_BACKEND": "anthropic"},
         )
         == "openai"
     )
@@ -59,7 +59,7 @@ def test_resolve_provider_type_prefers_explicit_and_env() -> None:
         resolve_provider_type(
             "anthropic",
             "auto",
-            {"COPILOT_PROVIDER_TYPE": "openai", "HEADROOM_BACKEND": "anthropic"},
+            {"COPILOT_PROVIDER_TYPE": "openai", "LEGROOM_BACKEND": "anthropic"},
         )
         == "openai"
     )
@@ -67,12 +67,12 @@ def test_resolve_provider_type_prefers_explicit_and_env() -> None:
         resolve_provider_type(
             None,
             "auto",
-            {"COPILOT_PROVIDER_TYPE": "not-a-provider", "HEADROOM_BACKEND": "anthropic"},
+            {"COPILOT_PROVIDER_TYPE": "not-a-provider", "LEGROOM_BACKEND": "anthropic"},
         )
         == "anthropic"
     )
-    assert resolve_provider_type(None, "auto", {"HEADROOM_BACKEND": "anthropic"}) == "anthropic"
-    assert resolve_provider_type(None, "auto", {"HEADROOM_BACKEND": "anyllm"}) == "openai"
+    assert resolve_provider_type(None, "auto", {"LEGROOM_BACKEND": "anthropic"}) == "anthropic"
+    assert resolve_provider_type(None, "auto", {"LEGROOM_BACKEND": "anyllm"}) == "openai"
 
 
 def test_validate_configuration_accepts_supported_combinations() -> None:

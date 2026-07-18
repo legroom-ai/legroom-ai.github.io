@@ -1,8 +1,8 @@
-"""Differential network capture reporting for Claude Code vs Headroom.
+"""Differential network capture reporting for Claude Code vs Legroom.
 
 The capture format is intentionally JSONL so mitmproxy addons, tests, and
 future packet capture tools can all produce the same records without a heavy
-dependency in the Headroom package.
+dependency in the Legroom package.
 """
 
 from __future__ import annotations
@@ -53,12 +53,12 @@ class CapturedExchange:
 
 @dataclass(frozen=True)
 class CaptureDiff:
-    """Comparison result between a direct lane and a Headroom lane."""
+    """Comparison result between a direct lane and a Legroom lane."""
 
     direct_count: int
-    headroom_count: int
+    legroom_count: int
     only_direct: list[str]
-    only_headroom: list[str]
+    only_legroom: list[str]
     paired: list[dict[str, Any]]
     generated_at: str
 
@@ -66,9 +66,9 @@ class CaptureDiff:
         return {
             "generated_at": self.generated_at,
             "direct_count": self.direct_count,
-            "headroom_count": self.headroom_count,
+            "legroom_count": self.legroom_count,
             "only_direct": self.only_direct,
-            "only_headroom": self.only_headroom,
+            "only_legroom": self.only_legroom,
             "paired": self.paired,
         }
 
@@ -205,19 +205,19 @@ def _json_paths(value: Any, prefix: str = "$") -> dict[str, Any]:
 
 
 def _header_delta(
-    direct: dict[str, str], headroom: dict[str, str]
+    direct: dict[str, str], legroom: dict[str, str]
 ) -> tuple[list[str], list[str], list[str]]:
     direct_keys = {key.lower(): key for key in direct}
-    headroom_keys = {key.lower(): key for key in headroom}
-    only_direct = sorted(direct_keys[key] for key in set(direct_keys) - set(headroom_keys))
-    only_headroom = sorted(headroom_keys[key] for key in set(headroom_keys) - set(direct_keys))
+    legroom_keys = {key.lower(): key for key in legroom}
+    only_direct = sorted(direct_keys[key] for key in set(direct_keys) - set(legroom_keys))
+    only_legroom = sorted(legroom_keys[key] for key in set(legroom_keys) - set(direct_keys))
     changed: list[str] = []
-    for lower in sorted(set(direct_keys) & set(headroom_keys)):
+    for lower in sorted(set(direct_keys) & set(legroom_keys)):
         d_key = direct_keys[lower]
-        h_key = headroom_keys[lower]
-        if direct[d_key] != headroom[h_key]:
+        h_key = legroom_keys[lower]
+        if direct[d_key] != legroom[h_key]:
             changed.append(d_key)
-    return only_direct, only_headroom, changed
+    return only_direct, only_legroom, changed
 
 
 def _header_value(headers: dict[str, str], name: str) -> str | None:
@@ -245,95 +245,95 @@ def _anthropic_request_summary(exchange: CapturedExchange) -> dict[str, Any]:
 
 
 def _pair_exchanges(
-    direct: list[CapturedExchange], headroom: list[CapturedExchange], *, pair_by: str = "path"
+    direct: list[CapturedExchange], legroom: list[CapturedExchange], *, pair_by: str = "path"
 ) -> tuple[list[tuple[CapturedExchange, CapturedExchange]], list[str], list[str]]:
     direct_by_key: dict[str, list[CapturedExchange]] = {}
-    headroom_by_key: dict[str, list[CapturedExchange]] = {}
+    legroom_by_key: dict[str, list[CapturedExchange]] = {}
     for item in direct:
         key = item.route_key if pair_by == "route" else item.path_key
         direct_by_key.setdefault(key, []).append(item)
-    for item in headroom:
+    for item in legroom:
         key = item.route_key if pair_by == "route" else item.path_key
-        headroom_by_key.setdefault(key, []).append(item)
+        legroom_by_key.setdefault(key, []).append(item)
 
     pairs: list[tuple[CapturedExchange, CapturedExchange]] = []
     only_direct: list[str] = []
-    only_headroom: list[str] = []
-    for key in sorted(set(direct_by_key) | set(headroom_by_key)):
+    only_legroom: list[str] = []
+    for key in sorted(set(direct_by_key) | set(legroom_by_key)):
         direct_items = direct_by_key.get(key, [])
-        headroom_items = headroom_by_key.get(key, [])
-        shared = min(len(direct_items), len(headroom_items))
-        pairs.extend(zip(direct_items[:shared], headroom_items[:shared], strict=False))
+        legroom_items = legroom_by_key.get(key, [])
+        shared = min(len(direct_items), len(legroom_items))
+        pairs.extend(zip(direct_items[:shared], legroom_items[:shared], strict=False))
         only_direct.extend([item.route_key for item in direct_items[shared:]])
-        only_headroom.extend([item.route_key for item in headroom_items[shared:]])
-    return pairs, only_direct, only_headroom
+        only_legroom.extend([item.route_key for item in legroom_items[shared:]])
+    return pairs, only_direct, only_legroom
 
 
 def compare_captures(
-    direct: list[CapturedExchange], headroom: list[CapturedExchange], *, pair_by: str = "path"
+    direct: list[CapturedExchange], legroom: list[CapturedExchange], *, pair_by: str = "path"
 ) -> CaptureDiff:
-    pairs, only_direct, only_headroom = _pair_exchanges(direct, headroom, pair_by=pair_by)
+    pairs, only_direct, only_legroom = _pair_exchanges(direct, legroom, pair_by=pair_by)
     paired: list[dict[str, Any]] = []
-    for direct_item, headroom_item in pairs:
+    for direct_item, legroom_item in pairs:
         direct_paths = (
             _json_paths(direct_item.request_json) if direct_item.request_json is not None else {}
         )
-        headroom_paths = (
-            _json_paths(headroom_item.request_json)
-            if headroom_item.request_json is not None
+        legroom_paths = (
+            _json_paths(legroom_item.request_json)
+            if legroom_item.request_json is not None
             else {}
         )
-        only_direct_json = sorted(set(direct_paths) - set(headroom_paths))
-        only_headroom_json = sorted(set(headroom_paths) - set(direct_paths))
+        only_direct_json = sorted(set(direct_paths) - set(legroom_paths))
+        only_legroom_json = sorted(set(legroom_paths) - set(direct_paths))
         changed_json = sorted(
             path
-            for path in set(direct_paths) & set(headroom_paths)
-            if direct_paths[path] != headroom_paths[path]
+            for path in set(direct_paths) & set(legroom_paths)
+            if direct_paths[path] != legroom_paths[path]
         )
-        headers_only_direct, headers_only_headroom, headers_changed = _header_delta(
-            direct_item.request_headers, headroom_item.request_headers
+        headers_only_direct, headers_only_legroom, headers_changed = _header_delta(
+            direct_item.request_headers, legroom_item.request_headers
         )
         paired.append(
             {
                 "route": direct_item.route_key,
-                "headroom_route": headroom_item.route_key,
+                "legroom_route": legroom_item.route_key,
                 "direct_sequence": direct_item.sequence,
-                "headroom_sequence": headroom_item.sequence,
+                "legroom_sequence": legroom_item.sequence,
                 "status": {
                     "direct": direct_item.response_status,
-                    "headroom": headroom_item.response_status,
+                    "legroom": legroom_item.response_status,
                 },
                 "request_body_size": {
                     "direct": direct_item.request_body_size,
-                    "headroom": headroom_item.request_body_size,
-                    "delta": headroom_item.request_body_size - direct_item.request_body_size,
+                    "legroom": legroom_item.request_body_size,
+                    "delta": legroom_item.request_body_size - direct_item.request_body_size,
                 },
                 "request_body_sha256": {
                     "direct": direct_item.request_body_sha256,
-                    "headroom": headroom_item.request_body_sha256,
-                    "same": direct_item.request_body_sha256 == headroom_item.request_body_sha256,
+                    "legroom": legroom_item.request_body_sha256,
+                    "same": direct_item.request_body_sha256 == legroom_item.request_body_sha256,
                 },
                 "anthropic": {
                     "direct": _anthropic_request_summary(direct_item),
-                    "headroom": _anthropic_request_summary(headroom_item),
+                    "legroom": _anthropic_request_summary(legroom_item),
                 },
                 "headers": {
                     "only_direct": headers_only_direct,
-                    "only_headroom": headers_only_headroom,
+                    "only_legroom": headers_only_legroom,
                     "changed": headers_changed,
                 },
                 "json": {
                     "only_direct": only_direct_json,
-                    "only_headroom": only_headroom_json,
+                    "only_legroom": only_legroom_json,
                     "changed": changed_json,
                 },
             }
         )
     return CaptureDiff(
         direct_count=len(direct),
-        headroom_count=len(headroom),
+        legroom_count=len(legroom),
         only_direct=only_direct,
-        only_headroom=only_headroom,
+        only_legroom=only_legroom,
         paired=paired,
         generated_at=datetime.now(timezone.utc).isoformat(),
     )
@@ -352,17 +352,17 @@ def render_markdown_report(diff: CaptureDiff) -> str:
         "## Summary",
         "",
         f"- Direct exchanges: `{diff.direct_count}`",
-        f"- Headroom exchanges: `{diff.headroom_count}`",
+        f"- Legroom exchanges: `{diff.legroom_count}`",
         f"- Paired exchanges: `{len(diff.paired)}`",
         f"- Only direct: `{len(diff.only_direct)}`",
-        f"- Only Headroom: `{len(diff.only_headroom)}`",
+        f"- Only Legroom: `{len(diff.only_legroom)}`",
         "",
     ]
     if diff.only_direct:
         lines.extend(["## Only Direct", "", *[f"- `{route}`" for route in diff.only_direct], ""])
-    if diff.only_headroom:
+    if diff.only_legroom:
         lines.extend(
-            ["## Only Headroom", "", *[f"- `{route}`" for route in diff.only_headroom], ""]
+            ["## Only Legroom", "", *[f"- `{route}`" for route in diff.only_legroom], ""]
         )
 
     lines.extend(
@@ -375,33 +375,33 @@ def render_markdown_report(diff: CaptureDiff) -> str:
     )
     for item in diff.paired:
         route = item["route"]
-        if item.get("headroom_route") and item["headroom_route"] != route:
-            route = f"{route} -> {item['headroom_route']}"
-        status = f"{item['status']['direct']} -> {item['status']['headroom']}"
+        if item.get("legroom_route") and item["legroom_route"] != route:
+            route = f"{route} -> {item['legroom_route']}"
+        status = f"{item['status']['direct']} -> {item['status']['legroom']}"
         sizes = item["request_body_size"]
-        body = f"{sizes['direct']} -> {sizes['headroom']} ({sizes['delta']:+})"
+        body = f"{sizes['direct']} -> {sizes['legroom']} ({sizes['delta']:+})"
         sha = "same" if item["request_body_sha256"]["same"] else "changed"
         headers = item["headers"]
         header_delta = (
-            f"+{_list_or_dash(headers['only_headroom'])}; "
+            f"+{_list_or_dash(headers['only_legroom'])}; "
             f"-{_list_or_dash(headers['only_direct'])}; "
             f"changed={_list_or_dash(headers['changed'])}"
         )
         json_delta = item["json"]
         json_text = (
-            f"+{_list_or_dash(json_delta['only_headroom'])}; "
+            f"+{_list_or_dash(json_delta['only_legroom'])}; "
             f"-{_list_or_dash(json_delta['only_direct'])}; "
             f"changed={_list_or_dash(json_delta['changed'])}"
         )
         anthropic = item.get("anthropic", {})
         direct_anthropic = anthropic.get("direct", {})
-        headroom_anthropic = anthropic.get("headroom", {})
-        tool_delta = headroom_anthropic.get("tools_bytes", 0) - direct_anthropic.get(
+        legroom_anthropic = anthropic.get("legroom", {})
+        tool_delta = legroom_anthropic.get("tools_bytes", 0) - direct_anthropic.get(
             "tools_bytes", 0
         )
         json_text = (
             f"{json_text}; tools={direct_anthropic.get('tools_count', 0)}"
-            f"->{headroom_anthropic.get('tools_count', 0)}"
+            f"->{legroom_anthropic.get('tools_count', 0)}"
             f" ({tool_delta:+} bytes)"
         )
         lines.append(

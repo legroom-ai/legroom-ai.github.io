@@ -7,8 +7,8 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 
-from headroom.install.paths import zcode_config_dir
-from headroom.providers.claude import proxy_base_url as _claude_proxy_base_url
+from legroom.install.paths import zcode_config_dir
+from legroom.providers.claude import proxy_base_url as _claude_proxy_base_url
 
 _log = logging.getLogger(__name__)
 
@@ -98,7 +98,7 @@ def detect_upstream(config_path: Path | None = None) -> ZCodeUpstream:
 
 
 def upstream_to_proxy_urls(upstream: ZCodeUpstream) -> tuple[str | None, str | None]:
-    """Map :class:`ZCodeUpstream` to headroom proxy URL params.
+    """Map :class:`ZCodeUpstream` to legroom proxy URL params.
 
     Returns ``(anthropic_api_url, openai_api_url)`` — exactly one is set.
     """
@@ -111,7 +111,7 @@ def render_setup_lines(port: int) -> list[str]:
     """Render the ZCode setup instructions for the local proxy."""
     targets = build_proxy_targets(port)
     return [
-        "  Headroom proxy is running. Configure ZCode:",
+        "  Legroom proxy is running. Configure ZCode:",
         "",
         "  Open ZCode > Settings > Model Settings:",
         "",
@@ -120,8 +120,8 @@ def render_setup_lines(port: int) -> list[str]:
         "",
         "  Select a model through the new provider in ZCode's model selector.",
         "",
-        "  To add the Headroom MCP server (optional):",
+        "  To add the Legroom MCP server (optional):",
         "    Settings > MCP Servers > New MCP Server > Full configuration",
-        '    Paste: {"headroom": {"type": "stdio", "command": "headroom",',
+        '    Paste: {"legroom": {"type": "stdio", "command": "legroom",',
         '             "args": ["mcp", "serve"], "enabled": true}}',
     ]

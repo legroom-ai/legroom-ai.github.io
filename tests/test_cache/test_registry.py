@@ -2,14 +2,14 @@
 
 import pytest
 
-from headroom.cache import (
+from legroom.cache import (
     AnthropicCacheOptimizer,
     CacheConfig,
     CacheOptimizerRegistry,
     GoogleCacheOptimizer,
     OpenAICacheOptimizer,
 )
-from headroom.cache.base import BaseCacheOptimizer, CacheResult, CacheStrategy
+from legroom.cache.base import BaseCacheOptimizer, CacheResult, CacheStrategy
 
 
 class MockOptimizer(BaseCacheOptimizer):

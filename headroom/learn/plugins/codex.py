@@ -1,4 +1,4 @@
-"""OpenAI Codex CLI plugin for headroom learn.
+"""OpenAI Codex CLI plugin for legroom learn.
 
 Reads session logs from ~/.codex/sessions/ (JSON and JSONL formats).
 """

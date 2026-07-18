@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from headroom.providers.proxy_targets import (
+from legroom.providers.proxy_targets import (
     api_target,
     select_passthrough_base_url,
     vertex_target_for_location,
 )
-from headroom.providers.registry import DEFAULT_VERTEX_API_URL
+from legroom.providers.registry import DEFAULT_VERTEX_API_URL
 
 
 def _proxy(**legacy_targets: str):
@@ -59,7 +59,7 @@ def test_select_passthrough_base_url_handles_special_auth_modes() -> None:
     assert (
         select_passthrough_base_url(
             proxy,
-            {"api-key": "azure", "x-headroom-base-url": "https://azure.example/base/"},
+            {"api-key": "azure", "x-legroom-base-url": "https://azure.example/base/"},
         )
         == "https://azure.example/base"
     )

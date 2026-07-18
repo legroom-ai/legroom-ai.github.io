@@ -1,4 +1,4 @@
-"""Main CLI entry point for Headroom."""
+"""Main CLI entry point for Legroom."""
 
 import click
 
@@ -8,7 +8,7 @@ CLI_CONTEXT_SETTINGS = {"help_option_names": ["--help", "-?"]}
 def get_version() -> str:
     """Get the current version."""
     try:
-        from headroom._version import __version__
+        from legroom._version import __version__
 
         return __version__
     except ImportError:
@@ -16,19 +16,19 @@ def get_version() -> str:
 
 
 @click.group(context_settings=CLI_CONTEXT_SETTINGS)
-@click.version_option(get_version(), "--version", "-v", prog_name="headroom")
+@click.version_option(get_version(), "--version", "-v", prog_name="legroom")
 @click.pass_context
 def main(ctx: click.Context) -> None:
-    """Headroom - The Context Optimization Layer for LLM Applications.
+    """Legroom - The Context Optimization Layer for LLM Applications.
 
     Manage memories, run the optimization proxy, and analyze metrics.
 
     \b
     Examples:
-        headroom proxy              Start the optimization proxy
-        headroom memory list        List stored memories
-        headroom memory stats       Show memory statistics
-        headroom update             Update Headroom to the latest release
+        legroom proxy              Start the optimization proxy
+        legroom memory list        List stored memories
+        legroom memory stats       Show memory statistics
+        legroom update             Update Legroom to the latest release
     """
     ctx.ensure_object(dict)
 
@@ -39,7 +39,7 @@ def main(ctx: click.Context) -> None:
     # exports authoritative over the stored file. Fail-open so a corrupt
     # settings.json can never block the CLI.
     try:
-        from headroom import settings_store
+        from legroom import settings_store
 
         settings_store.apply_to_environ(settings_store.load())
     except Exception:  # noqa: BLE001 — settings load must never break the CLI
@@ -50,7 +50,7 @@ def main(ctx: click.Context) -> None:
     # Never blocks, never raises; skipped for `update` (it checks explicitly).
     if ctx.invoked_subcommand != "update":
         try:
-            from headroom.update_check import maybe_check_async
+            from legroom.update_check import maybe_check_async
 
             maybe_check_async()
         except Exception:  # noqa: BLE001 — update check must never break the CLI

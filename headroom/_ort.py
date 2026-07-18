@@ -2,23 +2,23 @@
 
 Why this module exists
 ----------------------
-``headroom._core`` consumers of the ``ort`` crate (magika content
+``legroom._core`` consumers of the ``ort`` crate (magika content
 detection, fastembed embeddings) are built with ``ort-load-dynamic`` on
 every platform: the native ONNX Runtime library is resolved at runtime
 rather than statically linked.
 
 Static ``ort-download-binaries`` linking is risky on x86_64 Linux/macOS
 because Microsoft's prebuilt ORT requires AVX2 and can execute at
-extension load, SIGILLing ``import headroom._core`` on pre-AVX2 CPUs
-before Headroom's runtime guard can fall back (#1278). On Windows, the
+extension load, SIGILLing ``import legroom._core`` on pre-AVX2 CPUs
+before Legroom's runtime guard can fall back (#1278). On Windows, the
 dynamic fallback can pick up ``C:\\Windows\\System32\\onnxruntime.dll``
 from Windows ML and deadlock ORT session init on Windows 11 24H2+.
 
-The fix: before anything can import ``headroom._core``, resolve the
+The fix: before anything can import ``legroom._core``, resolve the
 pip-installed ``onnxruntime`` package's shared library
 (``capi/onnxruntime.dll`` / ``capi/libonnxruntime.so*`` /
 ``capi/libonnxruntime*.dylib``) and export it via ``ORT_DYLIB_PATH``.
-``headroom/__init__.py`` calls this hook, which guarantees ordering for
+``legroom/__init__.py`` calls this hook, which guarantees ordering for
 every package-level consumer.
 
 Behavior contract
@@ -29,8 +29,8 @@ Behavior contract
   importing it (importing would load its native code; this hook must
   stay microsecond-scale and side-effect free).
 - Never raises: import-time failure of an optional accelerator must
-  not break ``import headroom``. Without a pin, detection still
-  degrades gracefully through HEADROOM_MAGIKA_INIT_TIMEOUT_SECS and
+  not break ``import legroom``. Without a pin, detection still
+  degrades gracefully through LEGROOM_MAGIKA_INIT_TIMEOUT_SECS and
   the non-ML tiers.
 """
 
@@ -94,7 +94,7 @@ def _resolve_and_pin() -> str | None:
         if spec is None or not spec.origin:
             logger.debug(
                 "onnxruntime package not found; %s left unset. Rust ML detection "
-                "needs a pip-installed onnxruntime (install headroom-ai[proxy] "
+                "needs a pip-installed onnxruntime (install legroom-ai[proxy] "
                 "or set %s explicitly).",
                 _ENV_VAR,
                 _ENV_VAR,
@@ -114,6 +114,6 @@ def _resolve_and_pin() -> str | None:
         os.environ[_ENV_VAR] = str(native)
         logger.info("Pinned %s to bundled ONNX Runtime: %s", _ENV_VAR, native)
         return str(native)
-    except Exception as exc:  # never break `import headroom` over an accelerator pin
+    except Exception as exc:  # never break `import legroom` over an accelerator pin
         logger.debug("ort dylib pin skipped: %s: %s", type(exc).__name__, exc)
         return None

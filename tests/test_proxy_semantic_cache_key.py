@@ -1,4 +1,4 @@
-"""Regression tests for the proxy SemanticCache key (headroom/proxy/semantic_cache.py).
+"""Regression tests for the proxy SemanticCache key (legroom/proxy/semantic_cache.py).
 
 The key previously hashed only {model, messages}, so two requests with identical
 messages but a different system prompt, tool set, or sampling config collided and
@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import pytest
 
-from headroom.proxy.semantic_cache import SemanticCache
+from legroom.proxy.semantic_cache import SemanticCache
 
 MESSAGES = [{"role": "user", "content": "hello"}]
 MODEL = "claude-haiku-4-5"

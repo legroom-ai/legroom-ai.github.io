@@ -179,11 +179,11 @@ def simulate_codex_maturation(root: Path) -> MaturationSimReport:
     Codex has no structured ``Read`` tool. It reads files through
     ``exec_command`` calls such as ``cat``, ``sed -n``, and ``rtk read``.
     This mirrors ``simulate_maturation`` with the Codex command classifier
-    so ``headroom audit-reads --codex --simulate-maturation`` sizes the
+    so ``legroom audit-reads --codex --simulate-maturation`` sizes the
     same read-maturation policy from Codex traffic instead of returning an
     all-zero Claude-only simulation.
     """
-    from headroom.audit.codex import classify_command
+    from legroom.audit.codex import classify_command
 
     r = MaturationSimReport()
     next_touch_gaps: list[int] = []

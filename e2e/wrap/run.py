@@ -21,7 +21,7 @@ import httpx
 REPO_ROOT = Path("/workspace")
 PLUGIN_DIR = REPO_ROOT / "plugins" / "openclaw"
 SDK_DIR = REPO_ROOT / "sdk" / "typescript"
-RTK_MARKER = "<!-- headroom:rtk-instructions -->"
+RTK_MARKER = "<!-- legroom:rtk-instructions -->"
 PROXY_PORT = 28887
 CODEX_PORT = 28888
 AIDER_PORT = 28889
@@ -218,7 +218,7 @@ def create_shims(shim_dir: Path) -> None:
         from pathlib import Path
 
         tool = Path(sys.argv[0]).name
-        log_dir = Path(os.environ["HEADROOM_E2E_LOG_DIR"])
+        log_dir = Path(os.environ["LEGROOM_E2E_LOG_DIR"])
         log_dir.mkdir(parents=True, exist_ok=True)
         record = {
             "tool": tool,
@@ -275,7 +275,7 @@ def create_shims(shim_dir: Path) -> None:
         from pathlib import Path
 
         tool = Path(sys.argv[0]).name
-        log_dir = Path(os.environ["HEADROOM_E2E_LOG_DIR"])
+        log_dir = Path(os.environ["LEGROOM_E2E_LOG_DIR"])
         log_dir.mkdir(parents=True, exist_ok=True)
         record = {
             "tool": tool,
@@ -320,7 +320,7 @@ def create_shims(shim_dir: Path) -> None:
             )
             probes.append({"url": f"{openai_base.rstrip('/')}/models", "status": models_status})
 
-            model_name = "headroom-wrap-e2e"
+            model_name = "legroom-wrap-e2e"
             chat_status, chat_body = request_json(
                 f"{openai_base.rstrip('/')}/chat/completions",
                 payload={
@@ -328,7 +328,7 @@ def create_shims(shim_dir: Path) -> None:
                     "messages": [
                         {
                             "role": "user",
-                            "content": "Confirm Headroom received this wrapped Codex message.",
+                            "content": "Confirm Legroom received this wrapped Codex message.",
                         }
                     ],
                 },
@@ -346,10 +346,10 @@ def create_shims(shim_dir: Path) -> None:
             probes.append({"url": stats_url, "status": stats_status})
             requests = stats_body.get("requests", {})
             by_model = requests.get("by_model", {}) if isinstance(requests, dict) else {}
-            record["headroom_request_total"] = (
+            record["legroom_request_total"] = (
                 requests.get("total") if isinstance(requests, dict) else None
             )
-            record["headroom_model_count"] = (
+            record["legroom_model_count"] = (
                 by_model.get(model_name) if isinstance(by_model, dict) else None
             )
 
@@ -397,9 +397,9 @@ def start_mock_server(port: int) -> tuple[MockOpenAIServer, threading.Thread]:
 
 
 def start_proxy(port: int, env: dict[str, str]) -> subprocess.Popen[str]:
-    log(f"Starting headroom proxy on port {port}")
+    log(f"Starting legroom proxy on port {port}")
     proc = subprocess.Popen(
-        ["headroom", "proxy", "--host", "127.0.0.1", "--port", str(port)],
+        ["legroom", "proxy", "--host", "127.0.0.1", "--port", str(port)],
         env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
@@ -485,9 +485,9 @@ def stop_openclaw_gateway(env: dict[str, str], cwd: Path) -> None:
 
 def verify_installs() -> None:
     log("Verifying installed packages and binaries")
-    for tool in ("headroom", "codex", "aider", "openclaw"):
+    for tool in ("legroom", "codex", "aider", "openclaw"):
         assert_true(shutil.which(tool) is not None, f"Expected '{tool}' on PATH")
-    run(["headroom", "--help"], timeout=30)
+    run(["legroom", "--help"], timeout=30)
     run(["npm", "list", "-g", "--depth=0", "@openai/codex", "openclaw"], timeout=60)
     run(["/opt/aider-venv/bin/python", "-m", "pip", "show", "aider-chat"], timeout=60)
 
@@ -512,7 +512,7 @@ def prepare_local_openclaw_plugin(base_env: dict[str, str], tmp_dir: Path) -> Pa
 
     package_json_path = plugin_dir / "package.json"
     package_json = json.loads(package_json_path.read_text(encoding="utf-8"))
-    package_json["dependencies"]["headroom-ai"] = f"file:{tarball_path.as_posix()}"
+    package_json["dependencies"]["legroom-ai"] = f"file:{tarball_path.as_posix()}"
     package_json_path.write_text(f"{json.dumps(package_json, indent=2)}\n", encoding="utf-8")
 
     return plugin_dir
@@ -564,7 +564,7 @@ def verify_codex_wrap(
 ) -> None:
     port = CODEX_PORT
     run(
-        ["headroom", "wrap", "codex", "--port", str(port), "--", "--help"],
+        ["legroom", "wrap", "codex", "--port", str(port), "--", "--help"],
         env=base_env,
         cwd=project_dir,
         timeout=120,
@@ -586,12 +586,12 @@ def verify_codex_wrap(
     )
     durable_config = config_path.read_text(encoding="utf-8")
     assert_true(
-        "[mcp_servers.headroom]" in durable_config,
-        "Codex wrap should persist the Headroom MCP server",
+        "[mcp_servers.legroom]" in durable_config,
+        "Codex wrap should persist the Legroom MCP server",
     )
     assert_true(
-        'model_provider = "headroom"' not in durable_config
-        and "[model_providers.headroom]" not in durable_config
+        'model_provider = "legroom"' not in durable_config
+        and "[model_providers.legroom]" not in durable_config
         and "openai_base_url" not in durable_config,
         "Codex wrap should keep proxy routing out of the durable config",
     )
@@ -638,31 +638,31 @@ def verify_codex_wrap(
                 "status": 200,
             },
         ],
-        "Codex shim should prove OPENAI_BASE_URL points at a live proxy and that Headroom logged the wrapped message",
+        "Codex shim should prove OPENAI_BASE_URL points at a live proxy and that Legroom logged the wrapped message",
     )
     assert_true(
         entries[-1].get("chat_completion") == "mock completion from upstream",
-        "Codex wrap should receive the mock upstream completion through Headroom",
+        "Codex wrap should receive the mock upstream completion through Legroom",
     )
     assert_true(
-        entries[-1].get("headroom_model_count", 0) >= 1,
-        "Codex wrap should appear in Headroom request stats",
+        entries[-1].get("legroom_model_count", 0) >= 1,
+        "Codex wrap should appear in Legroom request stats",
     )
     assert_true(
         any(
             item["path"] == "/v1/chat/completions"
             and isinstance(item.get("body"), dict)
-            and item["body"].get("model") == "headroom-wrap-e2e"
+            and item["body"].get("model") == "legroom-wrap-e2e"
             for item in mock_server.requests
         ),
-        "Codex wrap should forward the wrapped message upstream through Headroom",
+        "Codex wrap should forward the wrapped message upstream through Legroom",
     )
 
 
 def verify_claude_wrap(base_env: dict[str, str], project_dir: Path, log_dir: Path) -> None:
     port = PROXY_PORT + 10
     run(
-        ["headroom", "wrap", "claude", "--port", str(port), "--", "--help"],
+        ["legroom", "wrap", "claude", "--port", str(port), "--", "--help"],
         env=base_env,
         cwd=project_dir,
         timeout=120,
@@ -683,7 +683,7 @@ def verify_claude_wrap(base_env: dict[str, str], project_dir: Path, log_dir: Pat
 def verify_aider_wrap(base_env: dict[str, str], project_dir: Path, log_dir: Path) -> None:
     port = AIDER_PORT
     run(
-        ["headroom", "wrap", "aider", "--port", str(port), "--", "--help"],
+        ["legroom", "wrap", "aider", "--port", str(port), "--", "--help"],
         env=base_env,
         cwd=project_dir,
         timeout=120,
@@ -723,7 +723,7 @@ def verify_aider_wrap(base_env: dict[str, str], project_dir: Path, log_dir: Path
 def verify_cursor_wrap(base_env: dict[str, str], project_dir: Path) -> None:
     port = CURSOR_PORT
     proc = subprocess.Popen(
-        ["headroom", "wrap", "cursor", "--port", str(port)],
+        ["legroom", "wrap", "cursor", "--port", str(port)],
         env=base_env,
         cwd=str(project_dir),
         stdout=subprocess.PIPE,
@@ -746,7 +746,7 @@ def verify_cursor_wrap(base_env: dict[str, str], project_dir: Path) -> None:
         )
         wait_for_http(f"http://127.0.0.1:{port}/health", timeout=15)
         # rtk registers a native Cursor hook (rtk init --agent cursor) when it
-        # can (~/.cursor exists); headroom only falls back to injecting
+        # can (~/.cursor exists); legroom only falls back to injecting
         # .cursorrules text if that registration fails (GH #756). Accept
         # either outcome rather than assuming the fallback path.
         cursorrules = project_dir / ".cursorrules"
@@ -770,7 +770,7 @@ def verify_cursor_wrap(base_env: dict[str, str], project_dir: Path) -> None:
 def verify_cline_wrap(base_env: dict[str, str], project_dir: Path) -> None:
     """Smoke test: `wrap cline --prepare-only` writes RTK guidance to .clinerules."""
     run(
-        ["headroom", "wrap", "cline", "--prepare-only", "--port", str(CLINE_PORT)],
+        ["legroom", "wrap", "cline", "--prepare-only", "--port", str(CLINE_PORT)],
         env=base_env,
         cwd=project_dir,
         timeout=60,
@@ -786,7 +786,7 @@ def verify_cline_wrap(base_env: dict[str, str], project_dir: Path) -> None:
 def verify_continue_wrap(base_env: dict[str, str], project_dir: Path) -> None:
     """Smoke test: `wrap continue --prepare-only` injects RTK into .continue/config.json."""
     run(
-        ["headroom", "wrap", "continue", "--prepare-only", "--port", str(CONTINUE_PORT)],
+        ["legroom", "wrap", "continue", "--prepare-only", "--port", str(CONTINUE_PORT)],
         env=base_env,
         cwd=project_dir,
         timeout=60,
@@ -804,7 +804,7 @@ def verify_continue_wrap(base_env: dict[str, str], project_dir: Path) -> None:
 def verify_goose_wrap(base_env: dict[str, str], project_dir: Path) -> None:
     """Smoke test: `wrap goose --prepare-only` writes RTK guidance to .goosehints."""
     run(
-        ["headroom", "wrap", "goose", "--prepare-only", "--port", str(GOOSE_PORT)],
+        ["legroom", "wrap", "goose", "--prepare-only", "--port", str(GOOSE_PORT)],
         env=base_env,
         cwd=project_dir,
         timeout=60,
@@ -825,7 +825,7 @@ def verify_openhands_wrap(base_env: dict[str, str], project_dir: Path) -> None:
     setup path. The env-var wiring is covered by the unit tests.
     """
     run(
-        ["headroom", "wrap", "openhands", "--prepare-only", "--port", str(OPENHANDS_PORT)],
+        ["legroom", "wrap", "openhands", "--prepare-only", "--port", str(OPENHANDS_PORT)],
         env=base_env,
         cwd=project_dir,
         timeout=60,
@@ -841,7 +841,7 @@ def verify_openclaw_wrap(
     gateway_proc: subprocess.Popen[str] | None = None
     run(
         [
-            "headroom",
+            "legroom",
             "wrap",
             "openclaw",
             "--plugin-path",
@@ -902,7 +902,7 @@ def verify_openclaw_wrap(
                     gateway_output = gateway_proc.stdout.read()
                 raise RuntimeError(f"{exc}\nGateway output:\n{gateway_output}") from exc
 
-        entry = state["plugins"]["entries"]["headroom"]
+        entry = state["plugins"]["entries"]["legroom"]
         assert_true(entry["enabled"] is True, "OpenClaw wrap should enable the plugin")
         assert_true(entry["config"]["proxyPort"] == port, "OpenClaw wrap should set proxy port")
         assert_true(
@@ -914,7 +914,7 @@ def verify_openclaw_wrap(
             "OpenClaw e2e bootstrap should set gateway.mode=local",
         )
         assert_true(
-            state["plugins"]["slots"]["contextEngine"] == "headroom",
+            state["plugins"]["slots"]["contextEngine"] == "legroom",
             "OpenClaw wrap should set the context engine slot",
         )
     finally:
@@ -922,7 +922,7 @@ def verify_openclaw_wrap(
             stop_process(gateway_proc)
         stop_openclaw_gateway(base_env, project_dir)
 
-    run(["headroom", "unwrap", "openclaw"], env=base_env, cwd=project_dir, timeout=120)
+    run(["legroom", "unwrap", "openclaw"], env=base_env, cwd=project_dir, timeout=120)
     state = json.loads(config_path.read_text(encoding="utf-8"))
     assert_true(
         state["plugins"]["slots"]["contextEngine"] == "legacy",
@@ -933,7 +933,7 @@ def verify_openclaw_wrap(
 def main() -> None:
     verify_installs()
     with tempfile.TemporaryDirectory(
-        prefix="headroom-wrap-e2e-", ignore_cleanup_errors=True
+        prefix="legroom-wrap-e2e-", ignore_cleanup_errors=True
     ) as tmp_dir_str:
         tmp_dir = Path(tmp_dir_str)
         home_dir = tmp_dir / "home"
@@ -951,11 +951,11 @@ def main() -> None:
             {
                 "HOME": str(home_dir),
                 "PATH": f"{shim_dir}{os.pathsep}{base_env['PATH']}",
-                "HEADROOM_E2E_LOG_DIR": str(log_dir),
+                "LEGROOM_E2E_LOG_DIR": str(log_dir),
                 "OPENAI_TARGET_API_URL": "http://127.0.0.1:19001/v1",
                 # RTK is opt-in (off by default). These wrap smoke tests assert
                 # RTK-instruction injection, so exercise the RTK-on path.
-                "HEADROOM_RTK": "1",
+                "LEGROOM_RTK": "1",
             }
         )
 
@@ -982,7 +982,7 @@ def main() -> None:
 def verify_opencode_wrap(base_env: dict[str, str], project_dir: Path, log_dir: Path) -> None:
     port = OPENCODE_PORT
     run(
-        ["headroom", "wrap", "opencode", "--port", str(port), "--", "--help"],
+        ["legroom", "wrap", "opencode", "--port", str(port), "--", "--help"],
         env=base_env,
         cwd=project_dir,
         timeout=120,
@@ -1009,12 +1009,12 @@ def verify_opencode_wrap(base_env: dict[str, str], project_dir: Path, log_dir: P
     )
     config = json.loads(env_vars["OPENCODE_CONFIG_CONTENT"])
     assert_true(
-        config["provider"]["headroom"]["options"]["baseURL"] == f"http://127.0.0.1:{port}/v1",
-        "Opencode wrap should inject headroom provider baseURL",
+        config["provider"]["legroom"]["options"]["baseURL"] == f"http://127.0.0.1:{port}/v1",
+        "Opencode wrap should inject legroom provider baseURL",
     )
 
     run(
-        ["headroom", "unwrap", "opencode", "--port", str(port)],
+        ["legroom", "unwrap", "opencode", "--port", str(port)],
         env=base_env,
         cwd=project_dir,
         timeout=120,
@@ -1023,8 +1023,8 @@ def verify_opencode_wrap(base_env: dict[str, str], project_dir: Path, log_dir: P
     if config_path.exists():
         content = config_path.read_text(encoding="utf-8")
         assert_true(
-            "headroom" not in content,
-            "Opencode unwrap should remove headroom provider from config",
+            "legroom" not in content,
+            "Opencode unwrap should remove legroom provider from config",
         )
 
 

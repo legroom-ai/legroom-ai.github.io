@@ -75,7 +75,7 @@ class ProcessedBatchResult:
 class BatchResultProcessor:
     """Processes batch results to handle CCR tool calls.
 
-    When a batch result contains a CCR tool call (headroom_retrieve),
+    When a batch result contains a CCR tool call (legroom_retrieve),
     this processor:
     1. Looks up the original request context
     2. Executes the retrieval from the compression store

@@ -32,10 +32,10 @@ import pytest
 
 def _build_extension() -> None:
     try:
-        from headroom._core import SmartCrusher  # noqa: F401
+        from legroom._core import SmartCrusher  # noqa: F401
     except ImportError:
         pytest.skip(
-            "headroom._core not built — run `bash scripts/build_rust_extension.sh`",
+            "legroom._core not built — run `bash scripts/build_rust_extension.sh`",
             allow_module_level=True,
         )
 
@@ -48,7 +48,7 @@ def test_audit_safe_disabled_by_default_no_behavior_change() -> None:
     default → identical output to a crusher with no audit-safe config
     at all. The flag gates the whole feature, not just the presence of
     patterns."""
-    from headroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
+    from legroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
 
     items = [{"id": i, "status": "ok"} for i in range(50)]
     items_json = json.dumps(items)
@@ -69,7 +69,7 @@ def test_audit_safe_disabled_by_default_no_behavior_change() -> None:
 def test_audit_safe_with_no_patterns_is_a_no_op() -> None:
     """`audit_safe=True` but `protected_patterns` empty/None → nothing
     to protect, output unchanged from the unguarded crusher."""
-    from headroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
+    from legroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
 
     items = [{"id": i, "status": "ok"} for i in range(50)]
     items_json = json.dumps(items)
@@ -96,7 +96,7 @@ def test_splice_back_restores_a_dropped_protected_row() -> None:
     Deterministic — doesn't depend on Rust's actual sampling decision
     for a given input, only on the splice/verify logic this PR adds.
     """
-    from headroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
+    from legroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
 
     crusher = SmartCrusher(
         SmartCrusherConfig(audit_safe=True, protected_patterns=["AUDIT_FLAG"]),
@@ -132,7 +132,7 @@ def test_audit_safe_preserves_protected_rows_end_to_end() -> None:
     runs, and every protected row is present in the output afterward,
     regardless of what the statistical row-selection decided on its
     own."""
-    from headroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
+    from legroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
 
     background = [{"id": i, "status": "ok"} for i in range(60)]
     protected_rows = [
@@ -170,7 +170,7 @@ def test_audit_safe_fails_closed_when_verification_still_finds_loss(monkeypatch)
     `fail_closed_on_protected_loss=True` (the default), the whole
     array is returned unmodified instead of shipping a result with
     fewer protected-row matches than the input had."""
-    from headroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
+    from legroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
 
     crusher = SmartCrusher(
         SmartCrusherConfig(audit_safe=True, protected_patterns=["AUDIT_FLAG"]),
@@ -208,7 +208,7 @@ def test_audit_safe_ships_best_effort_when_fail_closed_disabled(monkeypatch) -> 
     """Same forced-mismatch scenario, but `fail_closed_on_protected_loss
     =False` — ship the spliced best-effort result (with a logged
     warning) instead of refusing to compress."""
-    from headroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
+    from legroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
 
     crusher = SmartCrusher(
         SmartCrusherConfig(
@@ -251,7 +251,7 @@ def test_invalid_protected_pattern_raises() -> None:
     """A regex that fails to compile is a caller bug and must raise
     loudly at construction time — silently treating it as "nothing
     protected" would defeat the point of audit-safe mode."""
-    from headroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
+    from legroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
 
     with pytest.raises(ValueError, match="invalid protected_patterns regex"):
         SmartCrusher(
@@ -272,7 +272,7 @@ def test_invalid_protected_pattern_raises() -> None:
 def test_smart_crush_content_preserves_protected_rows_end_to_end() -> None:
     """Real lossy compression via `_smart_crush_content` (the method
     `apply()` calls) still surfaces every protected row afterward."""
-    from headroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
+    from legroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
 
     background = [{"id": i, "status": "ok"} for i in range(60)]
     protected_rows = [
@@ -306,8 +306,8 @@ def test_apply_preserves_protected_rows_in_tool_message() -> None:
     message content (before the digest marker) still contains every
     protected row. This is the exact code path the real proxy runs for
     every tool output — proof audit-safe mode isn't test-only plumbing."""
-    from headroom import OpenAIProvider, Tokenizer
-    from headroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
+    from legroom import OpenAIProvider, Tokenizer
+    from legroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
 
     background = [{"id": i, "status": "ok"} for i in range(60)]
     protected_rows = [
@@ -356,7 +356,7 @@ def test_content_protection_falls_back_to_pattern_count_for_non_array_output() -
     row structure to splice into, so verification counts protected
     pattern matches in the raw text instead. A drop in match count
     still fails closed."""
-    from headroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
+    from legroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
 
     crusher = SmartCrusher(
         SmartCrusherConfig(audit_safe=True, protected_patterns=["AUDIT_FLAG"]),
@@ -381,7 +381,7 @@ def test_content_protection_no_op_when_pattern_count_preserved() -> None:
     """Non-list `crushed` output that still contains every protected
     pattern occurrence is left untouched — the fallback only fires on
     an actual count decrease."""
-    from headroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
+    from legroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
 
     crusher = SmartCrusher(
         SmartCrusherConfig(audit_safe=True, protected_patterns=["AUDIT_FLAG"]),

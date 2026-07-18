@@ -8,9 +8,9 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-import headroom.evals.adversarial_grid as grid_module
-from headroom.cli.main import main
-from headroom.evals.adversarial_grid import (
+import legroom.evals.adversarial_grid as grid_module
+from legroom.cli.main import main
+from legroom.evals.adversarial_grid import (
     PAYLOADS,
     POSITIONS,
     AdversarialReport,

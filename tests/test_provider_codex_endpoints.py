@@ -1,4 +1,4 @@
-from headroom.providers.codex.endpoints import (
+from legroom.providers.codex.endpoints import (
     chatgpt_backend_url,
     codex_backend_url,
     codex_backend_ws_url,

@@ -30,28 +30,28 @@ pub enum CompressionMode {
     LiveZone,
 }
 
-/// Policy for stripping internal `x-headroom-*` headers from upstream-bound
+/// Policy for stripping internal `x-legroom-*` headers from upstream-bound
 /// requests (PR-A5, fixes P5-49).
 ///
 /// When `enabled` (default), every header whose name starts with
-/// `x-headroom-` is dropped before the upstream call. Stops fingerprinting
-/// of the proxy via subscription-revocation flags (`x-headroom-bypass`,
-/// `x-headroom-mode`, etc.) and prevents leakage of internal user-id /
+/// `x-legroom-` is dropped before the upstream call. Stops fingerprinting
+/// of the proxy via subscription-revocation flags (`x-legroom-bypass`,
+/// `x-legroom-mode`, etc.) and prevents leakage of internal user-id /
 /// stack / base-url headers.
 ///
 /// When `disabled`, internal headers are forwarded verbatim. This is an
 /// explicit operator opt-in for diagnostic shadow tracing — NOT a fallback.
 /// Document the trade-off in `docs/configuration.md` before flipping this.
 ///
-/// Source priority: CLI flag → `HEADROOM_PROXY_STRIP_INTERNAL_HEADERS`
+/// Source priority: CLI flag → `LEGROOM_PROXY_STRIP_INTERNAL_HEADERS`
 /// env var → default (`enabled`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 #[clap(rename_all = "snake_case")]
 pub enum StripInternalHeaders {
-    /// Strip every `x-headroom-*` header from upstream-bound requests.
+    /// Strip every `x-legroom-*` header from upstream-bound requests.
     /// Default. Operationally safe.
     Enabled,
-    /// Forward `x-headroom-*` to upstream verbatim. Diagnostic-only;
+    /// Forward `x-legroom-*` to upstream verbatim. Diagnostic-only;
     /// exposes internal flags to the upstream and reveals the proxy.
     Disabled,
 }
@@ -85,7 +85,7 @@ impl StripInternalHeaders {
 /// those fields are *always* part of the cache hot zone (invariant I2);
 /// they're guaranteed-immutable independently of marker placement.
 ///
-/// Source priority: CLI flag → `HEADROOM_PROXY_CACHE_CONTROL_AUTO_FROZEN`
+/// Source priority: CLI flag → `LEGROOM_PROXY_CACHE_CONTROL_AUTO_FROZEN`
 /// env var → default (`enabled`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 #[clap(rename_all = "snake_case")]
@@ -140,7 +140,7 @@ impl CacheControlAutoFrozen {
 /// — instant if config is hot-reloaded, redeploy otherwise.
 ///
 /// Source priority: CLI flag →
-/// `HEADROOM_PROXY_AUTH_MODE_POLICY_ENFORCEMENT` env var →
+/// `LEGROOM_PROXY_AUTH_MODE_POLICY_ENFORCEMENT` env var →
 /// default (`disabled`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 #[clap(rename_all = "snake_case")]
@@ -183,18 +183,18 @@ impl CompressionMode {
 
 #[derive(Debug, Clone, Parser)]
 #[command(
-    name = "headroom-proxy",
+    name = "legroom-proxy",
     version,
-    about = "Headroom transparent reverse proxy"
+    about = "Legroom transparent reverse proxy"
 )]
 pub struct CliArgs {
     /// Address the proxy listens on (e.g. 0.0.0.0:8787).
-    #[arg(long, env = "HEADROOM_PROXY_LISTEN", default_value = "0.0.0.0:8787")]
+    #[arg(long, env = "LEGROOM_PROXY_LISTEN", default_value = "0.0.0.0:8787")]
     pub listen: SocketAddr,
 
     /// Upstream base URL the proxy forwards to (e.g. http://127.0.0.1:8788).
     /// REQUIRED — there is no default; we want operators to be explicit.
-    #[arg(long, env = "HEADROOM_PROXY_UPSTREAM")]
+    #[arg(long, env = "LEGROOM_PROXY_UPSTREAM")]
     pub upstream: Url,
 
     /// End-to-end timeout for a single upstream request (long, since LLM
@@ -227,17 +227,17 @@ pub struct CliArgs {
     #[arg(long, default_value = "30s", value_parser = parse_duration)]
     pub graceful_shutdown_timeout: Duration,
 
-    /// Enable Headroom compression on LLM-shaped requests
+    /// Enable Legroom compression on LLM-shaped requests
     /// (currently: `POST /v1/messages` for Anthropic). When off,
     /// the proxy stays a pure streaming passthrough.
     ///
     /// Off by default so existing operators get unchanged behaviour
     /// and the integration-test harness doesn't need to opt out
     /// per-test. Operators wanting to demo the compressor pass
-    /// `--compression` (or set `HEADROOM_PROXY_COMPRESSION=1`).
+    /// `--compression` (or set `LEGROOM_PROXY_COMPRESSION=1`).
     #[arg(
         long = "compression",
-        env = "HEADROOM_PROXY_COMPRESSION",
+        env = "LEGROOM_PROXY_COMPRESSION",
         default_value_t = false
     )]
     pub compression: bool,
@@ -258,11 +258,11 @@ pub struct CliArgs {
     /// The flag exists so the default can flip in one config
     /// change once `live_zone` is the safer choice on real traffic.
     ///
-    /// Source priority: CLI flag → `HEADROOM_PROXY_COMPRESSION_MODE`
+    /// Source priority: CLI flag → `LEGROOM_PROXY_COMPRESSION_MODE`
     /// env var → default (`off`).
     #[arg(
         long = "compression-mode",
-        env = "HEADROOM_PROXY_COMPRESSION_MODE",
+        env = "LEGROOM_PROXY_COMPRESSION_MODE",
         value_enum,
         default_value_t = CompressionMode::Off,
     )]
@@ -278,11 +278,11 @@ pub struct CliArgs {
     /// benchmark setups that want to measure compression independent
     /// of marker placement; it is NOT recommended for production.
     ///
-    /// Source priority: CLI flag → `HEADROOM_PROXY_CACHE_CONTROL_AUTO_FROZEN`
+    /// Source priority: CLI flag → `LEGROOM_PROXY_CACHE_CONTROL_AUTO_FROZEN`
     /// env var → default (`enabled`).
     #[arg(
         long = "cache-control-auto-frozen",
-        env = "HEADROOM_PROXY_CACHE_CONTROL_AUTO_FROZEN",
+        env = "LEGROOM_PROXY_CACHE_CONTROL_AUTO_FROZEN",
         value_enum,
         default_value_t = CacheControlAutoFrozen::Enabled,
     )]
@@ -295,26 +295,26 @@ pub struct CliArgs {
     /// any subscription regression.
     ///
     /// Source priority: CLI flag →
-    /// `HEADROOM_PROXY_AUTH_MODE_POLICY_ENFORCEMENT` env var →
+    /// `LEGROOM_PROXY_AUTH_MODE_POLICY_ENFORCEMENT` env var →
     /// default (`enabled` from c5/5 onward).
     #[arg(
         long = "auth-mode-policy-enforcement",
-        env = "HEADROOM_PROXY_AUTH_MODE_POLICY_ENFORCEMENT",
+        env = "LEGROOM_PROXY_AUTH_MODE_POLICY_ENFORCEMENT",
         value_enum,
         default_value_t = AuthModePolicyEnforcement::Enabled,
     )]
     pub auth_mode_policy_enforcement: AuthModePolicyEnforcement,
 
-    /// Strip internal `x-headroom-*` headers from upstream-bound
+    /// Strip internal `x-legroom-*` headers from upstream-bound
     /// requests (PR-A5, fixes P5-49). Default `enabled`. The `disabled`
     /// path is operator opt-in for diagnostic shadow tracing only —
     /// NOT a fallback per realignment build constraint #4.
     ///
-    /// Source priority: CLI flag → `HEADROOM_PROXY_STRIP_INTERNAL_HEADERS`
+    /// Source priority: CLI flag → `LEGROOM_PROXY_STRIP_INTERNAL_HEADERS`
     /// env var → default (`enabled`).
     #[arg(
         long = "strip-internal-headers",
-        env = "HEADROOM_PROXY_STRIP_INTERNAL_HEADERS",
+        env = "LEGROOM_PROXY_STRIP_INTERNAL_HEADERS",
         value_enum,
         default_value_t = StripInternalHeaders::Enabled,
     )]
@@ -331,11 +331,11 @@ pub struct CliArgs {
     /// rollback of the streaming pipeline without flipping the
     /// global `--compression` switch — it is NOT a fallback path.
     ///
-    /// Source priority: CLI flag → `HEADROOM_PROXY_ENABLE_RESPONSES_STREAMING`
+    /// Source priority: CLI flag → `LEGROOM_PROXY_ENABLE_RESPONSES_STREAMING`
     /// env var → default (`true`).
     #[arg(
         long = "enable-responses-streaming",
-        env = "HEADROOM_PROXY_ENABLE_RESPONSES_STREAMING",
+        env = "LEGROOM_PROXY_ENABLE_RESPONSES_STREAMING",
         default_value_t = true,
         action = clap::ArgAction::Set,
     )]
@@ -353,11 +353,11 @@ pub struct CliArgs {
     /// is NOT performed in this PR — `enable_conversations_passthrough`
     /// is strictly an instrumentation switch.
     ///
-    /// Source priority: CLI flag → `HEADROOM_PROXY_ENABLE_CONVERSATIONS_PASSTHROUGH`
+    /// Source priority: CLI flag → `LEGROOM_PROXY_ENABLE_CONVERSATIONS_PASSTHROUGH`
     /// env var → default (`true`).
     #[arg(
         long = "enable-conversations-passthrough",
-        env = "HEADROOM_PROXY_ENABLE_CONVERSATIONS_PASSTHROUGH",
+        env = "LEGROOM_PROXY_ENABLE_CONVERSATIONS_PASSTHROUGH",
         default_value_t = true,
         action = clap::ArgAction::Set,
     )]
@@ -374,11 +374,11 @@ pub struct CliArgs {
     /// re-sign — operators MUST run an unsigned upstream that
     /// happens to know what to do, otherwise this fails closed).
     ///
-    /// Source priority: CLI flag → `HEADROOM_PROXY_ENABLE_BEDROCK_NATIVE`
+    /// Source priority: CLI flag → `LEGROOM_PROXY_ENABLE_BEDROCK_NATIVE`
     /// env var → default (`true`).
     #[arg(
         long = "enable-bedrock-native",
-        env = "HEADROOM_PROXY_ENABLE_BEDROCK_NATIVE",
+        env = "LEGROOM_PROXY_ENABLE_BEDROCK_NATIVE",
         default_value_t = true,
         action = clap::ArgAction::Set,
     )]
@@ -389,11 +389,11 @@ pub struct CliArgs {
     /// region is `https://bedrock-runtime.{region}.amazonaws.com`
     /// (override via `--bedrock-endpoint` for FIPS or VPC endpoints).
     ///
-    /// Source priority: CLI flag → `HEADROOM_PROXY_BEDROCK_REGION`
+    /// Source priority: CLI flag → `LEGROOM_PROXY_BEDROCK_REGION`
     /// env var → `AWS_REGION` env var → default (`us-east-1`).
     #[arg(
         long = "bedrock-region",
-        env = "HEADROOM_PROXY_BEDROCK_REGION",
+        env = "LEGROOM_PROXY_BEDROCK_REGION",
         default_value = "us-east-1"
     )]
     pub bedrock_region: String,
@@ -404,18 +404,18 @@ pub struct CliArgs {
     /// (`bedrock-runtime-fips.{region}.amazonaws.com`), VPC endpoints,
     /// or local-mock test setups.
     ///
-    /// Source priority: CLI flag → `HEADROOM_PROXY_BEDROCK_ENDPOINT`
+    /// Source priority: CLI flag → `LEGROOM_PROXY_BEDROCK_ENDPOINT`
     /// env var → derived-from-region.
-    #[arg(long = "bedrock-endpoint", env = "HEADROOM_PROXY_BEDROCK_ENDPOINT")]
+    #[arg(long = "bedrock-endpoint", env = "LEGROOM_PROXY_BEDROCK_ENDPOINT")]
     pub bedrock_endpoint: Option<Url>,
 
     /// AWS profile name passed to the `aws-config` default credential
     /// chain. When unset, the chain uses the default behaviour
     /// (env vars → `[default]` profile → IMDS / ECS task role).
     ///
-    /// Source priority: CLI flag → `HEADROOM_PROXY_AWS_PROFILE`
+    /// Source priority: CLI flag → `LEGROOM_PROXY_AWS_PROFILE`
     /// env var → `AWS_PROFILE` env var → default chain.
-    #[arg(long = "aws-profile", env = "HEADROOM_PROXY_AWS_PROFILE")]
+    #[arg(long = "aws-profile", env = "LEGROOM_PROXY_AWS_PROFILE")]
     pub aws_profile: Option<String>,
 
     /// Phase D PR-D2: validate the prelude + message CRC32 on each
@@ -427,11 +427,11 @@ pub struct CliArgs {
     /// reject on CRC mismatch. Per project policy, every flag flip
     /// is logged at app-build time.
     ///
-    /// Source priority: CLI flag → `HEADROOM_PROXY_BEDROCK_VALIDATE_EVENTSTREAM_CRC`
+    /// Source priority: CLI flag → `LEGROOM_PROXY_BEDROCK_VALIDATE_EVENTSTREAM_CRC`
     /// env var → default (`true`).
     #[arg(
         long = "bedrock-validate-eventstream-crc",
-        env = "HEADROOM_PROXY_BEDROCK_VALIDATE_EVENTSTREAM_CRC",
+        env = "LEGROOM_PROXY_BEDROCK_VALIDATE_EVENTSTREAM_CRC",
         default_value_t = true,
         action = clap::ArgAction::Set,
     )]
@@ -446,11 +446,11 @@ pub struct CliArgs {
     /// logging + observability so dashboards can group Vertex traffic
     /// by region without parsing the upstream URL.
     ///
-    /// Source priority: CLI flag → `HEADROOM_PROXY_VERTEX_REGION`
+    /// Source priority: CLI flag → `LEGROOM_PROXY_VERTEX_REGION`
     /// env var → default (`us-central1`).
     #[arg(
         long = "vertex-region",
-        env = "HEADROOM_PROXY_VERTEX_REGION",
+        env = "LEGROOM_PROXY_VERTEX_REGION",
         default_value = "us-central1"
     )]
     pub vertex_region: String,
@@ -461,11 +461,11 @@ pub struct CliArgs {
     /// `cloud-platform.read-only` etc., but Vertex `:rawPredict`
     /// requires write so most deployments use the default.
     ///
-    /// Source priority: CLI flag → `HEADROOM_PROXY_VERTEX_ADC_SCOPE`
+    /// Source priority: CLI flag → `LEGROOM_PROXY_VERTEX_ADC_SCOPE`
     /// env var → default (`cloud-platform`).
     #[arg(
         long = "vertex-adc-scope",
-        env = "HEADROOM_PROXY_VERTEX_ADC_SCOPE",
+        env = "LEGROOM_PROXY_VERTEX_ADC_SCOPE",
         default_value = "https://www.googleapis.com/auth/cloud-platform"
     )]
     pub vertex_adc_scope: String,
@@ -513,7 +513,7 @@ pub struct Config {
     /// Phase F PR-F2.1 c3/6: gate per-auth-mode `CompressionPolicy`
     /// enforcement. `Disabled` until c6/6 flips the default.
     pub auth_mode_policy_enforcement: AuthModePolicyEnforcement,
-    /// Whether to strip internal `x-headroom-*` headers from
+    /// Whether to strip internal `x-legroom-*` headers from
     /// upstream-bound requests. PR-A5 default-on guard against
     /// fingerprinting / leakage of internal flags.
     pub strip_internal_headers: StripInternalHeaders,
@@ -617,7 +617,7 @@ impl Config {
             // new test that needs to exercise the enforcement-on
             // path, set this field to `Enabled` in your test setup.
             auth_mode_policy_enforcement: AuthModePolicyEnforcement::Disabled,
-            // Production default: strip internal `x-headroom-*` headers
+            // Production default: strip internal `x-legroom-*` headers
             // from upstream-bound requests. Tests opt out per-case via
             // `start_proxy_with`.
             strip_internal_headers: StripInternalHeaders::Enabled,

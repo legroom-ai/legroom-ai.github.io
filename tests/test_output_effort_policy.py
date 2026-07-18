@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from headroom.proxy.output_effort_policy import (
+from legroom.proxy.output_effort_policy import (
     LEGACY_THINKING_FLOOR,
     can_create_openai_text_verbosity,
     clamp_legacy_thinking_budget,

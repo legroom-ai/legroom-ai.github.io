@@ -1,4 +1,4 @@
-"""Tests for the Codex read-pattern audit (headroom.audit.codex)."""
+"""Tests for the Codex read-pattern audit (legroom.audit.codex)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from headroom.audit.codex import audit_codex, classify_command, render_codex_text, strip_wrappers
+from legroom.audit.codex import audit_codex, classify_command, render_codex_text, strip_wrappers
 
 
 class TestClassifier:
@@ -22,8 +22,8 @@ class TestClassifier:
             ("sed -n '1,200p' src/foo.py", "read", True),
             ("rtk read src/foo.py --lines 10-50", "read", True),
             ("head -50 src/foo.py", "read", True),
-            ("nl headroom/config.py", "read", False),
-            ("rg -n 'def apply' headroom/", "search", False),
+            ("nl legroom/config.py", "read", False),
+            ("rg -n 'def apply' legroom/", "search", False),
             ("rtk grep -n pattern .", "search", False),
             ("git diff HEAD~1", "git", False),
             ("apply_patch <<'EOF'\n*** Begin Patch\nEOF", "edit", False),
@@ -44,8 +44,8 @@ class TestClassifier:
         assert path == "/abs/foo.py"
 
     def test_sed_range_not_mistaken_for_path(self):
-        _, path, _ = classify_command("sed -n '5,30p' headroom/config.py")
-        assert path == "headroom/config.py"
+        _, path, _ = classify_command("sed -n '5,30p' legroom/config.py")
+        assert path == "legroom/config.py"
 
     def test_compound_command_with_read(self):
         cat, path, _ = classify_command("cat foo.py | grep def", workdir="/r")
@@ -133,7 +133,7 @@ class TestAuditCodex:
 
 class TestCodexMaturationSim:
     def test_metrics(self, codex_dir):
-        from headroom.audit.maturation import simulate_codex_maturation
+        from legroom.audit.maturation import simulate_codex_maturation
 
         r = simulate_codex_maturation(codex_dir)
         assert r.read_calls == 3
@@ -146,7 +146,7 @@ class TestCodexMaturationSim:
     def test_cli_codex_simulate_maturation(self, codex_dir):
         from click.testing import CliRunner
 
-        from headroom.cli.main import main
+        from legroom.cli.main import main
 
         runner = CliRunner()
         res = runner.invoke(
@@ -176,7 +176,7 @@ class TestCodexMaturationSim:
         assert data["maturation_simulation"]["rereads_any"] == 1
 
     def test_edit_risk_metrics_from_codex_mutations(self, tmp_path):
-        from headroom.audit.maturation import simulate_codex_maturation
+        from legroom.audit.maturation import simulate_codex_maturation
 
         lines = [
             _call("c1", "cat src/foo.py"),
@@ -206,7 +206,7 @@ class TestCli:
     def test_cli_codex_mode(self, codex_dir):
         from click.testing import CliRunner
 
-        from headroom.cli.main import main
+        from legroom.cli.main import main
 
         runner = CliRunner()
         res = runner.invoke(main, ["audit-reads", "--codex", "--path", str(codex_dir)])

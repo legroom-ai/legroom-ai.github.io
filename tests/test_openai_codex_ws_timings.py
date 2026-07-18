@@ -11,8 +11,8 @@ from unittest.mock import MagicMock, patch
 import anyio
 import pytest
 
-import headroom.proxy.handlers.openai as openai_handler
-from headroom.proxy.handlers.openai import OpenAIHandlerMixin
+import legroom.proxy.handlers.openai as openai_handler
+from legroom.proxy.handlers.openai import OpenAIHandlerMixin
 
 
 class _DummyMetrics:
@@ -162,13 +162,13 @@ class _CapturingHandler(logging.Handler):
 
 @pytest.fixture
 def stage_log_capture():
-    """Attach a ``Handler`` directly to the ``headroom.proxy`` logger.
+    """Attach a ``Handler`` directly to the ``legroom.proxy`` logger.
 
     Using a direct handler is more robust than ``caplog`` for this
     logger because upstream configuration may set ``propagate=False``
     during module import, which bypasses pytest's root-logger capture.
     """
-    target = logging.getLogger("headroom.proxy")
+    target = logging.getLogger("legroom.proxy")
     handler = _CapturingHandler()
     previous_level = target.level
     target.addHandler(handler)
@@ -270,7 +270,7 @@ def test_codex_ws_chatgpt_auth_skips_memory_tools(stage_log_capture):
         headers={
             "authorization": "Bearer chatgpt-session-token",
             "chatgpt-account-id": "acct_123",
-            "x-headroom-user-id": "user-1",
+            "x-legroom-user-id": "user-1",
         },
     )
     handler = _DummyOpenAIHandler()

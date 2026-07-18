@@ -1,17 +1,17 @@
 """Live (per-request) env knobs and a hot-reload override store.
 
-Most Headroom settings are read once at proxy startup into ``Config`` and are
+Most Legroom settings are read once at proxy startup into ``Config`` and are
 visible in ``/health``. A second, smaller class of environment variables is
 read *live* — on every request (the output-shaper family) or captured at module
 import (the ast-grep read-rewrite threshold). The proxy reads these from its own
-process environment, so a *reused* proxy — one ``headroom wrap`` attaches to
+process environment, so a *reused* proxy — one ``legroom wrap`` attaches to
 rather than starting fresh — never sees values a user exports afterwards. The
 fix without this module would be to restart the proxy, which is disruptive
 (cold-start of the ML stack, dropped in-flight requests, lost compression
 caches).
 
 This module is the single source of truth for that class of knob and provides a
-process-global override store. ``headroom wrap`` pushes the values it would
+process-global override store. ``legroom wrap`` pushes the values it would
 otherwise only be able to apply by restarting (``POST /admin/runtime-env``), and
 the proxy applies them in memory with no restart. Readers call :func:`getenv`
 instead of ``os.environ.get`` so an override wins over the launch-time
@@ -21,7 +21,7 @@ reading the environment directly.
 Scope rule: a variable belongs here only if the proxy reads it *after* startup
 (or captures it at import) AND it is not already reflected in the ``/health``
 ``config`` block that ``wrap`` compares for reuse. Startup-captured settings
-(``HEADROOM_TARGET_RATIO`` etc.) do not belong here — a fresh proxy already
+(``LEGROOM_TARGET_RATIO`` etc.) do not belong here — a fresh proxy already
 gets them and they ride the existing config channel.
 """
 
@@ -54,20 +54,20 @@ class Knob:
 # hot-reloadable and visible in /health. Keep this list to genuinely live knobs
 # (see the scope rule in the module docstring).
 RUNTIME_ENV_KNOBS: tuple[Knob, ...] = (
-    Knob("HEADROOM_OUTPUT_SHAPER", "bool", "Master switch for output-token shaping."),
+    Knob("LEGROOM_OUTPUT_SHAPER", "bool", "Master switch for output-token shaping."),
     Knob(
-        "HEADROOM_VERBOSITY_LEVEL", "int", "Verbosity steering level 0-4 (unset = learned/default)."
+        "LEGROOM_VERBOSITY_LEVEL", "int", "Verbosity steering level 0-4 (unset = learned/default)."
     ),
-    Knob("HEADROOM_EFFORT_ROUTER", "bool", "Lower effort on mechanical tool-result continuations."),
-    Knob("HEADROOM_MECHANICAL_EFFORT", "str", "Effort value used on mechanical continuations."),
-    Knob("HEADROOM_VERBOSITY_AUTOTUNE", "bool", "Use the AIMD verbosity controller state."),
+    Knob("LEGROOM_EFFORT_ROUTER", "bool", "Lower effort on mechanical tool-result continuations."),
+    Knob("LEGROOM_MECHANICAL_EFFORT", "str", "Effort value used on mechanical continuations."),
+    Knob("LEGROOM_VERBOSITY_AUTOTUNE", "bool", "Use the AIMD verbosity controller state."),
     Knob(
-        "HEADROOM_OUTPUT_HOLDOUT",
+        "LEGROOM_OUTPUT_HOLDOUT",
         "float",
         "Fraction of conversations held out for A/B measurement.",
     ),
     Knob(
-        "HEADROOM_INTERCEPT_READ_MIN_CHARS",
+        "LEGROOM_INTERCEPT_READ_MIN_CHARS",
         "int",
         "Min tool-output chars before the ast-grep read rewrite.",
     ),
@@ -131,7 +131,7 @@ def explicit_env(environ: Mapping[str, str] | None = None) -> dict[str, str]:
 
     Only explicitly-set knobs are pushed so a session never clobbers another
     session's setting with a default it never asked for. To force a knob back to
-    a default on a shared proxy, set it explicitly (e.g. ``HEADROOM_OUTPUT_SHAPER=0``).
+    a default on a shared proxy, set it explicitly (e.g. ``LEGROOM_OUTPUT_SHAPER=0``).
     """
     src = os.environ if environ is None else environ
     out: dict[str, str] = {}

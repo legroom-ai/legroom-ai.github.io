@@ -4,13 +4,13 @@ Anthropic's server-side refusal-fallback feature emits an output-only
 ``{"type": "fallback", ...}`` block inside an assistant response. It is valid on
 the response path but rejected on the request path, so replaying that assistant
 turn 400s the whole request. The shared body readers must drop it before
-forwarding. See ``strip_output_only_request_blocks`` in ``headroom.proxy.helpers``.
+forwarding. See ``strip_output_only_request_blocks`` in ``legroom.proxy.helpers``.
 """
 
 import asyncio
 import json
 
-from headroom.proxy.helpers import (
+from legroom.proxy.helpers import (
     read_request_json_with_bytes,
     strip_output_only_request_blocks,
 )

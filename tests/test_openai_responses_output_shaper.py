@@ -10,8 +10,8 @@ pytest.importorskip("fastapi")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from headroom.proxy.loopback_guard import require_loopback  # noqa: E402
-from headroom.proxy.server import ProxyConfig, create_app  # noqa: E402
+from legroom.proxy.loopback_guard import require_loopback  # noqa: E402
+from legroom.proxy.server import ProxyConfig, create_app  # noqa: E402
 
 
 def _make_client() -> TestClient:
@@ -48,9 +48,9 @@ async def _ok_response(
 
 
 def test_http_responses_output_shaper_rewrites_and_labels(monkeypatch):
-    monkeypatch.setenv("HEADROOM_OUTPUT_SHAPER", "1")
-    monkeypatch.setenv("HEADROOM_VERBOSITY_LEVEL", "2")
-    monkeypatch.delenv("HEADROOM_OUTPUT_HOLDOUT", raising=False)
+    monkeypatch.setenv("LEGROOM_OUTPUT_SHAPER", "1")
+    monkeypatch.setenv("LEGROOM_VERBOSITY_LEVEL", "2")
+    monkeypatch.delenv("LEGROOM_OUTPUT_HOLDOUT", raising=False)
     captured: dict[str, Any] = {}
     outcomes: list[Any] = []
 
@@ -90,7 +90,7 @@ def test_http_responses_output_shaper_rewrites_and_labels(monkeypatch):
 
     assert response.status_code == 200
     sent = captured["body"]
-    assert "<headroom_output_shaping>" in sent["instructions"]
+    assert "<legroom_output_shaping>" in sent["instructions"]
     assert sent["reasoning"]["effort"] == "low"
     assert sent["text"]["verbosity"] == "low"
     assert captured["retry_kwargs"]["body_mutated"] is True
@@ -103,7 +103,7 @@ def test_http_responses_output_shaper_rewrites_and_labels(monkeypatch):
 
 
 def test_http_responses_output_shaper_respects_bypass(monkeypatch):
-    monkeypatch.setenv("HEADROOM_OUTPUT_SHAPER", "1")
+    monkeypatch.setenv("LEGROOM_OUTPUT_SHAPER", "1")
     captured: dict[str, Any] = {}
     payload = {"model": "gpt-5", "input": "hi"}
 
@@ -120,7 +120,7 @@ def test_http_responses_output_shaper_respects_bypass(monkeypatch):
             "/v1/responses",
             headers={
                 "authorization": "Bearer test-key",
-                "x-headroom-bypass": "true",
+                "x-legroom-bypass": "true",
             },
             json=payload,
         )
@@ -130,8 +130,8 @@ def test_http_responses_output_shaper_respects_bypass(monkeypatch):
 
 
 def test_http_responses_output_shaper_holdout_labels_without_rewrite(monkeypatch):
-    monkeypatch.setenv("HEADROOM_OUTPUT_SHAPER", "1")
-    monkeypatch.setenv("HEADROOM_OUTPUT_HOLDOUT", "1")
+    monkeypatch.setenv("LEGROOM_OUTPUT_SHAPER", "1")
+    monkeypatch.setenv("LEGROOM_OUTPUT_HOLDOUT", "1")
     captured: dict[str, Any] = {}
     outcomes: list[Any] = []
     payload = {"model": "gpt-5", "input": "hi"}

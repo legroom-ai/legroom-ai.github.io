@@ -1,6 +1,6 @@
 """Image Compressor - Seamless image token optimization.
 
-This is the main entry point for image compression in Headroom.
+This is the main entry point for image compression in Legroom.
 It automatically:
 1. Detects images in messages
 2. Extracts the user's query
@@ -8,7 +8,7 @@ It automatically:
 4. Applies provider-specific compression
 
 Usage:
-    from headroom.image import ImageCompressor
+    from legroom.image import ImageCompressor
 
     compressor = ImageCompressor()
 

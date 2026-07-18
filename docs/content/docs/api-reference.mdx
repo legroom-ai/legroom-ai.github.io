@@ -1,21 +1,21 @@
 ---
 title: API Reference
-description: Complete API reference for the Headroom Python and TypeScript SDKs. Core client, configuration types, result types, errors, and utilities.
+description: Complete API reference for the Legroom Python and TypeScript SDKs. Core client, configuration types, result types, errors, and utilities.
 ---
 
-Complete API reference for the Headroom Python and TypeScript SDKs.
+Complete API reference for the Legroom Python and TypeScript SDKs.
 
 ## Core
 
-### HeadroomClient
+### LegroomClient
 
-The main entry point for the Headroom SDK.
+The main entry point for the Legroom SDK.
 
 <Tabs groupId="lang" items={['TypeScript', 'Python']}>
 <Tab value="TypeScript">
 
 <TypeTable type={{
-  baseUrl: { type: 'string', description: 'Base URL for the Headroom proxy' },
+  baseUrl: { type: 'string', description: 'Base URL for the Legroom proxy' },
   apiKey: { type: 'string', description: 'API key for authentication' },
   timeout: { type: 'number', description: 'Request timeout in milliseconds' },
   fallback: { type: 'boolean', description: 'Return original messages on failure instead of throwing' },
@@ -23,9 +23,9 @@ The main entry point for the Headroom SDK.
 }} />
 
 ```ts twoslash
-import { HeadroomClient } from 'headroom-ai';
+import { LegroomClient } from 'legroom-ai';
 
-const client = new HeadroomClient({
+const client = new LegroomClient({
   baseUrl: 'http://localhost:8787',
   apiKey: 'your-api-key',
   timeout: 30_000,
@@ -52,10 +52,10 @@ const client = new HeadroomClient({
 }} />
 
 ```python
-from headroom import HeadroomClient, OpenAIProvider
+from legroom import LegroomClient, OpenAIProvider
 from openai import OpenAI
 
-client = HeadroomClient(
+client = LegroomClient(
     original_client=OpenAI(),
     provider=OpenAIProvider(),
     default_mode="optimize",
@@ -75,7 +75,7 @@ Create a chat completion with optional optimization.
 The TypeScript SDK uses `compress()` to optimize messages before sending them to your LLM client:
 
 ```ts twoslash
-import { compress } from 'headroom-ai';
+import { compress } from 'legroom-ai';
 
 const result = await compress(messages, {
   model: 'gpt-4o',
@@ -88,23 +88,23 @@ const result = await compress(messages, {
 </Tab>
 <Tab value="Python">
 
-Accepts all standard OpenAI/Anthropic parameters plus Headroom-specific overrides:
+Accepts all standard OpenAI/Anthropic parameters plus Legroom-specific overrides:
 
 <TypeTable type={{
-  headroom_mode: { type: '"audit" | "optimize" | "simulate"', description: 'Override mode for this request', default: 'Client default' },
-  headroom_query: { type: 'str', description: 'Query for relevance scoring', default: 'None' },
-  headroom_output_buffer_tokens: { type: 'int', description: 'Reserve tokens for output', default: '4000' },
-  headroom_keep_turns: { type: 'int', description: 'Keep last N turns uncompressed', default: '2' },
-  headroom_tool_profiles: { type: 'dict', description: 'Per-tool compression overrides', default: '{}' },
+  legroom_mode: { type: '"audit" | "optimize" | "simulate"', description: 'Override mode for this request', default: 'Client default' },
+  legroom_query: { type: 'str', description: 'Query for relevance scoring', default: 'None' },
+  legroom_output_buffer_tokens: { type: 'int', description: 'Reserve tokens for output', default: '4000' },
+  legroom_keep_turns: { type: 'int', description: 'Keep last N turns uncompressed', default: '2' },
+  legroom_tool_profiles: { type: 'dict', description: 'Per-tool compression overrides', default: '{}' },
 }} />
 
 ```python
 response = client.chat.completions.create(
     model="gpt-4o",
     messages=[...],
-    headroom_mode="optimize",
-    headroom_keep_turns=5,
-    headroom_tool_profiles={
+    legroom_mode="optimize",
+    legroom_keep_turns=5,
+    legroom_tool_profiles={
         "important_tool": {"skip_compression": True},
     },
 )
@@ -132,22 +132,22 @@ print(f"Transforms: {plan.transforms_applied}")
 
 ### compress() (TypeScript)
 
-Top-level function to compress messages via the Headroom proxy.
+Top-level function to compress messages via the Legroom proxy.
 
 <TypeTable type={{
   model: { type: 'string', description: 'Model name for token counting and context limits' },
-  baseUrl: { type: 'string', description: 'Base URL for the Headroom proxy' },
+  baseUrl: { type: 'string', description: 'Base URL for the Legroom proxy' },
   apiKey: { type: 'string', description: 'API key for authentication' },
   timeout: { type: 'number', description: 'Request timeout in milliseconds' },
   fallback: { type: 'boolean', description: 'Return original messages on failure instead of throwing' },
   retries: { type: 'number', description: 'Number of retry attempts on failure' },
-  client: { type: 'HeadroomClientInterface', description: 'Pre-configured client instance to use' },
+  client: { type: 'LegroomClientInterface', description: 'Pre-configured client instance to use' },
   tokenBudget: { type: 'number', description: 'Token budget — compress to fit within this limit' },
   hooks: { type: 'CompressionHooks', description: 'Compression hooks for pre/post processing' },
 }} />
 
 ```ts twoslash
-import { compress } from 'headroom-ai';
+import { compress } from 'legroom-ai';
 
 const result = await compress(messages, {
   model: 'gpt-4o',
@@ -247,7 +247,7 @@ if not result["valid"]:
 }} />
 
 ```python
-from headroom import SmartCrusherConfig
+from legroom import SmartCrusherConfig
 
 config = SmartCrusherConfig(
     min_tokens_to_crush=200,
@@ -289,7 +289,7 @@ config = SmartCrusherConfig(
 }} />
 
 ```python
-from headroom import CacheAlignerConfig
+from legroom import CacheAlignerConfig
 
 config = CacheAlignerConfig(
     enabled=True,
@@ -304,16 +304,16 @@ config = CacheAlignerConfig(
 
 ### Context management
 
-Context management is now handled automatically inside the pipeline (live-zone-only compression). Headroom never drops messages from the conversation history; it compresses only the newest content blocks (latest user message, latest tool result) and keeps the cache hot zone — system prompt, tools, and older turns — untouched. Use the `headroom_keep_turns` / `headroom_output_buffer_tokens` per-request overrides to tune behavior. The `RollingWindowConfig`, `IntelligentContextConfig`, and `ScoringWeights` classes are no longer part of Headroom.
+Context management is now handled automatically inside the pipeline (live-zone-only compression). Legroom never drops messages from the conversation history; it compresses only the newest content blocks (latest user message, latest tool result) and keeps the cache hot zone — system prompt, tools, and older turns — untouched. Use the `legroom_keep_turns` / `legroom_output_buffer_tokens` per-request overrides to tune behavior. The `RollingWindowConfig`, `IntelligentContextConfig`, and `ScoringWeights` classes are no longer part of Legroom.
 
-### HeadroomConfig
+### LegroomConfig
 
 <Tabs groupId="lang" items={['TypeScript', 'Python']}>
 <Tab value="TypeScript">
 
 <TypeTable type={{
   storeUrl: { type: 'string', description: 'Storage URL for metrics database' },
-  defaultMode: { type: 'HeadroomMode', description: 'Default compression mode' },
+  defaultMode: { type: 'LegroomMode', description: 'Default compression mode' },
   modelContextLimits: { type: 'Record<string, number>', description: 'Override context limits per model' },
   smartCrusher: { type: 'SmartCrusherConfig', description: 'Smart crusher configuration' },
   cacheAligner: { type: 'CacheAlignerConfig', description: 'Cache aligner configuration' },
@@ -330,12 +330,12 @@ Context management is now handled automatically inside the pipeline (live-zone-o
 The top-level config object that contains all sub-configurations:
 
 ```python
-from headroom import HeadroomConfig
+from legroom import LegroomConfig
 
-config = HeadroomConfig()
+config = LegroomConfig()
 config.smart_crusher.min_tokens_to_crush = 100
 config.cache_aligner.enabled = True
-# Note: rolling_window has been removed — use headroom_keep_turns per-request instead
+# Note: rolling_window has been removed — use legroom_keep_turns per-request instead
 ```
 
 </Tab>
@@ -427,7 +427,7 @@ config.cache_aligner.enabled = True
 ### OpenAIProvider
 
 ```python
-from headroom import OpenAIProvider
+from legroom import OpenAIProvider
 
 provider = OpenAIProvider(
     enable_prefix_caching=True,
@@ -442,7 +442,7 @@ cost = provider.estimate_cost(input_tokens=1000, output_tokens=500, model="gpt-4
 ### AnthropicProvider
 
 ```python
-from headroom import AnthropicProvider
+from legroom import AnthropicProvider
 from anthropic import Anthropic
 
 provider = AnthropicProvider(
@@ -457,7 +457,7 @@ tokens = counter.count_messages(messages)  # Accurate count via API
 ### GoogleProvider
 
 ```python
-from headroom.providers import GoogleProvider
+from legroom.providers import GoogleProvider
 
 provider = GoogleProvider(
     enable_context_caching=True,
@@ -473,7 +473,7 @@ provider = GoogleProvider(
 Factory function to create scorers:
 
 ```python
-from headroom import create_scorer
+from legroom import create_scorer
 
 # Auto-select best available scorer
 scorer = create_scorer()
@@ -487,7 +487,7 @@ scorer = create_scorer(scorer_type="hybrid", alpha=0.7)
 Fast keyword-based scoring (zero dependencies):
 
 ```python
-from headroom import BM25Scorer
+from legroom import BM25Scorer
 
 scorer = BM25Scorer()
 scores = scorer.score_items(items=["item 1", "item 2"], query="search query")
@@ -495,10 +495,10 @@ scores = scorer.score_items(items=["item 1", "item 2"], query="search query")
 
 ### EmbeddingScorer
 
-Semantic similarity scoring (requires `headroom-ai[relevance]`):
+Semantic similarity scoring (requires `legroom-ai[relevance]`):
 
 ```python
-from headroom import EmbeddingScorer, embedding_available
+from legroom import EmbeddingScorer, embedding_available
 
 if embedding_available():
     scorer = EmbeddingScorer(model_name="BAAI/bge-small-en-v1.5")
@@ -510,7 +510,7 @@ if embedding_available():
 Combines BM25 and embeddings:
 
 ```python
-from headroom import HybridScorer
+from legroom import HybridScorer
 
 scorer = HybridScorer(alpha=0.5)  # 50% BM25, 50% embedding
 scores = scorer.score_items(items, query)
@@ -523,7 +523,7 @@ scores = scorer.score_items(items, query)
 ### SmartCrusher
 
 ```python
-from headroom import SmartCrusher
+from legroom import SmartCrusher
 
 crusher = SmartCrusher()
 result = crusher.crush(data={"results": [...]}, query="user query")
@@ -532,7 +532,7 @@ result = crusher.crush(data={"results": [...]}, query="user query")
 ### CacheAligner
 
 ```python
-from headroom import CacheAligner
+from legroom import CacheAligner
 
 aligner = CacheAligner()
 result = aligner.align(messages)
@@ -541,7 +541,7 @@ result = aligner.align(messages)
 ### TransformPipeline
 
 ```python
-from headroom import TransformPipeline
+from legroom import TransformPipeline
 
 pipeline = TransformPipeline([
     SmartCrusher(),
@@ -560,10 +560,10 @@ result = pipeline.transform(messages)
 
 | Exception | Meaning |
 |-----------|---------|
-| `HeadroomError` | Base class for all errors |
-| `HeadroomConnectionError` | Cannot reach proxy |
-| `HeadroomAuthError` | 401 from proxy |
-| `HeadroomCompressError` | Compression failed (includes `statusCode`, `errorType`) |
+| `LegroomError` | Base class for all errors |
+| `LegroomConnectionError` | Cannot reach proxy |
+| `LegroomAuthError` | 401 from proxy |
+| `LegroomCompressError` | Compression failed (includes `statusCode`, `errorType`) |
 | `ConfigurationError` | Invalid configuration |
 | `ProviderError` | Provider issues |
 | `StorageError` | Storage failures |
@@ -579,7 +579,7 @@ Use `mapProxyError(status, type, message)` to convert proxy error responses to t
 
 | Exception | Meaning |
 |-----------|---------|
-| `HeadroomError` | Base class for all Headroom errors |
+| `LegroomError` | Base class for all Legroom errors |
 | `ConfigurationError` | Invalid config values |
 | `ProviderError` | Provider issue (unknown model, etc.) |
 | `StorageError` | Database issue |
@@ -598,7 +598,7 @@ All exceptions include a `details` dict with additional context.
 ### Tokenizer
 
 ```python
-from headroom import Tokenizer, count_tokens_text, count_tokens_messages
+from legroom import Tokenizer, count_tokens_text, count_tokens_messages
 
 # Quick counting
 tokens = count_tokens_text("Hello, world!", model="gpt-4o")
@@ -614,10 +614,10 @@ tokens = tokenizer.count_messages(messages)
 Generate HTML/Markdown reports from stored metrics:
 
 ```python
-from headroom import generate_report
+from legroom import generate_report
 
 report = generate_report(
-    store_url="sqlite:///headroom.db",
+    store_url="sqlite:///legroom.db",
     format="html",
     period="day",
 )

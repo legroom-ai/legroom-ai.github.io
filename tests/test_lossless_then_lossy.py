@@ -11,13 +11,13 @@ DIFF content is never lossy-chained (Kompressing hunks breaks ``git apply``).
 Kompress is mocked so these run without the ModernBERT model.
 """
 
-from headroom.transforms.content_router import (
+from legroom.transforms.content_router import (
     CompressionStrategy,
     ContentRouter,
     ContentRouterConfig,
     _estimate_tokens,
 )
-from headroom.transforms.lossless_compaction import search_unheading
+from legroom.transforms.lossless_compaction import search_unheading
 
 
 def _grep_block() -> str:
@@ -145,7 +145,7 @@ def test_lossy_after_fold_never_worse_than_pure_fold():
 
 
 def test_lossy_gate_boundary_default(monkeypatch):
-    monkeypatch.delenv("HEADROOM_LOSSY_MIN_EXTRA_SAVINGS", raising=False)
+    monkeypatch.delenv("LEGROOM_LOSSY_MIN_EXTRA_SAVINGS", raising=False)
     block = _grep_block()
     r, _ = _router(lossless_then_lossy=True)
     assert abs(r._lossy_min_extra_savings - 0.05) < 1e-9  # default: require >=5% extra
@@ -161,7 +161,7 @@ def test_lossy_gate_boundary_default(monkeypatch):
 
 
 def test_lossy_gate_env_override(monkeypatch):
-    monkeypatch.setenv("HEADROOM_LOSSY_MIN_EXTRA_SAVINGS", "0.20")
+    monkeypatch.setenv("LEGROOM_LOSSY_MIN_EXTRA_SAVINGS", "0.20")
     r, _ = _router(lossless_then_lossy=True)
     assert abs(r._lossy_min_extra_savings - 0.20) < 1e-9  # env override wins
     block = _grep_block()

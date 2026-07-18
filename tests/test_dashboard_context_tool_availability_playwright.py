@@ -13,7 +13,7 @@ from urllib.parse import urlsplit
 
 import pytest
 
-from headroom.dashboard import get_dashboard_html
+from legroom.dashboard import get_dashboard_html
 
 playwright = pytest.importorskip("playwright.sync_api")
 Page = playwright.Page
@@ -158,7 +158,7 @@ def test_dashboard_session_view_shows_not_installed_message_when_unavailable() -
         browser = pw.chromium.launch()
         page = browser.new_page(viewport={"width": 1720, "height": 1400}, color_scheme="dark")
         _install_dashboard_routes(page, stats, history)
-        page.goto("http://headroom.local/dashboard", wait_until="load")
+        page.goto("http://legroom.local/dashboard", wait_until="load")
 
         expect(page.get_by_text("RTK not installed", exact=True)).to_be_visible()
         expect(page.get_by_text("not installed", exact=True)).to_be_visible()
@@ -179,7 +179,7 @@ def test_dashboard_session_view_shows_real_zero_row_when_installed_but_zero() ->
         browser = pw.chromium.launch()
         page = browser.new_page(viewport={"width": 1720, "height": 1400}, color_scheme="dark")
         _install_dashboard_routes(page, stats, history)
-        page.goto("http://headroom.local/dashboard", wait_until="load")
+        page.goto("http://legroom.local/dashboard", wait_until="load")
 
         expect(page.get_by_text("RTK 0 this session (0.0%)", exact=True)).to_be_visible()
         expect(page.get_by_text("RTK not installed", exact=True)).to_have_count(0)
@@ -204,7 +204,7 @@ def test_dashboard_historical_tab_hides_lifetime_card_when_unavailable() -> None
         browser = pw.chromium.launch()
         page = browser.new_page(viewport={"width": 1720, "height": 1400}, color_scheme="dark")
         _install_dashboard_routes(page, stats, history)
-        page.goto("http://headroom.local/dashboard", wait_until="load")
+        page.goto("http://legroom.local/dashboard", wait_until="load")
 
         page.get_by_role("button", name="Historical").click()
         expect(page.get_by_text("Historical Summary")).to_be_visible()
@@ -224,7 +224,7 @@ def test_dashboard_historical_tab_shows_lifetime_card_when_available() -> None:
         browser = pw.chromium.launch()
         page = browser.new_page(viewport={"width": 1720, "height": 1400}, color_scheme="dark")
         _install_dashboard_routes(page, stats, history)
-        page.goto("http://headroom.local/dashboard", wait_until="load")
+        page.goto("http://legroom.local/dashboard", wait_until="load")
 
         page.get_by_role("button", name="Historical").click()
         expect(page.get_by_text("RTK Lifetime Saved")).to_be_visible()

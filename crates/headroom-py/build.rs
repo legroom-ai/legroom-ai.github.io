@@ -16,7 +16,7 @@
 // don't reference any of these symbols.
 //
 // Issues:
-//   - #355 (https://github.com/ghaliba3/headroom/issues/355)
+//   - #355 (https://github.com/legroom-ai/legroom-ai.github.io/issues/355)
 //     for the `__isoc23_*` family
 //   - PR #396 dry-run for the `__libc_single_threaded` symbol
 
@@ -40,7 +40,7 @@ fn main() {
         // already 35 MiB.
         .flag_if_supported("-fPIC")
         .opt_level(2)
-        .compile("headroom_glibc_compat");
+        .compile("legroom_glibc_compat");
 
     // Force the linker to pull our shim's objects into _core.so even
     // if at archive-scan time no UND `__isoc23_*` reference exists

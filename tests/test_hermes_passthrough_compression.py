@@ -8,7 +8,7 @@ Key invariants tested:
 - Chat messages (role=user/assistant) are compressed
 - Non-chat items (tool, function, reasoning, system) are preserved byte-stable
 - Non-dict items in the input array are preserved
-- x-headroom-bypass header skips compression entirely
+- x-legroom-bypass header skips compression entirely
 - Malformed/unsupported payloads are forwarded unchanged
 """
 
@@ -25,12 +25,12 @@ pytest.importorskip("fastapi")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from headroom.providers.hermes import (  # noqa: E402
+from legroom.providers.hermes import (  # noqa: E402
     compress_scoped_passthrough_body,
     is_scoped_coding_agent_path,
 )
-from headroom.proxy.loopback_guard import require_loopback  # noqa: E402
-from headroom.proxy.server import ProxyConfig, create_app  # noqa: E402
+from legroom.proxy.loopback_guard import require_loopback  # noqa: E402
+from legroom.proxy.server import ProxyConfig, create_app  # noqa: E402
 
 
 def _make_app(**kwargs: Any):
@@ -161,7 +161,7 @@ def test_codex_proxy_preserves_nondict_items() -> None:
 
 @respx.mock
 def test_codex_proxy_bypass_header_skips_compression() -> None:
-    """x-headroom-bypass: true prevents any body mutation."""
+    """x-legroom-bypass: true prevents any body mutation."""
     original_input = [
         {"role": "user", "content": "compressible " + "text " * 200},
         {"role": "assistant", "content": "response"},
@@ -175,7 +175,7 @@ def test_codex_proxy_bypass_header_skips_compression() -> None:
             "/api/codex-proxy/session-1/v1/responses",
             headers={
                 "authorization": "Bearer test-key",
-                "x-headroom-bypass": "true",
+                "x-legroom-bypass": "true",
             },
             json={"model": "gpt-4o-mini", "input": original_input},
         )
@@ -272,7 +272,7 @@ def test_claude_proxy_preserves_tool_use_items() -> None:
             "/api/claude-code-proxy/session-1/v1/messages",
             headers={
                 "authorization": "Bearer test-key",
-                "x-headroom-base-url": "https://httpbin.org",
+                "x-legroom-base-url": "https://httpbin.org",
             },
             json={"model": "claude-sonnet-4-5-20250929", "messages": original_messages},
         )
@@ -293,7 +293,7 @@ def test_claude_proxy_preserves_tool_use_items() -> None:
 
 @respx.mock
 def test_claude_proxy_bypass_header_skips_compression() -> None:
-    """x-headroom-bypass: true prevents any body mutation on Claude proxy."""
+    """x-legroom-bypass: true prevents any body mutation on Claude proxy."""
     original_messages = [
         {"role": "user", "content": "compressible " + "text " * 200},
         {"role": "assistant", "content": "response"},
@@ -307,8 +307,8 @@ def test_claude_proxy_bypass_header_skips_compression() -> None:
             "/api/claude-code-proxy/session-1/v1/messages",
             headers={
                 "authorization": "Bearer test-key",
-                "x-headroom-bypass": "true",
-                "x-headroom-base-url": "https://httpbin.org",
+                "x-legroom-bypass": "true",
+                "x-legroom-base-url": "https://httpbin.org",
             },
             json={"model": "claude-sonnet-4-5-20250929", "messages": original_messages},
         )
@@ -332,7 +332,7 @@ def test_claude_proxy_no_model_forwarded_unchanged() -> None:
             "/api/claude-code-proxy/session-1/v1/messages",
             headers={
                 "authorization": "Bearer test-key",
-                "x-headroom-base-url": "https://httpbin.org",
+                "x-legroom-base-url": "https://httpbin.org",
             },
             json={"messages": original_messages},
         )
@@ -352,7 +352,7 @@ def test_claude_proxy_compression_applies_to_chat_messages() -> None:
             "/api/claude-code-proxy/session-1/v1/messages",
             headers={
                 "authorization": "Bearer test-key",
-                "x-headroom-base-url": "https://httpbin.org",
+                "x-legroom-base-url": "https://httpbin.org",
             },
             json={
                 "model": "claude-sonnet-4-5-20250929",
@@ -412,7 +412,7 @@ def test_hermes_adapter_preserves_structured_messages_when_compressor_changes_ou
         result.messages = [{**message, "content": "compressed"} for message in messages]
         return result
 
-    monkeypatch.setattr("headroom.compress", fake_compress)
+    monkeypatch.setattr("legroom.compress", fake_compress)
     original = {
         "model": "claude-sonnet-4-5-20250929",
         "messages": [
@@ -452,7 +452,7 @@ def test_codex_adapter_compresses_canonical_responses_input_text(
         ]
         return result
 
-    monkeypatch.setattr("headroom.compress", fake_compress)
+    monkeypatch.setattr("legroom.compress", fake_compress)
     original = {
         "model": "gpt-5.5",
         "input": [

@@ -1,10 +1,10 @@
 """Phase 2 (#1171): the kompress size-gate routes oversized text to TextCrusher
-when HEADROOM_TEXT_CRUSHER is enabled (real prose savings), instead of the
+when LEGROOM_TEXT_CRUSHER is enabled (real prose savings), instead of the
 LogCompressor (which yields ~0 on prose) or ModernBERT (slow)."""
 
 from __future__ import annotations
 
-from headroom.transforms.content_router import ContentRouter, _estimate_tokens
+from legroom.transforms.content_router import ContentRouter, _estimate_tokens
 
 
 def _prose() -> str:
@@ -15,7 +15,7 @@ def _prose() -> str:
 
 
 def test_gate_routes_to_text_crusher_when_enabled(monkeypatch):
-    monkeypatch.setenv("HEADROOM_TEXT_CRUSHER", "1")
+    monkeypatch.setenv("LEGROOM_TEXT_CRUSHER", "1")
     router = ContentRouter()
     router._kompress_max_tokens = 50  # tiny ceiling so the gate fires
 
@@ -36,6 +36,6 @@ def test_gate_routes_to_text_crusher_when_enabled(monkeypatch):
 
 
 def test_text_crusher_disabled_by_default(monkeypatch):
-    monkeypatch.delenv("HEADROOM_TEXT_CRUSHER", raising=False)
+    monkeypatch.delenv("LEGROOM_TEXT_CRUSHER", raising=False)
     router = ContentRouter()
     assert router._get_text_crusher() is None

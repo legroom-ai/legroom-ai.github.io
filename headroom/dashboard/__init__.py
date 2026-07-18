@@ -1,4 +1,4 @@
-"""Headroom Dashboard - Real-time proxy monitoring UI."""
+"""Legroom Dashboard - Real-time proxy monitoring UI."""
 
 from pathlib import Path
 

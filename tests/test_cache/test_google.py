@@ -4,9 +4,9 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from headroom.cache import CacheConfig, GoogleCacheOptimizer, OptimizationContext
-from headroom.cache.base import CacheStrategy
-from headroom.cache.google import (
+from legroom.cache import CacheConfig, GoogleCacheOptimizer, OptimizationContext
+from legroom.cache.base import CacheStrategy
+from legroom.cache.google import (
     GOOGLE_CACHE_DISCOUNT,
     GOOGLE_MIN_CACHE_TOKENS,
     CacheabilityAnalysis,

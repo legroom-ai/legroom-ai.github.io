@@ -1,4 +1,4 @@
-"""Google Gemini CLI plugin for headroom learn.
+"""Google Gemini CLI plugin for legroom learn.
 
 Reads session logs from ~/.gemini/tmp/<project_hash>/chats/ (JSON and JSONL).
 """

@@ -3,15 +3,15 @@
 This module provides pluggable storage backends for CCR (Compress-Cache-Retrieve).
 Backend selection depends on how the store is constructed:
 - ``get_compression_store()`` (the proxy path) defaults to SQLite
-  (restart-safe, shared across workers); ``HEADROOM_CCR_BACKEND=memory``
+  (restart-safe, shared across workers); ``LEGROOM_CCR_BACKEND=memory``
   forces in-memory, and other backends (Redis, MongoDB via entry points)
   can be selected by env.
 - ``CompressionStore()`` constructed directly defaults to **in-memory**
   unless a backend is passed explicitly.
 
 Usage:
-    from headroom.cache.backends import SQLiteBackend, CompressionStoreBackend
-    from headroom.cache.compression_store import CompressionStore, get_compression_store
+    from legroom.cache.backends import SQLiteBackend, CompressionStoreBackend
+    from legroom.cache.compression_store import CompressionStore, get_compression_store
 
     # Env-driven default (SQLite at workspace_dir()/ccr_store.db)
     store = get_compression_store()

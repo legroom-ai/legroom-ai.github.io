@@ -1,18 +1,18 @@
 """Prompt Comparison System using LLM-as-Judge.
 
-This module provides tools to verify that Headroom preserves the semantic
+This module provides tools to verify that Legroom preserves the semantic
 meaning of prompts by comparing prompts before and after processing.
 
-This is CRITICAL for proving that Headroom doesn't change the meaning of prompts
+This is CRITICAL for proving that Legroom doesn't change the meaning of prompts
 when they go through the proxy.
 
 Usage:
-    from headroom.evals.prompt_comparison import compare_prompts, PromptComparer
+    from legroom.evals.prompt_comparison import compare_prompts, PromptComparer
 
     # Simple comparison
     result = compare_prompts(
         original_prompt="What is the capital of France?",
-        headroom_modified_prompt="What is the capital of France?",
+        legroom_modified_prompt="What is the capital of France?",
     )
     print(f"Equivalent: {result.are_equivalent}")
 
@@ -75,8 +75,8 @@ class PromptComparisonResult:
     """Result of comparing two prompts for semantic equivalence.
 
     Attributes:
-        original: The original prompt before Headroom processing.
-        headroom_modified: The prompt after Headroom processing.
+        original: The original prompt before Legroom processing.
+        legroom_modified: The prompt after Legroom processing.
         are_equivalent: Whether the prompts are semantically equivalent.
         confidence: Confidence level of the judgment (HIGH, MEDIUM, LOW).
         differences: List of specific differences found between prompts.
@@ -89,7 +89,7 @@ class PromptComparisonResult:
     """
 
     original: str
-    headroom_modified: str
+    legroom_modified: str
     are_equivalent: bool
     confidence: str = "MEDIUM"
     differences: list[str] = field(default_factory=list)
@@ -104,7 +104,7 @@ class PromptComparisonResult:
         """Convert result to dictionary."""
         return {
             "original": self.original,
-            "headroom_modified": self.headroom_modified,
+            "legroom_modified": self.legroom_modified,
             "are_equivalent": self.are_equivalent,
             "confidence": self.confidence,
             "differences": self.differences,
@@ -121,7 +121,7 @@ class PromptComparisonResult:
         """Create result from dictionary."""
         return cls(
             original=data["original"],
-            headroom_modified=data["headroom_modified"],
+            legroom_modified=data["legroom_modified"],
             are_equivalent=data["are_equivalent"],
             confidence=data.get("confidence", "MEDIUM"),
             differences=data.get("differences", []),
@@ -212,7 +212,7 @@ def _parse_judge_response(response_text: str) -> dict[str, Any]:
 
 def compare_prompts(
     original_prompt: str,
-    headroom_modified_prompt: str,
+    legroom_modified_prompt: str,
     judge_model: str = "gpt-4o",
     api_key: str | None = None,
     metadata: dict[str, Any] | None = None,
@@ -223,8 +223,8 @@ def compare_prompts(
     to determine if they are semantically equivalent.
 
     Args:
-        original_prompt: The original prompt before Headroom processing.
-        headroom_modified_prompt: The prompt after Headroom processing.
+        original_prompt: The original prompt before Legroom processing.
+        legroom_modified_prompt: The prompt after Legroom processing.
         judge_model: The OpenAI model to use as judge (default: gpt-4o).
         api_key: OpenAI API key (uses OPENAI_API_KEY env var if not provided).
         metadata: Optional metadata to attach to the result.
@@ -239,7 +239,7 @@ def compare_prompts(
     Example:
         result = compare_prompts(
             original_prompt="Explain quantum computing in simple terms.",
-            headroom_modified_prompt="Explain quantum computing in simple terms.",
+            legroom_modified_prompt="Explain quantum computing in simple terms.",
         )
         if not result.are_equivalent:
             print(f"WARNING: Prompts differ! {result.differences}")
@@ -264,7 +264,7 @@ def compare_prompts(
     # Build the judge prompt
     judge_prompt = SEMANTIC_EQUIVALENCE_JUDGE_PROMPT.format(
         original_prompt=original_prompt,
-        modified_prompt=headroom_modified_prompt,
+        modified_prompt=legroom_modified_prompt,
     )
 
     # Call the judge
@@ -282,7 +282,7 @@ def compare_prompts(
 
     return PromptComparisonResult(
         original=original_prompt,
-        headroom_modified=headroom_modified_prompt,
+        legroom_modified=legroom_modified_prompt,
         are_equivalent=parsed["are_equivalent"],
         confidence=parsed["confidence"],
         differences=parsed["differences"],
@@ -342,14 +342,14 @@ class PromptComparer:
     def compare(
         self,
         original_prompt: str,
-        headroom_modified_prompt: str,
+        legroom_modified_prompt: str,
         metadata: dict[str, Any] | None = None,
     ) -> PromptComparisonResult:
         """Compare two prompts and track the result.
 
         Args:
-            original_prompt: The original prompt before Headroom processing.
-            headroom_modified_prompt: The prompt after Headroom processing.
+            original_prompt: The original prompt before Legroom processing.
+            legroom_modified_prompt: The prompt after Legroom processing.
             metadata: Optional metadata to attach to the result.
 
         Returns:
@@ -357,7 +357,7 @@ class PromptComparer:
         """
         result = compare_prompts(
             original_prompt=original_prompt,
-            headroom_modified_prompt=headroom_modified_prompt,
+            legroom_modified_prompt=legroom_modified_prompt,
             judge_model=self.judge_model,
             api_key=self.api_key,
             metadata=metadata,
@@ -393,20 +393,20 @@ class PromptComparer:
     def compare_and_log(
         self,
         original_prompt: str,
-        headroom_modified_prompt: str,
+        legroom_modified_prompt: str,
         metadata: dict[str, Any] | None = None,
     ) -> PromptComparisonResult:
         """Compare two prompts and immediately log the result.
 
         Args:
-            original_prompt: The original prompt before Headroom processing.
-            headroom_modified_prompt: The prompt after Headroom processing.
+            original_prompt: The original prompt before Legroom processing.
+            legroom_modified_prompt: The prompt after Legroom processing.
             metadata: Optional metadata to attach to the result.
 
         Returns:
             PromptComparisonResult with the comparison outcome.
         """
-        result = self.compare(original_prompt, headroom_modified_prompt, metadata)
+        result = self.compare(original_prompt, legroom_modified_prompt, metadata)
         self.log_result(result)
         return result
 
@@ -484,8 +484,8 @@ def compare_messages(
     This is useful for comparing full conversation histories, not just single prompts.
 
     Args:
-        original_messages: Original message list before Headroom.
-        modified_messages: Modified message list after Headroom.
+        original_messages: Original message list before Legroom.
+        modified_messages: Modified message list after Legroom.
         judge_model: The OpenAI model to use as judge.
         api_key: OpenAI API key.
 
@@ -524,7 +524,7 @@ def compare_messages(
 
     result = compare_prompts(
         original_prompt=original_str,
-        headroom_modified_prompt=modified_str,
+        legroom_modified_prompt=modified_str,
         judge_model=judge_model,
         api_key=api_key,
         metadata={
@@ -563,7 +563,7 @@ def batch_compare_prompts(
     ) -> tuple[int, PromptComparisonResult]:
         result = compare_prompts(
             original_prompt=original,
-            headroom_modified_prompt=modified,
+            legroom_modified_prompt=modified,
             judge_model=judge_model,
             api_key=api_key,
             metadata={"batch_index": index},
@@ -584,22 +584,22 @@ def batch_compare_prompts(
     return [r for r in results if r is not None]
 
 
-def verify_headroom_preservation(
+def verify_legroom_preservation(
     original_messages: list[dict[str, Any]],
-    headroom_messages: list[dict[str, Any]],
+    legroom_messages: list[dict[str, Any]],
     judge_model: str = "gpt-4o",
     api_key: str | None = None,
     fail_on_difference: bool = False,
 ) -> PromptComparisonResult:
-    """Verify that Headroom preserves the semantic meaning of a request.
+    """Verify that Legroom preserves the semantic meaning of a request.
 
-    This is the main entry point for verifying Headroom's accuracy preservation.
-    It compares the original messages with those modified by Headroom and
+    This is the main entry point for verifying Legroom's accuracy preservation.
+    It compares the original messages with those modified by Legroom and
     raises an error if differences are found (when fail_on_difference=True).
 
     Args:
-        original_messages: Messages before Headroom processing.
-        headroom_messages: Messages after Headroom processing.
+        original_messages: Messages before Legroom processing.
+        legroom_messages: Messages after Legroom processing.
         judge_model: The model to use for judging.
         api_key: OpenAI API key.
         fail_on_difference: If True, raise an error when prompts differ.
@@ -611,24 +611,24 @@ def verify_headroom_preservation(
         ValueError: If fail_on_difference=True and prompts are not equivalent.
 
     Example:
-        # Capture messages before and after Headroom
+        # Capture messages before and after Legroom
         original = [{"role": "user", "content": "Hello, how are you?"}]
-        after_headroom = [{"role": "user", "content": "Hello, how are you?"}]
+        after_legroom = [{"role": "user", "content": "Hello, how are you?"}]
 
-        result = verify_headroom_preservation(
-            original, after_headroom, fail_on_difference=True
+        result = verify_legroom_preservation(
+            original, after_legroom, fail_on_difference=True
         )
     """
     result = compare_messages(
         original_messages=original_messages,
-        modified_messages=headroom_messages,
+        modified_messages=legroom_messages,
         judge_model=judge_model,
         api_key=api_key,
     )
 
     if fail_on_difference and not result.are_equivalent:
         raise ValueError(
-            f"Headroom modified prompt semantics! "
+            f"Legroom modified prompt semantics! "
             f"Differences: {result.differences}. "
             f"Reasoning: {result.reasoning}"
         )

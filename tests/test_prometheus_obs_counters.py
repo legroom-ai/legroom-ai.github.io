@@ -2,11 +2,11 @@
 
 Covers the related counters added to ``PrometheusMetrics``:
 
-* ``headroom_compression_failed_total{reason}`` — recorded at the proxy's
+* ``legroom_compression_failed_total{reason}`` — recorded at the proxy's
   optimization fail-open site, split into "timeout" vs "error".
-* ``headroom_kompress_size_gate_total{outcome}`` — recorded by ContentRouter
+* ``legroom_kompress_size_gate_total{outcome}`` — recorded by ContentRouter
   via the observer hook, split into "exceeded" vs "within".
-* ``headroom_compression_quarantine_total{event}`` — records quarantine
+* ``legroom_compression_quarantine_total{event}`` — records quarantine
   activation and immediate executor skips while a timed-out worker remains.
 
 Imports only the metrics module so the test stays free of heavy ML deps.
@@ -19,7 +19,7 @@ import threading
 
 import pytest
 
-from headroom.proxy.prometheus_metrics import PrometheusMetrics
+from legroom.proxy.prometheus_metrics import PrometheusMetrics
 
 
 def test_record_compression_failed_buckets_by_reason() -> None:
@@ -76,17 +76,17 @@ async def test_counters_exported_in_prometheus_text() -> None:
 
     text = await metrics.export()
 
-    assert "# TYPE headroom_compression_failed_total counter" in text
-    assert 'headroom_compression_failed_total{reason="timeout"} 1' in text
-    assert 'headroom_compression_failed_total{reason="error"} 1' in text
+    assert "# TYPE legroom_compression_failed_total counter" in text
+    assert 'legroom_compression_failed_total{reason="timeout"} 1' in text
+    assert 'legroom_compression_failed_total{reason="error"} 1' in text
 
-    assert "# TYPE headroom_kompress_size_gate_total counter" in text
-    assert 'headroom_kompress_size_gate_total{outcome="exceeded"} 1' in text
-    assert 'headroom_kompress_size_gate_total{outcome="within"} 1' in text
+    assert "# TYPE legroom_kompress_size_gate_total counter" in text
+    assert 'legroom_kompress_size_gate_total{outcome="exceeded"} 1' in text
+    assert 'legroom_kompress_size_gate_total{outcome="within"} 1' in text
 
-    assert "# TYPE headroom_compression_quarantine_total counter" in text
-    assert 'headroom_compression_quarantine_total{event="activated"} 1' in text
-    assert 'headroom_compression_quarantine_total{event="skipped"} 1' in text
+    assert "# TYPE legroom_compression_quarantine_total counter" in text
+    assert 'legroom_compression_quarantine_total{event="activated"} 1' in text
+    assert 'legroom_compression_quarantine_total{event="skipped"} 1' in text
 
 
 @pytest.mark.asyncio
@@ -97,9 +97,9 @@ async def test_counters_absent_from_export_until_recorded() -> None:
 
     # Conditional emission: the families only appear once a sample exists,
     # matching the other labelled-counter blocks in export().
-    assert "headroom_compression_failed_total" not in text
-    assert "headroom_kompress_size_gate_total" not in text
-    assert "headroom_compression_quarantine_total" not in text
+    assert "legroom_compression_failed_total" not in text
+    assert "legroom_kompress_size_gate_total" not in text
+    assert "legroom_compression_quarantine_total" not in text
 
 
 @pytest.mark.asyncio

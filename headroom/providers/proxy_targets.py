@@ -5,9 +5,9 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any, cast
 
-from headroom.providers.codex import resolve_codex_routing
-from headroom.providers.codex.endpoints import CHATGPT_BACKEND_API_URL
-from headroom.providers.vertex import vertex_target_for_location as _vertex_target_for_location
+from legroom.providers.codex import resolve_codex_routing
+from legroom.providers.codex.endpoints import CHATGPT_BACKEND_API_URL
+from legroom.providers.vertex import vertex_target_for_location as _vertex_target_for_location
 
 LEGACY_API_TARGET_ATTRS: dict[str, str] = {
     "anthropic": "ANTHROPIC_API_URL",
@@ -37,7 +37,7 @@ def select_passthrough_base_url(proxy: Any, headers: Mapping[str, str]) -> str:
     if headers.get("x-goog-api-key"):
         return api_target(proxy, "gemini")
     if headers.get("api-key"):
-        azure_base = headers.get("x-headroom-base-url", "")
+        azure_base = headers.get("x-legroom-base-url", "")
         if azure_base:
             return azure_base.rstrip("/")
     provider_name = proxy.provider_runtime.model_metadata_provider(headers)

@@ -312,7 +312,7 @@ async fn thinking_block_preserved() {
         &upstream.uri(),
         |c| {
             c.compression = true;
-            c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+            c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
         },
         |s| install_static_token_source(s, TEST_BEARER),
     )
@@ -499,7 +499,7 @@ async fn stream_raw_predict_sse_handled() {
 #[tokio::test]
 async fn adc_failure_returns_5xx_no_silent_forward() {
     use async_trait::async_trait;
-    use headroom_proxy::vertex::{TokenSource, TokenSourceError};
+    use legroom_proxy::vertex::{TokenSource, TokenSourceError};
     use std::sync::Arc as StdArc;
 
     // Token source that always fails — verifies the no-silent-fallback

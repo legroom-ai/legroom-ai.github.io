@@ -1,6 +1,6 @@
 """Universal memory sync engine for cross-agent interoperability.
 
-Provides bidirectional sync between headroom's memory DB and any
+Provides bidirectional sync between legroom's memory DB and any
 agent's native memory format via pluggable adapters.
 
 Architecture:
@@ -9,8 +9,8 @@ Architecture:
     sync() = import + export          (bidirectional, fast no-op when unchanged)
 
 Usage:
-    from headroom.memory.sync import sync, SyncResult
-    from headroom.memory.sync_adapters.claude_code import ClaudeCodeAdapter
+    from legroom.memory.sync import sync, SyncResult
+    from legroom.memory.sync_adapters.claude_code import ClaudeCodeAdapter
 
     adapter = ClaudeCodeAdapter(memory_dir=Path("~/.claude/projects/.../memory"))
     backend = LocalBackend(config)
@@ -30,12 +30,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from headroom import paths as _paths
+from legroom import paths as _paths
 
-logger = logging.getLogger("headroom.memory.sync")
+logger = logging.getLogger("legroom.memory.sync")
 
 # State file for fast no-op detection (workspace bucket, respects
-# HEADROOM_WORKSPACE_DIR). Resolved at import time, matching prior behavior.
+# LEGROOM_WORKSPACE_DIR). Resolved at import time, matching prior behavior.
 _DEFAULT_STATE_PATH = _paths.sync_state_path()
 
 
@@ -98,7 +98,7 @@ class AgentMemoryAdapter(ABC):
 
         Args:
             memories: List of dicts with keys: content, category, importance,
-                      headroom_id, source_agent, content_hash.
+                      legroom_id, source_agent, content_hash.
 
         Returns:
             Count of memories written.
@@ -160,7 +160,7 @@ async def sync(
     state_path: Path = _DEFAULT_STATE_PATH,
     force: bool = False,
 ) -> SyncResult:
-    """Bidirectional sync between headroom DB and an agent's memory.
+    """Bidirectional sync between legroom DB and an agent's memory.
 
     1. Fast no-op check (fingerprint comparison)
     2. Import: agent files → DB (new entries only, deduped by content hash)
@@ -320,7 +320,7 @@ async def sync_export(
                 "content": mem.content,
                 "category": getattr(mem, "category", "") or "",
                 "importance": getattr(mem, "importance", 0.5),
-                "headroom_id": mem.id,
+                "legroom_id": mem.id,
                 "source_agent": meta.get("source_agent", "unknown"),
                 "content_hash": content_hash,
                 "created_at": mem.created_at.isoformat()
@@ -339,20 +339,20 @@ async def sync_export(
 
 
 # ---------------------------------------------------------------------------
-# CLI entry point: python -m headroom.memory.sync --db ... --user ... --agent ...
+# CLI entry point: python -m legroom.memory.sync --db ... --user ... --agent ...
 # ---------------------------------------------------------------------------
 
 
 def _build_sync_backend(db_path: str) -> Any:
     """Build the memory backend used by the sync subprocess.
 
-    Match the proxy MCP server (see ``headroom/memory/mcp_server.py``): use the
+    Match the proxy MCP server (see ``legroom/memory/mcp_server.py``): use the
     torch-free ONNX embedder so ``wrap --memory`` sync works on the proxy extras
     without sentence-transformers/PyTorch (#1092). It loads the same
     ``all-MiniLM-L6-v2`` 384-dim model as the local embedder, so vectors stay
     compatible with what the proxy writes — no DB migration.
     """
-    from headroom.memory.backends.local import LocalBackend, LocalBackendConfig
+    from legroom.memory.backends.local import LocalBackend, LocalBackendConfig
 
     config = LocalBackendConfig(db_path=db_path, embedder_backend="onnx")
     return LocalBackend(config)
@@ -362,7 +362,7 @@ def main() -> None:
     """CLI entry point for running sync from a subprocess."""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Headroom memory sync")
+    parser = argparse.ArgumentParser(description="Legroom memory sync")
     parser.add_argument("--db", required=True, help="Path to memory DB")
     parser.add_argument("--user", required=True, help="User ID")
     parser.add_argument("--agent", required=True, choices=["claude", "codex"], help="Agent to sync")
@@ -377,14 +377,14 @@ def main() -> None:
         await backend._ensure_initialized()
 
         if args.agent == "claude":
-            from headroom.memory.sync_adapters.claude_code import (
+            from legroom.memory.sync_adapters.claude_code import (
                 ClaudeCodeAdapter,
                 get_claude_memory_dir,
             )
 
             adapter: ClaudeCodeAdapter | Any = ClaudeCodeAdapter(get_claude_memory_dir())
         elif args.agent == "codex":
-            from headroom.memory.sync_adapters.codex_agent import CodexAdapter
+            from legroom.memory.sync_adapters.codex_agent import CodexAdapter
 
             adapter = CodexAdapter()
         else:

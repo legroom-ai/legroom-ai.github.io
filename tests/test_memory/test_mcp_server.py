@@ -4,10 +4,10 @@ from unittest.mock import AsyncMock
 
 import numpy as np
 
-from headroom.memory.models import Memory
+from legroom.memory.models import Memory
 from tests._mcp_stub import import_module_with_mcp_stub
 
-mcp_server_mod = import_module_with_mcp_stub("headroom.memory.mcp_server")
+mcp_server_mod = import_module_with_mcp_stub("legroom.memory.mcp_server")
 
 
 class _CapturingServer:
@@ -222,7 +222,7 @@ def test_concurrent_tool_calls_share_backend_initialization(monkeypatch) -> None
 def test_memory_mcp_startup_context_reports_dynamic_project_db(tmp_path) -> None:
     project_dir = tmp_path / "project-a"
     project_dir.mkdir()
-    configured_db = str(project_dir / ".headroom" / "memory.db")
+    configured_db = str(project_dir / ".legroom" / "memory.db")
 
     context = mcp_server_mod._memory_mcp_startup_context(
         configured_db,
@@ -306,12 +306,12 @@ def test_main_logs_memory_mcp_startup_context(monkeypatch, tmp_path, caplog) -> 
         lambda payload: captured_run_payloads.append(payload),
     )
 
-    caplog.set_level("INFO", logger="headroom.memory.mcp")
+    caplog.set_level("INFO", logger="legroom.memory.mcp")
 
     mcp_server_mod.main()
 
     assert captured_run_payloads == [
-        ("run", str(project_dir / ".headroom" / "memory.db"), "codex-user")
+        ("run", str(project_dir / ".legroom" / "memory.db"), "codex-user")
     ]
     assert any(
         "Memory MCP startup: configured_db=" in record.message

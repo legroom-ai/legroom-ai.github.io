@@ -1,19 +1,19 @@
-"""Wrap CLI commands to run through Headroom proxy.
+"""Wrap CLI commands to run through Legroom proxy.
 
 Usage:
-    headroom wrap claude                    # Start proxy + context tool + claude
-    headroom wrap copilot -- --model ...    # Start proxy + launch GitHub Copilot CLI
-    headroom wrap codex                     # Start proxy + OpenAI Codex CLI
-    headroom wrap aider                     # Start proxy + aider
-    headroom wrap openclaude                # Start proxy + OpenClaude
-    headroom wrap vibe                      # Start proxy + Mistral Vibe
-    headroom wrap grok                      # Start proxy + Grok CLI
-    headroom wrap cursor                    # Start proxy + print Cursor config instructions
-    headroom wrap grok-build                # Start proxy + configure Grok Build
-    headroom wrap openclaw                  # Install + configure OpenClaw plugin
-    headroom wrap claude --no-context-tool  # Without CLI context-tool setup
-    headroom wrap claude --port 9999        # Custom proxy port
-    headroom wrap claude -- --model opus    # Pass args to claude
+    legroom wrap claude                    # Start proxy + context tool + claude
+    legroom wrap copilot -- --model ...    # Start proxy + launch GitHub Copilot CLI
+    legroom wrap codex                     # Start proxy + OpenAI Codex CLI
+    legroom wrap aider                     # Start proxy + aider
+    legroom wrap openclaude                # Start proxy + OpenClaude
+    legroom wrap vibe                      # Start proxy + Mistral Vibe
+    legroom wrap grok                      # Start proxy + Grok CLI
+    legroom wrap cursor                    # Start proxy + print Cursor config instructions
+    legroom wrap grok-build                # Start proxy + configure Grok Build
+    legroom wrap openclaw                  # Install + configure OpenClaw plugin
+    legroom wrap claude --no-context-tool  # Without CLI context-tool setup
+    legroom wrap claude --port 9999        # Custom proxy port
+    legroom wrap claude -- --model opus    # Pass args to claude
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any, cast
 
-from headroom._subprocess import pid_alive, run
+from legroom._subprocess import pid_alive, run
 
 # Fix Windows cp1252 encoding — box-drawing characters require UTF-8
 if sys.platform == "win32" and hasattr(sys.stdout, "buffer"):
@@ -51,20 +51,20 @@ if sys.version_info >= (3, 11):
 else:  # pragma: no cover - exercised only on Python 3.10
     import tomli as tomllib  # type: ignore[no-redef]
 
-from headroom import fsutil
-from headroom._version import __version__ as _HEADROOM_VERSION
-from headroom._version import normalize_release_version as _normalize_release_version
-from headroom.agent_savings import (
+from legroom import fsutil
+from legroom._version import __version__ as _LEGROOM_VERSION
+from legroom._version import normalize_release_version as _normalize_release_version
+from legroom.agent_savings import (
     apply_agent_savings_env_defaults,
 )
-from headroom.copilot_auth import (
+from legroom.copilot_auth import (
     has_oauth_auth,
     resolve_client_bearer_token,
     resolve_copilot_api_url,
     resolve_subscription_bearer_token_details,
 )
-from headroom.providers.aider import build_launch_env as _build_aider_launch_env
-from headroom.providers.claude import (
+from legroom.providers.aider import build_launch_env as _build_aider_launch_env
+from legroom.providers.claude import (
     REMOTE_CONTROL_BASE_URL_ENV,
     TOOL_SEARCH_DEFAULT,
     TOOL_SEARCH_ENV,
@@ -74,75 +74,75 @@ from headroom.providers.claude import (
     remote_control_gate_message,
     remote_control_sibling_gate_note,
 )
-from headroom.providers.claude import (
+from legroom.providers.claude import (
     proxy_base_url as _claude_proxy_base_url,
 )
-from headroom.providers.codex import build_launch_env as _build_codex_launch_env
-from headroom.providers.codex.install import codex_uses_chatgpt_auth
-from headroom.providers.codex.threads import retag_to_headroom, retag_to_native
-from headroom.providers.copilot import (
+from legroom.providers.codex import build_launch_env as _build_codex_launch_env
+from legroom.providers.codex.install import codex_uses_chatgpt_auth
+from legroom.providers.codex.threads import retag_to_legroom, retag_to_native
+from legroom.providers.copilot import (
     build_launch_env as _build_copilot_launch_env,
 )
-from headroom.providers.copilot import (
+from legroom.providers.copilot import (
     copilot_model_from_args as _copilot_model_from_args_impl,
 )
-from headroom.providers.copilot import (
+from legroom.providers.copilot import (
     default_wire_api_for_model as _copilot_default_wire_api_for_model_impl,
 )
-from headroom.providers.copilot import (
+from legroom.providers.copilot import (
     detect_running_proxy_backend as _copilot_detect_running_proxy_backend,
 )
-from headroom.providers.copilot import (
+from legroom.providers.copilot import (
     is_auto_model as _is_auto_model,
 )
-from headroom.providers.copilot import (
+from legroom.providers.copilot import (
     model_configured as _copilot_model_configured_impl,
 )
-from headroom.providers.copilot import (
+from legroom.providers.copilot import (
     provider_key_source as _copilot_provider_key_source,
 )
-from headroom.providers.copilot import (
+from legroom.providers.copilot import (
     query_proxy_config as _copilot_query_proxy_config,
 )
-from headroom.providers.copilot import (
+from legroom.providers.copilot import (
     resolve_provider_type as _copilot_resolve_provider_type,
 )
-from headroom.providers.copilot import (
+from legroom.providers.copilot import (
     strip_auto_model_args as _strip_auto_model_args,
 )
-from headroom.providers.copilot import (
+from legroom.providers.copilot import (
     validate_configuration as _validate_copilot_configuration,
 )
-from headroom.providers.cursor import render_setup_lines as _render_cursor_setup_lines
-from headroom.providers.grok import build_launch_env as _build_grok_launch_env
-from headroom.providers.grok_build import render_setup_lines as _render_grok_build_setup_lines
-from headroom.providers.grok_build.config import (
+from legroom.providers.cursor import render_setup_lines as _render_cursor_setup_lines
+from legroom.providers.grok import build_launch_env as _build_grok_launch_env
+from legroom.providers.grok_build import render_setup_lines as _render_grok_build_setup_lines
+from legroom.providers.grok_build.config import (
     inject_grok_provider_config,
     restore_grok_provider_config,
 )
-from headroom.providers.kimi import build_launch_env as _build_kimi_launch_env
-from headroom.providers.mistral_vibe import build_launch_env as _build_mistral_vibe_launch_env
-from headroom.providers.omp import build_launch_env as _build_omp_launch_env
-from headroom.providers.omp import inject_models_override as _inject_omp_models_override
-from headroom.providers.omp import models_yml_path as _omp_models_yml_path
-from headroom.providers.omp import restore_models_override as _restore_omp_models_override
-from headroom.providers.openclaw import (
+from legroom.providers.kimi import build_launch_env as _build_kimi_launch_env
+from legroom.providers.mistral_vibe import build_launch_env as _build_mistral_vibe_launch_env
+from legroom.providers.omp import build_launch_env as _build_omp_launch_env
+from legroom.providers.omp import inject_models_override as _inject_omp_models_override
+from legroom.providers.omp import models_yml_path as _omp_models_yml_path
+from legroom.providers.omp import restore_models_override as _restore_omp_models_override
+from legroom.providers.openclaw import (
     OPENCLAW_NPM_PACKAGE,
 )
-from headroom.providers.openclaw import (
+from legroom.providers.openclaw import (
     build_plugin_entry as _build_openclaw_plugin_entry_impl,
 )
-from headroom.providers.openclaw import (
+from legroom.providers.openclaw import (
     build_unwrap_entry as _build_openclaw_unwrap_entry_impl,
 )
-from headroom.providers.openclaw import (
+from legroom.providers.openclaw import (
     decode_entry_json as _decode_openclaw_entry_json_impl,
 )
-from headroom.providers.openclaw import (
+from legroom.providers.openclaw import (
     normalize_gateway_provider_ids as _normalize_openclaw_gateway_provider_ids_impl,
 )
-from headroom.providers.opencode import build_launch_env as _build_opencode_launch_env
-from headroom.providers.opencode.config import (
+from legroom.providers.opencode import build_launch_env as _build_opencode_launch_env
+from legroom.providers.opencode.config import (
     _MCP_MARKER_END,  # noqa: F401
     _MCP_MARKER_START,
     _PROVIDER_MARKER_END,  # noqa: F401
@@ -150,18 +150,18 @@ from headroom.providers.opencode.config import (
     inject_opencode_provider_config,
     opencode_config_paths,
     snapshot_opencode_config_if_unwrapped,
-    strip_opencode_headroom_blocks,
+    strip_opencode_legroom_blocks,
 )
-from headroom.providers.zcode import (
+from legroom.providers.zcode import (
     detect_upstream as _detect_zcode_upstream,
 )
-from headroom.providers.zcode import (
+from legroom.providers.zcode import (
     render_setup_lines as _render_zcode_setup_lines,
 )
-from headroom.providers.zcode import (
+from legroom.providers.zcode import (
     upstream_to_proxy_urls as _zcode_upstream_to_urls,
 )
-from headroom.proxy.project_context import with_project_prefix as _with_project_prefix
+from legroom.proxy.project_context import with_project_prefix as _with_project_prefix
 
 from .main import main
 
@@ -192,12 +192,12 @@ def _append_text(path: Path, content: str) -> None:
     fsutil.append_text(path, content)
 
 
-_CONTEXT_TOOL_ENV = "HEADROOM_CONTEXT_TOOL"
+_CONTEXT_TOOL_ENV = "LEGROOM_CONTEXT_TOOL"
 _CONTEXT_TOOL_RTK = "rtk"
 _CONTEXT_TOOL_LEAN_CTX = "lean-ctx"
 _VALID_CONTEXT_TOOLS = {_CONTEXT_TOOL_RTK, _CONTEXT_TOOL_LEAN_CTX}
 _AGENT_SAVINGS_TARGET_AGENTS = {"claude", "codex", "cursor", "grok", "grok_build", "opencode"}
-_WRAP_PROXY_TIMEOUT_ENV = "HEADROOM_WRAP_PROXY_TIMEOUT"
+_WRAP_PROXY_TIMEOUT_ENV = "LEGROOM_WRAP_PROXY_TIMEOUT"
 _WRAP_PROXY_TIMEOUT_DEFAULT_SECONDS = 45
 _WRAP_PROXY_TIMEOUT_ML_DEFAULT_SECONDS = 90
 _WRAP_PROXY_TIMEOUT_ML_MODULES = ("torch", "sentence_transformers", "spacy")
@@ -320,7 +320,7 @@ def _selected_context_tool() -> str:
     """Return the configured CLI context tool.
 
     RTK remains the default for backward compatibility. Set
-    ``HEADROOM_CONTEXT_TOOL=lean-ctx`` to let lean-ctx configure the supported
+    ``LEGROOM_CONTEXT_TOOL=lean-ctx`` to let lean-ctx configure the supported
     coding agent instead.
     """
 
@@ -356,7 +356,7 @@ def _wrap_agent_savings_profile(agent_type: str) -> str | None:
 
     if agent_type not in _AGENT_SAVINGS_WRAP_AGENTS:
         return None
-    return os.environ.get("HEADROOM_SAVINGS_PROFILE") or None
+    return os.environ.get("LEGROOM_SAVINGS_PROFILE") or None
 
 
 def _default_wrap_proxy_timeout_seconds() -> int:
@@ -390,10 +390,10 @@ def _resolve_wrap_proxy_timeout_seconds() -> int:
 def _print_telemetry_notice() -> None:
     """Print a telemetry notice when anonymous telemetry is enabled.
 
-    Respects the HEADROOM_TELEMETRY and HEADROOM_TELEMETRY_WARN feature flags.
+    Respects the LEGROOM_TELEMETRY and LEGROOM_TELEMETRY_WARN feature flags.
     Does nothing when telemetry or warnings are disabled.
     """
-    from headroom.telemetry.beacon import format_telemetry_notice
+    from legroom.telemetry.beacon import format_telemetry_notice
 
     notice = format_telemetry_notice(prefix="  ")
     if notice:
@@ -404,7 +404,7 @@ def _print_telemetry_notice() -> None:
 
 
 def _check_proxy(port: int) -> bool:
-    """Check if Headroom proxy is running on given port."""
+    """Check if Legroom proxy is running on given port."""
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.settimeout(1)
@@ -446,7 +446,7 @@ def _find_available_port(start_port: int, max_attempts: int = 100) -> int:
 
 def _get_log_path() -> Path:
     """Get path for proxy log file."""
-    from headroom import paths as _paths
+    from legroom import paths as _paths
 
     log_dir = _paths.log_dir()
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -476,22 +476,22 @@ def _start_proxy(
     copilot_refresh_oauth_token: str | None = None,
     copilot_api_token_expires_at: float | None = None,
 ) -> subprocess.Popen:
-    """Start Headroom proxy as a background subprocess.
+    """Start Legroom proxy as a background subprocess.
 
     Stdout and stderr are written to a dedicated sibling file, usually
-    `~/.headroom/logs/proxy-stdio.log`, to avoid pipe deadlock risk without
+    `~/.legroom/logs/proxy-stdio.log`, to avoid pipe deadlock risk without
     competing with the rotating `proxy.log` runtime log.
 
     The caller is responsible for ensuring *port* is available
     (see ``_find_available_port``).
     """
 
-    cmd = [sys.executable, "-m", "headroom.cli", "proxy", "--port", str(port)]
+    cmd = [sys.executable, "-m", "legroom.cli", "proxy", "--port", str(port)]
 
-    # Forward HEADROOM_MODE env var so the proxy respects the user's mode choice
-    headroom_mode = os.environ.get("HEADROOM_MODE")
-    if headroom_mode:
-        cmd.extend(["--mode", headroom_mode])
+    # Forward LEGROOM_MODE env var so the proxy respects the user's mode choice
+    legroom_mode = os.environ.get("LEGROOM_MODE")
+    if legroom_mode:
+        cmd.extend(["--mode", legroom_mode])
 
     # Forward --learn flag to proxy subprocess
     if learn:
@@ -506,15 +506,15 @@ def _start_proxy(
         cmd.append("--code-graph")
 
     # Forward backend configuration to proxy subprocess
-    _backend = backend or os.environ.get("HEADROOM_BACKEND")
+    _backend = backend or os.environ.get("LEGROOM_BACKEND")
     if _backend:
         cmd.extend(["--backend", _backend])
 
-    _anyllm = anyllm_provider or os.environ.get("HEADROOM_ANYLLM_PROVIDER")
+    _anyllm = anyllm_provider or os.environ.get("LEGROOM_ANYLLM_PROVIDER")
     if _anyllm:
         cmd.extend(["--anyllm-provider", _anyllm])
 
-    _region = region or os.environ.get("HEADROOM_REGION")
+    _region = region or os.environ.get("LEGROOM_REGION")
     if _region:
         cmd.extend(["--region", _region])
 
@@ -539,11 +539,11 @@ def _start_proxy(
     # Vertex AI RST_STREAMs HTTP/2 connections (error_code:2). Force HTTP/1.1
     # when wrapping a Vertex-mode client so upstream requests succeed.
     if os.environ.get("CLAUDE_CODE_USE_VERTEX") or os.environ.get("ANTHROPIC_VERTEX_PROJECT_ID"):
-        proxy_env.setdefault("HEADROOM_HTTP2", "false")
+        proxy_env.setdefault("LEGROOM_HTTP2", "false")
     # Tell the proxy which agent is being wrapped (for traffic learning output)
     if agent_type != "unknown":
-        proxy_env["HEADROOM_AGENT_TYPE"] = agent_type
-        proxy_env.setdefault("HEADROOM_STACK", f"wrap_{agent_type}")
+        proxy_env["LEGROOM_AGENT_TYPE"] = agent_type
+        proxy_env.setdefault("LEGROOM_STACK", f"wrap_{agent_type}")
     savings_profile = _wrap_agent_savings_profile(agent_type)
     if savings_profile is not None:
         apply_agent_savings_env_defaults(proxy_env, savings_profile)
@@ -574,7 +574,7 @@ def _start_proxy(
     # clients. Without this the proxy stays in the owner's console + Job
     # object; closing that window terminates the whole tree, bypassing the
     # marker-based reference counting in ``_make_cleanup`` and breaking every
-    # other ``headroom wrap`` instance routed through the same port.
+    # other ``legroom wrap`` instance routed through the same port.
     #   CREATE_NO_WINDOW         — give the proxy its OWN, invisible console.
     #                              A separate console means the parent's
     #                              CTRL_CLOSE_EVENT never reaches it, and no
@@ -651,23 +651,23 @@ def _rtk_opt_in() -> bool:
     """Whether RTK CLI-command filtering was explicitly enabled.
 
     RTK is opt-in (off by default): turn it on with ``--rtk`` (which sets
-    ``HEADROOM_RTK=1``) or by exporting ``HEADROOM_RTK=1``. ``--no-rtk`` remains
+    ``LEGROOM_RTK=1``) or by exporting ``LEGROOM_RTK=1``. ``--no-rtk`` remains
     accepted as a deprecated no-op.
     """
-    return os.environ.get("HEADROOM_RTK", "").strip().lower() in ("1", "true", "yes", "on")
+    return os.environ.get("LEGROOM_RTK", "").strip().lower() in ("1", "true", "yes", "on")
 
 
 def _rtk_flag_callback(ctx: Any, param: Any, value: bool) -> bool:
-    """Click eager callback: ``--rtk`` sets HEADROOM_RTK so the central RTK gate
+    """Click eager callback: ``--rtk`` sets LEGROOM_RTK so the central RTK gate
     (:func:`_rtk_opt_in`) sees the opt-in without threading a param through every
     wrap subcommand."""
     if value:
-        os.environ["HEADROOM_RTK"] = "1"
+        os.environ["LEGROOM_RTK"] = "1"
     return value
 
 
 # Shared opt-in flag applied to every ``wrap`` subcommand. ``expose_value=False``
-# so no subcommand signature changes; it works purely through HEADROOM_RTK.
+# so no subcommand signature changes; it works purely through LEGROOM_RTK.
 _rtk_option = click.option(
     "--rtk",
     is_flag=True,
@@ -675,7 +675,7 @@ _rtk_option = click.option(
     expose_value=False,
     is_eager=True,
     callback=_rtk_flag_callback,
-    help="Enable RTK CLI-command filtering (opt-in; off by default). Also enabled by HEADROOM_RTK=1.",
+    help="Enable RTK CLI-command filtering (opt-in; off by default). Also enabled by LEGROOM_RTK=1.",
 )
 
 
@@ -683,8 +683,8 @@ def _setup_rtk(verbose: bool = False) -> Path | None:
     """Ensure rtk is installed and hooks are registered."""
     if not _rtk_opt_in():
         return None
-    from headroom.rtk import get_rtk_path
-    from headroom.rtk.installer import ensure_rtk, register_claude_hooks
+    from legroom.rtk import get_rtk_path
+    from legroom.rtk.installer import ensure_rtk, register_claude_hooks
 
     rtk_path = get_rtk_path()
 
@@ -718,12 +718,12 @@ def _setup_rtk(verbose: bool = False) -> Path | None:
 
 
 def _ensure_rtk_on_path(rtk_path: Path, path_dirs: list[str] | None = None) -> Path | None:
-    """Make the Headroom-managed rtk resolvable as a bare ``rtk`` on PATH.
+    """Make the Legroom-managed rtk resolvable as a bare ``rtk`` on PATH.
 
     ``rtk init --global --auto-patch`` writes ``~/.claude/hooks/rtk-rewrite.sh``,
     and ``rtk rewrite`` emits a bare ``rtk`` token at runtime that the hook feeds
     back to the shell — so bare ``rtk`` has to resolve on PATH regardless of the
-    hook's contents. Since ``~/.headroom/bin`` (where Headroom installs rtk) is
+    hook's contents. Since ``~/.legroom/bin`` (where Legroom installs rtk) is
     not on PATH by default, that lookup fails and compression silently never
     runs (issue #487).
 
@@ -738,7 +738,7 @@ def _ensure_rtk_on_path(rtk_path: Path, path_dirs: list[str] | None = None) -> P
     Idempotent and conservative:
       * no-op if a ``rtk`` already resolves on PATH (managed or system);
       * no-op on Windows (symlinks need privilege; hooks resolve differently);
-      * only creates/refreshes a symlink Headroom owns — never clobbers an
+      * only creates/refreshes a symlink Legroom owns — never clobbers an
         existing real file or foreign binary.
 
     Returns the link path that was created or already correct, else ``None``.
@@ -793,8 +793,8 @@ def _ensure_rtk_on_path(rtk_path: Path, path_dirs: list[str] | None = None) -> P
 def _setup_lean_ctx_agent(agent: str, verbose: bool = False) -> Path | None:
     """Run lean-ctx agent setup for the requested coding tool."""
 
-    from headroom.lean_ctx import get_lean_ctx_path
-    from headroom.lean_ctx.installer import ensure_lean_ctx
+    from legroom.lean_ctx import get_lean_ctx_path
+    from legroom.lean_ctx.installer import ensure_lean_ctx
 
     lean_ctx = get_lean_ctx_path()
     if not lean_ctx:
@@ -805,7 +805,7 @@ def _setup_lean_ctx_agent(agent: str, verbose: bool = False) -> Path | None:
         return None
 
     try:
-        with tempfile.TemporaryDirectory(prefix="headroom-lean-ctx-") as setup_cwd:
+        with tempfile.TemporaryDirectory(prefix="legroom-lean-ctx-") as setup_cwd:
             # lean-ctx writes project-local files when initialized from a git
             # checkout. Run from a non-project directory so setup is limited to
             # home-scoped agent config such as ~/.codex or ~/.claude.
@@ -835,27 +835,27 @@ def _setup_lean_ctx_agent(agent: str, verbose: bool = False) -> Path | None:
     return lean_ctx
 
 
-# Hook-command markers Headroom manages in Claude settings.json. unwrap drops
+# Hook-command markers Legroom manages in Claude settings.json. unwrap drops
 # any hook entry whose command contains one of these.
-_HEADROOM_HOOK_MARKERS = ("rtk-rewrite", "headroom-init-claude")
+_LEGROOM_HOOK_MARKERS = ("rtk-rewrite", "legroom-init-claude")
 
-# Env vars Headroom's init/wrap inject into Claude settings.json; unwrap removes
+# Env vars Legroom's init/wrap inject into Claude settings.json; unwrap removes
 # them. ENABLE_TOOL_SEARCH keeps Claude Code's tool deferral on behind the proxy
 # (GH #746), paired with init/wrap setting it.
-_HEADROOM_ENV_KEYS = ("ANTHROPIC_BASE_URL", "ENABLE_TOOL_SEARCH")
+_LEGROOM_ENV_KEYS = ("ANTHROPIC_BASE_URL", "ENABLE_TOOL_SEARCH")
 
 # Stable marker embedded in the SessionStart self-heal hook that ``wrap claude``
 # installs (issue #2221). Lets that hook be found (idempotent install) and
 # removed (unwrap) by its command string.
-_WRAP_SELFHEAL_HOOK_MARKER = "headroom-wrap-selfheal"
+_WRAP_SELFHEAL_HOOK_MARKER = "legroom-wrap-selfheal"
 
 
 def _remove_claude_rtk_hooks(settings_path: Path | None = None) -> bool:
-    """Remove Headroom-managed entries from Claude settings.json.
+    """Remove Legroom-managed entries from Claude settings.json.
 
-    Reverses what ``headroom init claude`` and ``rtk init --auto-patch`` add:
-      * PreToolUse / SessionStart hooks whose command contains a Headroom marker
-        (``rtk-rewrite`` or ``headroom-init-claude``), and
+    Reverses what ``legroom init claude`` and ``rtk init --auto-patch`` add:
+      * PreToolUse / SessionStart hooks whose command contains a Legroom marker
+        (``rtk-rewrite`` or ``legroom-init-claude``), and
       * the ``ANTHROPIC_BASE_URL`` proxy-routing env var.
     Unrelated settings and user-authored hooks are left untouched. (Previously
     this only matched ``rtk-rewrite`` and returned early when no hooks existed,
@@ -896,7 +896,7 @@ def _remove_claude_rtk_hooks(settings_path: Path | None = None) -> bool:
                         isinstance(item, dict)
                         and any(
                             marker in str(item.get("command", "")).lower()
-                            for marker in _HEADROOM_HOOK_MARKERS
+                            for marker in _LEGROOM_HOOK_MARKERS
                         )
                     )
                 ]
@@ -924,7 +924,7 @@ def _remove_claude_rtk_hooks(settings_path: Path | None = None) -> bool:
     # this). List-comp, not any(), so every key is popped (no short-circuit).
     env = payload.get("env")
     if isinstance(env, dict):
-        removed_keys = [k for k in _HEADROOM_ENV_KEYS if env.pop(k, None) is not None]
+        removed_keys = [k for k in _LEGROOM_ENV_KEYS if env.pop(k, None) is not None]
         if removed_keys:
             changed = True
             if env:
@@ -981,7 +981,7 @@ def _vertex_target_api_url_from_claude_env(proxy_url: str) -> str | None:
     if not vertex_url:
         return None
 
-    from headroom.providers.registry import DEFAULT_VERTEX_API_URL
+    from legroom.providers.registry import DEFAULT_VERTEX_API_URL
 
     normalized_vertex_url = _normalize_proxy_api_url(vertex_url)
     if normalized_vertex_url == _normalize_proxy_api_url(DEFAULT_VERTEX_API_URL):
@@ -1002,10 +1002,10 @@ def _claude_wrap_base_url_env_key(*, foundry_mode: bool = False, vertex_mode: bo
 def _wrap_marker_path(settings_path: Path) -> Path:
     """Sidecar marker path for a given settings.local.json path.
 
-    Kept out of settings.local.json itself so Headroom's own bookkeeping never
+    Kept out of settings.local.json itself so Legroom's own bookkeeping never
     shows up as a stray key inside a file Claude Code's config loader parses.
     """
-    return settings_path.parent / ".headroom_wrap_marker.json"
+    return settings_path.parent / ".legroom_wrap_marker.json"
 
 
 def _write_wrap_marker(settings_path: Path, *, port: int, key: str, previous: str | None) -> None:
@@ -1110,7 +1110,7 @@ def _check_and_clear_stale_wrap_marker(settings_path: Path, *, key: str) -> str 
         return None
     previous = marker.get("previous")
     click.echo(
-        f"headroom: clearing stale {key} left by crashed wrap session (pid {marker.get('pid')})",
+        f"legroom: clearing stale {key} left by crashed wrap session (pid {marker.get('pid')})",
         err=True,
     )
     _restore_claude_wrap_base_url(previous, settings_path=settings_path, _key_override=key)
@@ -1149,7 +1149,7 @@ def _check_and_clear_dead_wrap_marker(settings_path: Path, *, key: str) -> str |
         return None
     previous = marker.get("previous")
     click.echo(
-        f"headroom: clearing stale {key} left by a proxy that is no longer "
+        f"legroom: clearing stale {key} left by a proxy that is no longer "
         f"running (issue #2221); restoring prior value",
         err=True,
     )
@@ -1185,11 +1185,11 @@ def _selfheal_dead_wrap_base_url() -> None:
 
 def _wrap_selfheal_hook_command() -> str:
     """Command string for the SessionStart self-heal hook (mirrors init hooks)."""
-    from headroom.cli.init import _command_string
-    from headroom.install.runtime import resolve_headroom_command
+    from legroom.cli.init import _command_string
+    from legroom.install.runtime import resolve_legroom_command
 
     return _command_string(
-        [*resolve_headroom_command(), "wrap", "selfheal", "--marker", _WRAP_SELFHEAL_HOOK_MARKER]
+        [*resolve_legroom_command(), "wrap", "selfheal", "--marker", _WRAP_SELFHEAL_HOOK_MARKER]
     )
 
 
@@ -1317,7 +1317,7 @@ def _write_claude_wrap_base_url(
     the daemon's environment.  Writing the mode-specific Claude base URL env
     key into the project-local settings file (.claude/settings.local.json in
     cwd) ensures every new conversation — including those started after the
-    initial launch — routes through the Headroom proxy without touching the
+    initial launch — routes through the Legroom proxy without touching the
     global user settings file or affecting sessions in other projects. Returns
     the previous value so the caller can restore it on exit (issue #951).
 
@@ -1397,19 +1397,19 @@ def _restore_claude_wrap_base_url(
     _clear_wrap_marker(path, key=key)
 
 
-def _setup_headroom_mcp(
+def _setup_legroom_mcp(
     registrar: Any, port: int, *, verbose: bool = False, force: bool = False
 ) -> None:
-    """Register the headroom MCP server with the given agent (idempotent).
+    """Register the legroom MCP server with the given agent (idempotent).
 
     The proxy compresses tool_result payloads and emits ``[Retrieve more:
     hash=…]`` markers. Without this registration those markers point at
-    nothing — the agent has no ``headroom_retrieve`` tool to call.
+    nothing — the agent has no ``legroom_retrieve`` tool to call.
 
     Generic across registrars: ``ClaudeRegistrar``, ``CodexRegistrar``, and
     any future agent registrar all flow through the same setup path.
     """
-    from headroom.mcp_registry import build_headroom_spec, format_result
+    from legroom.mcp_registry import build_legroom_spec, format_result
 
     if not registrar.detect():
         if verbose:
@@ -1417,7 +1417,7 @@ def _setup_headroom_mcp(
         return
 
     proxy_url = f"http://127.0.0.1:{port}"
-    spec = build_headroom_spec(proxy_url)
+    spec = build_legroom_spec(proxy_url)
     result = registrar.register_server(spec, force=force)
 
     line = format_result(
@@ -1425,7 +1425,7 @@ def _setup_headroom_mcp(
         result,
         label="MCP retrieve tool",
         verbose=verbose,
-        overwrite_hint=f"headroom mcp install --proxy-url {proxy_url} --force",
+        overwrite_hint=f"legroom mcp install --proxy-url {proxy_url} --force",
         restart_hint=f"restart {registrar.display_name} if it was already running",
     )
     if line is not None:
@@ -1437,19 +1437,19 @@ def _setup_serena_mcp(
 ) -> None:
     """Register Serena MCP with the given agent (idempotent).
 
-    A prior ``headroom wrap`` may have persisted a Serena entry built from an
+    A prior ``legroom wrap`` may have persisted a Serena entry built from an
     older spec — e.g. before ``--open-web-dashboard False`` was added to
     suppress the dashboard popup (#1003). ``register_server`` returns
     ``MISMATCH`` and refuses to overwrite a differing entry unless forced, so
     on its own a re-wrap leaves already-wrapped users stuck on the stale spec
     (and the popup) forever. When the ledger proves the entry currently in the
-    config is one Headroom installed, force-update it to the current spec. A
+    config is one Legroom installed, force-update it to the current spec. A
     user-managed Serena (absent from our ledger) is left untouched and the
     mismatch is reported as before.
     """
-    from headroom.mcp_registry import build_serena_spec, format_result
-    from headroom.mcp_registry.base import RegisterStatus
-    from headroom.mcp_registry.ledger import headroom_installed_matching, record_install
+    from legroom.mcp_registry import build_serena_spec, format_result
+    from legroom.mcp_registry.base import RegisterStatus
+    from legroom.mcp_registry.ledger import legroom_installed_matching, record_install
 
     if not registrar.detect():
         if verbose:
@@ -1463,15 +1463,15 @@ def _setup_serena_mcp(
     spec = build_serena_spec(context)
     result = registrar.register_server(spec, force=force)
 
-    # Migrate a stale Headroom-installed entry. register_server won't overwrite
-    # a differing spec without force, so an older Headroom Serena entry would
+    # Migrate a stale Legroom-installed entry. register_server won't overwrite
+    # a differing spec without force, so an older Legroom Serena entry would
     # otherwise persist across re-wraps. Force-update it only when the ledger
-    # proves Headroom installed the entry that's currently on disk — never a
+    # proves Legroom installed the entry that's currently on disk — never a
     # user-managed Serena.
     if (
         result.status == RegisterStatus.MISMATCH
         and not force
-        and headroom_installed_matching(registrar.name, registrar.get_server("serena"))
+        and legroom_installed_matching(registrar.name, registrar.get_server("serena"))
     ):
         result = registrar.register_server(spec, force=True)
         if result.status == RegisterStatus.REGISTERED:
@@ -1485,20 +1485,20 @@ def _setup_serena_mcp(
         result,
         label="Serena MCP",
         verbose=verbose,
-        overwrite_hint="update or remove the existing serena MCP entry, then rerun headroom wrap",
+        overwrite_hint="update or remove the existing serena MCP entry, then rerun legroom wrap",
         restart_hint=f"restart {registrar.display_name} if it was already running",
     )
     if line is not None:
         click.echo(line)
 
 
-def _remove_headroom_installed_serena_mcp(registrar: Any) -> str:
-    """Remove Serena MCP only if the ledger proves Headroom installed it."""
-    from headroom.mcp_registry.ledger import clear_install, headroom_installed_matching
+def _remove_legroom_installed_serena_mcp(registrar: Any) -> str:
+    """Remove Serena MCP only if the ledger proves Legroom installed it."""
+    from legroom.mcp_registry.ledger import clear_install, legroom_installed_matching
 
     current = registrar.get_server("serena")
-    if not headroom_installed_matching(registrar.name, current):
-        return "not_headroom_owned"
+    if not legroom_installed_matching(registrar.name, current):
+        return "not_legroom_owned"
     if registrar.unregister_server("serena"):
         clear_install(registrar.name, "serena")
         return "removed"
@@ -1508,12 +1508,12 @@ def _remove_headroom_installed_serena_mcp(registrar: Any) -> str:
 def _disable_serena_mcp(
     registrar: Any, *, verbose: bool = False, reason: str = "--no-serena"
 ) -> None:
-    """Actively disable a Headroom-installed Serena entry, not merely skip it.
+    """Actively disable a Legroom-installed Serena entry, not merely skip it.
 
-    Serena used to be registered by default, so a prior ``headroom wrap``
+    Serena used to be registered by default, so a prior ``legroom wrap``
     persists a ``serena`` entry into the agent's MCP config; the agent then
     keeps launching Serena on startup. Just *skipping* registration on a later
-    run leaves that stale entry in place — so this removes the entry Headroom
+    run leaves that stale entry in place — so this removes the entry Legroom
     installed. A user-managed Serena (absent from our ledger) is reported but
     left untouched. ``reason`` is surfaced in the message: ``--no-serena`` when
     the user opted out, or a note that tokensave is now the primary compressor.
@@ -1528,14 +1528,14 @@ def _disable_serena_mcp(
             click.echo(f"  Skipping Serena MCP ({reason})")
         return
 
-    status = _remove_headroom_installed_serena_mcp(registrar)
+    status = _remove_legroom_installed_serena_mcp(registrar)
     if status == "removed":
         click.echo(f"  Removed previously-installed Serena MCP ({reason})")
         click.echo(f"    restart {registrar.display_name} if it was already running")
-    elif status == "not_headroom_owned":
+    elif status == "not_legroom_owned":
         click.echo(
             "  Serena MCP is present but user-managed — leaving it in place "
-            "(--no-serena only removes entries Headroom installed)"
+            "(--no-serena only removes entries Legroom installed)"
         )
     else:  # "failed"
         click.echo(
@@ -1555,7 +1555,7 @@ def _ensure_tokensave_binary(verbose: bool = False) -> Path | None:
     (offline, unsupported platform, or download failure) — the caller then
     falls back to Serena.
     """
-    from headroom.graph.tokensave_installer import ensure_tokensave, get_tokensave_path
+    from legroom.graph.tokensave_installer import ensure_tokensave, get_tokensave_path
 
     existing = get_tokensave_path()
     if existing:
@@ -1607,12 +1607,12 @@ def _setup_tokensave_mcp(registrar: Any, *, verbose: bool = False, force: bool =
     Returns ``True`` when tokensave is available and set up, ``False`` when the
     binary is unavailable — the caller then falls back to Serena. Mirrors
     :func:`_setup_serena_mcp`'s ledger-aware migration: a stale
-    Headroom-installed ``tokensave`` entry is force-updated to the current
+    Legroom-installed ``tokensave`` entry is force-updated to the current
     spec, while a user-managed entry is left untouched.
     """
-    from headroom.mcp_registry import build_tokensave_spec, format_result
-    from headroom.mcp_registry.base import RegisterStatus
-    from headroom.mcp_registry.ledger import headroom_installed_matching, record_install
+    from legroom.mcp_registry import build_tokensave_spec, format_result
+    from legroom.mcp_registry.base import RegisterStatus
+    from legroom.mcp_registry.ledger import legroom_installed_matching, record_install
 
     if not registrar.detect():
         if verbose:
@@ -1629,13 +1629,13 @@ def _setup_tokensave_mcp(registrar: Any, *, verbose: bool = False, force: bool =
     spec = build_tokensave_spec(str(bin_path))
     result = registrar.register_server(spec, force=force)
 
-    # Migrate a stale Headroom-installed entry (e.g. an older binary path or
+    # Migrate a stale Legroom-installed entry (e.g. an older binary path or
     # pinned version), mirroring the Serena migration path. Only force-update
-    # when the ledger proves Headroom installed the entry on disk.
+    # when the ledger proves Legroom installed the entry on disk.
     if (
         result.status == RegisterStatus.MISMATCH
         and not force
-        and headroom_installed_matching(registrar.name, registrar.get_server("tokensave"))
+        and legroom_installed_matching(registrar.name, registrar.get_server("tokensave"))
     ):
         result = registrar.register_server(spec, force=True)
         if result.status == RegisterStatus.REGISTERED:
@@ -1649,7 +1649,7 @@ def _setup_tokensave_mcp(registrar: Any, *, verbose: bool = False, force: bool =
         result,
         label="tokensave MCP",
         verbose=verbose,
-        overwrite_hint="update or remove the existing tokensave MCP entry, then rerun headroom wrap",
+        overwrite_hint="update or remove the existing tokensave MCP entry, then rerun legroom wrap",
         restart_hint=f"restart {registrar.display_name} if it was already running",
     )
     if line is not None:
@@ -1657,13 +1657,13 @@ def _setup_tokensave_mcp(registrar: Any, *, verbose: bool = False, force: bool =
     return True
 
 
-def _remove_headroom_installed_tokensave_mcp(registrar: Any) -> str:
-    """Remove the tokensave MCP entry only if the ledger proves Headroom installed it."""
-    from headroom.mcp_registry.ledger import clear_install, headroom_installed_matching
+def _remove_legroom_installed_tokensave_mcp(registrar: Any) -> str:
+    """Remove the tokensave MCP entry only if the ledger proves Legroom installed it."""
+    from legroom.mcp_registry.ledger import clear_install, legroom_installed_matching
 
     current = registrar.get_server("tokensave")
-    if not headroom_installed_matching(registrar.name, current):
-        return "not_headroom_owned"
+    if not legroom_installed_matching(registrar.name, current):
+        return "not_legroom_owned"
     if registrar.unregister_server("tokensave"):
         clear_install(registrar.name, "tokensave")
         return "removed"
@@ -1671,7 +1671,7 @@ def _remove_headroom_installed_tokensave_mcp(registrar: Any) -> str:
 
 
 def _disable_tokensave_mcp(registrar: Any, *, verbose: bool = False) -> None:
-    """Make ``--no-tokensave`` actively remove a Headroom-installed tokensave entry."""
+    """Make ``--no-tokensave`` actively remove a Legroom-installed tokensave entry."""
     if not registrar.detect():
         if verbose:
             click.echo(f"  tokensave MCP: {registrar.display_name} not detected — skipping")
@@ -1682,14 +1682,14 @@ def _disable_tokensave_mcp(registrar: Any, *, verbose: bool = False) -> None:
             click.echo("  Skipping tokensave MCP (--no-tokensave)")
         return
 
-    status = _remove_headroom_installed_tokensave_mcp(registrar)
+    status = _remove_legroom_installed_tokensave_mcp(registrar)
     if status == "removed":
         click.echo("  Removed previously-installed tokensave MCP (--no-tokensave)")
         click.echo(f"    restart {registrar.display_name} if it was already running")
-    elif status == "not_headroom_owned":
+    elif status == "not_legroom_owned":
         click.echo(
             "  tokensave MCP is present but user-managed — leaving it in place "
-            "(--no-tokensave only removes entries Headroom installed)"
+            "(--no-tokensave only removes entries Legroom installed)"
         )
     else:  # "failed"
         click.echo(
@@ -1705,7 +1705,7 @@ def _setup_coding_compressor(registrar: Any, *, serena_context: str, **kwargs: A
 
     * ``no_tokensave`` — skip/disable tokensave entirely.
     * tokensave is set up by default; on success it becomes the primary
-      compressor and any Headroom-installed Serena entry is removed.
+      compressor and any Legroom-installed Serena entry is removed.
     * Serena is the backup: registered automatically when tokensave is
       unavailable (unless ``no_serena``), or forced on with ``serena=True``.
 
@@ -1741,7 +1741,7 @@ _CBM_MCP_SERVER_NAME = "codebase-memory-mcp"
 def _setup_code_graph(verbose: bool = False) -> bool:
     """Ensure the tokensave code graph is set up and the project indexed.
 
-    tokensave is Headroom's primary code-graph compressor and is normally
+    tokensave is Legroom's primary code-graph compressor and is normally
     installed by default (it builds a semantic knowledge graph the LLM can
     query for call chains, definitions, and impact analysis instead of
     reading whole files). ``--code-graph`` is kept for backward compatibility
@@ -1750,10 +1750,10 @@ def _setup_code_graph(verbose: bool = False) -> bool:
 
     Returns True if the graph is ready, False if tokensave is unavailable.
     Earlier releases backed this flag with ``codebase-memory-mcp``; that
-    server is no longer installed, and ``headroom unwrap`` still cleans up any
+    server is no longer installed, and ``legroom unwrap`` still cleans up any
     legacy ``codebase-memory-mcp`` entry a prior wrap left behind.
     """
-    from headroom.mcp_registry import ClaudeRegistrar
+    from legroom.mcp_registry import ClaudeRegistrar
 
     return _setup_tokensave_mcp(ClaudeRegistrar(), verbose=verbose, force=True)
 
@@ -1762,7 +1762,7 @@ def _setup_code_graph(verbose: bool = False) -> bool:
 # These get injected into AGENTS.md / .cursorrules so the LLM voluntarily
 # uses rtk-prefixed commands. Kept concise to minimize instruction overhead.
 RTK_INSTRUCTIONS_BLOCK = """\
-<!-- headroom:rtk-instructions -->
+<!-- legroom:rtk-instructions -->
 # RTK (Rust Token Killer) - Token-Optimized Commands
 
 When running shell commands, **always prefix with `rtk`**. This reduces context
@@ -1803,27 +1803,27 @@ rtk pip list            rtk pnpm install        rtk npm run <script>
 - In command chains, prefix each segment: `rtk git add . && rtk git commit -m "msg"`
 - For debugging, use raw command without rtk prefix
 - `rtk proxy <cmd>` runs command without filtering but tracks usage
-<!-- /headroom:rtk-instructions -->
+<!-- /legroom:rtk-instructions -->
 """
 
 # Marker used to detect if instructions are already injected
-_RTK_MARKER = "<!-- headroom:rtk-instructions -->"
+_RTK_MARKER = "<!-- legroom:rtk-instructions -->"
 
 # Memory MCP markers
-_MEMORY_MCP_MARKER = "# --- Headroom memory MCP (auto-injected) ---"
-_MEMORY_MCP_END = "# --- end Headroom memory ---"
-_MEMORY_AGENTS_MARKER = "<!-- headroom:memory-instructions -->"
+_MEMORY_MCP_MARKER = "# --- Legroom memory MCP (auto-injected) ---"
+_MEMORY_MCP_END = "# --- end Legroom memory ---"
+_MEMORY_AGENTS_MARKER = "<!-- legroom:memory-instructions -->"
 
 # Codex config injection markers
-_CODEX_TOP_LEVEL_MARKER = "# --- Headroom proxy (auto-injected by headroom wrap codex) ---"
-_CODEX_END_MARKER = "# --- end Headroom ---"
-_CODEX_MCP_MARKER = "# --- Headroom MCP server ---"
-_CODEX_MCP_END = "# --- end Headroom MCP server ---"
+_CODEX_TOP_LEVEL_MARKER = "# --- Legroom proxy (auto-injected by legroom wrap codex) ---"
+_CODEX_END_MARKER = "# --- end Legroom ---"
+_CODEX_MCP_MARKER = "# --- Legroom MCP server ---"
+_CODEX_MCP_END = "# --- end Legroom MCP server ---"
 # File name used for the pre-wrap snapshot of the Codex config file.  The
-# snapshot lets `headroom unwrap codex` restore the exact prior state, even
+# snapshot lets `legroom unwrap codex` restore the exact prior state, even
 # if the user had their own `model_provider` / `[model_providers.*]` config
 # before running wrap.
-_CODEX_CONFIG_BACKUP_SUFFIX = ".headroom-backup"
+_CODEX_CONFIG_BACKUP_SUFFIX = ".legroom-backup"
 
 
 def _codex_home_dir() -> Path:
@@ -1933,8 +1933,8 @@ def _codex_session_launch_settings(
             f"{_codex_toml_value(_UPSTREAM_BASE_URL_ENV_VAR)}"
         )
 
-    if project and "HEADROOM_PROJECT" not in env:
-        env["HEADROOM_PROJECT"] = project
+    if project and "LEGROOM_PROJECT" not in env:
+        env["LEGROOM_PROJECT"] = project
     config_args = tuple(item for override in overrides for item in ("--config", override))
     return (*config_args, *codex_args), env, display
 
@@ -1943,7 +1943,7 @@ def _offer_dangling_codex_recovery(active_home: Path) -> None:
     """Offer recovery before an interactive wrap creates more Codex state."""
     if not sys.stdin.isatty():
         return
-    from headroom.providers.codex.recovery import (
+    from legroom.providers.codex.recovery import (
         discover_dangling_homes,
         recover_codex_home,
     )
@@ -1951,14 +1951,14 @@ def _offer_dangling_codex_recovery(active_home: Path) -> None:
     candidates = [path for path in discover_dangling_homes() if path != active_home]
     if not candidates:
         return
-    click.echo("\nFound Codex state left by an earlier Headroom temporary home:")
+    click.echo("\nFound Codex state left by an earlier Legroom temporary home:")
     for candidate in candidates:
         click.echo(f"  {candidate}")
     if not click.confirm(
         "Back up both homes and recover this state before launching Codex?",
         default=True,
     ):
-        click.echo("Skipped recovery. Run `headroom recover codex` to recover it later.")
+        click.echo("Skipped recovery. Run `legroom recover codex` to recover it later.")
         return
     for candidate in candidates:
         report = recover_codex_home(source=candidate, target=active_home)
@@ -1973,13 +1973,13 @@ def _codex_config_paths() -> tuple[Path, Path]:
     return config_file, backup_file
 
 
-def _strip_codex_headroom_blocks(
+def _strip_codex_legroom_blocks(
     content: str,
     *,
     remove_mcp: bool = False,
     remove_named_mcp: bool = True,
 ) -> str:
-    """Remove all Headroom-managed blocks from a Codex ``config.toml`` string.
+    """Remove all Legroom-managed blocks from a Codex ``config.toml`` string.
 
     Returns the cleaned content.  Safe to call on content that never contained
     any markers — it will be returned effectively unchanged (only trailing
@@ -2003,12 +2003,12 @@ def _strip_codex_headroom_blocks(
     content = _remove_marker_span(content, _CODEX_TOP_LEVEL_MARKER, _CODEX_END_MARKER)
 
     if remove_mcp:
-        # Remove Headroom-managed MCP blocks written by `wrap codex`.
+        # Remove Legroom-managed MCP blocks written by `wrap codex`.
         content = _remove_marker_span(content, _CODEX_MCP_MARKER, _CODEX_MCP_END)
         if remove_named_mcp:
             content = re.sub(
-                r"(?ms)^# --- Headroom MCP server: [^\n]+ ---\n.*?"
-                r"^# --- end Headroom MCP server: [^\n]+ ---\n?",
+                r"(?ms)^# --- Legroom MCP server: [^\n]+ ---\n.*?"
+                r"^# --- end Legroom MCP server: [^\n]+ ---\n?",
                 "",
                 content,
             )
@@ -2016,28 +2016,28 @@ def _strip_codex_headroom_blocks(
 
     # Strip any leftover top-level keys that older (or crashed) versions of
     # `wrap codex` may have written outside the marker block.
-    content = re.sub(r'(?m)^[ \t]*model_provider[ \t]*=[ \t]*"headroom"[ \t]*\r?\n', "", content)
+    content = re.sub(r'(?m)^[ \t]*model_provider[ \t]*=[ \t]*"legroom"[ \t]*\r?\n', "", content)
     content = re.sub(
         r'(?m)^[ \t]*openai_base_url[ \t]*=[ \t]*"http://127\.0\.0\.1:\d+/v1"[ \t]*\r?\n',
         "",
         content,
     )
 
-    # Strip any orphaned `[model_providers.headroom]` table with the fields we
+    # Strip any orphaned `[model_providers.legroom]` table with the fields we
     # write.  We only remove it if the table is recognisably ours (base_url
-    # mentions localhost and a Headroom proxy port).  This protects users who
-    # happen to have a differently configured `headroom` provider.
-    orphan_headroom_table = re.compile(
-        r"(?ms)^\[model_providers\.headroom\][^\[]*?"
+    # mentions localhost and a Legroom proxy port).  This protects users who
+    # happen to have a differently configured `legroom` provider.
+    orphan_legroom_table = re.compile(
+        r"(?ms)^\[model_providers\.legroom\][^\[]*?"
         r'base_url[ \t]*=[ \t]*"http://127\.0\.0\.1:\d+/v1"[^\[]*?'
         r"(?=^\[|\Z)"
     )
-    content = orphan_headroom_table.sub("", content)
+    content = orphan_legroom_table.sub("", content)
 
     return content.lstrip("\n").rstrip() + "\n" if content.strip() else ""
 
 
-# Top-level bare keys we redirect to headroom values when the user already
+# Top-level bare keys we redirect to legroom values when the user already
 # has them set.  Match the entire line (including any trailing comment) so
 # we can rewrite it cleanly.  Bare keys must precede any [section] in TOML,
 # so a `^` anchor combined with `^[ \t]*key` is sufficient — table lines
@@ -2045,15 +2045,15 @@ def _strip_codex_headroom_blocks(
 _REDIRECTABLE_KEYS: tuple[str, ...] = ("model_provider", "openai_base_url")
 
 
-def _strip_existing_codex_headroom_provider_table(content: str) -> str:
-    """Remove a pre-existing ``[model_providers.headroom]`` table before wrap."""
-    if "[model_providers.headroom]" not in content:
+def _strip_existing_codex_legroom_provider_table(content: str) -> str:
+    """Remove a pre-existing ``[model_providers.legroom]`` table before wrap."""
+    if "[model_providers.legroom]" not in content:
         return content
 
     import re  # local import to match surrounding helper convention
 
     provider_table = re.compile(
-        r"(?ms)^[ \t]*\[model_providers\.headroom\][^\n]*\n.*?(?=^[ \t]*\[|\Z)"
+        r"(?ms)^[ \t]*\[model_providers\.legroom\][^\n]*\n.*?(?=^[ \t]*\[|\Z)"
     )
     content = provider_table.sub("", content)
     return content.lstrip("\n").rstrip() + "\n" if content.strip() else ""
@@ -2063,15 +2063,15 @@ def _redirect_existing_top_level_keys(content: str, port: int) -> str:
     """Rewrite user-defined top-level keys so wrap does not create duplicates.
 
     Codex's ``config.toml`` rejects duplicate top-level keys (TOML spec),
-    which would break ``codex`` startup after ``headroom wrap codex`` runs
+    which would break ``codex`` startup after ``legroom wrap codex`` runs
     on a config that already declares its own ``model_provider`` or
     ``openai_base_url``.
 
     For each redirectable key, if the user's line already sets it, replace
-    the value with the headroom one and append ``# was: <original-value>``
+    the value with the legroom one and append ``# was: <original-value>``
     so the user can still see and recover their previous setting.  The
     snapshot taken in ``_snapshot_codex_config_if_unwrapped`` ensures the
-    pre-wrap file can be restored byte-for-byte on ``headroom unwrap
+    pre-wrap file can be restored byte-for-byte on ``legroom unwrap
     codex``.
 
     Returns the modified content.  If no redirectable keys are present,
@@ -2087,7 +2087,7 @@ def _redirect_existing_top_level_keys(content: str, port: int) -> str:
         def _replace(match: re.Match[str]) -> str:
             original_value = match.group("value")
             if current_key == "model_provider":
-                new_value = "headroom"
+                new_value = "legroom"
             else:  # openai_base_url
                 new_value = f"http://127.0.0.1:{current_port}/v1"
             if original_value == new_value:
@@ -2114,7 +2114,7 @@ def _has_redirectable_top_level_key(content: str, key: str) -> bool:
     return pattern.search(content) is not None
 
 
-def _codex_config_has_headroom_markers(content: str) -> bool:
+def _codex_config_has_legroom_markers(content: str) -> bool:
     """Return whether a Codex config already contains wrap-owned markers."""
     managed_markers = (
         _CODEX_TOP_LEVEL_MARKER,
@@ -2128,8 +2128,8 @@ def _codex_config_has_headroom_markers(content: str) -> bool:
 def _snapshot_codex_config_if_unwrapped(config_file: Path, backup_file: Path) -> None:
     """Snapshot ``config.toml`` to ``backup_file`` before the first injection.
 
-    Called as the first step of every Headroom injection into Codex's
-    ``config.toml``.  Guarantees that ``headroom unwrap codex`` can restore the
+    Called as the first step of every Legroom injection into Codex's
+    ``config.toml``.  Guarantees that ``legroom unwrap codex`` can restore the
     user's original file byte-for-byte.
 
     Rules:
@@ -2138,7 +2138,7 @@ def _snapshot_codex_config_if_unwrapped(config_file: Path, backup_file: Path) ->
       *pre-wrap* state, so running wrap repeatedly must not clobber it.
     * If the config file doesn't exist yet, there's nothing to back up; unwrap
       will remove the file entirely instead of restoring a snapshot.
-    * If the config already contains any Headroom-managed Codex marker, a wrap
+    * If the config already contains any Legroom-managed Codex marker, a wrap
       run is already active: do not snapshot the injected state.
     """
     if backup_file.exists():
@@ -2149,7 +2149,7 @@ def _snapshot_codex_config_if_unwrapped(config_file: Path, backup_file: Path) ->
         content = _read_text(config_file)
     except OSError:
         return
-    if _codex_config_has_headroom_markers(content):
+    if _codex_config_has_legroom_markers(content):
         return
     backup_file.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(config_file, backup_file)
@@ -2159,8 +2159,8 @@ def _ensure_rtk_binary(verbose: bool = False) -> Path | None:
     """Ensure rtk binary is installed (download if needed). No hook registration."""
     if not _rtk_opt_in():
         return None
-    from headroom.rtk import get_rtk_path
-    from headroom.rtk.installer import ensure_rtk
+    from legroom.rtk import get_rtk_path
+    from legroom.rtk.installer import ensure_rtk
 
     rtk_path = get_rtk_path()
 
@@ -2187,12 +2187,12 @@ def _prepare_wrap_rtk(verbose: bool = False, *, label: str | None = None) -> Pat
 
 
 # Canonical casing for the proxy's per-project savings header (matched
-# case-insensitively by headroom.proxy.project_context.PROJECT_HEADER).
-_PROJECT_HEADER_NAME = "X-Headroom-Project"
+# case-insensitively by legroom.proxy.project_context.PROJECT_HEADER).
+_PROJECT_HEADER_NAME = "X-Legroom-Project"
 
 
 def _project_name_from_cwd() -> str | None:
-    """Project label for X-Headroom-Project: basename of the launch directory.
+    """Project label for X-Legroom-Project: basename of the launch directory.
 
     Non-ASCII characters are percent-encoded (RFC 3986) so the header value
     stays within the visible-ASCII range required by RFC 7230.  The proxy
@@ -2205,12 +2205,12 @@ def _project_name_from_cwd() -> str | None:
 
 
 def _apply_project_header_env(env: dict[str, str]) -> None:
-    """Inject X-Headroom-Project into ``ANTHROPIC_CUSTOM_HEADERS``.
+    """Inject X-Legroom-Project into ``ANTHROPIC_CUSTOM_HEADERS``.
 
     Claude Code reads ``ANTHROPIC_CUSTOM_HEADERS`` as newline-separated
     ``Name: value`` lines and attaches them to every API request; the
-    Headroom proxy uses the X-Headroom-Project header for per-project
-    savings attribution.  An existing user-supplied x-headroom-project
+    Legroom proxy uses the X-Legroom-Project header for per-project
+    savings attribution.  An existing user-supplied x-legroom-project
     header (any casing) always wins — we never duplicate or overwrite it,
     and any other user headers are preserved by appending.
     """
@@ -2229,25 +2229,25 @@ def _apply_project_header_env(env: dict[str, str]) -> None:
         env["ANTHROPIC_CUSTOM_HEADERS"] = header_line
 
 
-# Codex's own built-in providers plus Headroom's injected one — never treated
+# Codex's own built-in providers plus Legroom's injected one — never treated
 # as a "custom upstream to preserve" by _detect_custom_codex_upstream_base_url.
-_CODEX_BUILTIN_PROVIDER_NAMES = frozenset({"openai", "anthropic", "azure", "headroom"})
+_CODEX_BUILTIN_PROVIDER_NAMES = frozenset({"openai", "anthropic", "azure", "legroom"})
 
 # Header carrying a preserved custom upstream (freemodel.dev, LiteLLM, vLLM,
 # ...) so the proxy forwards to it instead of the hardcoded OpenAI default.
 # Codex's env_http_headers only accepts an env-var *name* per header (not a
 # literal value), so the detected URL is exported into this env var by the
 # `wrap codex` launch path — see its use in `codex()` below.
-_UPSTREAM_BASE_URL_HEADER_NAME = "X-Headroom-Base-Url"
-_UPSTREAM_BASE_URL_ENV_VAR = "HEADROOM_CODEX_UPSTREAM_BASE_URL"
+_UPSTREAM_BASE_URL_HEADER_NAME = "X-Legroom-Base-Url"
+_UPSTREAM_BASE_URL_ENV_VAR = "LEGROOM_CODEX_UPSTREAM_BASE_URL"
 
 
 def _codex_custom_provider_base_urls(content: str) -> dict[str, str]:
     """Return ``{provider_name: base_url}`` for user-declared custom providers.
 
     Excludes Codex's built-ins (``openai``/``anthropic``/``azure``) and
-    Headroom's own ``headroom`` table.  A table with no ``base_url`` line, or
-    one already pointing at Headroom's own localhost proxy (a leftover from a
+    Legroom's own ``legroom`` table.  A table with no ``base_url`` line, or
+    one already pointing at Legroom's own localhost proxy (a leftover from a
     prior wrap this pass hasn't stripped yet), is excluded too.
     """
     import re
@@ -2278,7 +2278,7 @@ def _detect_custom_codex_upstream_base_url(content: str) -> str | None:
 
     Codex lets users declare OpenAI-compatible gateways (LiteLLM, vLLM,
     freemodel.dev, ...) under ``[model_providers.<name>]`` and select one via
-    the top-level ``model_provider`` key. Before this, ``headroom wrap codex``
+    the top-level ``model_provider`` key. Before this, ``legroom wrap codex``
     unconditionally pointed the proxy's upstream OpenAI route at
     ``api.openai.com``, silently discarding that selection — the user's
     gateway API key then gets sent to OpenAI, which rejects it (#1614).
@@ -2286,7 +2286,7 @@ def _detect_custom_codex_upstream_base_url(content: str) -> str | None:
     If the top-level ``model_provider`` names one of the detected custom
     tables, that selection wins unambiguously. This also covers the
     already-wrapped case: once wrap has run once, the top-level key reads
-    ``model_provider = "headroom"  # was: <original>`` (see
+    ``model_provider = "legroom"  # was: <original>`` (see
     ``_redirect_existing_top_level_keys``), so the original selection is
     recovered from that trailing comment on re-wrap / port changes.
 
@@ -2320,11 +2320,11 @@ def _detect_custom_codex_upstream_base_url(content: str) -> str | None:
 
 
 def _inject_codex_provider_config(port: int) -> str | None:
-    """Inject a Headroom model provider into Codex's config.toml.
+    """Inject a Legroom model provider into Codex's config.toml.
 
     Two keys need to be in effect for the proxy to route all traffic:
 
-    * ``model_provider = "headroom"`` — selects the custom provider for
+    * ``model_provider = "legroom"`` — selects the custom provider for
       API-key mode traffic.
     * ``openai_base_url = "http://127.0.0.1:{port}/v1"`` — overrides the
       built-in ``openai`` provider's base URL.  This is the critical key for
@@ -2336,7 +2336,7 @@ def _inject_codex_provider_config(port: int) -> str | None:
     If the user has not already declared these top-level keys, they are
     added in a marker-delimited block at the top of the file.  If the
     user *has* declared one or both, the existing lines are rewritten
-    in place to the headroom values (with the previous value kept in a
+    in place to the legroom values (with the previous value kept in a
     ``# was: …`` trailing comment) so the resulting file stays TOML-valid
     — TOML rejects duplicate top-level keys, which would break
     ``codex`` startup.
@@ -2344,14 +2344,14 @@ def _inject_codex_provider_config(port: int) -> str | None:
     Safe to call multiple times — the injected block is fully replaced on
     each call, so re-running with a different ``port`` updates the config.
     Before the first injection, the pre-wrap file is snapshotted to
-    ``config.toml.headroom-backup`` so ``headroom unwrap codex``
+    ``config.toml.legroom-backup`` so ``legroom unwrap codex``
     can restore it byte-for-byte.
 
     Returns the custom upstream ``base_url`` preserved from an existing
     ``[model_providers.*]`` table, if one was detected (#1614); ``None``
     otherwise. Callers that go on to launch Codex should export this value
-    into ``HEADROOM_CODEX_UPSTREAM_BASE_URL`` (the injected
-    ``env_http_headers`` entry maps it to the ``X-Headroom-Base-Url`` header,
+    into ``LEGROOM_CODEX_UPSTREAM_BASE_URL`` (the injected
+    ``env_http_headers`` entry maps it to the ``X-Legroom-Base-Url`` header,
     which the proxy's OpenAI HTTP handlers honor over the hardcoded
     ``api.openai.com`` default) — see its use in ``codex()`` below.
     """
@@ -2387,31 +2387,31 @@ def _inject_codex_provider_config(port: int) -> str | None:
     requires_openai_auth = (
         "requires_openai_auth = true\n" if codex_uses_chatgpt_auth(config_dir / "auth.json") else ""
     )
-    # Per-project savings: Codex sends the X-Headroom-Project header only
-    # when the mapped env var (HEADROOM_PROJECT, set by `headroom wrap
+    # Per-project savings: Codex sends the X-Legroom-Project header only
+    # when the mapped env var (LEGROOM_PROJECT, set by `legroom wrap
     # codex`) exists at Codex runtime. When a custom upstream was detected,
-    # add a second entry so Codex also sends X-Headroom-Base-Url — the proxy
+    # add a second entry so Codex also sends X-Legroom-Base-Url — the proxy
     # forwards there instead of api.openai.com (#1614).
-    env_http_headers_map = {_PROJECT_HEADER_NAME: "HEADROOM_PROJECT"}
+    env_http_headers_map = {_PROJECT_HEADER_NAME: "LEGROOM_PROJECT"}
     if custom_upstream_base_url:
         env_http_headers_map[_UPSTREAM_BASE_URL_HEADER_NAME] = _UPSTREAM_BASE_URL_ENV_VAR
     env_http_headers_toml = ", ".join(f'"{k}" = "{v}"' for k, v in env_http_headers_map.items())
     provider_section = (
         f"{_CODEX_TOP_LEVEL_MARKER}\n"
-        "[model_providers.headroom]\n"
-        'name = "OpenAI via Headroom proxy"\n'
+        "[model_providers.legroom]\n"
+        'name = "OpenAI via Legroom proxy"\n'
         f'base_url = "http://127.0.0.1:{port}/v1"\n'
         f"supports_websockets = true\n"
         f"{requires_openai_auth}"
         # Inline table keeps the key inside this section so
-        # _strip_codex_headroom_blocks removes it with the rest of the block.
+        # _strip_codex_legroom_blocks removes it with the rest of the block.
         f"env_http_headers = {{ {env_http_headers_toml} }}\n"
         f"{_CODEX_END_MARKER}\n"
     )
 
-    # The two redirectable keys and their headroom target values.
+    # The two redirectable keys and their legroom target values.
     _REDIRECT_TARGETS = {
-        "model_provider": "headroom",
+        "model_provider": "legroom",
         "openai_base_url": f"http://127.0.0.1:{port}/v1",
     }
 
@@ -2441,15 +2441,15 @@ def _inject_codex_provider_config(port: int) -> str | None:
 
         if config_file.exists():
             content = _read_text(config_file)
-            # Remove any prior Headroom-managed blocks before re-injecting so
+            # Remove any prior Legroom-managed blocks before re-injecting so
             # the operation is idempotent and supports port changes.
-            content = _strip_codex_headroom_blocks(content)
-            content = _strip_existing_codex_headroom_provider_table(content)
+            content = _strip_codex_legroom_blocks(content)
+            content = _strip_existing_codex_legroom_provider_table(content)
 
             # Bare top-level keys must precede any [section] in TOML, and
             # TOML rejects duplicate top-level keys.  Rewrite any existing
             # top-level ``model_provider`` / ``openai_base_url`` in place
-            # to the headroom values; for keys the user has not declared,
+            # to the legroom values; for keys the user has not declared,
             # add them in a marker-delimited block at the top of the
             # file.  The original values are kept in a trailing ``# was:
             # <value>`` comment, and the snapshot mechanism guarantees
@@ -2483,16 +2483,16 @@ def _inject_codex_provider_config(port: int) -> str | None:
             )
 
         _write_text(config_file, content)
-        click.echo(f"  Codex config: injected Headroom provider (WS + HTTP) into {config_file}")
+        click.echo(f"  Codex config: injected Legroom provider (WS + HTTP) into {config_file}")
         if custom_upstream_base_url:
             click.echo(
                 f"  Codex config: preserving existing custom upstream "
                 f"{custom_upstream_base_url} (from a pre-existing [model_providers.*] "
                 "base_url)"
             )
-        # Pull existing native threads into the headroom-provider menu so Codex's
-        # history list stays whole once it routes through Headroom. Best-effort.
-        retag_to_headroom(_codex_home_dir())
+        # Pull existing native threads into the legroom-provider menu so Codex's
+        # history list stays whole once it routes through Legroom. Best-effort.
+        retag_to_legroom(_codex_home_dir())
     except Exception as e:
         click.echo(f"  Warning: could not update Codex config: {e}")
         return None
@@ -2507,11 +2507,11 @@ def _restore_codex_provider_config() -> tuple[str, Path]:
 
     * ``"restored"`` — a pre-wrap backup existed and was restored; backup
       file has been removed.
-    * ``"cleaned"``  — no backup existed, but the Headroom-managed block was
+    * ``"cleaned"``  — no backup existed, but the Legroom-managed block was
       found and stripped out (preserving surrounding user content).
-    * ``"removed"``  — the config file only contained Headroom-managed
+    * ``"removed"``  — the config file only contained Legroom-managed
       content (created by wrap) and has been deleted.
-    * ``"noop"``     — nothing to undo; no Headroom marker and no backup.
+    * ``"noop"``     — nothing to undo; no Legroom marker and no backup.
     """
     config_file, backup_file = _codex_config_paths()
 
@@ -2524,7 +2524,7 @@ def _restore_codex_provider_config() -> tuple[str, Path]:
     # Case 2: no backup, but config file exists and has markers — strip them.
     if config_file.exists():
         original = _read_text(config_file)
-        if _codex_config_has_headroom_markers(original):
+        if _codex_config_has_legroom_markers(original):
             # Without a backup, only remove named MCP blocks when this file
             # also carries wrap-owned provider markers from a full wrap.
             remove_named_mcp = any(
@@ -2536,13 +2536,13 @@ def _restore_codex_provider_config() -> tuple[str, Path]:
                     _CODEX_MCP_END,
                 )
             )
-            cleaned = _strip_codex_headroom_blocks(
+            cleaned = _strip_codex_legroom_blocks(
                 original,
                 remove_mcp=True,
                 remove_named_mcp=remove_named_mcp,
             )
             if not cleaned.strip():
-                # Nothing left but Headroom content — remove the file entirely
+                # Nothing left but Legroom content — remove the file entirely
                 # so Codex falls back to its default config.
                 config_file.unlink()
                 return "removed", config_file
@@ -2558,18 +2558,18 @@ def _emit_wrap_interrupted(agent: str, marker_path: Path | None) -> None:
 
     Called when a wrap subcommand catches ``KeyboardInterrupt`` between marker
     injection and proxy startup. The marker file (if any) is left on disk —
-    re-running the same ``headroom wrap <agent>`` command is idempotent and
+    re-running the same ``legroom wrap <agent>`` command is idempotent and
     safe.
     """
     if marker_path is not None:
         click.echo(
             f"\n  Wrap was interrupted; marker file at {marker_path} is on "
-            f"disk. Rerun `headroom wrap {agent}` to retry — it's idempotent."
+            f"disk. Rerun `legroom wrap {agent}` to retry — it's idempotent."
         )
     else:
         click.echo(
             f"\n  Wrap was interrupted before any on-disk changes. Rerun "
-            f"`headroom wrap {agent}` to retry — it's idempotent."
+            f"`legroom wrap {agent}` to retry — it's idempotent."
         )
 
 
@@ -2577,14 +2577,14 @@ _WRAP_BANNER_INNER_WIDTH = 47
 
 
 def _print_wrap_banner(agent: str) -> None:
-    """Print a centered ``HEADROOM WRAP: <AGENT>`` banner.
+    """Print a centered ``LEGROOM WRAP: <AGENT>`` banner.
 
     Every Pattern-B wrap subcommand (proxy-only + watcher loop) used to
     inline this 3-line box by hand with hand-padded spaces, which made
     title-length changes silently miscenter the title. Compute padding
     here so adding a 9th agent just works.
     """
-    title = f"HEADROOM WRAP: {agent.upper()}"
+    title = f"LEGROOM WRAP: {agent.upper()}"
     pad_total = _WRAP_BANNER_INNER_WIDTH - len(title)
     pad_left = pad_total // 2
     pad_right = pad_total - pad_left
@@ -2748,12 +2748,12 @@ def _inject_rtk_instructions(file_path: Path, verbose: bool = False) -> bool:
 
 
 def _remove_rtk_instructions(file_path: Path) -> bool:
-    """Remove Headroom's marker-fenced rtk guidance from an instruction file."""
+    """Remove Legroom's marker-fenced rtk guidance from an instruction file."""
     if not file_path.exists():
         return False
 
     content = _read_text(file_path)
-    end_marker = "<!-- /headroom:rtk-instructions -->"
+    end_marker = "<!-- /legroom:rtk-instructions -->"
     start = content.find(_RTK_MARKER)
     if start < 0:
         return False
@@ -2776,7 +2776,7 @@ def _remove_rtk_instructions(file_path: Path) -> bool:
 
 
 def _inject_memory_mcp_config(user_id: str) -> None:
-    """Register headroom memory as an MCP server in Codex's config.toml.
+    """Register legroom memory as an MCP server in Codex's config.toml.
 
     Idempotent — replaces existing section if present.
     """
@@ -2790,9 +2790,9 @@ def _inject_memory_mcp_config(user_id: str) -> None:
     python_bin = sys.executable.replace("\\", "/")
     mcp_section = (
         f"\n{_MEMORY_MCP_MARKER}\n"
-        f"[mcp_servers.headroom_memory]\n"
+        f"[mcp_servers.legroom_memory]\n"
         f'command = "{python_bin}"\n'
-        f'args = ["-m", "headroom.memory.mcp_server", "--user", "{user_id}"]\n'
+        f'args = ["-m", "legroom.memory.mcp_server", "--user", "{user_id}"]\n'
         f"startup_timeout_sec = 30\n"
         f"tool_timeout_sec = 30\n"
         f"{_MEMORY_MCP_END}\n"
@@ -2832,7 +2832,7 @@ def _inject_memory_agents_md(file_path: Path) -> bool:
     memory_block = (
         f"{_MEMORY_AGENTS_MARKER}\n"
         "## Memory\n\n"
-        "Use the `headroom_memory` MCP server for persistent cross-session knowledge.\n\n"
+        "Use the `legroom_memory` MCP server for persistent cross-session knowledge.\n\n"
         "**Before** answering questions about prior decisions, conventions, project context,\n"
         "architecture, user preferences, org info, codenames, debugging history, or anything\n"
         "from past sessions — call `memory_search` first.\n\n"
@@ -2912,7 +2912,7 @@ def _inject_continue_rtk_systemmessage(config_file: Path, verbose: bool = False)
     * top-level ``systemMessage``
     * each ``models[i].systemMessage`` where ``models[i]`` is a dict
 
-    The RTK marker (``<!-- headroom:rtk-instructions -->``) is the idempotency
+    The RTK marker (``<!-- legroom:rtk-instructions -->``) is the idempotency
     token: if a prior ``systemMessage`` already contains the marker we leave
     that site alone. If the existing value is a non-empty string we append
     with a separator. If the existing value is **non-string** (dict / list /
@@ -3022,7 +3022,7 @@ def _query_proxy_health(port: int) -> dict[str, Any] | None:
 
 
 def _proxy_health_config(payload: dict[str, Any] | None) -> dict[str, Any] | None:
-    """Extract the config block from a Headroom /health payload."""
+    """Extract the config block from a Legroom /health payload."""
     if payload is None:
         return None
     config = payload.get("config")
@@ -3048,36 +3048,36 @@ def _agent_savings_config_mismatches(
     desired_env = os.environ.copy()
     apply_agent_savings_env_defaults(desired_env)
     checks: tuple[tuple[str, str, str, str], ...] = (
-        ("HEADROOM_SAVINGS_PROFILE", "savings_profile", "savings-profile", "str"),
-        ("HEADROOM_TARGET_RATIO", "target_ratio", "target-ratio", "float"),
+        ("LEGROOM_SAVINGS_PROFILE", "savings_profile", "savings-profile", "str"),
+        ("LEGROOM_TARGET_RATIO", "target_ratio", "target-ratio", "float"),
         (
-            "HEADROOM_COMPRESS_USER_MESSAGES",
+            "LEGROOM_COMPRESS_USER_MESSAGES",
             "compress_user_messages",
             "compress-user-messages",
             "bool",
         ),
         (
-            "HEADROOM_COMPRESS_SYSTEM_MESSAGES",
+            "LEGROOM_COMPRESS_SYSTEM_MESSAGES",
             "compress_system_messages",
             "compress-system-messages",
             "bool",
         ),
-        ("HEADROOM_PROTECT_RECENT", "protect_recent", "protect-recent", "int"),
+        ("LEGROOM_PROTECT_RECENT", "protect_recent", "protect-recent", "int"),
         (
-            "HEADROOM_PROTECT_ANALYSIS_CONTEXT",
+            "LEGROOM_PROTECT_ANALYSIS_CONTEXT",
             "protect_analysis_context",
             "protect-analysis-context",
             "bool",
         ),
-        ("HEADROOM_MIN_TOKENS", "min_tokens_to_crush", "min-tokens", "int"),
-        ("HEADROOM_MAX_ITEMS", "max_items_after_crush", "max-items", "int"),
+        ("LEGROOM_MIN_TOKENS", "min_tokens_to_crush", "min-tokens", "int"),
+        ("LEGROOM_MAX_ITEMS", "max_items_after_crush", "max-items", "int"),
         (
-            "HEADROOM_SMART_CRUSHER_COMPACTION",
+            "LEGROOM_SMART_CRUSHER_COMPACTION",
             "smart_crusher_with_compaction",
             "smart-crusher-compaction",
             "bool",
         ),
-        ("HEADROOM_ACCURACY_GUARD", "accuracy_guard", "accuracy-guard", "str"),
+        ("LEGROOM_ACCURACY_GUARD", "accuracy_guard", "accuracy-guard", "str"),
     )
 
     mismatches: list[str] = []
@@ -3140,12 +3140,12 @@ def _proxy_version(payload: dict[str, Any] | None) -> str | None:
 
 
 def _proxy_needs_version_restart(payload: dict[str, Any] | None) -> bool:
-    """Return True when a running Headroom proxy uses a different package version."""
+    """Return True when a running Legroom proxy uses a different package version."""
     running_version = _proxy_version(payload)
     running_release = _normalize_release_version(running_version)
     # -dev is a display marker for source builds; compare the base release so a
     # dev CLI still restarts a stale proxy on a real version difference.
-    current_release = _normalize_release_version(_HEADROOM_VERSION.removesuffix("-dev"))
+    current_release = _normalize_release_version(_LEGROOM_VERSION.removesuffix("-dev"))
     return (
         running_release is not None
         and current_release is not None
@@ -3194,14 +3194,14 @@ def _kill_proxy_by_pid(pid: int, port: int) -> bool:
 
 
 def _stop_local_proxy_for_unwrap(port: int) -> str:
-    """Stop a local Headroom proxy for durable unwrap commands.
+    """Stop a local Legroom proxy for durable unwrap commands.
 
     Returns a status string:
-      * ``"stopped"``: a Headroom proxy was identified and stopped.
+      * ``"stopped"``: a Legroom proxy was identified and stopped.
       * ``"not_running"``: nothing is listening on the requested port.
       * ``"unidentified"``: something is listening, but it did not expose
-        Headroom's health/config payload, so we did not kill it.
-      * ``"no_pid"``: the service looked like Headroom but did not expose a PID.
+        Legroom's health/config payload, so we did not kill it.
+      * ``"no_pid"``: the service looked like Legroom but did not expose a PID.
       * ``"failed"``: a PID was found but the port stayed bound after stop.
     """
 
@@ -3278,7 +3278,7 @@ def _same_port_claude_env_keys(port: int) -> list[str]:
 
 
 def _stop_persistent_manifest_for_claude_unwrap(manifest: Any) -> str | None:
-    from headroom.cli.install import _deactivate_deployment_mutations, _stop_deployment
+    from legroom.cli.install import _deactivate_deployment_mutations, _stop_deployment
 
     try:
         _deactivate_deployment_mutations(manifest)
@@ -3338,9 +3338,9 @@ def _echo_claude_unwrap_route_cleanup(result: dict[str, Any], port: int) -> bool
             f"'{manifest.profile}' still owns port {port}; left it running because it is not "
             "clearly Claude-targeted."
         )
-        click.echo(f"  To stop it, run `headroom install stop --profile {manifest.profile}`.")
+        click.echo(f"  To stop it, run `legroom install stop --profile {manifest.profile}`.")
         click.echo(
-            f"  To remove it completely, run `headroom install remove --profile {manifest.profile}`."
+            f"  To remove it completely, run `legroom install remove --profile {manifest.profile}`."
         )
         clean = False
     elif kind == "persistent_failed":
@@ -3349,7 +3349,7 @@ def _echo_claude_unwrap_route_cleanup(result: dict[str, Any], port: int) -> bool
             "  Warning: failed to stop Claude-owned persistent deployment "
             f"'{manifest.profile}' on port {port}: {result.get('error')}"
         )
-        click.echo(f"  Retry with `headroom install stop --profile {manifest.profile}`.")
+        click.echo(f"  Retry with `legroom install stop --profile {manifest.profile}`.")
         clean = False
     if env_keys:
         click.echo(
@@ -3365,24 +3365,24 @@ def _echo_unwrap_proxy_stop_status(status: str, port: int) -> None:
     """Print a human-readable proxy stop result for unwrap commands."""
 
     if status == "stopped":
-        click.echo(f"  Stopped local Headroom proxy on port {port}.")
+        click.echo(f"  Stopped local Legroom proxy on port {port}.")
     elif status == "not_running":
-        click.echo(f"  No local Headroom proxy detected on port {port}.")
+        click.echo(f"  No local Legroom proxy detected on port {port}.")
     elif status == "unidentified":
         click.echo(
-            f"  Warning: port {port} is in use, but it did not look like Headroom; left it running."
+            f"  Warning: port {port} is in use, but it did not look like Legroom; left it running."
         )
     elif status == "no_pid":
         click.echo(
-            f"  Warning: Headroom proxy on port {port} did not expose a PID; left it running."
+            f"  Warning: Legroom proxy on port {port} did not expose a PID; left it running."
         )
     else:
-        click.echo(f"  Warning: failed to stop Headroom proxy on port {port}; stop it manually.")
+        click.echo(f"  Warning: failed to stop Legroom proxy on port {port}; stop it manually.")
 
 
 def _find_persistent_manifest(port: int) -> Any:
     """Return a matching persistent deployment manifest for the requested port."""
-    from headroom.install.state import list_manifests
+    from legroom.install.state import list_manifests
 
     manifests = [manifest for manifest in list_manifests() if manifest.port == port]
     manifests.sort(key=lambda manifest: (manifest.profile != "default", manifest.profile))
@@ -3391,10 +3391,10 @@ def _find_persistent_manifest(port: int) -> Any:
 
 def _recover_persistent_proxy(port: int) -> bool:
     """Start or recover a matching persistent deployment for the requested port."""
-    from headroom.install.health import probe_ready
-    from headroom.install.models import InstallPreset, SupervisorKind
-    from headroom.install.runtime import start_detached_agent, start_persistent_docker, wait_ready
-    from headroom.install.supervisors import start_supervisor
+    from legroom.install.health import probe_ready
+    from legroom.install.models import InstallPreset, SupervisorKind
+    from legroom.install.runtime import start_detached_agent, start_persistent_docker, wait_ready
+    from legroom.install.supervisors import start_supervisor
 
     manifest = _find_persistent_manifest(port)
     if manifest is None:
@@ -3434,18 +3434,18 @@ def _recover_persistent_proxy(port: int) -> bool:
 
 def _restart_persistent_proxy(manifest: Any, port: int) -> bool:
     """Restart a persistent deployment after an idle stale-version detection."""
-    from headroom.install.models import InstallPreset, SupervisorKind
-    from headroom.install.runtime import (
+    from legroom.install.models import InstallPreset, SupervisorKind
+    from legroom.install.runtime import (
         start_detached_agent,
         start_persistent_docker,
         stop_runtime,
         wait_ready,
     )
-    from headroom.install.supervisors import start_supervisor
+    from legroom.install.supervisors import start_supervisor
 
     click.echo(
         f"  Restarting persistent deployment '{manifest.profile}' "
-        f"with Headroom {_HEADROOM_VERSION}..."
+        f"with Legroom {_LEGROOM_VERSION}..."
     )
     try:
         if manifest.preset == InstallPreset.PERSISTENT_DOCKER.value:
@@ -3502,7 +3502,7 @@ def _should_use_copilot_oauth(
     if provider_type == "anthropic":
         return False
 
-    effective_backend = backend or os.environ.get("HEADROOM_BACKEND")
+    effective_backend = backend or os.environ.get("LEGROOM_BACKEND")
     if effective_backend not in (None, "", "anthropic"):
         return False
 
@@ -3524,7 +3524,7 @@ def _push_runtime_env(port: int, no_proxy: bool) -> None:
     """
     if no_proxy:
         return
-    from headroom.proxy import runtime_env as _rt
+    from legroom.proxy import runtime_env as _rt
 
     payload = _rt.explicit_env(os.environ)
     if not payload:
@@ -3589,7 +3589,7 @@ def _ensure_proxy(
                 "starting a dedicated local proxy instance for this wrap session."
             )
         if not isolated_copilot_subscription_proxy and manifest is not None:
-            from headroom.install.health import probe_ready
+            from legroom.install.health import probe_ready
 
             if probe_ready(manifest.health_url):
                 health_payload = helpers._query_proxy_health(port)
@@ -3604,8 +3604,8 @@ def _ensure_proxy(
                             else f"{len(other_wrappers)} attached wrapper(s)"
                         )
                         click.echo(
-                            f"  Proxy on port {port} is running Headroom {running_version}; "
-                            f"current CLI is {_HEADROOM_VERSION}."
+                            f"  Proxy on port {port} is running Legroom {running_version}; "
+                            f"current CLI is {_LEGROOM_VERSION}."
                         )
                         click.echo(
                             f"  Leaving it running because {detail} "
@@ -3616,7 +3616,7 @@ def _ensure_proxy(
                         return None, port
                     raise click.ClickException(
                         f"Persistent deployment '{manifest.profile}' on port {port} "
-                        f"is running stale Headroom {running_version} and could not be restarted."
+                        f"is running stale Legroom {running_version} and could not be restarted."
                     )
                 # Check if the running proxy has the features we need.
                 # Without this, a persistent deployment started for one use case
@@ -3752,8 +3752,8 @@ def _ensure_proxy(
                         else f"{len(other_wrappers)} attached wrapper(s)"
                     )
                     click.echo(
-                        f"  Proxy on port {port} is running Headroom {running_version}; "
-                        f"current CLI is {_HEADROOM_VERSION}."
+                        f"  Proxy on port {port} is running Legroom {running_version}; "
+                        f"current CLI is {_LEGROOM_VERSION}."
                     )
                     click.echo(
                         f"  Leaving it running because {detail} "
@@ -3762,8 +3762,8 @@ def _ensure_proxy(
                     return None, port
 
                 click.echo(
-                    f"  Proxy on port {port} is running Headroom {running_version}; "
-                    f"restarting with {_HEADROOM_VERSION}..."
+                    f"  Proxy on port {port} is running Legroom {running_version}; "
+                    f"restarting with {_LEGROOM_VERSION}..."
                 )
                 proxy_pid = running_config.get("pid") if running_config is not None else None
                 if proxy_pid is None:
@@ -3880,7 +3880,7 @@ def _ensure_proxy(
             else:
                 click.echo(f"  Port {port} is in use, using port {actual_port} instead.")
 
-        click.echo(f"  Starting Headroom proxy on port {actual_port}...")
+        click.echo(f"  Starting Legroom proxy on port {actual_port}...")
         try:
             proc = cast(
                 subprocess.Popen[Any],
@@ -3933,7 +3933,7 @@ def _ensure_proxy(
 
 def _client_marker_path(port: int) -> Path:
     """Path to this process's wrap-client marker for ``port``."""
-    from headroom import paths as _paths
+    from legroom import paths as _paths
 
     d = _paths.proxy_clients_dir(port)
     d.mkdir(parents=True, exist_ok=True)
@@ -4032,7 +4032,7 @@ def _marker_pid_reused(marker: Path, pid: int) -> bool:
 
 def _live_proxy_clients(port: int, *, exclude_self: bool = True) -> list[int]:
     """Live wrap-client PIDs for ``port``, pruning stale markers as we go."""
-    from headroom import paths as _paths
+    from legroom import paths as _paths
 
     d = _paths.proxy_clients_dir(port)
     if not d.exists():
@@ -4059,7 +4059,7 @@ def _live_proxy_clients(port: int, *, exclude_self: bool = True) -> list[int]:
 def _make_cleanup(proxy_proc_holder: list, port: int | list[int] = 8787) -> Any:
     """Create a cleanup function that terminates the proxy on exit.
 
-    Only kills the proxy when no other live headroom-wrapped clients remain,
+    Only kills the proxy when no other live legroom-wrapped clients remain,
     tracked via per-PID marker files in ``paths.proxy_clients_dir(port)``.
 
     ``port`` can be an ``int`` or a ``list[int]``.  When a port fallback occurs
@@ -4129,7 +4129,7 @@ def _launch_tool(
 
     try:
         click.echo()
-        padded = f"HEADROOM WRAP: {tool_label}".center(47)
+        padded = f"LEGROOM WRAP: {tool_label}".center(47)
         click.echo("  ╔═══════════════════════════════════════════════╗")
         click.echo(f"  ║{padded}║")
         click.echo("  ╚═══════════════════════════════════════════════╝")
@@ -4169,7 +4169,7 @@ def _launch_tool(
             _setup_code_graph(verbose=False)
 
         click.echo()
-        click.echo(f"  Launching {tool_label} (API routed through Headroom)...")
+        click.echo(f"  Launching {tool_label} (API routed through Legroom)...")
         for var in env_vars_display:
             click.echo(f"  {var}")
         if args:
@@ -4266,7 +4266,7 @@ def _build_openclaw_plugin_entry(
     gateway_provider_ids: tuple[str, ...] | None,
     enabled: bool,
 ) -> dict[str, object]:
-    """Merge managed Headroom plugin settings with any existing entry payload."""
+    """Merge managed Legroom plugin settings with any existing entry payload."""
     return _build_openclaw_plugin_entry_impl(
         existing_entry=existing_entry,
         proxy_port=proxy_port,
@@ -4284,17 +4284,17 @@ def _build_openclaw_unwrap_entry(existing_entry: Any) -> dict[str, object]:
 
 
 def _write_openclaw_plugin_entry(openclaw_bin: str, entry: dict[str, object]) -> None:
-    """Persist the Headroom plugin config entry."""
+    """Persist the Legroom plugin config entry."""
     _run_checked(
         [
             openclaw_bin,
             "config",
             "set",
-            "plugins.entries.headroom",
+            "plugins.entries.legroom",
             json.dumps(entry, separators=(",", ":")),
             "--strict-json",
         ],
-        action="openclaw config set plugins.entries.headroom",
+        action="openclaw config set plugins.entries.legroom",
     )
 
 
@@ -4350,7 +4350,7 @@ def _copy_openclaw_plugin_into_extensions(
         )
 
     extensions_dir = _resolve_openclaw_extensions_dir(openclaw_bin)
-    target_dir = extensions_dir / "headroom"
+    target_dir = extensions_dir / "legroom"
     target_dist = target_dir / "dist"
     target_hook_shim = target_dir / "hook-shim"
     target_dir.mkdir(parents=True, exist_ok=True)
@@ -4371,37 +4371,37 @@ def _copy_openclaw_plugin_into_extensions(
 
 @main.group()
 def wrap() -> None:
-    """Wrap CLI tools to run through Headroom.
+    """Wrap CLI tools to run through Legroom.
 
     \b
-    Starts a Headroom proxy, configures the environment, and launches
-    the target tool so all API calls route through Headroom automatically.
+    Starts a Legroom proxy, configures the environment, and launches
+    the target tool so all API calls route through Legroom automatically.
 
     \b
     Supported tools (one Click subcommand per tool):
-        headroom wrap claude              # Claude Code (Anthropic)
-        headroom wrap codex               # OpenAI Codex CLI
-        headroom wrap copilot -- --model claude-sonnet-4-20250514
-        headroom wrap aider               # Aider
-        headroom wrap openclaude          # OpenClaude
-        headroom wrap vibe                # Mistral Vibe
-        headroom wrap grok                # Grok CLI (xAI)
-        headroom wrap cursor              # Cursor (prints config instructions)
-        headroom wrap grok-build          # Grok Build (updates ~/.grok/config.toml)
-        headroom wrap cline               # Cline (VS Code; prints config instructions)
-        headroom wrap continue            # Continue (VS Code/JetBrains; injects systemMessage)
-        headroom wrap goose               # Goose (Block) CLI
-        headroom wrap openhands           # OpenHands CLI
-        headroom wrap openclaw            # OpenClaw plugin bootstrap
-        headroom wrap opencode            # OpenCode CLI
-        headroom wrap omp                 # Oh My Pi CLI
-        headroom wrap zcode               # ZCode desktop app setup
+        legroom wrap claude              # Claude Code (Anthropic)
+        legroom wrap codex               # OpenAI Codex CLI
+        legroom wrap copilot -- --model claude-sonnet-4-20250514
+        legroom wrap aider               # Aider
+        legroom wrap openclaude          # OpenClaude
+        legroom wrap vibe                # Mistral Vibe
+        legroom wrap grok                # Grok CLI (xAI)
+        legroom wrap cursor              # Cursor (prints config instructions)
+        legroom wrap grok-build          # Grok Build (updates ~/.grok/config.toml)
+        legroom wrap cline               # Cline (VS Code; prints config instructions)
+        legroom wrap continue            # Continue (VS Code/JetBrains; injects systemMessage)
+        legroom wrap goose               # Goose (Block) CLI
+        legroom wrap openhands           # OpenHands CLI
+        legroom wrap openclaw            # OpenClaw plugin bootstrap
+        legroom wrap opencode            # OpenCode CLI
+        legroom wrap omp                 # Oh My Pi CLI
+        legroom wrap zcode               # ZCode desktop app setup
 
     \b
     `wrap` vs `proxy`:
-        - `headroom wrap <tool>` — convenience: starts the proxy for you,
+        - `legroom wrap <tool>` — convenience: starts the proxy for you,
           sets the right env vars, and launches the wrapped CLI.
-        - `headroom proxy` — just the proxy. Use this with any
+        - `legroom proxy` — just the proxy. Use this with any
           OpenAI/Anthropic-compatible client by setting
           ANTHROPIC_BASE_URL / OPENAI_BASE_URL yourself.
 
@@ -4412,7 +4412,7 @@ def wrap() -> None:
 
 @main.group()
 def unwrap() -> None:
-    """Undo durable Headroom wrapping for supported tools."""
+    """Undo durable Legroom wrapping for supported tools."""
 
 
 @wrap.command("selfheal", hidden=True)
@@ -4458,7 +4458,7 @@ def wrap_selfheal(marker: str | None) -> None:
 @click.option(
     "--no-mcp",
     is_flag=True,
-    help="Skip headroom MCP server registration (compression markers will be unactionable)",
+    help="Skip legroom MCP server registration (compression markers will be unactionable)",
 )
 @click.option(
     "--no-tokensave",
@@ -4499,13 +4499,13 @@ def wrap_selfheal(marker: str | None) -> None:
     "--backend",
     default=None,
     help="API backend for the proxy: 'anthropic' (default), 'litellm-vertex_ai', etc. "
-    "(env: HEADROOM_BACKEND). For Vertex, prefer CLAUDE_CODE_USE_VERTEX=1 (native, "
+    "(env: LEGROOM_BACKEND). For Vertex, prefer CLAUDE_CODE_USE_VERTEX=1 (native, "
     "keeps your GCP auth) over a litellm backend.",
 )
 @click.option(
     "--region",
     default=None,
-    help="Cloud region for Vertex/Bedrock backends (env: HEADROOM_REGION).",
+    help="Cloud region for Vertex/Bedrock backends (env: LEGROOM_REGION).",
 )
 @click.option(
     "--1m",
@@ -4541,32 +4541,32 @@ def claude(
     prepare_only: bool,
     claude_args: tuple,
 ) -> None:
-    """Launch Claude Code through Headroom proxy.
+    """Launch Claude Code through Legroom proxy.
 
     \b
-    Sets ANTHROPIC_BASE_URL to route all Anthropic API calls through Headroom.
+    Sets ANTHROPIC_BASE_URL to route all Anthropic API calls through Legroom.
     All unknown flags are passed through to claude (e.g. --resume, --model).
 
     \b
     Examples:
-        headroom wrap claude                    # Start everything
-        headroom wrap claude --memory           # With persistent memory
-        headroom wrap claude --resume <id>      # Resume a session
-        headroom wrap claude -- -p              # Claude in print mode
-        headroom wrap claude                    # tokensave code graph (primary)
-        headroom wrap claude --no-tokensave     # Skip tokensave; fall back to Serena
-        headroom wrap claude --serena           # Also register the Serena backup
-        headroom wrap claude --context-tool     # Enable CLI context-tool setup
-        headroom wrap claude --no-context-tool  # Skip CLI context-tool setup
-        headroom wrap claude --no-mcp           # Skip MCP retrieve tool registration
-        headroom wrap claude --no-serena        # Never register the Serena backup
-        headroom wrap claude --1m               # Preserve the 1M context window
+        legroom wrap claude                    # Start everything
+        legroom wrap claude --memory           # With persistent memory
+        legroom wrap claude --resume <id>      # Resume a session
+        legroom wrap claude -- -p              # Claude in print mode
+        legroom wrap claude                    # tokensave code graph (primary)
+        legroom wrap claude --no-tokensave     # Skip tokensave; fall back to Serena
+        legroom wrap claude --serena           # Also register the Serena backup
+        legroom wrap claude --context-tool     # Enable CLI context-tool setup
+        legroom wrap claude --no-context-tool  # Skip CLI context-tool setup
+        legroom wrap claude --no-mcp           # Skip MCP retrieve tool registration
+        legroom wrap claude --no-serena        # Never register the Serena backup
+        legroom wrap claude --1m               # Preserve the 1M context window
     """
     # RTK/context-tool is opt-in (off by default): --context-tool (legacy) and
-    # --rtk both enable it. Mirror --context-tool into HEADROOM_RTK so the central
+    # --rtk both enable it. Mirror --context-tool into LEGROOM_RTK so the central
     # RTK gate (_rtk_opt_in) fires for the legacy flag too.
     if context_tool:
-        os.environ["HEADROOM_RTK"] = "1"
+        os.environ["LEGROOM_RTK"] = "1"
     setup_context_tool = (context_tool or _rtk_opt_in()) and not no_rtk
     if prepare_only:
         if setup_context_tool:
@@ -4605,10 +4605,10 @@ def claude(
         # this, the finally block's base_url restore never runs (issue #1768).
         signal.signal(signal.SIGHUP, cleanup)
 
-    # Memory sync BEFORE proxy startup — sync headroom DB ↔ Claude's files
+    # Memory sync BEFORE proxy startup — sync legroom DB ↔ Claude's files
     if memory:
         try:
-            mem_dir = Path.cwd() / ".headroom"
+            mem_dir = Path.cwd() / ".legroom"
             mem_dir.mkdir(parents=True, exist_ok=True)
             _sync_db = str(mem_dir / "memory.db")
             _sync_user = os.environ.get("USER", os.environ.get("USERNAME", "default"))
@@ -4618,7 +4618,7 @@ def claude(
                 [
                     sys.executable,
                     "-m",
-                    "headroom.memory.sync",
+                    "legroom.memory.sync",
                     "--db",
                     _sync_db,
                     "--user",
@@ -4648,7 +4648,7 @@ def claude(
     try:
         click.echo()
         click.echo("  ╔═══════════════════════════════════════════════╗")
-        click.echo("  ║            HEADROOM WRAP: CLAUDE              ║")
+        click.echo("  ║            LEGROOM WRAP: CLAUDE              ║")
         click.echo("  ╚═══════════════════════════════════════════════╝")
         click.echo()
 
@@ -4669,10 +4669,10 @@ def claude(
         # ANTHROPIC_BASE_URL and authenticates to Google Vertex with GCP ADC. The
         # documented way to route its Vertex :rawPredict / :streamRawPredict
         # traffic through a gateway is ANTHROPIC_VERTEX_BASE_URL. Point it at
-        # Headroom and the proxy compresses the request, then forwards to the
+        # Legroom and the proxy compresses the request, then forwards to the
         # real regional Vertex host (derived per-request from the path's
         # location) using Claude Code's own ADC token — no API key, no creds held
-        # by Headroom. This is the turnkey Vertex compression path.
+        # by Legroom. This is the turnkey Vertex compression path.
         use_vertex = bool(os.environ.get("CLAUDE_CODE_USE_VERTEX"))
         proxy_url = _claude_proxy_base_url(port)
         vertex_upstream = _vertex_target_api_url_from_claude_env(proxy_url) if use_vertex else None
@@ -4708,14 +4708,14 @@ def claude(
             click.echo("  Skipping CLI context tool (--no-context-tool)")
 
         if not no_mcp:
-            from headroom.mcp_registry import ClaudeRegistrar
+            from legroom.mcp_registry import ClaudeRegistrar
 
-            _setup_headroom_mcp(ClaudeRegistrar(), actual_port, verbose=verbose)
+            _setup_legroom_mcp(ClaudeRegistrar(), actual_port, verbose=verbose)
         elif verbose:
             click.echo("  Skipping MCP retrieve tool (--no-mcp)")
 
         # Coding-task compressor: tokensave primary, Serena backup.
-        from headroom.mcp_registry import ClaudeRegistrar
+        from legroom.mcp_registry import ClaudeRegistrar
 
         _setup_coding_compressor(
             ClaudeRegistrar(),
@@ -4731,7 +4731,7 @@ def claude(
 
         proxy_url = _claude_proxy_base_url(actual_port)
         click.echo()
-        click.echo("  Launching Claude Code (API routed through Headroom)...")
+        click.echo("  Launching Claude Code (API routed through Legroom)...")
         if use_vertex:
             click.echo(
                 f"  Vertex mode: ANTHROPIC_VERTEX_BASE_URL={proxy_url} "
@@ -4747,7 +4747,7 @@ def claude(
             # first-party Remote Control (/rc) behind a custom ANTHROPIC_BASE_URL.
             # Warn accurately — but only for subscription sessions that ever had
             # RC (skip API-key/cloud auth) and only when the installed version is
-            # at/after the gate (or unknown). The gate is upstream; Headroom
+            # at/after the gate (or unknown). The gate is upstream; Legroom
             # cannot restore RC, so this is a launch-time notice, not a fix.
             # Detecting the version shells out to `claude --version`, so skip that
             # subprocess for auth modes we would never warn about anyway.
@@ -4785,7 +4785,7 @@ def claude(
         if use_vertex:
             # Claude Code stays in Vertex mode (keeps CLAUDE_CODE_USE_VERTEX,
             # ANTHROPIC_VERTEX_PROJECT_ID, CLOUD_ML_REGION, ADC — all inherited);
-            # we only redirect its Vertex endpoint to Headroom.
+            # we only redirect its Vertex endpoint to Legroom.
             env["ANTHROPIC_VERTEX_BASE_URL"] = proxy_url
         elif foundry_upstream:
             # ANTHROPIC_FOUNDRY_BASE_URL is the base URL the Anthropic SDK
@@ -4797,7 +4797,7 @@ def claude(
 
         # Issue #951: write to settings.json so daemon-spawned conversation
         # workers (which read settings.json fresh rather than inheriting the
-        # daemon's environment) also route through Headroom.
+        # daemon's environment) also route through Legroom.
         _settings_vertex[0] = bool(use_vertex)
         _settings_foundry[0] = bool(foundry_upstream) and not _settings_vertex[0]
         # _wrap_settings_path is bound before the try (above) so the finally is
@@ -4827,7 +4827,7 @@ def claude(
         _ensure_claude_wrap_selfheal_hook(_wrap_settings_path)
 
         # Per-project savings attribution: tag every request with the launch
-        # directory's name via X-Headroom-Project (user override wins).
+        # directory's name via X-Legroom-Project (user override wins).
         _apply_project_header_env(env)
 
         # Issue #746: keep Claude Code's on-demand tool loading on through the
@@ -4888,8 +4888,8 @@ def claude(
 @click.option(
     "--port", "-p", default=8787, type=click.IntRange(1, 65535), help="Proxy port (default: 8787)"
 )
-@click.option("--no-stop-proxy", is_flag=True, help="Do not stop the local Headroom proxy")
-@click.option("--keep-mcp", is_flag=True, help="Keep Headroom MCP registrations")
+@click.option("--no-stop-proxy", is_flag=True, help="Do not stop the local Legroom proxy")
+@click.option("--keep-mcp", is_flag=True, help="Keep Legroom MCP registrations")
 @click.option("--keep-rtk", is_flag=True, help="Keep rtk Claude hooks")
 def unwrap_claude(
     port: int,
@@ -4897,38 +4897,38 @@ def unwrap_claude(
     keep_mcp: bool,
     keep_rtk: bool,
 ) -> None:
-    """Undo durable setup from ``headroom wrap claude``."""
+    """Undo durable setup from ``legroom wrap claude``."""
     click.echo()
     click.echo("  ╔═══════════════════════════════════════════════╗")
-    click.echo("  ║          HEADROOM UNWRAP: CLAUDE              ║")
+    click.echo("  ║          LEGROOM UNWRAP: CLAUDE              ║")
     click.echo("  ╚═══════════════════════════════════════════════╝")
     click.echo()
 
     if not keep_mcp:
-        from headroom.mcp_registry import ClaudeRegistrar
+        from legroom.mcp_registry import ClaudeRegistrar
 
         registrar = ClaudeRegistrar()
         if registrar.detect():
-            removed_headroom = registrar.unregister_server("headroom")
+            removed_legroom = registrar.unregister_server("legroom")
             removed_code_graph = registrar.unregister_server(_CBM_MCP_SERVER_NAME)
-            tokensave_status = _remove_headroom_installed_tokensave_mcp(registrar)
-            serena_status = _remove_headroom_installed_serena_mcp(registrar)
-            if removed_headroom:
-                click.echo("  Removed Headroom MCP retrieve tool from Claude.")
+            tokensave_status = _remove_legroom_installed_tokensave_mcp(registrar)
+            serena_status = _remove_legroom_installed_serena_mcp(registrar)
+            if removed_legroom:
+                click.echo("  Removed Legroom MCP retrieve tool from Claude.")
             else:
-                click.echo("  Headroom MCP retrieve tool was not registered in Claude.")
+                click.echo("  Legroom MCP retrieve tool was not registered in Claude.")
             if removed_code_graph:
                 click.echo("  Removed legacy codebase-memory-mcp code graph server from Claude.")
             if tokensave_status == "removed":
-                click.echo("  Removed Headroom-installed tokensave MCP server from Claude.")
+                click.echo("  Removed Legroom-installed tokensave MCP server from Claude.")
             elif tokensave_status == "failed":
                 click.echo(
-                    "  tokensave MCP server matched Headroom ledger but could not be removed."
+                    "  tokensave MCP server matched Legroom ledger but could not be removed."
                 )
             if serena_status == "removed":
-                click.echo("  Removed Headroom-installed Serena MCP server from Claude.")
+                click.echo("  Removed Legroom-installed Serena MCP server from Claude.")
             elif serena_status == "failed":
-                click.echo("  Serena MCP server matched Headroom ledger but could not be removed.")
+                click.echo("  Serena MCP server matched Legroom ledger but could not be removed.")
         else:
             click.echo("  Claude Code not detected; skipped MCP cleanup.")
     else:
@@ -4944,7 +4944,7 @@ def unwrap_claude(
 
     _unwrap_settings_path = Path.cwd() / ".claude" / "settings.local.json"
     if _remove_claude_wrap_selfheal_hook(_unwrap_settings_path):
-        click.echo("  Removed Headroom wrap self-heal SessionStart hook (issue #2221).")
+        click.echo("  Removed Legroom wrap self-heal SessionStart hook (issue #2221).")
     for _foundry, _vertex in ((False, False), (True, False), (False, True)):
         _key = _claude_wrap_base_url_env_key(foundry_mode=_foundry, vertex_mode=_vertex)
         _marker = _read_wrap_marker(_unwrap_settings_path)
@@ -4966,7 +4966,7 @@ def unwrap_claude(
     else:
         clean_unwrap = _echo_claude_unwrap_route_cleanup(_unwrap_claude_route_cleanup(port), port)
     if clean_unwrap:
-        click.echo("✓ Claude is no longer durably wrapped by Headroom.")
+        click.echo("✓ Claude is no longer durably wrapped by Legroom.")
     else:
         click.echo(
             "  Claude local wrap settings were removed, but effective routing residue remains."
@@ -4995,15 +4995,15 @@ def unwrap_claude(
 @click.option(
     "--backend",
     default=None,
-    help="API backend for the proxy: 'anthropic', 'anyllm', 'litellm-vertex', etc. (env: HEADROOM_BACKEND)",
+    help="API backend for the proxy: 'anthropic', 'anyllm', 'litellm-vertex', etc. (env: LEGROOM_BACKEND)",
 )
 @click.option(
     "--anyllm-provider",
     default=None,
-    help="Provider for any-llm backend: openai, mistral, groq, etc. (env: HEADROOM_ANYLLM_PROVIDER)",
+    help="Provider for any-llm backend: openai, mistral, groq, etc. (env: LEGROOM_ANYLLM_PROVIDER)",
 )
 @click.option(
-    "--region", default=None, help="Cloud region for Bedrock/Vertex (env: HEADROOM_REGION)"
+    "--region", default=None, help="Cloud region for Bedrock/Vertex (env: LEGROOM_REGION)"
 )
 @click.option(
     "--provider-type",
@@ -5022,7 +5022,7 @@ def unwrap_claude(
     "--subscription",
     is_flag=True,
     help=(
-        "Experimental: route GitHub-authenticated Copilot CLI traffic through Headroom "
+        "Experimental: route GitHub-authenticated Copilot CLI traffic through Legroom "
         "without requiring a provider API key."
     ),
 )
@@ -5043,21 +5043,21 @@ def copilot(
     verbose: bool,
     copilot_args: tuple[str, ...],
 ) -> None:
-    """Launch GitHub Copilot CLI through Headroom proxy.
+    """Launch GitHub Copilot CLI through Legroom proxy.
 
     \b
     Configures Copilot CLI BYOK provider variables so Copilot routes through
-    the local Headroom proxy. In auto mode, the wrapper uses Anthropic-style
+    the local Legroom proxy. In auto mode, the wrapper uses Anthropic-style
     routing for the stock proxy backend and OpenAI-compatible routing for
     translated backends such as any-llm and LiteLLM.
 
     \b
     Examples:
-        headroom wrap copilot -- --model claude-sonnet-4-20250514
-        headroom wrap copilot --backend anyllm --anyllm-provider groq -- --model gpt-4o
-        headroom wrap copilot --provider-type openai --wire-api responses -- --model gpt-5.4
-        headroom wrap copilot --subscription -- --model gpt-4.1
-        headroom wrap copilot --no-context-tool -- --prompt "explain this file"
+        legroom wrap copilot -- --model claude-sonnet-4-20250514
+        legroom wrap copilot --backend anyllm --anyllm-provider groq -- --model gpt-4o
+        legroom wrap copilot --provider-type openai --wire-api responses -- --model gpt-5.4
+        legroom wrap copilot --subscription -- --model gpt-4.1
+        legroom wrap copilot --no-context-tool -- --prompt "explain this file"
 
     \b
     Copilot hosted API (--subscription and the implicit OAuth path) routes to the
@@ -5075,7 +5075,7 @@ def copilot(
         )
         raise SystemExit(1)
 
-    effective_backend = backend or os.environ.get("HEADROOM_BACKEND")
+    effective_backend = backend or os.environ.get("LEGROOM_BACKEND")
     if _check_proxy(port):
         running_backend = _detect_running_proxy_backend(port)
         if effective_backend and running_backend and effective_backend != running_backend:
@@ -5138,7 +5138,7 @@ def copilot(
         if not client_bearer:
             raise click.ClickException(
                 "GitHub Copilot subscription mode requires a reusable GitHub/Copilot bearer "
-                "token, but none could be resolved. Run `headroom copilot-auth login` first, or set "
+                "token, but none could be resolved. Run `legroom copilot-auth login` first, or set "
                 "GITHUB_COPILOT_TOKEN / GITHUB_COPILOT_GITHUB_TOKEN."
             )
 
@@ -5220,9 +5220,9 @@ def copilot(
             src = _copilot_provider_key_source(effective_provider_type)
             click.echo(
                 f"\n  Error: Copilot BYOK mode requires a provider API key.\n"
-                f"  `headroom wrap copilot` uses Copilot's BYOK mode, which bypasses GitHub's\n"
+                f"  `legroom wrap copilot` uses Copilot's BYOK mode, which bypasses GitHub's\n"
                 f"  Copilot API and routes requests directly to the model provider through the\n"
-                f"  Headroom proxy. A GitHub Copilot subscription alone is not sufficient.\n\n"
+                f"  Legroom proxy. A GitHub Copilot subscription alone is not sufficient.\n\n"
                 f"  Set one of:\n"
                 f"    export {src}=sk-...          # recommended\n"
                 f"    export COPILOT_PROVIDER_API_KEY=sk-...  # also works\n"
@@ -5242,7 +5242,7 @@ def copilot(
                 "  Options:\n"
                 "    • Use a concrete model: --model gpt-4o\n"
                 "    • Use subscription mode for native auto-routing:\n"
-                "      headroom wrap copilot --subscription -- --model auto"
+                "      legroom wrap copilot --subscription -- --model auto"
             )
             raise SystemExit(1)
         else:
@@ -5281,14 +5281,14 @@ def copilot(
 @click.option(
     "--port", "-p", default=8787, type=click.IntRange(1, 65535), help="Proxy port (default: 8787)"
 )
-@click.option("--no-stop-proxy", is_flag=True, help="Do not stop the local Headroom proxy")
+@click.option("--no-stop-proxy", is_flag=True, help="Do not stop the local Legroom proxy")
 def unwrap_copilot(port: int, no_stop_proxy: bool) -> None:
-    """Undo durable setup from ``headroom wrap copilot``."""
+    """Undo durable setup from ``legroom wrap copilot``."""
     instructions = Path.cwd() / ".github" / "copilot-instructions.md"
     if _remove_rtk_instructions(instructions):
-        click.echo("  Removed Headroom rtk instructions from Copilot.")
+        click.echo("  Removed Legroom rtk instructions from Copilot.")
     else:
-        click.echo("  No Headroom rtk instructions found for Copilot.")
+        click.echo("  No Legroom rtk instructions found for Copilot.")
 
     if not no_stop_proxy:
         _echo_unwrap_proxy_stop_status(_stop_local_proxy_for_unwrap(port), port)
@@ -5314,9 +5314,9 @@ def _prepare_codex_wrap_state(
 ) -> None:
     """Prepare the active Codex home for a wrap or prepare-only invocation."""
     # Snapshot Codex config.toml BEFORE any wrap-time mutation so
-    # `headroom unwrap codex` can restore the user's pre-wrap state
+    # `legroom unwrap codex` can restore the user's pre-wrap state
     # byte-for-byte. The snapshot is a no-op if the backup already exists
-    # or if the file already has Headroom markers, so this is safe to
+    # or if the file already has Legroom markers, so this is safe to
     # call repeatedly. Crucially this must run before MCP install, which
     # writes its marker block to the same file.
     if persistent_routing:
@@ -5336,21 +5336,21 @@ def _prepare_codex_wrap_state(
                 global_agents = (rtk_home or _codex_home_dir()) / "AGENTS.md"
                 _inject_rtk_instructions(global_agents, verbose=verbose)
 
-    # Register headroom MCP server in Codex config.toml so Codex can
-    # call headroom_retrieve on compression markers from the proxy.
+    # Register legroom MCP server in Codex config.toml so Codex can
+    # call legroom_retrieve on compression markers from the proxy.
     if not no_mcp:
-        from headroom.mcp_registry import CodexRegistrar
+        from legroom.mcp_registry import CodexRegistrar
 
         # Codex starts a long-lived local MCP subprocess from config.toml.
         # If a previous wrap used another port, retrieval can silently point
         # at the wrong proxy while model traffic uses the right one.
-        _setup_headroom_mcp(CodexRegistrar(), port, verbose=verbose, force=True)
+        _setup_legroom_mcp(CodexRegistrar(), port, verbose=verbose, force=True)
     elif verbose:
         click.echo("  Skipping MCP retrieve tool (--no-mcp)")
 
     # Coding-task compressor: tokensave primary, Serena backup. Codex starts
     # long-lived MCP subprocesses from config.toml, so force re-registration.
-    from headroom.mcp_registry import CodexRegistrar
+    from legroom.mcp_registry import CodexRegistrar
 
     _setup_coding_compressor(
         CodexRegistrar(),
@@ -5365,7 +5365,7 @@ def _prepare_codex_wrap_state(
     # Setup memory MCP server for Codex (native tool integration)
     if memory:
         click.echo("  Setting up memory for Codex...")
-        mem_dir = Path.cwd() / ".headroom"
+        mem_dir = Path.cwd() / ".legroom"
         mem_dir.mkdir(parents=True, exist_ok=True)
         db_path = str(mem_dir / "memory.db")
         mem_user = os.environ.get("USER", os.environ.get("USERNAME", "default"))
@@ -5381,8 +5381,8 @@ def _prepare_codex_wrap_state(
         try:
             import asyncio
 
-            from headroom.memory.sync import _build_sync_backend, sync_import
-            from headroom.memory.sync_adapters.claude_code import (
+            from legroom.memory.sync import _build_sync_backend, sync_import
+            from legroom.memory.sync_adapters.claude_code import (
                 ClaudeCodeAdapter,
                 get_claude_memory_dir,
             )
@@ -5403,7 +5403,7 @@ def _prepare_codex_wrap_state(
         except Exception as e:
             click.echo(f"  Warning: Claude memory import failed: {e}")
 
-    # Inject Headroom provider into Codex config so WebSocket traffic also
+    # Inject Legroom provider into Codex config so WebSocket traffic also
     # routes through the proxy.  Codex ignores OPENAI_BASE_URL for its WS
     # transport unless a custom provider declares supports_websockets = true.
     # NOTE: this must run BEFORE _inject_memory_mcp_config because it rewrites
@@ -5518,7 +5518,7 @@ def _run_codex_wrap(
 @click.option(
     "--no-mcp",
     is_flag=True,
-    help="Skip headroom MCP server registration (compression markers will be unactionable)",
+    help="Skip legroom MCP server registration (compression markers will be unactionable)",
 )
 @click.option(
     "--no-tokensave",
@@ -5544,15 +5544,15 @@ def _run_codex_wrap(
 @click.option(
     "--backend",
     default=None,
-    help="API backend for the proxy: 'anthropic', 'anyllm', 'litellm-vertex', etc. (env: HEADROOM_BACKEND)",
+    help="API backend for the proxy: 'anthropic', 'anyllm', 'litellm-vertex', etc. (env: LEGROOM_BACKEND)",
 )
 @click.option(
     "--anyllm-provider",
     default=None,
-    help="Provider for any-llm backend: openai, mistral, groq, etc. (env: HEADROOM_ANYLLM_PROVIDER)",
+    help="Provider for any-llm backend: openai, mistral, groq, etc. (env: LEGROOM_ANYLLM_PROVIDER)",
 )
 @click.option(
-    "--region", default=None, help="Cloud region for Bedrock/Vertex (env: HEADROOM_REGION)"
+    "--region", default=None, help="Cloud region for Bedrock/Vertex (env: LEGROOM_REGION)"
 )
 @click.option("--memory", is_flag=True, help="Enable persistent cross-session memory")
 @click.option("--verbose", "-v", is_flag=True, help="Verbose output")
@@ -5576,26 +5576,26 @@ def codex(
     prepare_only: bool,
     codex_args: tuple,
 ) -> None:
-    """Launch OpenAI Codex CLI through Headroom proxy.
+    """Launch OpenAI Codex CLI through Legroom proxy.
 
     \b
-    Sets OPENAI_BASE_URL to route all OpenAI API calls through Headroom.
+    Sets OPENAI_BASE_URL to route all OpenAI API calls through Legroom.
     Sets up the selected CLI context tool so Codex uses token-optimized
     commands (60-90% savings on shell output). Also
-    registers the headroom MCP server in the active Codex config file
-    so Codex can call ``headroom_retrieve`` on compression markers.
+    registers the legroom MCP server in the active Codex config file
+    so Codex can call ``legroom_retrieve`` on compression markers.
 
     \b
     Examples:
-        headroom wrap codex                         # Start proxy + context tool + mcp + codex
-        headroom wrap codex -- "fix the bug"        # Pass prompt to codex
-        headroom wrap codex --no-context-tool       # Skip CLI context-tool setup
-        headroom wrap codex --no-mcp                # Skip MCP retrieve tool registration
-        headroom wrap codex --no-tokensave          # Skip tokensave; fall back to Serena
-        headroom wrap codex --serena                # Also register the Serena backup
-        headroom wrap codex --no-serena             # Never register the Serena backup
-        headroom wrap codex --port 9999             # Custom proxy port
-        headroom wrap codex --backend anyllm --anyllm-provider groq
+        legroom wrap codex                         # Start proxy + context tool + mcp + codex
+        legroom wrap codex -- "fix the bug"        # Pass prompt to codex
+        legroom wrap codex --no-context-tool       # Skip CLI context-tool setup
+        legroom wrap codex --no-mcp                # Skip MCP retrieve tool registration
+        legroom wrap codex --no-tokensave          # Skip tokensave; fall back to Serena
+        legroom wrap codex --serena                # Also register the Serena backup
+        legroom wrap codex --no-serena             # Never register the Serena backup
+        legroom wrap codex --port 9999             # Custom proxy port
+        legroom wrap codex --backend anyllm --anyllm-provider groq
     """
     return _run_codex_wrap(
         port=port,
@@ -5664,19 +5664,19 @@ def aider(
     prepare_only: bool,
     aider_args: tuple,
 ) -> None:
-    """Launch aider through Headroom proxy.
+    """Launch aider through Legroom proxy.
 
     \b
-    Sets OPENAI_API_BASE to route all API calls through Headroom.
+    Sets OPENAI_API_BASE to route all API calls through Legroom.
     Sets up the selected CLI context tool so aider uses token-optimized commands.
 
     \b
     Examples:
-        headroom wrap aider                              # Start proxy + context tool + aider
-        headroom wrap aider -- --model gpt-4o            # Use GPT-4o
-        headroom wrap aider -- --model claude-sonnet-4   # Use Claude
-        headroom wrap aider --no-context-tool            # Skip CLI context-tool setup
-        headroom wrap aider --backend litellm-vertex --region us-central1
+        legroom wrap aider                              # Start proxy + context tool + aider
+        legroom wrap aider -- --model gpt-4o            # Use GPT-4o
+        legroom wrap aider -- --model claude-sonnet-4   # Use Claude
+        legroom wrap aider --no-context-tool            # Skip CLI context-tool setup
+        legroom wrap aider --backend litellm-vertex --region us-central1
     """
     # Setup CLI context tool for aider.
     if not no_rtk:
@@ -5767,7 +5767,7 @@ def openclaude(
     prepare_only: bool,
     openclaude_args: tuple,
 ) -> None:
-    """Launch OpenClaude through Headroom proxy.
+    """Launch OpenClaude through Legroom proxy.
 
     \b
     OpenClaude is a prose-format coding CLI (like Aider / Cline); it speaks
@@ -5776,9 +5776,9 @@ def openclaude(
 
     \b
     Examples:
-        headroom wrap openclaude                         # Start proxy + openclaude
-        headroom wrap openclaude -- --model gpt-4o       # Pass args to openclaude
-        headroom wrap openclaude --no-context-tool       # Skip CLI context-tool setup
+        legroom wrap openclaude                         # Start proxy + openclaude
+        legroom wrap openclaude -- --model gpt-4o       # Pass args to openclaude
+        legroom wrap openclaude --no-context-tool       # Skip CLI context-tool setup
     """
     openclaude_instructions: Path | None = (
         Path.cwd() / _OPENCLAUDE_INSTRUCTIONS_FILE if not no_rtk else None
@@ -5800,7 +5800,7 @@ def openclaude(
     openclaude_bin = shutil.which("openclaude")
     if not openclaude_bin:
         click.echo("Error: 'openclaude' not found in PATH.")
-        click.echo("Install OpenClaude before running `headroom wrap openclaude`.")
+        click.echo("Install OpenClaude before running `legroom wrap openclaude`.")
         raise SystemExit(1)
 
     env, env_vars_display = _build_aider_launch_env(
@@ -5864,17 +5864,17 @@ def vibe(
     prepare_only: bool,
     vibe_args: tuple,
 ) -> None:
-    """Launch Mistral Vibe through Headroom proxy.
+    """Launch Mistral Vibe through Legroom proxy.
 
     \b
-    Sets VIBE_PROVIDERS to route all Mistral API calls through Headroom.
+    Sets VIBE_PROVIDERS to route all Mistral API calls through Legroom.
 
     \b
     Examples:
-        headroom wrap vibe                         # Start proxy + vibe
-        headroom wrap vibe -- "fix the bug"        # Pass prompt to vibe
-        headroom wrap vibe --port 9999             # Custom proxy port
-        headroom wrap vibe --no-context-tool       # Skip CLI context-tool setup
+        legroom wrap vibe                         # Start proxy + vibe
+        legroom wrap vibe -- "fix the bug"        # Pass prompt to vibe
+        legroom wrap vibe --port 9999             # Custom proxy port
+        legroom wrap vibe --no-context-tool       # Skip CLI context-tool setup
     """
     if prepare_only:
         return
@@ -5950,19 +5950,19 @@ def kimi(
     prepare_only: bool,
     kimi_args: tuple,
 ) -> None:
-    """Launch Kimi CLI through Headroom proxy.
+    """Launch Kimi CLI through Legroom proxy.
 
     \b
     Sets KIMI_BASE_URL to route Kimi's OpenAI-compatible /chat/completions
-    traffic through Headroom. Kimi's own OAuth bearer is forwarded upstream,
+    traffic through Legroom. Kimi's own OAuth bearer is forwarded upstream,
     so no extra login is required — run `kimi` once to authenticate first.
 
     \b
     Examples:
-        headroom wrap kimi                         # Start proxy + kimi
-        headroom wrap kimi -- -m kimi-for-coding   # Pass args to kimi
-        headroom wrap kimi --port 9999             # Custom proxy port
-        headroom wrap kimi --kimi-api-url https://api.moonshot.ai/v1
+        legroom wrap kimi                         # Start proxy + kimi
+        legroom wrap kimi -- -m kimi-for-coding   # Pass args to kimi
+        legroom wrap kimi --port 9999             # Custom proxy port
+        legroom wrap kimi --kimi-api-url https://api.moonshot.ai/v1
     """
     if prepare_only:
         return
@@ -6010,7 +6010,7 @@ def kimi(
     is_flag=True,
     help="Skip CLI context-tool setup",
 )
-@click.option("--no-mcp", is_flag=True, help="Skip headroom MCP server registration")
+@click.option("--no-mcp", is_flag=True, help="Skip legroom MCP server registration")
 @click.option(
     "--no-tokensave",
     is_flag=True,
@@ -6059,20 +6059,20 @@ def grok(
     prepare_only: bool,
     grok_args: tuple,
 ) -> None:
-    """Launch Grok CLI through Headroom proxy.
+    """Launch Grok CLI through Legroom proxy.
 
     \b
     Sets ``GROK_CLI_CHAT_PROXY_BASE_URL`` so Grok routes inference traffic
-    through Headroom. Registers the headroom MCP server in ``~/.grok/config.toml``
-    so Grok can call ``headroom_retrieve`` on compression markers.
+    through Legroom. Registers the legroom MCP server in ``~/.grok/config.toml``
+    so Grok can call ``legroom_retrieve`` on compression markers.
 
     \b
     Examples:
-        headroom wrap grok                         # Start proxy + context tool + grok
-        headroom wrap grok -- -p "fix the bug"     # Pass prompt to grok
-        headroom wrap grok --no-context-tool       # Skip CLI context-tool setup
-        headroom wrap grok --no-mcp                # Skip MCP retrieve tool registration
-        headroom wrap grok --port 9999             # Custom proxy port
+        legroom wrap grok                         # Start proxy + context tool + grok
+        legroom wrap grok -- -p "fix the bug"     # Pass prompt to grok
+        legroom wrap grok --no-context-tool       # Skip CLI context-tool setup
+        legroom wrap grok --no-mcp                # Skip MCP retrieve tool registration
+        legroom wrap grok --port 9999             # Custom proxy port
     """
     agents_md: Path | None = Path.cwd() / "AGENTS.md" if not no_rtk else None
     if not no_rtk:
@@ -6087,13 +6087,13 @@ def grok(
         )
 
     if not no_mcp:
-        from headroom.mcp_registry import GrokRegistrar
+        from legroom.mcp_registry import GrokRegistrar
 
-        _setup_headroom_mcp(GrokRegistrar(), port, verbose=verbose, force=True)
+        _setup_legroom_mcp(GrokRegistrar(), port, verbose=verbose, force=True)
     elif verbose:
         click.echo("  Skipping MCP retrieve tool (--no-mcp)")
 
-    from headroom.mcp_registry import GrokRegistrar
+    from legroom.mcp_registry import GrokRegistrar
 
     _setup_coding_compressor(
         GrokRegistrar(),
@@ -6170,7 +6170,7 @@ def cursor(
     verbose: bool,
     prepare_only: bool,
 ) -> None:
-    """Start Headroom proxy for use with Cursor.
+    """Start Legroom proxy for use with Cursor.
 
     \b
     Cursor reads its API configuration from its settings UI, not from
@@ -6183,9 +6183,9 @@ def cursor(
 
     \b
     Example:
-        headroom wrap cursor                # Start proxy + context-tool instructions
-        headroom wrap cursor --no-context-tool  # Proxy only, no CLI context tool
-        headroom wrap cursor --port 9999    # Custom proxy port
+        legroom wrap cursor                # Start proxy + context-tool instructions
+        legroom wrap cursor --no-context-tool  # Proxy only, no CLI context tool
+        legroom wrap cursor --port 9999    # Custom proxy port
     """
     cursorrules: Path | None = Path.cwd() / ".cursorrules" if not no_rtk else None
     cursor_hook_registered = False
@@ -6197,7 +6197,7 @@ def cursor(
             # RTK_INSTRUCTIONS_BLOCK text into .cursorrules — a silent hook makes
             # the custom-rules text redundant guidance (GH #756).
             nonlocal cursor_hook_registered
-            from headroom.rtk.installer import register_agent_hooks
+            from legroom.rtk.installer import register_agent_hooks
 
             # rtk may exit 0 without writing hooks.json (e.g. an rtk build that
             # doesn't support --agent cursor), so trust the file, not the exit
@@ -6275,19 +6275,19 @@ def grok_build(
     verbose: bool,
     prepare_only: bool,
 ) -> None:
-    """Start Headroom proxy for use with Grok Build.
+    """Start Legroom proxy for use with Grok Build.
 
     \b
     Grok Build reads model endpoints from ``~/.grok/config.toml``. This
     command starts the proxy, optionally sets up the selected CLI context
-    tool, injects a Headroom-managed ``[model.grok-build]`` override, and
+    tool, injects a Legroom-managed ``[model.grok-build]`` override, and
     prints next steps.
 
     \b
     Example:
-        headroom wrap grok-build
-        headroom wrap grok-build --no-context-tool
-        headroom wrap grok-build --port 9999
+        legroom wrap grok-build
+        legroom wrap grok-build --no-context-tool
+        legroom wrap grok-build --port 9999
     """
     project = _project_name_from_cwd()
     agents_md: Path | None = Path.cwd() / "AGENTS.md" if not no_rtk else None
@@ -6307,7 +6307,7 @@ def grok_build(
     if prepare_only:
         try:
             config_file = inject_grok_provider_config(port, project=project)
-            click.echo(f"  Grok config: injected Headroom proxy override into {config_file}")
+            click.echo(f"  Grok config: injected Legroom proxy override into {config_file}")
         except Exception as e:
             click.echo(f"  Warning: could not update Grok config: {e}")
         return
@@ -6315,7 +6315,7 @@ def grok_build(
     def _print_grok_build_setup(actual_port: int) -> None:
         try:
             config_file = inject_grok_provider_config(actual_port, project=project)
-            click.echo(f"  Grok config: injected Headroom proxy override into {config_file}")
+            click.echo(f"  Grok config: injected Legroom proxy override into {config_file}")
             click.echo()
         except Exception as e:
             click.echo(f"  Warning: could not update Grok config: {e}")
@@ -6372,7 +6372,7 @@ def cline(
     verbose: bool,
     prepare_only: bool,
 ) -> None:
-    """Start Headroom proxy for use with Cline (VS Code extension).
+    """Start Legroom proxy for use with Cline (VS Code extension).
 
     \b
     Cline is a VS Code extension that reads its API configuration from the
@@ -6383,22 +6383,22 @@ def cline(
 
     \b
     After running this command, open Cline's settings in VS Code and configure
-    the API Base URL to point at the local Headroom proxy.
+    the API Base URL to point at the local Legroom proxy.
 
     \b
-    Uninstall: there is no ``headroom unwrap cline`` subcommand. To remove the
+    Uninstall: there is no ``legroom unwrap cline`` subcommand. To remove the
     injected guidance, hand-edit ``.clinerules`` at the project root and
-    delete everything between ``<!-- headroom:rtk-instructions -->`` and
-    ``<!-- /headroom:rtk-instructions -->`` (inclusive). If ``lean-ctx`` mode
+    delete everything between ``<!-- legroom:rtk-instructions -->`` and
+    ``<!-- /legroom:rtk-instructions -->`` (inclusive). If ``lean-ctx`` mode
     is selected, the lean-ctx agent name ``cline`` may not be recognized by
     the local lean-ctx binary; a warning is printed in that case and setup
     is skipped silently.
 
     \b
     Examples:
-        headroom wrap cline                  # Start proxy + .clinerules instructions
-        headroom wrap cline --no-context-tool # Proxy only, no CLI context tool
-        headroom wrap cline --port 9999      # Custom proxy port
+        legroom wrap cline                  # Start proxy + .clinerules instructions
+        legroom wrap cline --no-context-tool # Proxy only, no CLI context tool
+        legroom wrap cline --port 9999      # Custom proxy port
     """
     # Pre-compute the marker path so the KeyboardInterrupt handler can report
     # its location even if the interrupt fires before _inject_rtk_instructions
@@ -6475,7 +6475,7 @@ def zcode(
     verbose: bool,
     prepare_only: bool,
 ) -> None:
-    """Start Headroom proxy for use with ZCode (zcode.z.ai desktop app).
+    """Start Legroom proxy for use with ZCode (zcode.z.ai desktop app).
 
     \b
     ZCode is a desktop Electron app that reads its API configuration from
@@ -6491,9 +6491,9 @@ def zcode(
 
     \b
     Example:
-        headroom wrap zcode                # Start proxy + context-tool instructions
-        headroom wrap zcode --no-context-tool  # Proxy only, no CLI context tool
-        headroom wrap zcode --port 9999    # Custom proxy port
+        legroom wrap zcode                # Start proxy + context-tool instructions
+        legroom wrap zcode --no-context-tool  # Proxy only, no CLI context tool
+        legroom wrap zcode --port 9999    # Custom proxy port
     """
     agents_md: Path | None = Path.cwd() / "AGENTS.md" if not no_rtk else None
     if not no_rtk:
@@ -6579,7 +6579,7 @@ def continue_dev(
     verbose: bool,
     prepare_only: bool,
 ) -> None:
-    """Start Headroom proxy for use with Continue (VS Code / JetBrains).
+    """Start Legroom proxy for use with Continue (VS Code / JetBrains).
 
     \b
     Continue reads its model configuration from .continue/config.json (a JSON
@@ -6607,10 +6607,10 @@ def continue_dev(
     existing value first.
 
     \b
-    Uninstall: there is no ``headroom unwrap continue`` subcommand. To remove
+    Uninstall: there is no ``legroom unwrap continue`` subcommand. To remove
     the injected guidance, hand-edit ``.continue/config.json`` and delete
-    everything between ``<!-- headroom:rtk-instructions -->`` and
-    ``<!-- /headroom:rtk-instructions -->`` (inclusive) from every
+    everything between ``<!-- legroom:rtk-instructions -->`` and
+    ``<!-- /legroom:rtk-instructions -->`` (inclusive) from every
     ``systemMessage`` field — both top-level and inside ``models[*]``. If
     ``lean-ctx`` mode is selected, the lean-ctx agent name ``continue`` may
     not be recognized by the local lean-ctx binary; a warning is printed in
@@ -6618,10 +6618,10 @@ def continue_dev(
 
     \b
     Examples:
-        headroom wrap continue                # Start proxy + inject systemMessage
-        headroom wrap continue --no-context-tool   # Proxy only
-        headroom wrap continue --port 9999    # Custom proxy port
-        headroom wrap continue --config path/to/config.json
+        legroom wrap continue                # Start proxy + inject systemMessage
+        legroom wrap continue --no-context-tool   # Proxy only
+        legroom wrap continue --port 9999    # Custom proxy port
+        legroom wrap continue --config path/to/config.json
     """
     config_file = config_path or (Path.cwd() / ".continue" / "config.json")
 
@@ -6712,29 +6712,29 @@ def goose(
     prepare_only: bool,
     goose_args: tuple,
 ) -> None:
-    """Launch Goose (Block) CLI through Headroom proxy.
+    """Launch Goose (Block) CLI through Legroom proxy.
 
     \b
     Sets OPENAI_BASE_URL and ANTHROPIC_BASE_URL to route Goose's API calls
-    through Headroom. Sets up the selected CLI context tool by injecting RTK
+    through Legroom. Sets up the selected CLI context tool by injecting RTK
     guidance into .goosehints at the project root (Goose reads this file as
     extra system context).
 
     \b
-    Uninstall: there is no ``headroom unwrap goose`` subcommand. To remove the
+    Uninstall: there is no ``legroom unwrap goose`` subcommand. To remove the
     injected guidance, hand-edit ``.goosehints`` at the project root and
-    delete everything between ``<!-- headroom:rtk-instructions -->`` and
-    ``<!-- /headroom:rtk-instructions -->`` (inclusive). If ``lean-ctx`` mode
+    delete everything between ``<!-- legroom:rtk-instructions -->`` and
+    ``<!-- /legroom:rtk-instructions -->`` (inclusive). If ``lean-ctx`` mode
     is selected, the lean-ctx agent name ``goose`` may not be recognized by
     the local lean-ctx binary; a warning is printed in that case and setup
     is skipped silently.
 
     \b
     Examples:
-        headroom wrap goose                          # Start proxy + context tool + goose
-        headroom wrap goose -- session               # Start a Goose session
-        headroom wrap goose -- --provider anthropic  # Pass args to goose
-        headroom wrap goose --no-context-tool        # Skip CLI context-tool setup
+        legroom wrap goose                          # Start proxy + context tool + goose
+        legroom wrap goose -- session               # Start a Goose session
+        legroom wrap goose -- --provider anthropic  # Pass args to goose
+        legroom wrap goose --no-context-tool        # Skip CLI context-tool setup
     """
     # Goose reads .goosehints from the project root as extra context.
     # Pre-compute the marker path so the KeyboardInterrupt handler can report
@@ -6838,17 +6838,17 @@ def openhands(
     prepare_only: bool,
     openhands_args: tuple,
 ) -> None:
-    """Launch OpenHands CLI through Headroom proxy.
+    """Launch OpenHands CLI through Legroom proxy.
 
     \b
     Sets OPENAI_BASE_URL / ANTHROPIC_BASE_URL to route OpenHands' API calls
-    through Headroom. Instructions are injected via the
+    through Legroom. Instructions are injected via the
     ``OPENHANDS_INSTRUCTIONS`` environment variable at launch time so the
     on-disk OpenHands config is left untouched.
 
     \b
     The ``OPENHANDS_INSTRUCTIONS`` value injected by this command contains the
-    ``<!-- headroom:rtk-instructions -->`` marker. To uninstall, simply do not
+    ``<!-- legroom:rtk-instructions -->`` marker. To uninstall, simply do not
     set ``OPENHANDS_INSTRUCTIONS`` in the parent shell — this command never
     writes to disk, so nothing to clean up. If ``lean-ctx`` mode is selected,
     the lean-ctx agent name ``openhands`` may not be recognized by the local
@@ -6857,9 +6857,9 @@ def openhands(
 
     \b
     Examples:
-        headroom wrap openhands                # Start proxy + context tool + openhands
-        headroom wrap openhands -- --task ...  # Pass args to openhands
-        headroom wrap openhands --no-context-tool
+        legroom wrap openhands                # Start proxy + context tool + openhands
+        legroom wrap openhands -- --task ...  # Pass args to openhands
+        legroom wrap openhands --no-context-tool
     """
     # openhands never writes to disk — its rtk guidance ships via the
     # OPENHANDS_INSTRUCTIONS env var below — so marker_path is None and
@@ -6965,14 +6965,14 @@ def openhands(
     help="Install by copying plugin path instead of using --link",
 )
 @click.option(
-    "--proxy-port", default=8787, type=click.IntRange(1, 65535), help="Headroom proxy port"
+    "--proxy-port", default=8787, type=click.IntRange(1, 65535), help="Legroom proxy port"
 )
 @click.option("--startup-timeout-ms", default=20000, type=int, help="Proxy startup timeout")
 @click.option(
     "--gateway-provider-id",
     "gateway_provider_ids",
     multiple=True,
-    help="OpenClaw provider id to route through Headroom (repeatable; default: openai-codex)",
+    help="OpenClaw provider id to route through Legroom (repeatable; default: openai-codex)",
 )
 @click.option(
     "--python-path",
@@ -6982,7 +6982,7 @@ def openhands(
 @click.option(
     "--no-auto-start",
     is_flag=True,
-    help="Disable plugin auto-start of local headroom proxy",
+    help="Disable plugin auto-start of local legroom proxy",
 )
 @click.option(
     "--no-restart",
@@ -7007,7 +7007,7 @@ def openclaw(
     prepare_only: bool,
     existing_entry_json: str | None,
 ) -> None:
-    """Install and configure Headroom OpenClaw plugin in one command.
+    """Install and configure Legroom OpenClaw plugin in one command.
 
     \b
     What this command does:
@@ -7019,8 +7019,8 @@ def openclaw(
 
     \b
     Example:
-      headroom wrap openclaw
-      headroom wrap openclaw --plugin-path C:\\git\\headroom\\plugins\\openclaw
+      legroom wrap openclaw
+      legroom wrap openclaw --plugin-path C:\\git\\legroom\\plugins\\openclaw
     """
     if prepare_only:
         entry = _build_openclaw_plugin_entry(
@@ -7059,7 +7059,7 @@ def openclaw(
 
     click.echo()
     click.echo("  ╔═══════════════════════════════════════════════╗")
-    click.echo("  ║           HEADROOM WRAP: OPENCLAW             ║")
+    click.echo("  ║           LEGROOM WRAP: OPENCLAW             ║")
     click.echo("  ╚═══════════════════════════════════════════════╝")
     click.echo()
     if local_source_mode:
@@ -7078,7 +7078,7 @@ def openclaw(
     if effective_python_path is None and not no_auto_start and sys.executable:
         effective_python_path = sys.executable
 
-    existing_entry = _read_openclaw_config_value(openclaw_bin, "plugins.entries.headroom")
+    existing_entry = _read_openclaw_config_value(openclaw_bin, "plugins.entries.legroom")
     entry = _build_openclaw_plugin_entry(
         existing_entry=existing_entry,
         proxy_port=proxy_port,
@@ -7141,11 +7141,11 @@ def openclaw(
 
     # Write the managed plugin entry only after a successful (or recoverable)
     # install, so a hard install failure leaves no stale
-    # plugins.entries.headroom config behind.
+    # plugins.entries.legroom config behind.
     click.echo("  Writing plugin configuration...")
     _write_openclaw_plugin_entry(openclaw_bin, entry)
 
-    _set_openclaw_context_engine_slot(openclaw_bin, "headroom")
+    _set_openclaw_context_engine_slot(openclaw_bin, "legroom")
     _run_checked(
         [openclaw_bin, "config", "validate"],
         action="openclaw config validate",
@@ -7164,16 +7164,16 @@ def openclaw(
             click.echo(gateway_output)
 
     inspect_result = _run_checked(
-        [openclaw_bin, "plugins", "inspect", "headroom"],
-        action="openclaw plugins inspect headroom",
+        [openclaw_bin, "plugins", "inspect", "legroom"],
+        action="openclaw plugins inspect legroom",
     )
     if verbose and inspect_result.stdout.strip():
         click.echo(inspect_result.stdout.strip())
 
     click.echo()
-    click.echo("✓ OpenClaw is configured to use Headroom context compression.")
-    click.echo("  Plugin: headroom")
-    click.echo("  Slot:   plugins.slots.contextEngine = headroom")
+    click.echo("✓ OpenClaw is configured to use Legroom context compression.")
+    click.echo("  Plugin: legroom")
+    click.echo("  Slot:   plugins.slots.contextEngine = legroom")
     click.echo()
 
 
@@ -7199,7 +7199,7 @@ def openclaw(
     is_flag=True,
     help="Skip rtk instruction injection into the project AGENTS.md",
 )
-@click.option("--no-mcp", is_flag=True, help="Skip headroom MCP server registration")
+@click.option("--no-mcp", is_flag=True, help="Skip legroom MCP server registration")
 @click.option("--no-serena", is_flag=True, help="Skip Serena MCP server registration")
 @click.option(
     "--code-graph",
@@ -7234,26 +7234,26 @@ def opencode(
     prepare_only: bool,
     opencode_args: tuple,
 ) -> None:
-    """Launch OpenCode through Headroom proxy.
+    """Launch OpenCode through Legroom proxy.
 
     \b
     Sets OPENCODE_CONFIG_CONTENT to route all OpenCode API calls through
-    Headroom. Configures a headroom provider via @ai-sdk/openai-compatible.
+    Legroom. Configures a legroom provider via @ai-sdk/openai-compatible.
     Also sets OPENAI_BASE_URL and ANTHROPIC_BASE_URL as fallbacks.
 
     \b
     Examples:
-        headroom wrap opencode                         # Start proxy + context tool + opencode
-        headroom wrap opencode -- "fix the bug"        # Pass prompt to opencode
-        headroom wrap opencode --no-context-tool       # Skip CLI context-tool setup
-        headroom wrap opencode --no-project-rtk        # Keep project AGENTS.md unchanged
-        headroom wrap opencode --no-mcp                # Skip MCP retrieve tool registration
-        headroom wrap opencode --no-serena             # Skip Serena MCP registration
-        headroom wrap opencode --port 9999             # Custom proxy port
-        headroom wrap opencode --backend anyllm --anyllm-provider groq
+        legroom wrap opencode                         # Start proxy + context tool + opencode
+        legroom wrap opencode -- "fix the bug"        # Pass prompt to opencode
+        legroom wrap opencode --no-context-tool       # Skip CLI context-tool setup
+        legroom wrap opencode --no-project-rtk        # Keep project AGENTS.md unchanged
+        legroom wrap opencode --no-mcp                # Skip MCP retrieve tool registration
+        legroom wrap opencode --no-serena             # Skip Serena MCP registration
+        legroom wrap opencode --port 9999             # Custom proxy port
+        legroom wrap opencode --backend anyllm --anyllm-provider groq
     """
     # Snapshot OpenCode config.json BEFORE any wrap-time mutation so
-    # `headroom unwrap opencode` can restore the user's pre-wrap state.
+    # `legroom unwrap opencode` can restore the user's pre-wrap state.
     _opencode_config_file, _opencode_backup_file = opencode_config_paths()
     snapshot_opencode_config_if_unwrapped(_opencode_config_file, _opencode_backup_file)
 
@@ -7273,31 +7273,31 @@ def opencode(
                 global_agents = _opencode_home_dir() / "AGENTS.md"
                 _inject_rtk_instructions(global_agents, verbose=verbose)
 
-    # Register headroom MCP server in OpenCode config so OpenCode can
-    # call headroom_retrieve on compression markers from the proxy.
+    # Register legroom MCP server in OpenCode config so OpenCode can
+    # call legroom_retrieve on compression markers from the proxy.
     if not no_mcp:
-        from headroom.mcp_registry import OpencodeRegistrar
+        from legroom.mcp_registry import OpencodeRegistrar
 
-        _setup_headroom_mcp(OpencodeRegistrar(), port, verbose=verbose, force=True)
+        _setup_legroom_mcp(OpencodeRegistrar(), port, verbose=verbose, force=True)
     elif verbose:
         click.echo("  Skipping MCP retrieve tool (--no-mcp)")
 
     if not no_serena:
-        from headroom.mcp_registry import OpencodeRegistrar
+        from legroom.mcp_registry import OpencodeRegistrar
 
         # Serena ships no "opencode" context (only agent/codex/claude-code/ide/…);
         # passing --context opencode crashes Serena on launch (#1549/#1572). Use
         # the generic "agent" context, which OpenCode is.
         _setup_serena_mcp(OpencodeRegistrar(), context="agent", verbose=verbose, force=True)
     else:
-        from headroom.mcp_registry import OpencodeRegistrar
+        from legroom.mcp_registry import OpencodeRegistrar
 
         _disable_serena_mcp(OpencodeRegistrar(), verbose=verbose)
 
     # Setup memory MCP server for OpenCode (native tool integration)
     if memory:
         click.echo("  Setting up memory for OpenCode...")
-        mem_dir = Path.cwd() / ".headroom"
+        mem_dir = Path.cwd() / ".legroom"
         mem_dir.mkdir(parents=True, exist_ok=True)
         mem_user = os.environ.get("USER", os.environ.get("USERNAME", "default"))
         _inject_memory_mcp_config(mem_user)
@@ -7339,18 +7339,18 @@ def opencode(
         _unregister_proxy_client(port)
         _register_proxy_client(actual_port)
         if not no_mcp:
-            from headroom.mcp_registry import OpencodeRegistrar
+            from legroom.mcp_registry import OpencodeRegistrar
 
-            _setup_headroom_mcp(OpencodeRegistrar(), actual_port, verbose=verbose, force=True)
+            _setup_legroom_mcp(OpencodeRegistrar(), actual_port, verbose=verbose, force=True)
 
     env, env_vars_display = _build_opencode_launch_env(
         actual_port, os.environ, project=_project_name_from_cwd(), include_mcp=not no_mcp
     )
 
-    # Inject Headroom provider into OpenCode config so traffic routes through proxy.
+    # Inject Legroom provider into OpenCode config so traffic routes through proxy.
     inject_opencode_provider_config(actual_port)
     if memory:
-        mem_dir = Path.cwd() / ".headroom"
+        mem_dir = Path.cwd() / ".legroom"
         _inject_memory_mcp_config(
             os.environ.get("USER", os.environ.get("USERNAME", "default")),
         )
@@ -7402,25 +7402,25 @@ def _opencode_home_dir() -> Path:
 @click.option(
     "--port", "-p", default=8787, type=click.IntRange(1, 65535), help="Proxy port (default: 8787)"
 )
-@click.option("--no-stop-proxy", is_flag=True, help="Do not stop the local Headroom proxy")
+@click.option("--no-stop-proxy", is_flag=True, help="Do not stop the local Legroom proxy")
 def unwrap_opencode(port: int, no_stop_proxy: bool) -> None:
-    """Undo ``headroom wrap opencode`` edits to the active OpenCode config file.
+    """Undo ``legroom wrap opencode`` edits to the active OpenCode config file.
 
     Behaviour:
 
-    * If a pre-wrap backup (``opencode.json.headroom-backup``) exists, the
+    * If a pre-wrap backup (``opencode.json.legroom-backup``) exists, the
       original file is restored byte-for-byte and the backup is removed.
-    * Otherwise, if the config file still contains the Headroom-managed
+    * Otherwise, if the config file still contains the Legroom-managed
       block, that block is stripped out and the rest of the file is
       preserved.
-    * If the config only ever contained Headroom-written content, the file
+    * If the config only ever contained Legroom-written content, the file
       is removed entirely so OpenCode falls back to its defaults.
-    * If neither a backup nor a Headroom block is present, this is a safe
+    * If neither a backup nor a Legroom block is present, this is a safe
       no-op.
     """
     click.echo()
     click.echo("  ╔═══════════════════════════════════════════════╗")
-    click.echo("  ║         HEADROOM UNWRAP: OPENCODE             ║")
+    click.echo("  ║         LEGROOM UNWRAP: OPENCODE             ║")
     click.echo("  ╚═══════════════════════════════════════════════╝")
     click.echo()
 
@@ -7439,49 +7439,49 @@ def unwrap_opencode(port: int, no_stop_proxy: bool) -> None:
     elif config_file.exists():
         content = _read_text(config_file)
         if _PROVIDER_MARKER_START in content or _MCP_MARKER_START in content:
-            cleaned = strip_opencode_headroom_blocks(content)
+            cleaned = strip_opencode_legroom_blocks(content)
             if cleaned.strip():
                 _write_text(config_file, cleaned + "\n")
-                click.echo(f"  Removed Headroom block from {config_file}; other content preserved.")
+                click.echo(f"  Removed Legroom block from {config_file}; other content preserved.")
                 status = "cleaned"
             else:
                 config_file.unlink()
-                click.echo(f"  Removed {config_file} (contained only Headroom-written config).")
+                click.echo(f"  Removed {config_file} (contained only Legroom-written config).")
                 status = "removed"
         else:
-            click.echo(f"  Nothing to undo: {config_file} has no Headroom wrap markers.")
+            click.echo(f"  Nothing to undo: {config_file} has no Legroom wrap markers.")
             status = "noop"
     else:
         click.echo(f"  Nothing to undo: {config_file} does not exist.")
         status = "noop"
 
-    # Remove Serena MCP if it was installed by Headroom.
-    # Also remove the headroom MCP server itself.
-    from headroom.mcp_registry import OpencodeRegistrar
+    # Remove Serena MCP if it was installed by Legroom.
+    # Also remove the legroom MCP server itself.
+    from legroom.mcp_registry import OpencodeRegistrar
 
     opencode_registrar = OpencodeRegistrar()
     if opencode_registrar.detect():
-        if opencode_registrar.unregister_server("headroom"):
-            click.echo("  Removed Headroom MCP server from OpenCode.")
-        serena_status = _remove_headroom_installed_serena_mcp(opencode_registrar)
+        if opencode_registrar.unregister_server("legroom"):
+            click.echo("  Removed Legroom MCP server from OpenCode.")
+        serena_status = _remove_legroom_installed_serena_mcp(opencode_registrar)
         if serena_status == "removed":
-            click.echo("  Removed Headroom-installed Serena MCP server from OpenCode.")
+            click.echo("  Removed Legroom-installed Serena MCP server from OpenCode.")
         elif serena_status == "failed":
-            click.echo("  Serena MCP server matched Headroom ledger but could not be removed.")
+            click.echo("  Serena MCP server matched Legroom ledger but could not be removed.")
 
     # `wrap opencode` injects the marker-fenced rtk guidance into both the project
     # `AGENTS.md` and the global `_opencode_home_dir() / "AGENTS.md"`; that block is
     # durable state the config restore above does not touch. Without removing it, a
-    # plain `opencode` launch keeps following Headroom's "prefix shell commands with
+    # plain `opencode` launch keeps following Legroom's "prefix shell commands with
     # rtk" instruction and fails when the managed rtk binary is off PATH. Mirror what
     # unwrap_codex / unwrap_copilot already do. Best-effort and unconditional, like
     # the MCP cleanup above.
     for _agents_md in (Path.cwd() / "AGENTS.md", _opencode_home_dir() / "AGENTS.md"):
         if _remove_rtk_instructions(_agents_md):
-            click.echo(f"  Removed Headroom rtk instructions from {_agents_md}.")
+            click.echo(f"  Removed Legroom rtk instructions from {_agents_md}.")
 
     click.echo()
-    click.echo("✓ OpenCode is no longer routed through the Headroom proxy.")
+    click.echo("✓ OpenCode is no longer routed through the Legroom proxy.")
     if not no_stop_proxy and status != "noop":
         _echo_unwrap_proxy_stop_status(_stop_local_proxy_for_unwrap(port), port)
     click.echo()
@@ -7489,9 +7489,9 @@ def unwrap_opencode(port: int, no_stop_proxy: bool) -> None:
 
 @unwrap.command("openclaw")
 @click.option(
-    "--proxy-port", default=8787, type=click.IntRange(1, 65535), help="Headroom proxy port"
+    "--proxy-port", default=8787, type=click.IntRange(1, 65535), help="Legroom proxy port"
 )
-@click.option("--no-stop-proxy", is_flag=True, help="Do not stop the local Headroom proxy")
+@click.option("--no-stop-proxy", is_flag=True, help="Do not stop the local Legroom proxy")
 @click.option("--no-restart", is_flag=True, help="Do not restart OpenClaw gateway at the end")
 @click.option("--verbose", "-v", is_flag=True, help="Verbose output")
 @click.option("--prepare-only", is_flag=True, hidden=True)
@@ -7504,7 +7504,7 @@ def unwrap_openclaw(
     prepare_only: bool,
     existing_entry_json: str | None,
 ) -> None:
-    """Disable the Headroom OpenClaw plugin and restore the legacy engine slot."""
+    """Disable the Legroom OpenClaw plugin and restore the legacy engine slot."""
     if prepare_only:
         click.echo(
             json.dumps(
@@ -7520,12 +7520,12 @@ def unwrap_openclaw(
 
     click.echo()
     click.echo("  ╔═══════════════════════════════════════════════╗")
-    click.echo("  ║          HEADROOM UNWRAP: OPENCLAW            ║")
+    click.echo("  ║          LEGROOM UNWRAP: OPENCLAW            ║")
     click.echo("  ╚═══════════════════════════════════════════════╝")
     click.echo()
-    click.echo("  Disabling Headroom plugin and removing engine mapping...")
+    click.echo("  Disabling Legroom plugin and removing engine mapping...")
 
-    existing_entry = _read_openclaw_config_value(openclaw_bin, "plugins.entries.headroom")
+    existing_entry = _read_openclaw_config_value(openclaw_bin, "plugins.entries.legroom")
     entry = _build_openclaw_unwrap_entry(existing_entry)
     _write_openclaw_plugin_entry(openclaw_bin, entry)
     _set_openclaw_context_engine_slot(openclaw_bin, "legacy")
@@ -7548,15 +7548,15 @@ def unwrap_openclaw(
 
     if verbose:
         inspect_result = _run_checked(
-            [openclaw_bin, "plugins", "inspect", "headroom"],
-            action="openclaw plugins inspect headroom",
+            [openclaw_bin, "plugins", "inspect", "legroom"],
+            action="openclaw plugins inspect legroom",
         )
         if inspect_result.stdout.strip():
             click.echo(inspect_result.stdout.strip())
 
     click.echo()
-    click.echo("✓ OpenClaw Headroom wrap removed.")
-    click.echo("  Plugin: headroom (installed, disabled)")
+    click.echo("✓ OpenClaw Legroom wrap removed.")
+    click.echo("  Plugin: legroom (installed, disabled)")
     click.echo("  Slot:   plugins.slots.contextEngine = legacy")
     if not no_stop_proxy:
         _echo_unwrap_proxy_stop_status(_stop_local_proxy_for_unwrap(proxy_port), proxy_port)
@@ -7572,12 +7572,12 @@ def unwrap_openclaw(
 @click.option(
     "--port", "-p", default=8787, type=click.IntRange(1, 65535), help="Proxy port (default: 8787)"
 )
-@click.option("--no-stop-proxy", is_flag=True, help="Do not stop the local Headroom proxy")
+@click.option("--no-stop-proxy", is_flag=True, help="Do not stop the local Legroom proxy")
 def unwrap_grok_build(port: int, no_stop_proxy: bool) -> None:
-    """Undo ``headroom wrap grok-build`` edits to the active Grok config file."""
+    """Undo ``legroom wrap grok-build`` edits to the active Grok config file."""
     click.echo()
     click.echo("  ╔═══════════════════════════════════════════════╗")
-    click.echo("  ║         HEADROOM UNWRAP: GROK BUILD          ║")
+    click.echo("  ║         LEGROOM UNWRAP: GROK BUILD          ║")
     click.echo("  ╚═══════════════════════════════════════════════╝")
     click.echo()
 
@@ -7589,21 +7589,21 @@ def unwrap_grok_build(port: int, no_stop_proxy: bool) -> None:
     if status == "restored":
         click.echo(f"  Restored prior {config_file} from pre-wrap backup.")
     elif status == "cleaned":
-        click.echo(f"  Removed Headroom block from {config_file}; other content preserved.")
+        click.echo(f"  Removed Legroom block from {config_file}; other content preserved.")
     elif status == "removed":
-        click.echo(f"  Removed {config_file} (contained only Headroom-written config).")
+        click.echo(f"  Removed {config_file} (contained only Legroom-written config).")
     else:
         if not os.environ.get("GROK_HOME"):
             click.echo(
-                "  Warning: found no Headroom wrap markers in the default Grok config. "
+                "  Warning: found no Legroom wrap markers in the default Grok config. "
                 "If you wrapped Grok Build with GROK_HOME, rerun unwrap with the same "
                 "environment variable, e.g. GROK_HOME=/path/to/grok-home "
-                "headroom unwrap grok-build."
+                "legroom unwrap grok-build."
             )
-        click.echo(f"  Nothing to undo: {config_file} has no Headroom wrap markers.")
+        click.echo(f"  Nothing to undo: {config_file} has no Legroom wrap markers.")
 
     click.echo()
-    click.echo("✓ Grok Build is no longer routed through the Headroom proxy.")
+    click.echo("✓ Grok Build is no longer routed through the Legroom proxy.")
     if not no_stop_proxy and status != "noop":
         _echo_unwrap_proxy_stop_status(_stop_local_proxy_for_unwrap(port), port)
     click.echo()
@@ -7613,28 +7613,28 @@ def unwrap_grok_build(port: int, no_stop_proxy: bool) -> None:
 @click.option(
     "--port", "-p", default=8787, type=click.IntRange(1, 65535), help="Proxy port (default: 8787)"
 )
-@click.option("--no-stop-proxy", is_flag=True, help="Do not stop the local Headroom proxy")
+@click.option("--no-stop-proxy", is_flag=True, help="Do not stop the local Legroom proxy")
 def unwrap_codex(port: int, no_stop_proxy: bool) -> None:
-    """Undo ``headroom wrap codex`` edits to the active Codex config file.
+    """Undo ``legroom wrap codex`` edits to the active Codex config file.
 
     Behaviour:
 
-    * If a pre-wrap backup (``config.toml.headroom-backup``) exists, the
+    * If a pre-wrap backup (``config.toml.legroom-backup``) exists, the
       original file is restored byte-for-byte and the backup is removed.
-    * Otherwise, if the config file still contains the Headroom-managed
+    * Otherwise, if the config file still contains the Legroom-managed
       block, that block is stripped out and the rest of the file is
       preserved.
-    * If the config only ever contained Headroom-written content, the file
+    * If the config only ever contained Legroom-written content, the file
       is removed entirely so Codex falls back to its defaults.
-    * If neither a backup nor a Headroom block is present, this is a safe
+    * If neither a backup nor a Legroom block is present, this is a safe
       no-op (the user either never wrapped that config, or already unwrapped
-      it). When ``CODEX_HOME`` is unset, print a warning hint because Headroom
+      it). When ``CODEX_HOME`` is unset, print a warning hint because Legroom
       may be looking at the default config while Codex was wrapped with a
       custom home.
     """
     click.echo()
     click.echo("  ╔═══════════════════════════════════════════════╗")
-    click.echo("  ║           HEADROOM UNWRAP: CODEX              ║")
+    click.echo("  ║           LEGROOM UNWRAP: CODEX              ║")
     click.echo("  ╚═══════════════════════════════════════════════╝")
     click.echo()
 
@@ -7646,57 +7646,57 @@ def unwrap_codex(port: int, no_stop_proxy: bool) -> None:
     if status == "restored":
         click.echo(f"  Restored prior {config_file} from pre-wrap backup.")
     elif status == "cleaned":
-        click.echo(f"  Removed Headroom block from {config_file}; other content preserved.")
+        click.echo(f"  Removed Legroom block from {config_file}; other content preserved.")
     elif status == "removed":
-        click.echo(f"  Removed {config_file} (contained only Headroom-written config).")
+        click.echo(f"  Removed {config_file} (contained only Legroom-written config).")
     else:
         if not os.environ.get("CODEX_HOME"):
             click.echo(
-                "  Warning: found no Headroom wrap markers in the default Codex config. "
+                "  Warning: found no Legroom wrap markers in the default Codex config. "
                 "If you wrapped Codex with CODEX_HOME, rerun unwrap with the same "
                 "environment variable, e.g. CODEX_HOME=/path/to/codex-home "
-                "headroom unwrap codex."
+                "legroom unwrap codex."
             )
-        click.echo(f"  Nothing to undo: {config_file} has no Headroom wrap markers.")
+        click.echo(f"  Nothing to undo: {config_file} has no Legroom wrap markers.")
 
     # tokensave and Serena are each written as their own [mcp_servers.<name>]
-    # table with Headroom markers, separate from the provider block handled
+    # table with Legroom markers, separate from the provider block handled
     # above — a "cleaned" restore leaves them behind. Remove them explicitly
     # (only if we installed them), mirroring unwrap_claude. Runs after the
     # restore so a backup-restore that already dropped them is a safe no-op.
-    from headroom.mcp_registry import CodexRegistrar
+    from legroom.mcp_registry import CodexRegistrar
 
     codex_registrar = CodexRegistrar()
     if codex_registrar.detect():
-        tokensave_status = _remove_headroom_installed_tokensave_mcp(codex_registrar)
+        tokensave_status = _remove_legroom_installed_tokensave_mcp(codex_registrar)
         if tokensave_status == "removed":
-            click.echo("  Removed Headroom-installed tokensave MCP server from Codex.")
+            click.echo("  Removed Legroom-installed tokensave MCP server from Codex.")
         elif tokensave_status == "failed":
-            click.echo("  tokensave MCP server matched Headroom ledger but could not be removed.")
+            click.echo("  tokensave MCP server matched Legroom ledger but could not be removed.")
 
-        serena_status = _remove_headroom_installed_serena_mcp(codex_registrar)
+        serena_status = _remove_legroom_installed_serena_mcp(codex_registrar)
         if serena_status == "removed":
-            click.echo("  Removed Headroom-installed Serena MCP server from Codex.")
+            click.echo("  Removed Legroom-installed Serena MCP server from Codex.")
         elif serena_status == "failed":
-            click.echo("  Serena MCP server matched Headroom ledger but could not be removed.")
+            click.echo("  Serena MCP server matched Legroom ledger but could not be removed.")
 
     # `wrap codex` injects the marker-fenced rtk guidance into the Codex global
     # AGENTS.md (`_codex_home_dir() / "AGENTS.md"`); that block is durable state
     # the config restore above does not touch. Without removing it, a plain
-    # `codex` launch keeps following Headroom's "prefix shell commands with rtk"
+    # `codex` launch keeps following Legroom's "prefix shell commands with rtk"
     # instruction and fails when the managed rtk binary is off PATH. Mirror what
     # unwrap_copilot already does. Best-effort and unconditional, like the MCP
     # cleanup above.
     if _remove_rtk_instructions(_codex_home_dir() / "AGENTS.md"):
-        click.echo("  Removed Headroom rtk instructions from Codex AGENTS.md.")
+        click.echo("  Removed Legroom rtk instructions from Codex AGENTS.md.")
 
     if status in {"restored", "cleaned", "removed"}:
         # Hand the threads back to the native-provider menu so the full history
-        # stays visible once Codex no longer routes through Headroom. Best-effort.
+        # stays visible once Codex no longer routes through Legroom. Best-effort.
         retag_to_native(_codex_home_dir())
 
     click.echo()
-    click.echo("✓ Codex is no longer routed through the Headroom proxy.")
+    click.echo("✓ Codex is no longer routed through the Legroom proxy.")
     if not no_stop_proxy and status != "noop":
         _echo_unwrap_proxy_stop_status(_stop_local_proxy_for_unwrap(port), port)
     click.echo()
@@ -7741,13 +7741,13 @@ def omp(
     prepare_only: bool,
     omp_args: tuple,
 ) -> None:
-    """Launch Oh My Pi (omp) through Headroom proxy.
+    """Launch Oh My Pi (omp) through Legroom proxy.
 
     \b
-    Points omp's built-in `anthropic` provider at Headroom by injecting a
+    Points omp's built-in `anthropic` provider at Legroom by injecting a
     marker-fenced `providers.anthropic.baseUrl` override into
     ~/.omp/agent/models.yml (pre-wrap file backed up byte-for-byte; undo with
-    `headroom unwrap omp`). omp resolves its Anthropic chat endpoint from
+    `legroom unwrap omp`). omp resolves its Anthropic chat endpoint from
     models.yml — ANTHROPIC_BASE_URL only affects its web-search helper — and a
     same-ID override keeps omp's bundled model catalog and stored credentials.
     omp's other providers (OpenAI-direct, Gemini, ...) keep their normal
@@ -7755,11 +7755,11 @@ def omp(
 
     \b
     Examples:
-        headroom wrap omp                       # Start proxy + context tool + omp
-        headroom wrap omp -- -p "fix the bug"   # omp in non-interactive print mode
-        headroom wrap omp -- --model opus       # Pick a model (fuzzy match)
-        headroom wrap omp --no-context-tool     # Skip CLI context-tool setup
-        headroom unwrap omp                     # Restore pre-wrap models.yml
+        legroom wrap omp                       # Start proxy + context tool + omp
+        legroom wrap omp -- -p "fix the bug"   # omp in non-interactive print mode
+        legroom wrap omp -- --model opus       # Pick a model (fuzzy match)
+        legroom wrap omp --no-context-tool     # Skip CLI context-tool setup
+        legroom unwrap omp                     # Restore pre-wrap models.yml
     """
     # Setup CLI context tool for omp — it reads AGENTS.md from the project root.
     if not no_rtk:
@@ -7812,9 +7812,9 @@ def omp(
 @click.option(
     "--port", "-p", default=8787, type=click.IntRange(1, 65535), help="Proxy port (default: 8787)"
 )
-@click.option("--no-stop-proxy", is_flag=True, help="Do not stop the local Headroom proxy")
+@click.option("--no-stop-proxy", is_flag=True, help="Do not stop the local Legroom proxy")
 def unwrap_omp(port: int, no_stop_proxy: bool) -> None:
-    """Undo ``headroom wrap omp`` edits to omp's models.yml.
+    """Undo ``legroom wrap omp`` edits to omp's models.yml.
 
     Restores the byte-for-byte pre-wrap backup when one exists, or removes the
     wrap-created file when there was no models.yml before wrapping. A
@@ -7827,13 +7827,13 @@ def unwrap_omp(port: int, no_stop_proxy: bool) -> None:
     elif status == "removed":
         click.echo(f"  Removed wrap-created models.yml: {_omp_models_yml_path()}")
     else:
-        click.echo("  No Headroom-managed models.yml found — nothing to restore.")
+        click.echo("  No Legroom-managed models.yml found — nothing to restore.")
 
     if _remove_rtk_instructions(Path.cwd() / "AGENTS.md"):
-        click.echo("  Removed Headroom rtk instructions from AGENTS.md.")
+        click.echo("  Removed Legroom rtk instructions from AGENTS.md.")
 
     click.echo()
-    click.echo("✓ omp is no longer routed through the Headroom proxy.")
+    click.echo("✓ omp is no longer routed through the Legroom proxy.")
     if not no_stop_proxy and status != "noop":
         _echo_unwrap_proxy_stop_status(_stop_local_proxy_for_unwrap(port), port)
     click.echo()
@@ -7848,54 +7848,54 @@ def unwrap_omp(port: int, no_stop_proxy: bool) -> None:
 @click.option(
     "--port", "-p", default=8787, type=click.IntRange(1, 65535), help="Proxy port (default: 8787)"
 )
-@click.option("--no-stop-proxy", is_flag=True, help="Do not stop the local Headroom proxy")
+@click.option("--no-stop-proxy", is_flag=True, help="Do not stop the local Legroom proxy")
 def unwrap_grok(port: int, no_stop_proxy: bool) -> None:
-    """Undo durable ``headroom wrap grok`` MCP and guidance edits.
+    """Undo durable ``legroom wrap grok`` MCP and guidance edits.
 
     Grok API routing is session-scoped via ``GROK_CLI_CHAT_PROXY_BASE_URL`` and
-    does not require config restoration. This command removes Headroom MCP
+    does not require config restoration. This command removes Legroom MCP
     servers from ``~/.grok/config.toml`` and strips injected RTK guidance from
     the project ``AGENTS.md``.
     """
     click.echo()
     click.echo("  ╔═══════════════════════════════════════════════╗")
-    click.echo("  ║            HEADROOM UNWRAP: GROK              ║")
+    click.echo("  ║            LEGROOM UNWRAP: GROK              ║")
     click.echo("  ╚═══════════════════════════════════════════════╝")
     click.echo()
 
-    from headroom.mcp_registry import GrokRegistrar
+    from legroom.mcp_registry import GrokRegistrar
 
     grok_registrar = GrokRegistrar()
     removed_any = False
     if grok_registrar.detect():
-        tokensave_status = _remove_headroom_installed_tokensave_mcp(grok_registrar)
+        tokensave_status = _remove_legroom_installed_tokensave_mcp(grok_registrar)
         if tokensave_status == "removed":
-            click.echo("  Removed Headroom-installed tokensave MCP server from Grok.")
+            click.echo("  Removed Legroom-installed tokensave MCP server from Grok.")
             removed_any = True
         elif tokensave_status == "failed":
-            click.echo("  tokensave MCP server matched Headroom ledger but could not be removed.")
+            click.echo("  tokensave MCP server matched Legroom ledger but could not be removed.")
 
-        serena_status = _remove_headroom_installed_serena_mcp(grok_registrar)
+        serena_status = _remove_legroom_installed_serena_mcp(grok_registrar)
         if serena_status == "removed":
-            click.echo("  Removed Headroom-installed Serena MCP server from Grok.")
+            click.echo("  Removed Legroom-installed Serena MCP server from Grok.")
             removed_any = True
         elif serena_status == "failed":
-            click.echo("  Serena MCP server matched Headroom ledger but could not be removed.")
+            click.echo("  Serena MCP server matched Legroom ledger but could not be removed.")
 
-        if grok_registrar.unregister_server("headroom"):
-            click.echo("  Removed Headroom MCP server from Grok config.")
+        if grok_registrar.unregister_server("legroom"):
+            click.echo("  Removed Legroom MCP server from Grok config.")
             removed_any = True
 
     if _remove_rtk_instructions(Path.cwd() / "AGENTS.md"):
-        click.echo("  Removed Headroom rtk instructions from project AGENTS.md.")
+        click.echo("  Removed Legroom rtk instructions from project AGENTS.md.")
         removed_any = True
 
     if not removed_any:
-        click.echo("  Nothing to undo: no Headroom MCP markers or rtk guidance found.")
+        click.echo("  Nothing to undo: no Legroom MCP markers or rtk guidance found.")
 
     click.echo()
-    click.echo("✓ Grok is no longer configured for Headroom MCP retrieval.")
-    click.echo("  Start Grok without `headroom wrap grok` so API traffic skips the proxy.")
+    click.echo("✓ Grok is no longer configured for Legroom MCP retrieval.")
+    click.echo("  Start Grok without `legroom wrap grok` so API traffic skips the proxy.")
     if not no_stop_proxy and removed_any:
         _echo_unwrap_proxy_stop_status(_stop_local_proxy_for_unwrap(port), port)
     click.echo()
@@ -7910,30 +7910,30 @@ def unwrap_grok(port: int, no_stop_proxy: bool) -> None:
 @click.option(
     "--port", "-p", default=8787, type=click.IntRange(1, 65535), help="Proxy port (default: 8787)"
 )
-@click.option("--no-stop-proxy", is_flag=True, help="Do not stop the local Headroom proxy")
+@click.option("--no-stop-proxy", is_flag=True, help="Do not stop the local Legroom proxy")
 def unwrap_zcode(port: int, no_stop_proxy: bool) -> None:
-    """Undo ``headroom wrap zcode`` edits to AGENTS.md.
+    """Undo ``legroom wrap zcode`` edits to AGENTS.md.
 
     Removes RTK instructions injected into AGENTS.md at the project root.
     If the file only contained RTK instructions, it is deleted entirely.
     """
     click.echo()
     click.echo("  ╔═══════════════════════════════════════════════╗")
-    click.echo("  ║           HEADROOM UNWRAP: ZCODE             ║")
+    click.echo("  ║           LEGROOM UNWRAP: ZCODE             ║")
     click.echo("  ╚═══════════════════════════════════════════════╝")
     click.echo()
 
     agents_md = Path.cwd() / "AGENTS.md"
     if _remove_rtk_instructions(agents_md):
-        click.echo(f"  Removed Headroom rtk instructions from {agents_md}")
+        click.echo(f"  Removed Legroom rtk instructions from {agents_md}")
         if agents_md.exists() and not agents_md.read_text().strip():
             agents_md.unlink()
             click.echo(f"  Removed empty {agents_md}")
     else:
-        click.echo(f"  Nothing to undo: {agents_md} has no Headroom RTK markers.")
+        click.echo(f"  Nothing to undo: {agents_md} has no Legroom RTK markers.")
 
     click.echo()
-    click.echo("✓ ZCode is no longer routed through the Headroom proxy.")
+    click.echo("✓ ZCode is no longer routed through the Legroom proxy.")
     if not no_stop_proxy:
         _echo_unwrap_proxy_stop_status(_stop_local_proxy_for_unwrap(port), port)
     click.echo()

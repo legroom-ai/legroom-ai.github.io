@@ -1,19 +1,19 @@
-"""Headroom MCP Server — Context engineering toolkit for AI coding tools.
+"""Legroom MCP Server — Context engineering toolkit for AI coding tools.
 
-Exposes Headroom's compression, retrieval, and observability as MCP tools
+Exposes Legroom's compression, retrieval, and observability as MCP tools
 that any MCP-compatible host (Claude Code, Cursor, Codex, etc.) can use.
 
 Tools:
-    headroom_compress   — Compress content on demand (no proxy needed)
-    headroom_retrieve   — Retrieve original uncompressed content by hash
-    headroom_stats      — Session compression statistics
+    legroom_compress   — Compress content on demand (no proxy needed)
+    legroom_retrieve   — Retrieve original uncompressed content by hash
+    legroom_stats      — Session compression statistics
 
 Usage:
     # As standalone server (stdio transport, called by AI coding tools)
-    headroom mcp serve
+    legroom mcp serve
 
     # Add to Claude Code
-    headroom mcp install
+    legroom mcp install
 
 When running standalone (no proxy), compression and retrieval happen locally
 in this process. When a proxy is running, retrieval can also fetch from the
@@ -33,9 +33,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from headroom import paths as _paths
-from headroom import savings_ledger
-from headroom.cache.compression_store import format_retrieval_miss_detail
+from legroom import paths as _paths
+from legroom import savings_ledger
+from legroom.cache.compression_store import format_retrieval_miss_detail
 
 # fcntl is Unix-only; on Windows we skip file locking (stats are best-effort).
 # Keep the module typed as Any so Windows mypy runs don't try to resolve Unix-only attrs.
@@ -69,16 +69,16 @@ except ImportError:
     HTTPX_AVAILABLE = False
     httpx = None  # type: ignore[assignment]
 
-CCR_TOOL_NAME = "headroom_retrieve"
-COMPRESS_TOOL_NAME = "headroom_compress"
-STATS_TOOL_NAME = "headroom_stats"
-READ_TOOL_NAME = "headroom_read"
+CCR_TOOL_NAME = "legroom_retrieve"
+COMPRESS_TOOL_NAME = "legroom_compress"
+STATS_TOOL_NAME = "legroom_stats"
+READ_TOOL_NAME = "legroom_read"
 
-logger = logging.getLogger("headroom.ccr.mcp")
+logger = logging.getLogger("legroom.ccr.mcp")
 
-# Feature flag: enable headroom_read tool (file read caching via CCR)
-# Set HEADROOM_MCP_READ=on to enable
-_READ_ENABLED = os.environ.get("HEADROOM_MCP_READ", "off").lower().strip() in (
+# Feature flag: enable legroom_read tool (file read caching via CCR)
+# Set LEGROOM_MCP_READ=on to enable
+_READ_ENABLED = os.environ.get("LEGROOM_MCP_READ", "off").lower().strip() in (
     "on",
     "true",
     "1",
@@ -86,7 +86,7 @@ _READ_ENABLED = os.environ.get("HEADROOM_MCP_READ", "off").lower().strip() in (
     "enabled",
 )
 
-DEFAULT_PROXY_URL = os.environ.get("HEADROOM_PROXY_URL", "http://127.0.0.1:8787")
+DEFAULT_PROXY_URL = os.environ.get("LEGROOM_PROXY_URL", "http://127.0.0.1:8787")
 
 # How often the parent-death watchdog polls os.getppid() (seconds). When the
 # launching MCP client is SIGKILLed, stdin EOF may never arrive and the SDK's
@@ -102,7 +102,7 @@ def _format_session_summary(
 ) -> str:
     """Format the proxy summary + local MCP stats into clean readable text."""
     lines: list[str] = []
-    lines.append("Headroom Window-Scoped Session Summary")
+    lines.append("Legroom Window-Scoped Session Summary")
     lines.append("=" * 40)
 
     mode = summary.get("mode", "token")
@@ -146,14 +146,14 @@ def _format_session_summary(
 
     # Cost section
     cost = summary.get("cost", {})
-    without = cost.get("without_headroom_usd", 0)
-    with_hr = cost.get("with_headroom_usd", 0)
+    without = cost.get("without_legroom_usd", 0)
+    with_hr = cost.get("with_legroom_usd", 0)
     saved = cost.get("total_saved_usd", 0)
     pct = cost.get("savings_pct", 0)
     if without > 0:
         lines.append("Cost Impact:")
-        lines.append(f"  Without Headroom:  ${without:.2f}")
-        lines.append(f"  With Headroom:     ${with_hr:.2f}")
+        lines.append(f"  Without Legroom:  ${without:.2f}")
+        lines.append(f"  With Legroom:     ${with_hr:.2f}")
         lines.append(f"  You saved:         ${saved:.2f} ({pct}%)")
         breakdown = cost.get("breakdown", {})
         cache_s = breakdown.get("cache_savings_usd", 0)
@@ -197,8 +197,8 @@ def _format_session_summary(
 MCP_SESSION_TTL = 3600
 
 # Shared stats file: all MCP instances (main + sub-agents) append here.
-# headroom_stats aggregates across all instances within the session window.
-# Respects HEADROOM_WORKSPACE_DIR.
+# legroom_stats aggregates across all instances within the session window.
+# Respects LEGROOM_WORKSPACE_DIR.
 SHARED_STATS_DIR = _paths.workspace_dir()
 SHARED_STATS_FILE = _paths.session_stats_path()
 SESSION_WINDOW_SECONDS = 7200  # 2 hours — events older than this are pruned
@@ -350,15 +350,15 @@ class SessionStats:
         }
 
 
-class HeadroomMCPServer:
-    """MCP Server exposing Headroom's context engineering toolkit.
+class LegroomMCPServer:
+    """MCP Server exposing Legroom's context engineering toolkit.
 
     Tools:
-        headroom_compress — Compress content on demand. Stores original for
+        legroom_compress — Compress content on demand. Stores original for
                            retrieval. Works without a proxy.
-        headroom_retrieve — Retrieve original uncompressed content by hash.
+        legroom_retrieve — Retrieve original uncompressed content by hash.
                            Checks local store first, then proxy if configured.
-        headroom_stats    — Session statistics: compressions, savings, cost.
+        legroom_stats    — Session statistics: compressions, savings, cost.
 
     Modes:
         Standalone: Compression + retrieval happen locally. No proxy needed.
@@ -383,7 +383,7 @@ class HeadroomMCPServer:
         if not MCP_AVAILABLE or Server is None:
             raise ImportError("MCP SDK not installed. Install with: pip install mcp")
 
-        self.server: Server = Server("headroom")
+        self.server: Server = Server("legroom")
         self._setup_handlers()
 
     def _get_local_store(self) -> Any:
@@ -395,17 +395,17 @@ class HeadroomMCPServer:
         passes its own per-entry ``ttl`` at store time.
         """
         if self._local_store is None:
-            from headroom.cache.compression_store import get_compression_store
+            from legroom.cache.compression_store import get_compression_store
 
             self._local_store = get_compression_store()
         return self._local_store
 
     def _compress_content(self, content: str) -> dict[str, Any]:
-        """Compress content using Headroom's pipeline.
+        """Compress content using Legroom's pipeline.
 
         Returns dict with compressed text, token counts, hash, etc.
         """
-        from headroom.compress import compress
+        from legroom.compress import compress
 
         # Wrap content as a tool message (most common compression target)
         messages = [{"role": "tool", "content": content}]
@@ -440,7 +440,7 @@ class HeadroomMCPServer:
         # convention in ``_Stats.record_compression`` above. The previous
         # ``(1 - result.compression_ratio)`` inverted the value: since
         # ``compression_ratio`` is already the *saved* fraction (see
-        # ``CompressResult`` in headroom/compress.py — "0.0 = no savings, 1.0 =
+        # ``CompressResult`` in legroom/compress.py — "0.0 = no savings, 1.0 =
         # 100% removed"), the old expression reported the *retained* percentage,
         # e.g. a no-op (0% saved) was reported as 100%.
         savings_pct = round((1 - output_tokens / input_tokens) * 100, 1) if input_tokens > 0 else 0
@@ -453,7 +453,7 @@ class HeadroomMCPServer:
             "tokens_saved": max(0, input_tokens - output_tokens),
             "savings_percent": savings_pct,
             "transforms": result.transforms_applied,
-            "note": f"Original stored with hash={hash_key}. Use mcp__headroom__{CCR_TOOL_NAME} to get full content later.",
+            "note": f"Original stored with hash={hash_key}. Use mcp__legroom__{CCR_TOOL_NAME} to get full content later.",
         }
 
     async def _retrieve_content(
@@ -530,7 +530,7 @@ class HeadroomMCPServer:
             "hint": "To recover: if the compression marker references a file Read, "
             "re-read that file (the path is in the marker; disk is the source of "
             "truth). If it was command output, re-run the command. Content "
-            "compressed via headroom_compress is stored for the session; content "
+            "compressed via legroom_compress is stored for the session; content "
             "compressed by the proxy uses the configured CCR TTL.",
         }
 
@@ -618,7 +618,7 @@ class HeadroomMCPServer:
                         "Compress content to save context window space. "
                         "Use this on large tool outputs, file contents, search results, "
                         "or any content you want to shrink before reasoning over it. "
-                        f"The original is stored and can be retrieved later via mcp__headroom__{CCR_TOOL_NAME}. "
+                        f"The original is stored and can be retrieved later via mcp__legroom__{CCR_TOOL_NAME}. "
                         "Returns compressed text + a hash for retrieval."
                     ),
                     inputSchema={
@@ -640,7 +640,7 @@ class HeadroomMCPServer:
                     description=(
                         "Retrieve original uncompressed content by hash. "
                         "Use this when you need full details from previously compressed content. "
-                        "The hash comes from headroom_compress results or from compression "
+                        "The hash comes from legroom_compress results or from compression "
                         "markers like [N items compressed... hash=abc123]."
                     ),
                     inputSchema={
@@ -669,7 +669,7 @@ class HeadroomMCPServer:
                 ),
             ]
 
-            # Conditionally add headroom_read (behind feature flag)
+            # Conditionally add legroom_read (behind feature flag)
             if _READ_ENABLED:
                 tools.append(
                     Tool(
@@ -678,7 +678,7 @@ class HeadroomMCPServer:
                             "Read a file with smart caching. First read returns full content "
                             "and caches it. Subsequent reads of the same unchanged file return "
                             "a lightweight cache marker (~20 tokens instead of thousands). "
-                            f"Use mcp__headroom__{CCR_TOOL_NAME} with the hash to get full content if needed. "
+                            f"Use mcp__legroom__{CCR_TOOL_NAME} with the hash to get full content if needed. "
                             "Use this INSTEAD of the built-in Read tool for significant token savings."
                         ),
                         inputSchema={
@@ -749,7 +749,7 @@ class HeadroomMCPServer:
                 ]
 
     async def _handle_compress(self, arguments: dict[str, Any]) -> list[TextContent]:
-        """Handle headroom_compress tool call."""
+        """Handle legroom_compress tool call."""
         content = arguments.get("content")
         if not content:
             return [
@@ -763,7 +763,7 @@ class HeadroomMCPServer:
         loop = asyncio.get_running_loop()
         result = await loop.run_in_executor(None, self._compress_content, content)
 
-        # Record durably so `headroom savings` reflects this compression across
+        # Record durably so `legroom savings` reflects this compression across
         # restarts. Best-effort: never let savings bookkeeping break the tool.
         try:
             self._record_savings(result)
@@ -791,14 +791,14 @@ class HeadroomMCPServer:
             tokens_after=after,
             # The MCP tool doesn't know the agent's upstream model; an optional
             # hint lets a host attribute it, otherwise it records as "unknown".
-            model=os.environ.get("HEADROOM_MCP_MODEL"),
+            model=os.environ.get("LEGROOM_MCP_MODEL"),
             client=self._current_client(),
             source="mcp",
         )
 
     def _current_client(self) -> str:
         """Name of the MCP client driving this session (best-effort)."""
-        override = os.environ.get("HEADROOM_MCP_CLIENT")
+        override = os.environ.get("LEGROOM_MCP_CLIENT")
         if override:
             return override
         try:
@@ -812,7 +812,7 @@ class HeadroomMCPServer:
         return "unknown"
 
     async def _handle_retrieve(self, arguments: dict[str, Any]) -> list[TextContent]:
-        """Handle headroom_retrieve tool call."""
+        """Handle legroom_retrieve tool call."""
         hash_key = arguments.get("hash")
         if not hash_key:
             return [
@@ -833,7 +833,7 @@ class HeadroomMCPServer:
         return [TextContent(type="text", text=json.dumps(result, indent=2))]
 
     async def _handle_stats(self) -> list[TextContent]:
-        """Handle headroom_stats tool call."""
+        """Handle legroom_stats tool call."""
         stats = self._stats.to_dict()
 
         # Add local store stats if available
@@ -931,7 +931,7 @@ class HeadroomMCPServer:
         return result if result else None
 
     async def _handle_read(self, arguments: dict[str, Any]) -> list[TextContent]:
-        """Handle headroom_read tool call — file read with session caching."""
+        """Handle legroom_read tool call — file read with session caching."""
         import hashlib
 
         file_path = arguments.get("file_path", "")
@@ -962,12 +962,12 @@ class HeadroomMCPServer:
             ]
 
         # Read file from disk. PR-A8 / P1-8: avoid lossy decode kwargs
-        # in headroom/ccr/ — use the centralized safe-log decoder so
+        # in legroom/ccr/ — use the centralized safe-log decoder so
         # the project-wide grep stays clean (this path is for tool
         # output display, not SSE/wire path, so a replacement char on
         # invalid bytes is acceptable).
         try:
-            from headroom.proxy.helpers import safe_decode_for_logging
+            from legroom.proxy.helpers import safe_decode_for_logging
 
             content = safe_decode_for_logging(path.read_bytes())
         except Exception as e:
@@ -1004,7 +1004,7 @@ class HeadroomMCPServer:
                                     "note": (
                                         f"File unchanged since first read ({cached_lines} lines, "
                                         f"~{cached_tokens} tokens). Content already in your context "
-                                        f"from the first read. Call mcp__headroom__{CCR_TOOL_NAME}(hash='{ccr_hash}') "
+                                        f"from the first read. Call mcp__legroom__{CCR_TOOL_NAME}(hash='{ccr_hash}') "
                                         f"if you need the full content again."
                                     ),
                                 },
@@ -1023,7 +1023,7 @@ class HeadroomMCPServer:
             compressed=f"[File: {path.name}, {line_count} lines]",
             original_tokens=len(content.split()),
             compressed_tokens=5,
-            tool_name="headroom_read",
+            tool_name="legroom_read",
             ttl=MCP_SESSION_TTL,
         )
 
@@ -1075,7 +1075,7 @@ class HeadroomMCPServer:
         watchdog forces shutdown once we are reparented.
         """
         async with stdio_server() as (read_stream, write_stream):
-            logger.info(f"Headroom MCP Server starting (proxy: {self.proxy_url})")
+            logger.info(f"Legroom MCP Server starting (proxy: {self.proxy_url})")
             serve_task = asyncio.create_task(
                 self.server.run(
                     read_stream,
@@ -1135,28 +1135,28 @@ class HeadroomMCPServer:
 def create_ccr_mcp_server(
     proxy_url: str = DEFAULT_PROXY_URL,
     direct_mode: bool = False,
-) -> HeadroomMCPServer:
-    """Create a Headroom MCP server instance.
+) -> LegroomMCPServer:
+    """Create a Legroom MCP server instance.
 
     Args:
-        proxy_url: URL of the Headroom proxy server (for retrieval fallback).
+        proxy_url: URL of the Legroom proxy server (for retrieval fallback).
         direct_mode: Ignored (kept for backward compatibility).
 
     Returns:
-        HeadroomMCPServer instance.
+        LegroomMCPServer instance.
     """
-    return HeadroomMCPServer(proxy_url=proxy_url)
+    return LegroomMCPServer(proxy_url=proxy_url)
 
 
 async def main() -> None:
-    """Run the Headroom MCP server."""
+    """Run the Legroom MCP server."""
     parser = argparse.ArgumentParser(
-        description="Headroom MCP Server — Context engineering toolkit"
+        description="Legroom MCP Server — Context engineering toolkit"
     )
     parser.add_argument(
         "--proxy-url",
         default=DEFAULT_PROXY_URL,
-        help=f"Headroom proxy URL for retrieval fallback (default: {DEFAULT_PROXY_URL})",
+        help=f"Legroom proxy URL for retrieval fallback (default: {DEFAULT_PROXY_URL})",
     )
     parser.add_argument(
         "--direct",
@@ -1176,7 +1176,7 @@ async def main() -> None:
     else:
         logging.basicConfig(level=logging.WARNING)
 
-    server = HeadroomMCPServer(proxy_url=args.proxy_url)
+    server = LegroomMCPServer(proxy_url=args.proxy_url)
 
     try:
         await server.run_stdio()

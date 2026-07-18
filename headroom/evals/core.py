@@ -1,4 +1,4 @@
-"""Core evaluation infrastructure for Headroom.
+"""Core evaluation infrastructure for Legroom.
 
 This module provides the foundation for proving that compression
 preserves LLM accuracy through rigorous A/B testing.
@@ -15,7 +15,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-from headroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
+from legroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
 
 
 class EvalMode(Enum):
@@ -275,7 +275,7 @@ class CompressionEvaluator:
         Runs the query against both original and compressed context,
         then compares the responses.
         """
-        from headroom.evals.metrics import (
+        from legroom.evals.metrics import (
             compute_exact_match,
             compute_f1,
         )

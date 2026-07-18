@@ -16,8 +16,8 @@ def split_beta_tokens(value: str | None) -> list[str]:
     return out
 
 
-def merge_beta_tokens(client_value: str | None, headroom_required: list[str]) -> str:
-    """Merge client beta tokens with Headroom-required tokens deterministically."""
+def merge_beta_tokens(client_value: str | None, legroom_required: list[str]) -> str:
+    """Merge client beta tokens with Legroom-required tokens deterministically."""
 
     seen_lower: set[str] = set()
     out: list[str] = []
@@ -27,7 +27,7 @@ def merge_beta_tokens(client_value: str | None, headroom_required: list[str]) ->
             continue
         seen_lower.add(lower)
         out.append(token)
-    for token in headroom_required:
+    for token in legroom_required:
         if not token:
             continue
         token = token.strip()
@@ -41,13 +41,13 @@ def merge_beta_tokens(client_value: str | None, headroom_required: list[str]) ->
     return ",".join(out)
 
 
-def merge_anthropic_beta(client_value: str | None, headroom_required: list[str]) -> str:
-    """Merge client anthropic-beta value with Headroom-required tokens."""
+def merge_anthropic_beta(client_value: str | None, legroom_required: list[str]) -> str:
+    """Merge client anthropic-beta value with Legroom-required tokens."""
 
-    return merge_beta_tokens(client_value, headroom_required)
+    return merge_beta_tokens(client_value, legroom_required)
 
 
-def merge_openai_beta(client_value: str | None, headroom_required: list[str]) -> str:
-    """Merge client OpenAI-Beta value with Headroom-required tokens."""
+def merge_openai_beta(client_value: str | None, legroom_required: list[str]) -> str:
+    """Merge client OpenAI-Beta value with Legroom-required tokens."""
 
-    return merge_beta_tokens(client_value, headroom_required)
+    return merge_beta_tokens(client_value, legroom_required)

@@ -19,7 +19,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from headroom.transforms.content_router import (
+from legroom.transforms.content_router import (
     CompressionStrategy,
     ContentRouter,
 )
@@ -29,22 +29,22 @@ from headroom.transforms.content_router import (
 # skips it before compress() is ever called). Every file:line is factual; a
 # lossy reconstruction would fabricate paths the agent then acts on as fact.
 GREP_OUTPUT = (
-    'headroom/transforms/content_router.py:1375:            if role in ("tool", "assistant"):\n'
-    'headroom/transforms/smart_crusher.py:1010:            if msg.get("role") == "tool":\n'
-    'headroom/transforms/content_router.py:2653:            if role == "tool":\n'
-    'headroom/proxy/handlers/anthropic.py:44:                elif block.get("type") == "tool_result":\n'
-    'headroom/cache/prefix_tracker.py:88:            if message.get("role") == "tool":\n'
-    'headroom/proxy/helpers.py:102:        if msg.get("role") == "tool":\n'
-    "headroom/transforms/pipeline.py:132:        transforms.append(ContentRouter())\n"
-    "headroom/transforms/kompress_compressor.py:1376:            result = self.compress(content)\n"
-    'headroom/transforms/content_router.py:1483:                    compressor_name = "KompressCompressor"\n'
-    'headroom/transforms/content_router.py:1568:                compressor_name = "KompressCompressor"\n'
-    "headroom/transforms/content_router.py:2667:                bias = self._get_tool_bias(tool_name)\n"
-    "headroom/transforms/content_router.py:3317:        result = self.compress(content, context=context)\n"
-    "headroom/transforms/content_router.py:3331:                and not CCR_RETRIEVAL_MARKER_RE.search(result.compressed)\n"
-    "headroom/proxy/handlers/openai.py:697:    def _compress_openai_responses_live_text_units(self)\n"
-    "headroom/transforms/compression_units.py:204:    def compress_unit_with_router(self, unit)\n"
-    "headroom/config.py:676:class TransformResult:  # messages, tokens_before, tokens_after\n"
+    'legroom/transforms/content_router.py:1375:            if role in ("tool", "assistant"):\n'
+    'legroom/transforms/smart_crusher.py:1010:            if msg.get("role") == "tool":\n'
+    'legroom/transforms/content_router.py:2653:            if role == "tool":\n'
+    'legroom/proxy/handlers/anthropic.py:44:                elif block.get("type") == "tool_result":\n'
+    'legroom/cache/prefix_tracker.py:88:            if message.get("role") == "tool":\n'
+    'legroom/proxy/helpers.py:102:        if msg.get("role") == "tool":\n'
+    "legroom/transforms/pipeline.py:132:        transforms.append(ContentRouter())\n"
+    "legroom/transforms/kompress_compressor.py:1376:            result = self.compress(content)\n"
+    'legroom/transforms/content_router.py:1483:                    compressor_name = "KompressCompressor"\n'
+    'legroom/transforms/content_router.py:1568:                compressor_name = "KompressCompressor"\n'
+    "legroom/transforms/content_router.py:2667:                bias = self._get_tool_bias(tool_name)\n"
+    "legroom/transforms/content_router.py:3317:        result = self.compress(content, context=context)\n"
+    "legroom/transforms/content_router.py:3331:                and not CCR_RETRIEVAL_MARKER_RE.search(result.compressed)\n"
+    "legroom/proxy/handlers/openai.py:697:    def _compress_openai_responses_live_text_units(self)\n"
+    "legroom/transforms/compression_units.py:204:    def compress_unit_with_router(self, unit)\n"
+    "legroom/config.py:676:class TransformResult:  # messages, tokens_before, tokens_after\n"
 )
 
 LOSSY_SUMMARY = "grep found 8 matches across config and proxy modules (kompressed)."

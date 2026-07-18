@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" font-family="Segoe UI, Helvetica, Arial, sans-serif">
   <rect x="0" y="0" width="1200" height="900" fill="#ffffff"/>
-  <text x="600" y="36" text-anchor="middle" font-size="22" font-weight="700" fill="#111827">Headroom: Error-Output Protection False-Positive Fix (#1696)</text>
+  <text x="600" y="36" text-anchor="middle" font-size="22" font-weight="700" fill="#111827">Legroom: Error-Output Protection False-Positive Fix (#1696)</text>
 
   <!-- Box 1: pipeline -->
   <g>
@@ -29,7 +29,7 @@
   <g>
     <rect x="20" y="270" width="1160" height="150" rx="10" fill="#fff7ed" stroke="#ea580c"/>
     <text x="36" y="298" font-size="15" font-weight="700" fill="#c2410c">3. OBSERVED IMPACT (issue #1696 stats.json)</text>
-    <text x="36" y="324" font-size="13" fill="#111827">In a long multi-turn JS/TS coding session (KiloCode via headroom proxy), "router:protected:error_output" fired on</text>
+    <text x="36" y="324" font-size="13" fill="#111827">In a long multi-turn JS/TS coding session (KiloCode via legroom proxy), "router:protected:error_output" fired on</text>
     <text x="36" y="344" font-size="13" fill="#111827">nearly every request. Combined with tool-output exclusion and small-block skips, only a sliver of tokens were ever</text>
     <text x="36" y="364" font-size="13" fill="#111827">eligible for compression.</text>
     <rect x="900" y="325" width="60" height="60" fill="#fecaca"/>
@@ -47,7 +47,7 @@
     <text x="36" y="494" font-size="13" fill="#111827">Strip common zero-result phrases before the keyword scan:</text>
     <text x="36" y="516" font-size="13" font-family="Consolas, monospace" fill="#111827">"0 error(s)", "no error(s)", "0 failing",</text>
     <text x="36" y="536" font-size="13" font-family="Consolas, monospace" fill="#111827">"0 failure(s)", "no failure(s)"</text>
-    <text x="36" y="562" font-size="13" fill="#111827">headroom/transforms/error_detection.py</text>
+    <text x="36" y="562" font-size="13" fill="#111827">legroom/transforms/error_detection.py</text>
     <text x="36" y="582" font-size="13" fill="#111827">content_has_strong_error_indicators()</text>
     <text x="36" y="608" font-size="13" font-weight="700" fill="#047857">→ clean tool output no longer trips protection.</text>
   </g>
@@ -74,5 +74,5 @@
     <text x="36" y="782" font-size="13" fill="#111827">All 5 new tests + full existing content_router suite (86 tests total) pass.</text>
   </g>
 
-  <text x="600" y="850" text-anchor="middle" font-size="12" fill="#6b7280">Fixes GitHub issue #1696 · headroomlabs-ai/headroom</text>
+  <text x="600" y="850" text-anchor="middle" font-size="12" fill="#6b7280">Fixes GitHub issue #1696 · legroom-ai/legroom</text>
 </svg>

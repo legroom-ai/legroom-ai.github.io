@@ -1,4 +1,4 @@
-from headroom.providers.codex.responses import (
+from legroom.providers.codex.responses import (
     codex_responses_http_url,
     codex_responses_subpath_url,
     codex_responses_websocket_url,

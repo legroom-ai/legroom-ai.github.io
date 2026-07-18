@@ -1,19 +1,19 @@
 """Resolve Qdrant connection settings from environment variables.
 
-Provides a single source of truth for ``HEADROOM_QDRANT_*`` env vars so that
+Provides a single source of truth for ``LEGROOM_QDRANT_*`` env vars so that
 ``Memory``, ``Mem0Config``, ``DirectMem0Config``, and the proxy all pick up
 the same defaults when the caller does not pass an explicit value.
 
 Supported environment variables:
 
-- ``HEADROOM_QDRANT_URL``        Full URL (e.g. ``https://xyz.cloud.qdrant.io:6333``).
+- ``LEGROOM_QDRANT_URL``        Full URL (e.g. ``https://xyz.cloud.qdrant.io:6333``).
                                   When set, takes precedence over host/port.
-- ``HEADROOM_QDRANT_HOST``       Hostname. Default: ``localhost``.
-- ``HEADROOM_QDRANT_PORT``       HTTP port. Default: ``6333``.
-- ``HEADROOM_QDRANT_API_KEY``    API key for hosted Qdrant (e.g. Qdrant Cloud).
-- ``HEADROOM_QDRANT_HTTPS``      ``true``/``false``. Forces HTTPS on/off.
-- ``HEADROOM_QDRANT_PREFER_GRPC````true``/``false``. Use gRPC instead of HTTP.
-- ``HEADROOM_QDRANT_GRPC_PORT``  gRPC port. Default: ``6334``.
+- ``LEGROOM_QDRANT_HOST``       Hostname. Default: ``localhost``.
+- ``LEGROOM_QDRANT_PORT``       HTTP port. Default: ``6333``.
+- ``LEGROOM_QDRANT_API_KEY``    API key for hosted Qdrant (e.g. Qdrant Cloud).
+- ``LEGROOM_QDRANT_HTTPS``      ``true``/``false``. Forces HTTPS on/off.
+- ``LEGROOM_QDRANT_PREFER_GRPC````true``/``false``. Use gRPC instead of HTTP.
+- ``LEGROOM_QDRANT_GRPC_PORT``  gRPC port. Default: ``6334``.
 
 Explicit constructor arguments always win over environment values; the env
 vars only fill in defaults when the caller passes ``None`` (or omits the
@@ -70,42 +70,42 @@ def _parse_port(raw: str | None, var_name: str) -> int | None:
 
 
 def qdrant_env_url() -> str | None:
-    """Return ``HEADROOM_QDRANT_URL`` or ``None`` if unset."""
-    return _strip_env("HEADROOM_QDRANT_URL")
+    """Return ``LEGROOM_QDRANT_URL`` or ``None`` if unset."""
+    return _strip_env("LEGROOM_QDRANT_URL")
 
 
 def qdrant_env_host() -> str:
-    """Return ``HEADROOM_QDRANT_HOST`` or the ``localhost`` default."""
-    return _strip_env("HEADROOM_QDRANT_HOST") or DEFAULT_QDRANT_HOST
+    """Return ``LEGROOM_QDRANT_HOST`` or the ``localhost`` default."""
+    return _strip_env("LEGROOM_QDRANT_HOST") or DEFAULT_QDRANT_HOST
 
 
 def qdrant_env_port() -> int:
-    """Return ``HEADROOM_QDRANT_PORT`` or the ``6333`` default."""
+    """Return ``LEGROOM_QDRANT_PORT`` or the ``6333`` default."""
     return (
-        _parse_port(_strip_env("HEADROOM_QDRANT_PORT"), "HEADROOM_QDRANT_PORT")
+        _parse_port(_strip_env("LEGROOM_QDRANT_PORT"), "LEGROOM_QDRANT_PORT")
         or DEFAULT_QDRANT_PORT
     )
 
 
 def qdrant_env_api_key() -> str | None:
-    """Return ``HEADROOM_QDRANT_API_KEY`` or ``None`` if unset."""
-    return _strip_env("HEADROOM_QDRANT_API_KEY")
+    """Return ``LEGROOM_QDRANT_API_KEY`` or ``None`` if unset."""
+    return _strip_env("LEGROOM_QDRANT_API_KEY")
 
 
 def qdrant_env_https() -> bool | None:
-    """Return ``HEADROOM_QDRANT_HTTPS`` parsed as bool, or ``None`` if unset."""
-    return _parse_bool(_strip_env("HEADROOM_QDRANT_HTTPS"))
+    """Return ``LEGROOM_QDRANT_HTTPS`` parsed as bool, or ``None`` if unset."""
+    return _parse_bool(_strip_env("LEGROOM_QDRANT_HTTPS"))
 
 
 def qdrant_env_prefer_grpc() -> bool:
-    """Return ``HEADROOM_QDRANT_PREFER_GRPC`` parsed as bool. Default: ``False``."""
-    return _parse_bool(_strip_env("HEADROOM_QDRANT_PREFER_GRPC")) or False
+    """Return ``LEGROOM_QDRANT_PREFER_GRPC`` parsed as bool. Default: ``False``."""
+    return _parse_bool(_strip_env("LEGROOM_QDRANT_PREFER_GRPC")) or False
 
 
 def qdrant_env_grpc_port() -> int:
-    """Return ``HEADROOM_QDRANT_GRPC_PORT`` or the ``6334`` default."""
+    """Return ``LEGROOM_QDRANT_GRPC_PORT`` or the ``6334`` default."""
     return (
-        _parse_port(_strip_env("HEADROOM_QDRANT_GRPC_PORT"), "HEADROOM_QDRANT_GRPC_PORT")
+        _parse_port(_strip_env("LEGROOM_QDRANT_GRPC_PORT"), "LEGROOM_QDRANT_GRPC_PORT")
         or DEFAULT_QDRANT_GRPC_PORT
     )
 

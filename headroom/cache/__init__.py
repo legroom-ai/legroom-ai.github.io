@@ -1,4 +1,4 @@
-"""Headroom Cache Optimization Module.
+"""Legroom Cache Optimization Module.
 
 This module provides a plugin-based architecture for cache optimization
 across different LLM providers. Each provider has different caching
@@ -10,7 +10,7 @@ Provider Caching Differences:
 - Google: Separate CachedContent API, 75% savings + storage costs
 
 Usage:
-    from headroom.cache import CacheOptimizerRegistry, SemanticCacheLayer
+    from legroom.cache import CacheOptimizerRegistry, SemanticCacheLayer
 
     # Get provider-specific optimizer
     optimizer = CacheOptimizerRegistry.get("anthropic")
@@ -31,8 +31,8 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     # Expose concrete types to static analysis while keeping runtime imports lazy.
-    from headroom.cache.anthropic import AnthropicCacheOptimizer  # noqa: F401
-    from headroom.cache.base import (  # noqa: F401
+    from legroom.cache.anthropic import AnthropicCacheOptimizer  # noqa: F401
+    from legroom.cache.base import (  # noqa: F401
         BaseCacheOptimizer,
         CacheBreakpoint,
         CacheConfig,
@@ -42,24 +42,24 @@ if TYPE_CHECKING:
         CacheStrategy,
         OptimizationContext,
     )
-    from headroom.cache.compression_cache import CompressionCache  # noqa: F401
-    from headroom.cache.dynamic_detector import (  # noqa: F401
+    from legroom.cache.compression_cache import CompressionCache  # noqa: F401
+    from legroom.cache.dynamic_detector import (  # noqa: F401
         DetectorConfig,
         DynamicCategory,
         DynamicContentDetector,
         DynamicSpan,
         detect_dynamic_content,
     )
-    from headroom.cache.google import GoogleCacheOptimizer  # noqa: F401
-    from headroom.cache.openai import OpenAICacheOptimizer  # noqa: F401
-    from headroom.cache.prefix_tracker import (  # noqa: F401
+    from legroom.cache.google import GoogleCacheOptimizer  # noqa: F401
+    from legroom.cache.openai import OpenAICacheOptimizer  # noqa: F401
+    from legroom.cache.prefix_tracker import (  # noqa: F401
         FreezeStats,
         PrefixCacheTracker,
         PrefixFreezeConfig,
         SessionTrackerStore,
     )
-    from headroom.cache.registry import CacheOptimizerRegistry  # noqa: F401
-    from headroom.cache.semantic import SemanticCache, SemanticCacheLayer  # noqa: F401
+    from legroom.cache.registry import CacheOptimizerRegistry  # noqa: F401
+    from legroom.cache.semantic import SemanticCache, SemanticCacheLayer  # noqa: F401
 
 __all__ = [
     # Base types
@@ -86,7 +86,7 @@ __all__ = [
     # Semantic caching
     "SemanticCacheLayer",
     "SemanticCache",
-    # Compression cache (token headroom mode)
+    # Compression cache (token legroom mode)
     "CompressionCache",
     # Prefix cache tracking
     "PrefixCacheTracker",
@@ -97,36 +97,36 @@ __all__ = [
 
 _LAZY_EXPORTS: dict[str, tuple[str, str]] = {
     # Base types
-    "BaseCacheOptimizer": ("headroom.cache.base", "BaseCacheOptimizer"),
-    "CacheBreakpoint": ("headroom.cache.base", "CacheBreakpoint"),
-    "CacheConfig": ("headroom.cache.base", "CacheConfig"),
-    "CacheMetrics": ("headroom.cache.base", "CacheMetrics"),
-    "CacheOptimizer": ("headroom.cache.base", "CacheOptimizer"),
-    "CacheResult": ("headroom.cache.base", "CacheResult"),
-    "CacheStrategy": ("headroom.cache.base", "CacheStrategy"),
-    "OptimizationContext": ("headroom.cache.base", "OptimizationContext"),
+    "BaseCacheOptimizer": ("legroom.cache.base", "BaseCacheOptimizer"),
+    "CacheBreakpoint": ("legroom.cache.base", "CacheBreakpoint"),
+    "CacheConfig": ("legroom.cache.base", "CacheConfig"),
+    "CacheMetrics": ("legroom.cache.base", "CacheMetrics"),
+    "CacheOptimizer": ("legroom.cache.base", "CacheOptimizer"),
+    "CacheResult": ("legroom.cache.base", "CacheResult"),
+    "CacheStrategy": ("legroom.cache.base", "CacheStrategy"),
+    "OptimizationContext": ("legroom.cache.base", "OptimizationContext"),
     # Dynamic content detection
-    "DetectorConfig": ("headroom.cache.dynamic_detector", "DetectorConfig"),
-    "DynamicCategory": ("headroom.cache.dynamic_detector", "DynamicCategory"),
-    "DynamicContentDetector": ("headroom.cache.dynamic_detector", "DynamicContentDetector"),
-    "DynamicSpan": ("headroom.cache.dynamic_detector", "DynamicSpan"),
-    "detect_dynamic_content": ("headroom.cache.dynamic_detector", "detect_dynamic_content"),
+    "DetectorConfig": ("legroom.cache.dynamic_detector", "DetectorConfig"),
+    "DynamicCategory": ("legroom.cache.dynamic_detector", "DynamicCategory"),
+    "DynamicContentDetector": ("legroom.cache.dynamic_detector", "DynamicContentDetector"),
+    "DynamicSpan": ("legroom.cache.dynamic_detector", "DynamicSpan"),
+    "detect_dynamic_content": ("legroom.cache.dynamic_detector", "detect_dynamic_content"),
     # Registry
-    "CacheOptimizerRegistry": ("headroom.cache.registry", "CacheOptimizerRegistry"),
+    "CacheOptimizerRegistry": ("legroom.cache.registry", "CacheOptimizerRegistry"),
     # Provider implementations
-    "AnthropicCacheOptimizer": ("headroom.cache.anthropic", "AnthropicCacheOptimizer"),
-    "OpenAICacheOptimizer": ("headroom.cache.openai", "OpenAICacheOptimizer"),
-    "GoogleCacheOptimizer": ("headroom.cache.google", "GoogleCacheOptimizer"),
+    "AnthropicCacheOptimizer": ("legroom.cache.anthropic", "AnthropicCacheOptimizer"),
+    "OpenAICacheOptimizer": ("legroom.cache.openai", "OpenAICacheOptimizer"),
+    "GoogleCacheOptimizer": ("legroom.cache.google", "GoogleCacheOptimizer"),
     # Semantic caching
-    "SemanticCacheLayer": ("headroom.cache.semantic", "SemanticCacheLayer"),
-    "SemanticCache": ("headroom.cache.semantic", "SemanticCache"),
+    "SemanticCacheLayer": ("legroom.cache.semantic", "SemanticCacheLayer"),
+    "SemanticCache": ("legroom.cache.semantic", "SemanticCache"),
     # Compression cache
-    "CompressionCache": ("headroom.cache.compression_cache", "CompressionCache"),
+    "CompressionCache": ("legroom.cache.compression_cache", "CompressionCache"),
     # Prefix cache tracking
-    "PrefixCacheTracker": ("headroom.cache.prefix_tracker", "PrefixCacheTracker"),
-    "PrefixFreezeConfig": ("headroom.cache.prefix_tracker", "PrefixFreezeConfig"),
-    "FreezeStats": ("headroom.cache.prefix_tracker", "FreezeStats"),
-    "SessionTrackerStore": ("headroom.cache.prefix_tracker", "SessionTrackerStore"),
+    "PrefixCacheTracker": ("legroom.cache.prefix_tracker", "PrefixCacheTracker"),
+    "PrefixFreezeConfig": ("legroom.cache.prefix_tracker", "PrefixFreezeConfig"),
+    "FreezeStats": ("legroom.cache.prefix_tracker", "FreezeStats"),
+    "SessionTrackerStore": ("legroom.cache.prefix_tracker", "SessionTrackerStore"),
 }
 
 

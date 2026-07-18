@@ -23,7 +23,7 @@ import threading
 import time
 from pathlib import Path
 
-from headroom._subprocess import run
+from legroom._subprocess import run
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +87,7 @@ _IGNORE_DIRS = frozenset(
         "build",
         ".eggs",
         "*.egg-info",
-        ".headroom",
+        ".legroom",
         "target",  # Rust/Java
     }
 )
@@ -118,7 +118,7 @@ class CodeGraphWatcher:
         if cbm_binary:
             self.cbm_binary = cbm_binary
         else:
-            from headroom.graph.installer import get_cbm_path
+            from legroom.graph.installer import get_cbm_path
 
             path = get_cbm_path()
             self.cbm_binary = str(path) if path else None

@@ -17,10 +17,10 @@ Everything here is comparison-layer only (no Modal / no provider calls).
 
 import copy
 
-from headroom.cache.prefix_tracker import (
+from legroom.cache.prefix_tracker import (
     _canonicalize_for_prefix_compare as CANON,
 )
-from headroom.cache.prefix_tracker import (
+from legroom.cache.prefix_tracker import (
     extract_cache_stable_delta as delta,
 )
 
@@ -286,16 +286,16 @@ def test_ext_aisdk_provider_metadata_and_state_ignored():
 #     stripped from the delta before compression; OpenAI: none);
 #   * a round-trip test that the forwarded prefix stays byte-identical across a real
 #     multi-turn fixture for that provider (byte-level; ideally sourced from a captured
-#     HEADROOM_LOG_MESSAGES trace of the `inspect` non-litellm harness);
+#     LEGROOM_LOG_MESSAGES trace of the `inspect` non-litellm harness);
 #   * a tool-shape compression test (OpenAI role:tool with tool safeguards; Bedrock
 #     toolResult json). These live in the content_router tests once fix-7 is generalized
 #     beyond the Anthropic tool_result block path.
 
 
 # ============================================================================
-# Section 4 — read protection (HEADROOM_PROTECT_READS): never lossy-compress reads
+# Section 4 — read protection (LEGROOM_PROTECT_READS): never lossy-compress reads
 # ============================================================================
-from headroom.transforms.content_router import _is_read_command as _isread
+from legroom.transforms.content_router import _is_read_command as _isread
 
 
 def test_read_command_classifier():
@@ -334,16 +334,16 @@ def test_read_command_classifier():
 # Two bugs that silently disabled compression/protection on real harnesses.
 # These lock in the fixes and assert they hold across the command-prefix and
 # tool-call wire shapes different harnesses/providers emit.
-from headroom.transforms.content_router import (
+from legroom.transforms.content_router import (
     _bash_command_is_search as _issearch,
 )
-from headroom.transforms.content_router import (
+from legroom.transforms.content_router import (
     _is_read_command as _isread2,
 )
-from headroom.transforms.content_router import (
+from legroom.transforms.content_router import (
     _strip_cd_prefix as _stripcd,
 )
-from headroom.transforms.content_router import (
+from legroom.transforms.content_router import (
     _tool_call_command_text as _cmdtext,
 )
 
@@ -383,7 +383,7 @@ def test_openai_tool_calls_none_does_not_crash_and_still_compresses():
     # apply() -> compression silently fell through to PASSTHROUGH on every OpenAI
     # turn (observed on GPT-5.4 text-based: only ~2/24 requests compressed, net
     # token inflation). This asserts the coalesce fix: no crash, map builds.
-    from headroom.transforms.content_router import ContentRouter, ContentRouterConfig
+    from legroom.transforms.content_router import ContentRouter, ContentRouterConfig
 
     cr = ContentRouter(ContentRouterConfig())
     msgs = [
@@ -411,20 +411,20 @@ def test_text_based_read_protection_shape_agnostic(monkeypatch=None):
     # command* so cat/sed code reads are passed verbatim on ANY model/harness.
     import os
 
-    from headroom.tokenizers.registry import get_tokenizer
-    from headroom.transforms.content_router import (
+    from legroom.tokenizers.registry import get_tokenizer
+    from legroom.transforms.content_router import (
         ContentRouter,
         ContentRouterConfig,
         _fenced_shell_command,
     )
-    from headroom.transforms.read_lifecycle import ReadLifecycleConfig
+    from legroom.transforms.read_lifecycle import ReadLifecycleConfig
 
     assert (
         _fenced_shell_command("T\n```mswea_bash_command\ncd /r && cat x.py\n```")
         == "cd /r && cat x.py"
     )
     assert _fenced_shell_command("no fence here") == ""
-    os.environ["HEADROOM_PROTECT_READS"] = "1"
+    os.environ["LEGROOM_PROTECT_READS"] = "1"
     tok = get_tokenizer("gpt-4o")
     big_code = "def f():\n" + "    x = 1\n" * 300
     msgs = [
@@ -496,7 +496,7 @@ def test_bugB_read_detection_across_tool_call_wire_shapes():
 # now decides JSON by PARSING (objects, arrays, and a JSON value inside a small
 # bounded wrapper), so these lock in that an object read is released for
 # compression across wrapped/unwrapped shapes while source code stays protected.
-from headroom.transforms.content_router import (
+from legroom.transforms.content_router import (
     _read_output_should_be_protected as _protect,
 )
 
@@ -535,12 +535,12 @@ def test_read_protection_role_agnostic_openai_role_tool():
     import json as _json
     import os
 
-    from headroom.tokenizers.registry import get_tokenizer
-    from headroom.transforms.content_router import ContentRouter, ContentRouterConfig
-    from headroom.transforms.read_lifecycle import ReadLifecycleConfig
+    from legroom.tokenizers.registry import get_tokenizer
+    from legroom.transforms.content_router import ContentRouter, ContentRouterConfig
+    from legroom.transforms.read_lifecycle import ReadLifecycleConfig
 
-    os.environ["HEADROOM_PROTECT_READS"] = "1"
-    os.environ.pop("HEADROOM_EXPERIMENTAL_READ_KEEP_RATIO", None)  # protection, not the experiment
+    os.environ["LEGROOM_PROTECT_READS"] = "1"
+    os.environ.pop("LEGROOM_EXPERIMENTAL_READ_KEEP_RATIO", None)  # protection, not the experiment
     tok = get_tokenizer("gpt-4o")
     code = "def f():\n" + "    x = 1\n" * 300
 

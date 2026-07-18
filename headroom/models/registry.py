@@ -12,8 +12,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from headroom.pricing.litellm_pricing import estimate_cost as litellm_estimate_cost
-from headroom.pricing.litellm_pricing import get_model_pricing
+from legroom.pricing.litellm_pricing import estimate_cost as litellm_estimate_cost
+from legroom.pricing.litellm_pricing import get_model_pricing
 
 
 @dataclass(frozen=True)

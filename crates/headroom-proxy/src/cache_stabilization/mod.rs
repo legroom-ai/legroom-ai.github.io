@@ -2,7 +2,7 @@
 //!
 //! The realignment plan (`REALIGNMENT/07-phase-E-cache-stabilization.md`)
 //! groups every cache-stabilization mechanism behind one module so
-//! operators searching for "what does Headroom do to keep prompt
+//! operators searching for "what does Legroom do to keep prompt
 //! caches warm" land in one place. Phase E PRs in this module either:
 //!
 //! - **Observe** inbound bodies and emit structured warnings so

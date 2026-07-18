@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Quality benchmark: Snowflake Cortex  —  Standard vs Headroom
+Quality benchmark: Snowflake Cortex  —  Standard vs Legroom
 
-Tests whether headroom compression affects answer quality.
+Tests whether legroom compression affects answer quality.
 Strategy: embed known facts in payload, ask factual questions,
-score both standard and headroom responses against ground truth.
+score both standard and legroom responses against ground truth.
 
 No LLM judge needed — answers are verifiable from the data itself.
 
@@ -23,11 +23,11 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
-# ── Bootstrap headroom ────────────────────────────────────────────────────────
+# ── Bootstrap legroom ────────────────────────────────────────────────────────
 REPO_ROOT = Path(__file__).resolve().parent.parent
 _VENV_SITE = REPO_ROOT / ".venv" / "lib"
 try:
-    from headroom import compress as _hc_check  # noqa: F401
+    from legroom import compress as _hc_check  # noqa: F401
 except ImportError:
     sys.path.insert(0, str(REPO_ROOT))
     for _d in _VENV_SITE.glob("python*/site-packages"):
@@ -57,7 +57,7 @@ def _call(messages: list[dict], token: str, host: str) -> str:
         headers={
             "Authorization": f'Snowflake Token="{token}"',
             "Content-Type": "application/json",
-            "User-Agent": "headroom-quality-bench/1.0",
+            "User-Agent": "legroom-quality-bench/1.0",
         },
         method="POST",
     )
@@ -256,7 +256,7 @@ class QualityResult:
 
 
 def run_case(case: QualityCase, token: str, host: str) -> QualityResult:
-    from headroom import compress
+    from legroom import compress
 
     messages = [
         {"role": "system", "content": case.context},
@@ -304,7 +304,7 @@ def _show(r: QualityResult) -> None:
         f"  ({'PASS' if r.std_pass else 'FAIL'})"
     )
     print(
-        f"  │  Headroom  [{hdm_sym}]  : {r.hdm_hits}/{r.total_kw} keywords matched"
+        f"  │  Legroom  [{hdm_sym}]  : {r.hdm_hits}/{r.total_kw} keywords matched"
         f"  ({'PASS' if r.hdm_pass else 'FAIL'})  [{delta_sym} quality delta]"
     )
     print(f"  │  Q: {r.case.question[:80]}")
@@ -320,7 +320,7 @@ def _show(r: QualityResult) -> None:
 def main() -> int:
     print()
     print("╔═══════════════════════════════════════════════════════════════╗")
-    print("║  Cortex Code × Headroom  —  Quality Benchmark                ║")
+    print("║  Cortex Code × Legroom  —  Quality Benchmark                ║")
     print("║  Does compression affect answer accuracy?                     ║")
     print("╚═══════════════════════════════════════════════════════════════╝")
 
@@ -409,7 +409,7 @@ def main() -> int:
     print()
     print(
         f"  Pass rate  :  Standard {std_passes}/{total} ({std_passes / total * 100:.0f}%)  "
-        f"│  Headroom {hdm_passes}/{total} ({hdm_passes / total * 100:.0f}%)"
+        f"│  Legroom {hdm_passes}/{total} ({hdm_passes / total * 100:.0f}%)"
     )
     print(f"  Regressions (std pass → hdm fail) : {regressions}")
     print(f"  Improvements (std fail → hdm pass): {improvements}")
@@ -417,10 +417,10 @@ def main() -> int:
     print(f"  Avg token reduction                : ~{avg_token_saving:.0f}%")
     print()
     if regressions == 0:
-        print("  ✓  No quality regressions — headroom compression preserved answer accuracy")
+        print("  ✓  No quality regressions — legroom compression preserved answer accuracy")
     else:
         print(
-            f"  ⚠  {regressions} regression(s) — headroom dropped facts needed for correct answer"
+            f"  ⚠  {regressions} regression(s) — legroom dropped facts needed for correct answer"
         )
     print("╚═══════════════════════════════════════════════════════════════╝")
     print()

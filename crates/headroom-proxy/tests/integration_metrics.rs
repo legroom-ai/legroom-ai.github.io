@@ -26,9 +26,9 @@ mod common;
 
 use bytes::Bytes;
 use common::start_proxy_with;
-use headroom_proxy::observability;
-use headroom_proxy::sse::openai_responses::ResponseState;
-use headroom_proxy::sse::SseFramer;
+use legroom_proxy::observability;
+use legroom_proxy::sse::openai_responses::ResponseState;
+use legroom_proxy::sse::SseFramer;
 use serde_json::json;
 use std::convert::Infallible;
 use std::net::SocketAddr;
@@ -152,7 +152,7 @@ async fn cache_hit_rate_emitted_per_session() {
     // [0.75, 0.9] bucket).
     let (addr, _server) = anthropic_streaming_upstream(800, 200).await;
     let proxy = start_proxy_with(&format!("http://{addr}"), |c| {
-        c.compression_mode = headroom_proxy::config::CompressionMode::Off;
+        c.compression_mode = legroom_proxy::config::CompressionMode::Off;
     })
     .await;
 
@@ -304,7 +304,7 @@ async fn anthropic_simple_non_stream_upstream() -> (SocketAddr, tokio::task::Joi
 async fn passthrough_bytes_modified_zero_when_no_compression() {
     let (addr, _server) = anthropic_simple_non_stream_upstream().await;
     let proxy = start_proxy_with(&format!("http://{addr}"), |c| {
-        c.compression_mode = headroom_proxy::config::CompressionMode::Off;
+        c.compression_mode = legroom_proxy::config::CompressionMode::Off;
     })
     .await;
 
@@ -368,7 +368,7 @@ async fn passthrough_bytes_modified_zero_when_no_compression() {
     );
 
     // Public helper still works to drive a real-path row.
-    use headroom_proxy::observability::record_passthrough_bytes_modified;
+    use legroom_proxy::observability::record_passthrough_bytes_modified;
     record_passthrough_bytes_modified(
         "/integration_test_passthrough_synthetic",
         7,
@@ -402,7 +402,7 @@ async fn passthrough_bytes_modified_zero_when_no_compression() {
 
 #[tokio::test]
 async fn passthrough_bytes_modified_alarm_fires_with_byte_delta_label() {
-    use headroom_proxy::observability::record_passthrough_bytes_modified;
+    use legroom_proxy::observability::record_passthrough_bytes_modified;
 
     // Unique path label so this test owns its row.
     const TEST_PATH: &str = "/integration_test_c2_alarm_v1";
@@ -470,7 +470,7 @@ async fn service_tier_logged_known_value() {
     // bucket without going through the `"other"` sentinel.
     let (addr, _server) = responses_passthrough_upstream().await;
     let proxy = start_proxy_with(&format!("http://{addr}"), |c| {
-        c.compression_mode = headroom_proxy::config::CompressionMode::Off;
+        c.compression_mode = legroom_proxy::config::CompressionMode::Off;
         c.enable_responses_streaming = true;
     })
     .await;
@@ -515,7 +515,7 @@ async fn service_tier_unknown_bucketed_to_other() {
     // the metric vector cardinality.
     let (addr, _server) = responses_passthrough_upstream().await;
     let proxy = start_proxy_with(&format!("http://{addr}"), |c| {
-        c.compression_mode = headroom_proxy::config::CompressionMode::Off;
+        c.compression_mode = legroom_proxy::config::CompressionMode::Off;
         c.enable_responses_streaming = true;
     })
     .await;
@@ -571,7 +571,7 @@ async fn service_tier_unknown_bucketed_to_other() {
 
 #[test]
 fn service_tier_validate_known_returns_canonical_constant() {
-    use headroom_proxy::observability::metric_names::service_tier;
+    use legroom_proxy::observability::metric_names::service_tier;
     // Spec-defined values pass through verbatim — strict equality
     // against the &'static constants so a typo in the validator
     // surfaces here.
@@ -585,7 +585,7 @@ fn service_tier_validate_known_returns_canonical_constant() {
 
 #[test]
 fn service_tier_validate_unknown_returns_other_sentinel() {
-    use headroom_proxy::observability::metric_names::service_tier;
+    use legroom_proxy::observability::metric_names::service_tier;
     // C1: anything outside the bounded vocab buckets to OTHER.
     assert_eq!(
         service_tier::validate("nonsense_value"),
@@ -671,7 +671,7 @@ async fn compression_ratio_per_strategy_does_not_replicate_aggregate() {
     // exercises the helper directly with two distinct strategies +
     // distinct ratios so the histogram's _sum lines for each
     // strategy must differ.
-    use headroom_proxy::observability::observe_compression_ratio;
+    use legroom_proxy::observability::observe_compression_ratio;
 
     const STRAT_HEAVY: &str = "h1_test_heavy_v1";
     const STRAT_LIGHT: &str = "h1_test_light_v1";

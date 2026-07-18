@@ -1,6 +1,6 @@
 //! Model-name → tokenizer dispatch.
 //!
-//! Mirrors `MODEL_PATTERNS` in `headroom/tokenizers/registry.py`. Three
+//! Mirrors `MODEL_PATTERNS` in `legroom/tokenizers/registry.py`. Three
 //! backends in priority order:
 //!
 //! 1. **HuggingFace** — anything the caller has registered via
@@ -32,7 +32,7 @@ pub enum Backend {
 
 /// Pick a backend purely from the model name, ignoring runtime registrations.
 ///
-/// Patterns and ordering match `headroom.tokenizers.registry.MODEL_PATTERNS`
+/// Patterns and ordering match `legroom.tokenizers.registry.MODEL_PATTERNS`
 /// for the families this stage supports. Anything outside the OpenAI BPE
 /// family lands in `Estimation` here — even if [`register_hf`] would route
 /// it to `HuggingFace` at runtime. Use [`get_tokenizer`] for the real
@@ -133,7 +133,7 @@ pub fn clear_hf_registrations() {
 /// (e.g. a gated Llama repo without `HF_TOKEN`) does not affect others.
 ///
 /// ```no_run
-/// use headroom_core::tokenizer::try_register_hf;
+/// use legroom_core::tokenizer::try_register_hf;
 /// let _ = try_register_hf("command-", "CohereForAI/c4ai-command-r-v01");
 /// let _ = try_register_hf("mistral-", "mistralai/Mistral-7B-v0.1");
 /// ```

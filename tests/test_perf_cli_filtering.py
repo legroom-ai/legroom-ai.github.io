@@ -1,7 +1,7 @@
-"""``headroom perf`` must surface CLI context-tool (RTK) lifetime savings.
+"""``legroom perf`` must surface CLI context-tool (RTK) lifetime savings.
 
 RTK keeps its savings in its own counter, which never lands in ``proxy.log``,
-so ``headroom perf`` used to omit them entirely — the report showed only
+so ``legroom perf`` used to omit them entirely — the report showed only
 proxy-compression savings. These tests pin that the report (text + JSON)
 includes the context-tool lifetime savings when available, and degrades
 cleanly to proxy-only when the tool is absent.
@@ -9,8 +9,8 @@ cleanly to proxy-only when the tool is absent.
 
 from __future__ import annotations
 
-import headroom.proxy.helpers as helpers
-from headroom.perf import analyzer
+import legroom.proxy.helpers as helpers
+from legroom.perf import analyzer
 
 _FAKE_RTK = {
     "installed": True,

@@ -1,4 +1,4 @@
-"""Integration tests for token mode (legacy token_headroom behavior).
+"""Integration tests for token mode (legacy token_legroom behavior).
 
 Tests the CompressionCache working across simulated multi-turn conversations,
 verifying the critical invariants: no message injection, correct frozen counts,
@@ -8,7 +8,7 @@ when Claude Code drops messages.
 
 import copy
 
-from headroom.cache.compression_cache import CompressionCache
+from legroom.cache.compression_cache import CompressionCache
 
 
 def _make_user_msg(text: str) -> dict:
@@ -437,21 +437,21 @@ class TestExtractToolResultListContent:
 
     def test_anthropic_string_content_preserved(self):
         """Plain string content in Anthropic format still works."""
-        from headroom.cache.compression_cache import _extract_tool_result_content as f
+        from legroom.cache.compression_cache import _extract_tool_result_content as f
 
         msg = _make_tool_result_msg("t1", "hello world")
         assert f(msg) == "hello world"
 
     def test_anthropic_list_content_extracted(self):
         """List-of-blocks content is extracted and joined."""
-        from headroom.cache.compression_cache import _extract_tool_result_content as f
+        from legroom.cache.compression_cache import _extract_tool_result_content as f
 
         msg = _make_tool_result_list_content_msg("t1", ["Line 1", "Line 2"])
         assert f(msg) == "Line 1\nLine 2"
 
     def test_anthropic_mixed_blocks(self):
         """Non-text blocks (e.g. image) are skipped, only text blocks joined."""
-        from headroom.cache.compression_cache import _extract_tool_result_content as f
+        from legroom.cache.compression_cache import _extract_tool_result_content as f
 
         msg = {
             "role": "user",
@@ -471,7 +471,7 @@ class TestExtractToolResultListContent:
 
     def test_anthropic_list_empty_returns_none(self):
         """Empty text-only list returns None."""
-        from headroom.cache.compression_cache import _extract_tool_result_content as f
+        from legroom.cache.compression_cache import _extract_tool_result_content as f
 
         msg = {
             "role": "user",
@@ -481,21 +481,21 @@ class TestExtractToolResultListContent:
 
     def test_openai_list_content_extracted(self):
         """OpenAI format tool message with list content is extracted."""
-        from headroom.cache.compression_cache import _extract_tool_result_content as f
+        from legroom.cache.compression_cache import _extract_tool_result_content as f
 
         msg = _make_openai_tool_list_content_msg("tc1", ["Result 1", "Result 2"])
         assert f(msg) == "Result 1\nResult 2"
 
     def test_openai_string_content_still_works(self):
         """OpenAI format with plain string content is unchanged."""
-        from headroom.cache.compression_cache import _extract_tool_result_content as f
+        from legroom.cache.compression_cache import _extract_tool_result_content as f
 
         msg = _make_openai_tool_msg("tc1", "plain result")
         assert f(msg) == "plain result"
 
     def test_non_tool_msg_returns_none(self):
         """Regular user/assistant messages return None."""
-        from headroom.cache.compression_cache import _extract_tool_result_content as f
+        from legroom.cache.compression_cache import _extract_tool_result_content as f
 
         assert f(_make_user_msg("hello")) is None
         assert f(_make_assistant_msg("response")) is None
@@ -506,7 +506,7 @@ class TestSwapToolResultListContent:
 
     def test_swap_anthropic_list_content_preserves_structure(self):
         """Swap on list-of-blocks content replaces text in place."""
-        from headroom.cache.compression_cache import _swap_tool_result_content
+        from legroom.cache.compression_cache import _swap_tool_result_content
 
         msg = _make_tool_result_list_content_msg("t1", ["original"])
         swapped = _swap_tool_result_content(msg, "compressed")
@@ -517,7 +517,7 @@ class TestSwapToolResultListContent:
 
     def test_swap_anthropic_string_content_preserved(self):
         """Swap on plain-string content still works."""
-        from headroom.cache.compression_cache import _swap_tool_result_content
+        from legroom.cache.compression_cache import _swap_tool_result_content
 
         msg = _make_tool_result_msg("t1", "original")
         swapped = _swap_tool_result_content(msg, "compressed")
@@ -525,7 +525,7 @@ class TestSwapToolResultListContent:
 
     def test_swap_openai_list_content(self):
         """Swap on OpenAI list-content replaces text."""
-        from headroom.cache.compression_cache import _swap_tool_result_content
+        from legroom.cache.compression_cache import _swap_tool_result_content
 
         msg = _make_openai_tool_list_content_msg("tc1", ["original"])
         swapped = _swap_tool_result_content(msg, "compressed")
@@ -533,7 +533,7 @@ class TestSwapToolResultListContent:
 
     def test_swap_does_not_mutate_original(self):
         """_swap_tool_result_content performs a deep copy."""
-        from headroom.cache.compression_cache import _swap_tool_result_content
+        from legroom.cache.compression_cache import _swap_tool_result_content
 
         msg = _make_tool_result_list_content_msg("t1", ["original"])
         _swap_tool_result_content(msg, "compressed")
@@ -541,7 +541,7 @@ class TestSwapToolResultListContent:
 
     def test_swap_list_content_adds_text_block_when_missing(self):
         """When list has no text block, collapses to a single text block."""
-        from headroom.cache.compression_cache import _swap_tool_result_content
+        from legroom.cache.compression_cache import _swap_tool_result_content
 
         msg = {
             "role": "user",

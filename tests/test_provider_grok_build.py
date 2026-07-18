@@ -5,15 +5,15 @@ from pathlib import Path
 
 import pytest
 
-from headroom.providers.grok_build import build_proxy_targets, render_setup_lines
-from headroom.providers.grok_build.config import (
+from legroom.providers.grok_build import build_proxy_targets, render_setup_lines
+from legroom.providers.grok_build.config import (
     inject_grok_provider_config,
     redirect_existing_grok_build_base_url,
-    render_headroom_block,
+    render_legroom_block,
     restore_grok_provider_config,
-    strip_grok_headroom_blocks,
+    strip_grok_legroom_blocks,
 )
-from headroom.providers.grok_build.install import build_install_env
+from legroom.providers.grok_build.install import build_install_env
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -34,7 +34,7 @@ def _count_grok_build_tables(content: str) -> int:
     return content.count("[model.grok-build]")
 
 
-def test_grok_build_proxy_targets_use_local_headroom_proxy() -> None:
+def test_grok_build_proxy_targets_use_local_legroom_proxy() -> None:
     target = build_proxy_targets(9999)
 
     assert target.base_url == "http://127.0.0.1:9999/v1"
@@ -76,7 +76,7 @@ def test_grok_build_config_inject_and_restore_round_trip(tmp_path: Path, monkeyp
     config_file = inject_grok_provider_config(8787, project="demo")
     content = config_file.read_text(encoding="utf-8")
 
-    assert render_headroom_block(8787, project="demo").strip() in content
+    assert render_legroom_block(8787, project="demo").strip() in content
     assert 'base_url = "http://127.0.0.1:8787/p/demo/v1"' in content
 
     status, _ = restore_grok_provider_config()
@@ -85,11 +85,11 @@ def test_grok_build_config_inject_and_restore_round_trip(tmp_path: Path, monkeyp
 
 
 def test_grok_build_config_strip_preserves_user_content() -> None:
-    original = f'[models]\ndefault = "grok-build"\n\n{render_headroom_block(8787)}'
-    cleaned = strip_grok_headroom_blocks(original)
+    original = f'[models]\ndefault = "grok-build"\n\n{render_legroom_block(8787)}'
+    cleaned = strip_grok_legroom_blocks(original)
 
     assert "[models]" in cleaned
-    assert "headroom:grok-build" not in cleaned
+    assert "legroom:grok-build" not in cleaned
 
 
 def test_grok_build_inject_updates_existing_user_table_without_duplicate(
@@ -116,7 +116,7 @@ def test_grok_build_inject_updates_existing_user_table_without_duplicate(
     assert _count_grok_build_tables(content) == 1
     assert 'base_url = "http://127.0.0.1:8787/p/demo/v1"  # was: https://api.x.ai/v1' in content
     assert "temperature = 0.5" in content
-    assert "headroom:grok-build" not in content
+    assert "legroom:grok-build" not in content
     _assert_valid_toml(content)
 
 

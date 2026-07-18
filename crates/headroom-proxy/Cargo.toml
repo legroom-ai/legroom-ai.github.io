@@ -1,18 +1,18 @@
 [package]
-name = "headroom-proxy"
+name = "legroom-proxy"
 version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Headroom transparent reverse proxy (Rust, axum). Phase 1: drop-in passthrough in front of the Python proxy."
+description = "Legroom transparent reverse proxy (Rust, axum). Phase 1: drop-in passthrough in front of the Python proxy."
 
 [[bin]]
-name = "headroom-proxy"
+name = "legroom-proxy"
 path = "src/main.rs"
 
 [lib]
-name = "headroom_proxy"
+name = "legroom_proxy"
 path = "src/lib.rs"
 
 [dependencies]
@@ -40,7 +40,7 @@ url = "2"
 humantime = "2"
 bytesize = "1"
 tokio-util = { version = "0.7" }
-headroom-core = { path = "../headroom-core" }
+legroom-core = { path = "../legroom-core" }
 # Phase D PR-D1: native Bedrock InvokeModel route. SigV4 + AWS
 # default credential chain.
 aws-sigv4 = { workspace = true }
@@ -117,4 +117,4 @@ sha2 = "0.10"
 # noise). 100K cases is the project default for "no panic" parser
 # invariants — see `feedback_realignment_build_constraints.md`.
 proptest = "1"
-headroom-simulators = { path = "../headroom-simulators" }
+legroom-simulators = { path = "../legroom-simulators" }

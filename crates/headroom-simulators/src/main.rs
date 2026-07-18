@@ -2,23 +2,23 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 
 use clap::Parser;
-use headroom_simulators::{build_app, load_config, Simulator};
+use legroom_simulators::{build_app, load_config, Simulator};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
 
 #[derive(Debug, Parser)]
-#[command(about = "Deterministic local upstream simulators for Headroom tests")]
+#[command(about = "Deterministic local upstream simulators for Legroom tests")]
 struct Cli {
     #[arg(
         long,
-        env = "HEADROOM_SIMULATOR_LISTEN",
+        env = "LEGROOM_SIMULATOR_LISTEN",
         default_value = "127.0.0.1:8789"
     )]
     listen: SocketAddr,
-    #[arg(long, env = "HEADROOM_SIMULATOR_CONFIG")]
+    #[arg(long, env = "LEGROOM_SIMULATOR_CONFIG")]
     config: Option<PathBuf>,
-    #[arg(long, env = "HEADROOM_SIMULATOR_LOG", default_value = "info")]
+    #[arg(long, env = "LEGROOM_SIMULATOR_LOG", default_value = "info")]
     log_level: String,
 }
 
@@ -30,7 +30,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let simulator = Simulator::new(config);
     let app = build_app(simulator);
     let listener = tokio::net::TcpListener::bind(cli.listen).await?;
-    tracing::info!(addr = %listener.local_addr()?, "headroom simulator listening");
+    tracing::info!(addr = %listener.local_addr()?, "legroom simulator listening");
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
         .await?;

@@ -4,7 +4,7 @@ Derives two orthogonal identity fields the beacon reports:
 
 * ``install_mode`` — how the proxy process is deployed
   (``persistent`` / ``on_demand`` / ``wrapped`` / ``unknown``).
-* ``headroom_stack`` — how Headroom is being invoked
+* ``legroom_stack`` — how Legroom is being invoked
   (``proxy``, ``wrap_claude``, ``adapter_ts_openai``, ...).
 
 Both helpers are best-effort and never raise: telemetry is fire-and-forget and
@@ -42,7 +42,7 @@ _STACK_SLUG_RE = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
 
 # Cardinality cap on the per-process requests_by_stack dict. Protects the
 # Prometheus scrape, the in-memory counter, and the JSONB telemetry payload
-# from unbounded label explosion when clients send arbitrary X-Headroom-Stack
+# from unbounded label explosion when clients send arbitrary X-Legroom-Stack
 # header values.
 MAX_DISTINCT_STACKS = 32
 
@@ -79,7 +79,7 @@ def detect_install_mode(port: int) -> str:
 
     Resolution order:
 
-    1. ``HEADROOM_AGENT_TYPE`` env var set → ``wrapped`` (spawned by ``headroom wrap``).
+    1. ``LEGROOM_AGENT_TYPE`` env var set → ``wrapped`` (spawned by ``legroom wrap``).
     2. A ``DeploymentManifest`` on disk whose port matches ``port`` → ``persistent``.
     3. Otherwise → ``on_demand``.
 
@@ -88,11 +88,11 @@ def detect_install_mode(port: int) -> str:
     """
 
     try:
-        if os.environ.get("HEADROOM_AGENT_TYPE"):
+        if os.environ.get("LEGROOM_AGENT_TYPE"):
             return "wrapped"
 
         try:
-            from headroom.install.state import list_manifests
+            from legroom.install.state import list_manifests
 
             for manifest in list_manifests():
                 if getattr(manifest, "port", None) == port:
@@ -110,12 +110,12 @@ def detect_install_mode(port: int) -> str:
 
 
 def detect_stack(stats: dict[str, Any] | None = None) -> str:
-    """Classify how Headroom is being invoked.
+    """Classify how Legroom is being invoked.
 
     Resolution order:
 
-    1. ``HEADROOM_STACK`` env var set → use that slug verbatim.
-    2. ``HEADROOM_AGENT_TYPE`` env var set → ``wrap_<agent>``.
+    1. ``LEGROOM_STACK`` env var set → use that slug verbatim.
+    2. ``LEGROOM_AGENT_TYPE`` env var set → ``wrap_<agent>``.
     3. ``stats['requests']['by_stack']`` dict populated →
        pick the stack with >80% of requests, else ``mixed``.
     4. Otherwise → ``proxy``.
@@ -124,11 +124,11 @@ def detect_stack(stats: dict[str, Any] | None = None) -> str:
     """
 
     try:
-        explicit = normalize_stack(os.environ.get("HEADROOM_STACK"))
+        explicit = normalize_stack(os.environ.get("LEGROOM_STACK"))
         if explicit:
             return explicit
 
-        agent_type = os.environ.get("HEADROOM_AGENT_TYPE")
+        agent_type = os.environ.get("LEGROOM_AGENT_TYPE")
         if agent_type:
             return _slug_from_agent_type(agent_type)
 

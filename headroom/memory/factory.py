@@ -12,7 +12,7 @@ from importlib.metadata import entry_points
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from headroom.memory.config import (
+from legroom.memory.config import (
     EmbedderBackend,
     MemoryConfig,
     StoreBackend,
@@ -21,13 +21,13 @@ from headroom.memory.config import (
 )
 
 if TYPE_CHECKING:
-    from headroom.memory.ports import Embedder, MemoryCache, MemoryStore, TextIndex, VectorIndex
+    from legroom.memory.ports import Embedder, MemoryCache, MemoryStore, TextIndex, VectorIndex
 
 
 # Extension groups for memory backends registered via setuptools entry points.
-_MEMORY_STORE_GROUP = "headroom.memory_store"
-_MEMORY_VECTOR_GROUP = "headroom.memory_vector"
-_MEMORY_TEXT_GROUP = "headroom.memory_text"
+_MEMORY_STORE_GROUP = "legroom.memory_store"
+_MEMORY_VECTOR_GROUP = "legroom.memory_vector"
+_MEMORY_TEXT_GROUP = "legroom.memory_text"
 
 # Process-wide embedder cache keyed by (backend, model). Embedders are
 # stateless with respect to the memory store, so a single instance can
@@ -47,7 +47,7 @@ def _load_external_backend(
     """Load a memory backend registered via setuptools entry points.
 
     Mirrors the pattern used by
-    `headroom.cache.compression_store._create_default_ccr_backend`.
+    `legroom.cache.compression_store._create_default_ccr_backend`.
     """
     if not name:
         raise ValueError(
@@ -126,7 +126,7 @@ def _create_store(config: MemoryConfig) -> MemoryStore:
         ValueError: If the store backend is not supported.
     """
     if config.store_backend == StoreBackend.SQLITE:
-        from headroom.memory.adapters.sqlite import SQLiteMemoryStore
+        from legroom.memory.adapters.sqlite import SQLiteMemoryStore
 
         return SQLiteMemoryStore(config.db_path)
 
@@ -189,17 +189,17 @@ def _create_embedder(config: MemoryConfig) -> Embedder:
             return cached
 
         if config.embedder_backend == EmbedderBackend.LOCAL:
-            from headroom.memory.adapters.embedders import LocalEmbedder
+            from legroom.memory.adapters.embedders import LocalEmbedder
 
             embedder: Embedder = LocalEmbedder(model_name=config.embedder_model)
 
         elif config.embedder_backend == EmbedderBackend.ONNX:
-            from headroom.memory.adapters.embedders import OnnxLocalEmbedder
+            from legroom.memory.adapters.embedders import OnnxLocalEmbedder
 
             embedder = OnnxLocalEmbedder()
 
         elif config.embedder_backend == EmbedderBackend.OPENAI:
-            from headroom.memory.adapters.embedders import OpenAIEmbedder
+            from legroom.memory.adapters.embedders import OpenAIEmbedder
 
             embedder = OpenAIEmbedder(
                 api_key=config.openai_api_key,
@@ -207,7 +207,7 @@ def _create_embedder(config: MemoryConfig) -> Embedder:
             )
 
         elif config.embedder_backend == EmbedderBackend.OLLAMA:
-            from headroom.memory.adapters.embedders import OllamaEmbedder
+            from legroom.memory.adapters.embedders import OllamaEmbedder
 
             embedder = OllamaEmbedder(
                 base_url=config.ollama_base_url,
@@ -251,7 +251,7 @@ def _create_vector_index(config: MemoryConfig) -> VectorIndex:
 
     # AUTO: prefer SQLITE_VEC → HNSW → fail with helpful message
     if backend == VectorBackend.AUTO:
-        from headroom.memory.adapters import HNSW_AVAILABLE, SQLITE_VEC_AVAILABLE
+        from legroom.memory.adapters import HNSW_AVAILABLE, SQLITE_VEC_AVAILABLE
 
         if SQLITE_VEC_AVAILABLE:
             backend = VectorBackend.SQLITE_VEC
@@ -262,11 +262,11 @@ def _create_vector_index(config: MemoryConfig) -> VectorIndex:
                 "No vector index backend available for memory. Install one:\n"
                 "  pip install sqlite-vec   (recommended, lightweight)\n"
                 "  pip install hnswlib      (alternative)\n"
-                "Or install the full proxy bundle: pip install headroom-ai[proxy]"
+                "Or install the full proxy bundle: pip install legroom-ai[proxy]"
             )
 
     if backend == VectorBackend.SQLITE_VEC:
-        from headroom.memory.adapters import SQLITE_VEC_AVAILABLE
+        from legroom.memory.adapters import SQLITE_VEC_AVAILABLE
 
         if not SQLITE_VEC_AVAILABLE:
             raise ValueError(
@@ -274,7 +274,7 @@ def _create_vector_index(config: MemoryConfig) -> VectorIndex:
                 "Or use vector_backend=VectorBackend.HNSW"
             )
 
-        from headroom.memory.adapters.sqlite_vector import SQLiteVectorIndex
+        from legroom.memory.adapters.sqlite_vector import SQLiteVectorIndex
 
         # Derive vector db path from main db path if not specified
         if config.vector_db_path:
@@ -290,7 +290,7 @@ def _create_vector_index(config: MemoryConfig) -> VectorIndex:
         )
 
     if backend == VectorBackend.HNSW:
-        from headroom.memory.adapters import HNSW_AVAILABLE
+        from legroom.memory.adapters import HNSW_AVAILABLE
 
         if not HNSW_AVAILABLE:
             raise ValueError(
@@ -298,7 +298,7 @@ def _create_vector_index(config: MemoryConfig) -> VectorIndex:
                 "Or use vector_backend=VectorBackend.SQLITE_VEC"
             )
 
-        from headroom.memory.adapters.hnsw import HNSWVectorIndex
+        from legroom.memory.adapters.hnsw import HNSWVectorIndex
 
         # Derive persistent save path from the main DB path so the HNSW
         # index survives across process restarts (critical for cross-agent
@@ -333,7 +333,7 @@ def _create_text_index(config: MemoryConfig) -> TextIndex:
         ValueError: If the text backend is not supported.
     """
     if config.text_backend == TextBackend.FTS5:
-        from headroom.memory.adapters.fts5 import FTS5TextIndex
+        from legroom.memory.adapters.fts5 import FTS5TextIndex
 
         # FTS5TextIndex has a compatible interface but different method signatures
         return FTS5TextIndex(db_path=config.db_path)  # type: ignore[return-value]
@@ -358,7 +358,7 @@ def _create_cache(config: MemoryConfig) -> MemoryCache:
     Returns:
         A MemoryCache implementation.
     """
-    from headroom.memory.adapters.cache import LRUMemoryCache
+    from legroom.memory.adapters.cache import LRUMemoryCache
 
     # LRUMemoryCache implements MemoryCache protocol
     return LRUMemoryCache(max_size=config.cache_max_size)  # type: ignore[return-value]

@@ -1,7 +1,7 @@
-"""Operational observability helpers for Headroom."""
+"""Operational observability helpers for Legroom."""
 
 from .metrics import (
-    HeadroomOtelMetrics,
+    LegroomOtelMetrics,
     OTelMetricsConfig,
     configure_otel_metrics,
     get_otel_metrics,
@@ -11,31 +11,31 @@ from .metrics import (
     shutdown_otel_metrics,
 )
 from .tracing import (
-    HeadroomTracer,
+    LegroomTracer,
     LangfuseTracingConfig,
     configure_langfuse_tracing,
-    get_headroom_tracer,
+    get_legroom_tracer,
     get_langfuse_tracing_status,
-    reset_headroom_tracing,
-    set_headroom_tracer,
-    shutdown_headroom_tracing,
+    reset_legroom_tracing,
+    set_legroom_tracer,
+    shutdown_legroom_tracing,
 )
 
 __all__ = [
-    "HeadroomOtelMetrics",
+    "LegroomOtelMetrics",
     "OTelMetricsConfig",
     "configure_otel_metrics",
     "get_otel_metrics",
     "get_otel_metrics_status",
-    "HeadroomTracer",
+    "LegroomTracer",
     "LangfuseTracingConfig",
     "configure_langfuse_tracing",
-    "get_headroom_tracer",
+    "get_legroom_tracer",
     "get_langfuse_tracing_status",
     "reset_otel_metrics",
-    "reset_headroom_tracing",
+    "reset_legroom_tracing",
     "set_otel_metrics",
-    "set_headroom_tracer",
-    "shutdown_headroom_tracing",
+    "set_legroom_tracer",
+    "shutdown_legroom_tracing",
     "shutdown_otel_metrics",
 ]

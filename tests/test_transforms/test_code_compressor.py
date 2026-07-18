@@ -14,8 +14,8 @@ from unittest.mock import patch
 
 import pytest
 
-import headroom.transforms.code_compressor as cc
-from headroom.transforms.code_compressor import (
+import legroom.transforms.code_compressor as cc
+from legroom.transforms.code_compressor import (
     CodeAwareCompressor,
     CodeCompressionResult,
     CodeCompressorConfig,
@@ -59,8 +59,8 @@ def compressor(default_config):
 @pytest.fixture
 def tokenizer():
     """Get a tokenizer for Transform interface tests."""
-    from headroom.providers import OpenAIProvider
-    from headroom.tokenizer import Tokenizer
+    from legroom.providers import OpenAIProvider
+    from legroom.tokenizer import Tokenizer
 
     provider = OpenAIProvider()
     token_counter = provider.get_token_counter("gpt-4o")
@@ -491,7 +491,7 @@ class TestFallbackCompression:
     def test_fallback_when_tree_sitter_unavailable(self, default_config):
         """Uses fallback compression when tree-sitter is not installed."""
         with patch(
-            "headroom.transforms.code_compressor._check_tree_sitter_available",
+            "legroom.transforms.code_compressor._check_tree_sitter_available",
             return_value=False,
         ):
             compressor = CodeAwareCompressor(default_config)
@@ -513,11 +513,11 @@ class TestFallbackCompression:
         """
         with (
             patch(
-                "headroom.transforms.code_compressor._check_tree_sitter_available",
+                "legroom.transforms.code_compressor._check_tree_sitter_available",
                 return_value=False,
             ),
             patch(
-                "headroom.transforms.kompress_compressor.is_kompress_available",
+                "legroom.transforms.kompress_compressor.is_kompress_available",
                 return_value=False,
             ),
         ):
@@ -1571,7 +1571,7 @@ class TestRealASTRuns:
     def test_get_parser_returns_stock_node_api(self):
         """The parser must yield nodes with the stock tree_sitter property API
         that the tree-walking code relies on (``.type``/``.children``/...)."""
-        from headroom.transforms.code_compressor import _get_parser
+        from legroom.transforms.code_compressor import _get_parser
 
         parser = _get_parser("python")
         tree = parser.parse(b"def foo(x):\n    return x + 1\n")
@@ -1594,7 +1594,7 @@ class TestRealASTRuns:
     def test_check_tree_sitter_available_verifies_real_parse(self):
         """``_check_tree_sitter_available`` must only return True when an actual
         parse succeeds — not merely when the package imports."""
-        import headroom.transforms.code_compressor as cc
+        import legroom.transforms.code_compressor as cc
 
         cc._tree_sitter_available = None  # reset memoized result
         assert cc._check_tree_sitter_available() is True
@@ -1602,7 +1602,7 @@ class TestRealASTRuns:
     def test_check_tree_sitter_available_false_when_parse_broken(self):
         """If parsing raises (e.g. the old foreign-Language bug), availability
         must report False instead of green-lighting the broken path."""
-        import headroom.transforms.code_compressor as cc
+        import legroom.transforms.code_compressor as cc
 
         cc._tree_sitter_available = None
         with patch.object(cc, "_get_parser", side_effect=TypeError("boom")):
@@ -1742,7 +1742,7 @@ class TestRealASTRuns:
 
     def test_get_node_text_uses_utf8_byte_offsets(self):
         """tree-sitter byte offsets must not be sliced as Python str indexes."""
-        from headroom.transforms.code_compressor import _get_node_text, _get_parser
+        from legroom.transforms.code_compressor import _get_node_text, _get_parser
 
         code = 'def first():\n    """中文占位"""\n    return 1\n\ndef second():\n    return 2\n'
         root = _get_parser("python").parse(code.encode("utf-8")).root_node

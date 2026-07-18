@@ -18,10 +18,10 @@ import json
 
 import pytest
 
-from headroom.providers import OpenAIProvider
-from headroom.tokenizer import Tokenizer
-from headroom.transforms.content_router import ContentRouter, ContentRouterConfig
-from headroom.transforms.lossless_compaction import expand_runs, search_unheading, strip_ansi
+from legroom.providers import OpenAIProvider
+from legroom.tokenizer import Tokenizer
+from legroom.transforms.content_router import ContentRouter, ContentRouterConfig
+from legroom.transforms.lossless_compaction import expand_runs, search_unheading, strip_ansi
 
 GREP = "".join(
     f"src/module_{f}.py:{ln * 3}:matched occurrence with some real content here\n"

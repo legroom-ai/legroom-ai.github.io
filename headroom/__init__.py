@@ -1,9 +1,9 @@
 """
-Headroom - The Context Optimization Layer for LLM Applications.
+Legroom - The Context Optimization Layer for LLM Applications.
 
 Cut your LLM costs by 50-90% without losing accuracy.
 
-Headroom wraps LLM clients to provide:
+Legroom wraps LLM clients to provide:
 - Smart compression of tool outputs (keeps errors, anomalies, relevant items)
 - Cache-aligned prefix optimization for better provider cache hits
 - Rolling window token management for long conversations
@@ -11,11 +11,11 @@ Headroom wraps LLM clients to provide:
 
 Quick Start:
 
-    from headroom import HeadroomClient, OpenAIProvider
+    from legroom import LegroomClient, OpenAIProvider
     from openai import OpenAI
 
     # Wrap your existing client
-    client = HeadroomClient(
+    client = LegroomClient(
         original_client=OpenAI(),
         provider=OpenAIProvider(),
         default_mode="optimize",
@@ -43,7 +43,7 @@ Verify It's Working:
     # Enable logging to see what's happening
     import logging
     logging.basicConfig(level=logging.INFO)
-    # INFO:headroom.transforms.pipeline:Pipeline complete: 45000 -> 4500 tokens
+    # INFO:legroom.transforms.pipeline:Pipeline complete: 45000 -> 4500 tokens
 
 Simulate Before Sending:
 
@@ -56,16 +56,16 @@ Simulate Before Sending:
 
 Error Handling:
 
-    from headroom import HeadroomError, ConfigurationError, ProviderError
+    from legroom import LegroomError, ConfigurationError, ProviderError
 
     try:
         response = client.chat.completions.create(...)
     except ConfigurationError as e:
         print(f"Config issue: {e.details}")
-    except HeadroomError as e:
-        print(f"Headroom error: {e}")
+    except LegroomError as e:
+        print(f"Legroom error: {e}")
 
-For more examples, see https://github.com/headroom-sdk/headroom/tree/main/examples
+For more examples, see https://github.com/legroom-sdk/legroom/tree/main/examples
 """
 
 from __future__ import annotations
@@ -76,28 +76,28 @@ from typing import Any
 from ._ort import ensure_ort_dylib_pinned
 from ._version import __version__  # noqa: F401
 
-# Must run before anything can import `headroom._core`: on Windows the
+# Must run before anything can import `legroom._core`: on Windows the
 # Rust core resolves onnxruntime.dll at runtime (ort load-dynamic), and
 # the bare DLL search lands on the Windows ML System32 build, which
 # deadlocks ort session init (Win11 24H2+). Windows-gated, idempotent,
-# ~microseconds. See `headroom/_ort.py` for the full story.
+# ~microseconds. See `legroom/_ort.py` for the full story.
 ensure_ort_dylib_pinned()
 
 from .compress import CompressConfig, CompressResult, compress, compress_spreadsheet  # noqa: E402
 
 # Keep a real callable bound for the one-function compression API so
-# `from headroom import compress` is never shadowed by the submodule object.
+# `from legroom import compress` is never shadowed by the submodule object.
 
 __all__ = [
     # Main client
-    "HeadroomClient",
+    "LegroomClient",
     # Providers
     "Provider",
     "TokenCounter",
     "OpenAIProvider",
     "AnthropicProvider",
     # Exceptions
-    "HeadroomError",
+    "LegroomError",
     "ConfigurationError",
     "ProviderError",
     "StorageError",
@@ -107,8 +107,8 @@ __all__ = [
     "ValidationError",
     "TransformError",
     # Config
-    "HeadroomConfig",
-    "HeadroomMode",
+    "LegroomConfig",
+    "LegroomMode",
     "SmartCrusherConfig",
     "CacheAlignerConfig",
     "CacheOptimizerConfig",
@@ -153,17 +153,17 @@ __all__ = [
     "count_tokens_messages",
     "generate_report",
     # Observability
-    "HeadroomOtelMetrics",
-    "HeadroomTracer",
+    "LegroomOtelMetrics",
+    "LegroomTracer",
     "LangfuseTracingConfig",
     "OTelMetricsConfig",
     "configure_otel_metrics",
     "configure_langfuse_tracing",
-    "get_headroom_tracer",
+    "get_legroom_tracer",
     "get_langfuse_tracing_status",
     "get_otel_metrics",
     "get_otel_metrics_status",
-    "reset_headroom_tracing",
+    "reset_legroom_tracing",
     "reset_otel_metrics",
     # Memory - optional hierarchical memory system
     "with_memory",  # Main user-facing API
@@ -190,110 +190,110 @@ __all__ = [
     "SharedContext",
 ]
 
-# Keep package-level imports lightweight so `import headroom` does not eagerly
+# Keep package-level imports lightweight so `import legroom` does not eagerly
 # load provider SDKs, ML stacks, or optional proxy/runtime integrations.
 _LAZY_EXPORTS: dict[str, tuple[str, str]] = {
     # Main client
-    "HeadroomClient": ("headroom.client", "HeadroomClient"),
+    "LegroomClient": ("legroom.client", "LegroomClient"),
     # Providers
-    "Provider": ("headroom.providers", "Provider"),
-    "TokenCounter": ("headroom.providers", "TokenCounter"),
-    "OpenAIProvider": ("headroom.providers", "OpenAIProvider"),
-    "AnthropicProvider": ("headroom.providers", "AnthropicProvider"),
+    "Provider": ("legroom.providers", "Provider"),
+    "TokenCounter": ("legroom.providers", "TokenCounter"),
+    "OpenAIProvider": ("legroom.providers", "OpenAIProvider"),
+    "AnthropicProvider": ("legroom.providers", "AnthropicProvider"),
     # Exceptions
-    "HeadroomError": ("headroom.exceptions", "HeadroomError"),
-    "ConfigurationError": ("headroom.exceptions", "ConfigurationError"),
-    "ProviderError": ("headroom.exceptions", "ProviderError"),
-    "StorageError": ("headroom.exceptions", "StorageError"),
-    "CompressionError": ("headroom.exceptions", "CompressionError"),
-    "TokenizationError": ("headroom.exceptions", "TokenizationError"),
-    "CacheError": ("headroom.exceptions", "CacheError"),
-    "ValidationError": ("headroom.exceptions", "ValidationError"),
-    "TransformError": ("headroom.exceptions", "TransformError"),
+    "LegroomError": ("legroom.exceptions", "LegroomError"),
+    "ConfigurationError": ("legroom.exceptions", "ConfigurationError"),
+    "ProviderError": ("legroom.exceptions", "ProviderError"),
+    "StorageError": ("legroom.exceptions", "StorageError"),
+    "CompressionError": ("legroom.exceptions", "CompressionError"),
+    "TokenizationError": ("legroom.exceptions", "TokenizationError"),
+    "CacheError": ("legroom.exceptions", "CacheError"),
+    "ValidationError": ("legroom.exceptions", "ValidationError"),
+    "TransformError": ("legroom.exceptions", "TransformError"),
     # Config
-    "HeadroomConfig": ("headroom.config", "HeadroomConfig"),
-    "HeadroomMode": ("headroom.config", "HeadroomMode"),
-    "SmartCrusherConfig": ("headroom.config", "SmartCrusherConfig"),
-    "CacheAlignerConfig": ("headroom.config", "CacheAlignerConfig"),
-    "CacheOptimizerConfig": ("headroom.config", "CacheOptimizerConfig"),
-    "RelevanceScorerConfig": ("headroom.config", "RelevanceScorerConfig"),
+    "LegroomConfig": ("legroom.config", "LegroomConfig"),
+    "LegroomMode": ("legroom.config", "LegroomMode"),
+    "SmartCrusherConfig": ("legroom.config", "SmartCrusherConfig"),
+    "CacheAlignerConfig": ("legroom.config", "CacheAlignerConfig"),
+    "CacheOptimizerConfig": ("legroom.config", "CacheOptimizerConfig"),
+    "RelevanceScorerConfig": ("legroom.config", "RelevanceScorerConfig"),
     # Data models
-    "Block": ("headroom.config", "Block"),
-    "CachePrefixMetrics": ("headroom.config", "CachePrefixMetrics"),
-    "DiffArtifact": ("headroom.config", "DiffArtifact"),
-    "RequestMetrics": ("headroom.config", "RequestMetrics"),
-    "SimulationResult": ("headroom.config", "SimulationResult"),
-    "TransformDiff": ("headroom.config", "TransformDiff"),
-    "TransformResult": ("headroom.config", "TransformResult"),
-    "WasteSignals": ("headroom.config", "WasteSignals"),
+    "Block": ("legroom.config", "Block"),
+    "CachePrefixMetrics": ("legroom.config", "CachePrefixMetrics"),
+    "DiffArtifact": ("legroom.config", "DiffArtifact"),
+    "RequestMetrics": ("legroom.config", "RequestMetrics"),
+    "SimulationResult": ("legroom.config", "SimulationResult"),
+    "TransformDiff": ("legroom.config", "TransformDiff"),
+    "TransformResult": ("legroom.config", "TransformResult"),
+    "WasteSignals": ("legroom.config", "WasteSignals"),
     # Transforms
-    "SmartCrusher": ("headroom.transforms", "SmartCrusher"),
-    "CacheAligner": ("headroom.transforms", "CacheAligner"),
-    "TransformPipeline": ("headroom.transforms", "TransformPipeline"),
+    "SmartCrusher": ("legroom.transforms", "SmartCrusher"),
+    "CacheAligner": ("legroom.transforms", "CacheAligner"),
+    "TransformPipeline": ("legroom.transforms", "TransformPipeline"),
     # Cache optimizers
-    "BaseCacheOptimizer": ("headroom.cache", "BaseCacheOptimizer"),
-    "CacheConfig": ("headroom.cache", "CacheConfig"),
-    "CacheMetrics": ("headroom.cache", "CacheMetrics"),
-    "CacheResult": ("headroom.cache", "CacheResult"),
-    "CacheStrategy": ("headroom.cache", "CacheStrategy"),
-    "OptimizationContext": ("headroom.cache", "OptimizationContext"),
-    "CacheOptimizerRegistry": ("headroom.cache", "CacheOptimizerRegistry"),
-    "AnthropicCacheOptimizer": ("headroom.cache", "AnthropicCacheOptimizer"),
-    "OpenAICacheOptimizer": ("headroom.cache", "OpenAICacheOptimizer"),
-    "GoogleCacheOptimizer": ("headroom.cache", "GoogleCacheOptimizer"),
-    "SemanticCache": ("headroom.cache", "SemanticCache"),
-    "SemanticCacheLayer": ("headroom.cache", "SemanticCacheLayer"),
+    "BaseCacheOptimizer": ("legroom.cache", "BaseCacheOptimizer"),
+    "CacheConfig": ("legroom.cache", "CacheConfig"),
+    "CacheMetrics": ("legroom.cache", "CacheMetrics"),
+    "CacheResult": ("legroom.cache", "CacheResult"),
+    "CacheStrategy": ("legroom.cache", "CacheStrategy"),
+    "OptimizationContext": ("legroom.cache", "OptimizationContext"),
+    "CacheOptimizerRegistry": ("legroom.cache", "CacheOptimizerRegistry"),
+    "AnthropicCacheOptimizer": ("legroom.cache", "AnthropicCacheOptimizer"),
+    "OpenAICacheOptimizer": ("legroom.cache", "OpenAICacheOptimizer"),
+    "GoogleCacheOptimizer": ("legroom.cache", "GoogleCacheOptimizer"),
+    "SemanticCache": ("legroom.cache", "SemanticCache"),
+    "SemanticCacheLayer": ("legroom.cache", "SemanticCacheLayer"),
     # Relevance scoring
-    "RelevanceScore": ("headroom.relevance", "RelevanceScore"),
-    "RelevanceScorer": ("headroom.relevance", "RelevanceScorer"),
-    "BM25Scorer": ("headroom.relevance", "BM25Scorer"),
-    "EmbeddingScorer": ("headroom.relevance", "EmbeddingScorer"),
-    "HybridScorer": ("headroom.relevance", "HybridScorer"),
-    "create_scorer": ("headroom.relevance", "create_scorer"),
-    "embedding_available": ("headroom.relevance", "embedding_available"),
+    "RelevanceScore": ("legroom.relevance", "RelevanceScore"),
+    "RelevanceScorer": ("legroom.relevance", "RelevanceScorer"),
+    "BM25Scorer": ("legroom.relevance", "BM25Scorer"),
+    "EmbeddingScorer": ("legroom.relevance", "EmbeddingScorer"),
+    "HybridScorer": ("legroom.relevance", "HybridScorer"),
+    "create_scorer": ("legroom.relevance", "create_scorer"),
+    "embedding_available": ("legroom.relevance", "embedding_available"),
     # Utilities
-    "Tokenizer": ("headroom.tokenizer", "Tokenizer"),
-    "count_tokens_text": ("headroom.tokenizer", "count_tokens_text"),
-    "count_tokens_messages": ("headroom.tokenizer", "count_tokens_messages"),
-    "generate_report": ("headroom.reporting", "generate_report"),
+    "Tokenizer": ("legroom.tokenizer", "Tokenizer"),
+    "count_tokens_text": ("legroom.tokenizer", "count_tokens_text"),
+    "count_tokens_messages": ("legroom.tokenizer", "count_tokens_messages"),
+    "generate_report": ("legroom.reporting", "generate_report"),
     # Observability
-    "HeadroomOtelMetrics": ("headroom.observability", "HeadroomOtelMetrics"),
-    "HeadroomTracer": ("headroom.observability", "HeadroomTracer"),
-    "LangfuseTracingConfig": ("headroom.observability", "LangfuseTracingConfig"),
-    "OTelMetricsConfig": ("headroom.observability", "OTelMetricsConfig"),
-    "configure_otel_metrics": ("headroom.observability", "configure_otel_metrics"),
-    "configure_langfuse_tracing": ("headroom.observability", "configure_langfuse_tracing"),
-    "get_headroom_tracer": ("headroom.observability", "get_headroom_tracer"),
-    "get_langfuse_tracing_status": ("headroom.observability", "get_langfuse_tracing_status"),
-    "get_otel_metrics": ("headroom.observability", "get_otel_metrics"),
-    "get_otel_metrics_status": ("headroom.observability", "get_otel_metrics_status"),
-    "reset_headroom_tracing": ("headroom.observability", "reset_headroom_tracing"),
-    "reset_otel_metrics": ("headroom.observability", "reset_otel_metrics"),
+    "LegroomOtelMetrics": ("legroom.observability", "LegroomOtelMetrics"),
+    "LegroomTracer": ("legroom.observability", "LegroomTracer"),
+    "LangfuseTracingConfig": ("legroom.observability", "LangfuseTracingConfig"),
+    "OTelMetricsConfig": ("legroom.observability", "OTelMetricsConfig"),
+    "configure_otel_metrics": ("legroom.observability", "configure_otel_metrics"),
+    "configure_langfuse_tracing": ("legroom.observability", "configure_langfuse_tracing"),
+    "get_legroom_tracer": ("legroom.observability", "get_legroom_tracer"),
+    "get_langfuse_tracing_status": ("legroom.observability", "get_langfuse_tracing_status"),
+    "get_otel_metrics": ("legroom.observability", "get_otel_metrics"),
+    "get_otel_metrics_status": ("legroom.observability", "get_otel_metrics_status"),
+    "reset_legroom_tracing": ("legroom.observability", "reset_legroom_tracing"),
+    "reset_otel_metrics": ("legroom.observability", "reset_otel_metrics"),
     # One-function API
-    "compress": ("headroom.compress", "compress"),
-    "compress_spreadsheet": ("headroom.compress", "compress_spreadsheet"),
+    "compress": ("legroom.compress", "compress"),
+    "compress_spreadsheet": ("legroom.compress", "compress_spreadsheet"),
     # Hooks
-    "CompressionHooks": ("headroom.hooks", "CompressionHooks"),
-    "CompressContext": ("headroom.hooks", "CompressContext"),
-    "CompressEvent": ("headroom.hooks", "CompressEvent"),
+    "CompressionHooks": ("legroom.hooks", "CompressionHooks"),
+    "CompressContext": ("legroom.hooks", "CompressContext"),
+    "CompressEvent": ("legroom.hooks", "CompressEvent"),
     # Canonical pipeline
-    "PipelineStage": ("headroom.pipeline", "PipelineStage"),
-    "PipelineEvent": ("headroom.pipeline", "PipelineEvent"),
-    "PipelineExtensionManager": ("headroom.pipeline", "PipelineExtensionManager"),
-    "CANONICAL_PIPELINE_STAGES": ("headroom.pipeline", "CANONICAL_PIPELINE_STAGES"),
+    "PipelineStage": ("legroom.pipeline", "PipelineStage"),
+    "PipelineEvent": ("legroom.pipeline", "PipelineEvent"),
+    "PipelineExtensionManager": ("legroom.pipeline", "PipelineExtensionManager"),
+    "CANONICAL_PIPELINE_STAGES": ("legroom.pipeline", "CANONICAL_PIPELINE_STAGES"),
     # Shared context
-    "SharedContext": ("headroom.shared_context", "SharedContext"),
+    "SharedContext": ("legroom.shared_context", "SharedContext"),
 }
 
 # Memory remains optional and preserves the long-standing behavior of exposing
 # `None` when the extra dependencies are not installed.
 _OPTIONAL_EXPORTS = {
-    "with_memory": ("headroom.memory", "with_memory"),
-    "Memory": ("headroom.memory", "Memory"),
-    "ScopeLevel": ("headroom.memory", "ScopeLevel"),
-    "HierarchicalMemory": ("headroom.memory", "HierarchicalMemory"),
-    "MemoryConfig": ("headroom.memory", "MemoryConfig"),
-    "EmbedderBackend": ("headroom.memory", "EmbedderBackend"),
+    "with_memory": ("legroom.memory", "with_memory"),
+    "Memory": ("legroom.memory", "Memory"),
+    "ScopeLevel": ("legroom.memory", "ScopeLevel"),
+    "HierarchicalMemory": ("legroom.memory", "HierarchicalMemory"),
+    "MemoryConfig": ("legroom.memory", "MemoryConfig"),
+    "EmbedderBackend": ("legroom.memory", "EmbedderBackend"),
 }
 
 

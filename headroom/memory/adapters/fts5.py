@@ -1,4 +1,4 @@
-"""SQLite FTS5 full-text search index for Headroom Memory.
+"""SQLite FTS5 full-text search index for Legroom Memory.
 
 Provides fast, local full-text search with BM25 ranking.
 Uses SQLite's built-in FTS5 extension with Porter stemming
@@ -58,7 +58,7 @@ class FTS5TextIndex:
     - category: Memory category for filtering
     """
 
-    def __init__(self, db_path: str | Path = "headroom_memory.db") -> None:
+    def __init__(self, db_path: str | Path = "legroom_memory.db") -> None:
         """Initialize the FTS5 text index.
 
         Args:

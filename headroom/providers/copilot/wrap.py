@@ -11,7 +11,7 @@ from typing import Any
 
 import click
 
-from headroom.proxy.project_context import with_project_prefix
+from legroom.proxy.project_context import with_project_prefix
 
 
 def resolve_provider_type(
@@ -26,7 +26,7 @@ def resolve_provider_type(
     env_type = env.get("COPILOT_PROVIDER_TYPE")
     if env_type in {"anthropic", "openai"}:
         return env_type
-    effective_backend = backend or env.get("HEADROOM_BACKEND") or "anthropic"
+    effective_backend = backend or env.get("LEGROOM_BACKEND") or "anthropic"
     return "anthropic" if effective_backend == "anthropic" else "openai"
 
 
@@ -94,7 +94,7 @@ def strip_auto_model_args(copilot_args: tuple[str, ...]) -> tuple[str, ...]:
     """Remove ``--model auto`` (and ``--model=auto``) from Copilot CLI args.
 
     Used in the subscription/OAuth path: when the user passes ``--model auto``
-    to ``headroom wrap copilot --subscription``, we strip it before launching
+    to ``legroom wrap copilot --subscription``, we strip it before launching
     Copilot so the CLI falls back to its own native automatic model selection
     instead of sending the unsupported ``auto`` string to the BYOK API.
     """

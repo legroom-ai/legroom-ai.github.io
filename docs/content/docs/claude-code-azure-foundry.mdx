@@ -1,12 +1,12 @@
 ---
 title: Claude Code on Azure AI Foundry
-description: Run Claude Code against Claude models on Azure AI Foundry, with Headroom compressing your prompts — fewer input tokens, same answers, your own Azure credentials.
+description: Run Claude Code against Claude models on Azure AI Foundry, with Legroom compressing your prompts — fewer input tokens, same answers, your own Azure credentials.
 ---
 
-If your Claude models live on **Azure AI Foundry**, you can still get Headroom's
-prompt compression. Headroom sits between Claude Code and Azure: it shrinks the
+If your Claude models live on **Azure AI Foundry**, you can still get Legroom's
+prompt compression. Legroom sits between Claude Code and Azure: it shrinks the
 big stuff in each request (file reads, logs, tool output) and forwards the rest to
-Azure using **your own Azure credentials**. You keep your Azure setup; Headroom
+Azure using **your own Azure credentials**. You keep your Azure setup; Legroom
 just makes each call cheaper.
 
 ## What you get
@@ -14,14 +14,14 @@ just makes each call cheaper.
 - **Fewer input tokens** on every Claude Code request to Azure AI Foundry (often
   30–60% on agent workloads), so you pay for less.
 - **Same answers** — compression is reversible and content-aware.
-- **No new secrets** — Headroom never holds your Azure credentials. Claude Code
+- **No new secrets** — Legroom never holds your Azure credentials. Claude Code
   keeps authenticating to Azure AI Foundry with its own `api-key` or Entra Bearer
-  token; Headroom passes it through.
+  token; Legroom passes it through.
 
 ## Before you start
 
 You should already have Claude Code working against Azure AI Foundry **without**
-Headroom. That means these are set in your shell (or your `~/.claude/settings.json`
+Legroom. That means these are set in your shell (or your `~/.claude/settings.json`
 `env` block):
 
 ```bash
@@ -35,15 +35,15 @@ No `ANTHROPIC_API_KEY` is needed — Foundry mode uses your Azure credentials.
 ## Run it (one command)
 
 ```bash
-pip install headroom-ai
-headroom wrap claude
+pip install legroom-ai
+legroom wrap claude
 ```
 
-That's it. Because `CLAUDE_CODE_USE_FOUNDRY=1` is set, `headroom wrap claude`
+That's it. Because `CLAUDE_CODE_USE_FOUNDRY=1` is set, `legroom wrap claude`
 automatically:
 
 1. derives your Azure AI Foundry endpoint from `ANTHROPIC_FOUNDRY_RESOURCE`,
-2. starts the Headroom proxy with that endpoint as the upstream,
+2. starts the Legroom proxy with that endpoint as the upstream,
 3. points Claude Code's Foundry endpoint at the proxy (`ANTHROPIC_FOUNDRY_BASE_URL`),
 4. leaves your Azure resource, model, and credentials untouched.
 
@@ -59,12 +59,12 @@ Use Claude Code exactly as you normally would.
 ## How it works
 
 ```
-Claude Code ──(Foundry request)──▶ Headroom ──(compressed)──▶ Azure AI Foundry (Claude)
+Claude Code ──(Foundry request)──▶ Legroom ──(compressed)──▶ Azure AI Foundry (Claude)
    in Foundry mode                  compresses                 your resource
    (your api-key / Entra) ──────── passed through ───────────▶ authenticates you
 ```
 
-Claude Code sends its Foundry request (Anthropic API format) to Headroom. Headroom
+Claude Code sends its Foundry request (Anthropic API format) to Legroom. Legroom
 compresses the messages, then forwards to your Azure AI Foundry resource endpoint —
 `https://{ANTHROPIC_FOUNDRY_RESOURCE}.services.ai.azure.com/anthropic` — with your
 auth headers passed through unchanged.
@@ -72,31 +72,31 @@ auth headers passed through unchanged.
 ## If you have ANTHROPIC_FOUNDRY_BASE_URL set explicitly
 
 If your environment already has `ANTHROPIC_FOUNDRY_BASE_URL` set to the full Azure
-endpoint URL, Headroom uses it directly and `ANTHROPIC_FOUNDRY_RESOURCE` is not
+endpoint URL, Legroom uses it directly and `ANTHROPIC_FOUNDRY_RESOURCE` is not
 needed. Either configuration works.
 
 ## Check that compression is working
 
 1. Open the dashboard: [http://localhost:8787/dashboard](http://localhost:8787/dashboard).
    "Tokens saved" should climb as you use Claude Code.
-2. Or check response headers: `x-headroom-tokens-before`, `x-headroom-tokens-after`,
-   `x-headroom-tokens-saved`.
+2. Or check response headers: `x-legroom-tokens-before`, `x-legroom-tokens-after`,
+   `x-legroom-tokens-saved`.
 
 ## Troubleshooting
 
-**Headroom says "ANTHROPIC_BASE_URL" instead of "Foundry mode"**
+**Legroom says "ANTHROPIC_BASE_URL" instead of "Foundry mode"**
 
-`CLAUDE_CODE_USE_FOUNDRY` is not set in the shell where you ran `headroom wrap
+`CLAUDE_CODE_USE_FOUNDRY` is not set in the shell where you ran `legroom wrap
 claude`. Make sure to export it before running, or set it in your shell profile.
 
 **Claude Code fails with a 401 / auth error**
 
 Your Azure credentials are not being forwarded correctly. Verify that Claude Code
-works against Azure AI Foundry directly (without Headroom) before wrapping. If it
-works direct but not through Headroom, open an issue with the proxy log.
+works against Azure AI Foundry directly (without Legroom) before wrapping. If it
+works direct but not through Legroom, open an issue with the proxy log.
 
 **"tokens saved" is always 0**
 
 Check the [dashboard](http://localhost:8787/dashboard) — if requests are flowing
 but savings are 0, content may be below the compression threshold or the Rust
-extension may not be installed (`pip install "headroom-ai[proxy]"` includes it).
+extension may not be installed (`pip install "legroom-ai[proxy]"` includes it).

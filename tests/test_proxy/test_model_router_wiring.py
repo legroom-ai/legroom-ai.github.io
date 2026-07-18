@@ -15,9 +15,9 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from headroom.proxy.handlers.anthropic import AnthropicHandlerMixin
-from headroom.proxy.model_router import ModelRoute, ModelRouter, ModelRouterConfig
-from headroom.proxy.server import ProxyConfig, _proxy_config_from_env, create_app
+from legroom.proxy.handlers.anthropic import AnthropicHandlerMixin
+from legroom.proxy.model_router import ModelRoute, ModelRouter, ModelRouterConfig
+from legroom.proxy.server import ProxyConfig, _proxy_config_from_env, create_app
 
 MESSAGES = "/v1/messages"
 
@@ -69,9 +69,9 @@ def _router_config() -> ModelRouterConfig:
 
 
 def test_proxy_config_from_env_reads_router(monkeypatch) -> None:
-    monkeypatch.setenv("HEADROOM_MODEL_ROUTER_ENABLED", "true")
+    monkeypatch.setenv("LEGROOM_MODEL_ROUTER_ENABLED", "true")
     monkeypatch.setenv(
-        "HEADROOM_MODEL_ROUTES",
+        "LEGROOM_MODEL_ROUTES",
         '[{"name":"small","max_input_tokens":4000,"require_no_tools":true,'
         '"to_model":"claude-haiku-4-5"}]',
     )
@@ -82,8 +82,8 @@ def test_proxy_config_from_env_reads_router(monkeypatch) -> None:
 
 
 def test_proxy_config_from_env_router_disabled_by_default(monkeypatch) -> None:
-    monkeypatch.delenv("HEADROOM_MODEL_ROUTER_ENABLED", raising=False)
-    monkeypatch.delenv("HEADROOM_MODEL_ROUTES", raising=False)
+    monkeypatch.delenv("LEGROOM_MODEL_ROUTER_ENABLED", raising=False)
+    monkeypatch.delenv("LEGROOM_MODEL_ROUTES", raising=False)
     config = _proxy_config_from_env()
     assert config.model_router is not None
     assert not config.model_router.enabled
@@ -129,7 +129,7 @@ class _RouterHost(AnthropicHandlerMixin):
 
 def test_maybe_route_model_fails_closed_without_router() -> None:
     # A host that never set model_router (test doubles, alternate mixin hosts that
-    # do not run HeadroomProxy.__init__) must not crash when routing is off.
+    # do not run LegroomProxy.__init__) must not crash when routing is off.
     host = _RouterHost()
     tracker = MagicMock()
     out = host._maybe_route_model(
@@ -174,7 +174,7 @@ def test_maybe_route_model_logs_unchanged_decision(
     host = _RouterHost()
     host.model_router = ModelRouter(ModelRouterConfig(enabled=True, routes=routes))
 
-    with caplog.at_level(logging.INFO, logger="headroom.proxy"):
+    with caplog.at_level(logging.INFO, logger="legroom.proxy"):
         out = host._maybe_route_model(
             "keep", [{"content": "hi"}], {"model": "keep"}, MagicMock(), False
         )
@@ -240,7 +240,7 @@ def test_bypass_request_is_never_model_rewritten() -> None:
                 "max_tokens": 16,
                 "messages": [{"role": "user", "content": "hi"}],
             },
-            headers={"x-headroom-bypass": "true"},
+            headers={"x-legroom-bypass": "true"},
         )
     assert resp.status_code == 200
     # Byte-faithful passthrough must keep the client's original model.

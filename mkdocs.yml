@@ -1,9 +1,9 @@
-site_name: Headroom
+site_name: Legroom
 docs_dir: wiki
 site_description: "The Context Optimization Layer for LLM Applications — compress everything your AI agent reads."
-site_url: https://ghaliba3.github.io/headroom
-repo_url: https://github.com/ghaliba3/headroom
-repo_name: ghaliba3/headroom
+site_url: https://legroom-ai.github.io
+repo_url: https://github.com/legroom-ai/legroom-ai.github.io
+repo_name: ghaliba3/legroom
 edit_uri: edit/main/docs/
 
 theme:
@@ -128,9 +128,9 @@ nav:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/ghaliba3/headroom
+      link: https://github.com/legroom-ai/legroom-ai.github.io
     - icon: fontawesome/brands/python
-      link: https://pypi.org/project/headroom-ai/
+      link: https://pypi.org/project/legroom-ai/
     - icon: fontawesome/brands/discord
       link: https://discord.gg/yRmaUNpsPJ
   generator: false

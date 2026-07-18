@@ -6,7 +6,7 @@ import json
 from dataclasses import dataclass
 from typing import Any, Literal, cast
 
-from headroom.ccr.tool_injection import create_ccr_tool_definition
+from legroom.ccr.tool_injection import create_ccr_tool_definition
 
 
 @dataclass(frozen=True)

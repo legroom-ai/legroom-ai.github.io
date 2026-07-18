@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from headroom.proxy.internal_header_policy import (
+from legroom.proxy.internal_header_policy import (
     STRIP_INTERNAL_HEADERS_ENV,
     resolve_strip_internal_headers_mode,
     strip_internal_headers,
@@ -24,11 +24,11 @@ def test_resolve_strip_internal_headers_mode_rejects_unknown_values() -> None:
         resolve_strip_internal_headers_mode("maybe")
 
 
-def test_strip_internal_headers_removes_headroom_headers_case_insensitively() -> None:
+def test_strip_internal_headers_removes_legroom_headers_case_insensitively() -> None:
     headers = {
         "Authorization": "Bearer token",
-        "x-headroom-bypass": "true",
-        "X-Headroom-User-Id": "user-1",
+        "x-legroom-bypass": "true",
+        "X-Legroom-User-Id": "user-1",
         "content-type": "application/json",
     }
 
@@ -38,11 +38,11 @@ def test_strip_internal_headers_removes_headroom_headers_case_insensitively() ->
         "Authorization": "Bearer token",
         "content-type": "application/json",
     }
-    assert "x-headroom-bypass" in headers
+    assert "x-legroom-bypass" in headers
 
 
 def test_strip_internal_headers_disabled_returns_copy_unchanged() -> None:
-    headers = {"x-headroom-mode": "passthrough", "content-type": "application/json"}
+    headers = {"x-legroom-mode": "passthrough", "content-type": "application/json"}
 
     copied = strip_internal_headers(headers, mode="disabled")
 

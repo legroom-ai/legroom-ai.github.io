@@ -1,4 +1,4 @@
-# Headroom Evaluation Framework
+# Legroom Evaluation Framework
 
 **Prove that compression preserves LLM accuracy through rigorous OSS benchmarks.**
 
@@ -6,7 +6,7 @@
 
 ### Standard Benchmarks — "No Accuracy Loss"
 
-| Benchmark | Category | N | Baseline | Headroom | Delta |
+| Benchmark | Category | N | Baseline | Legroom | Delta |
 |-----------|----------|---|----------|----------|-------|
 | [GSM8K](https://huggingface.co/datasets/openai/gsm8k) | Math | 100 | 0.870 | 0.870 | **0.000** |
 | [TruthfulQA](https://huggingface.co/datasets/truthfulqa/truthful_qa) | Factual | 100 | 0.530 | 0.560 | **+0.030** |
@@ -25,8 +25,8 @@ Model: `gpt-4o-mini` | Suite cost: ~$3 | Duration: ~15 min
 ## Installation
 
 ```bash
-pip install "headroom-ai[all]"    # Everything including evals (recommended)
-pip install "headroom-ai[evals]"  # Evaluation framework only
+pip install "legroom-ai[all]"    # Everything including evals (recommended)
+pip install "legroom-ai[evals]"  # Evaluation framework only
 ```
 
 ## Quick Start
@@ -35,32 +35,32 @@ pip install "headroom-ai[evals]"  # Evaluation framework only
 
 ```bash
 # Quick smoke test (8 cases, ~10s)
-python -m headroom.evals quick -n 8 --provider openai --model gpt-4o-mini
+python -m legroom.evals quick -n 8 --provider openai --model gpt-4o-mini
 
 # Full Tier 1 suite (~$3, ~15 min) — requires proxy running
-python -m headroom.evals suite --tier 1 -o eval_results/
+python -m legroom.evals suite --tier 1 -o eval_results/
 
 # Extended suite (Tiers 1+2, ~$8, ~1 hr)
-python -m headroom.evals suite --tier 2 -o eval_results/
+python -m legroom.evals suite --tier 2 -o eval_results/
 
 # CI mode — exit 1 on any regression
-python -m headroom.evals suite --tier 1 --ci
+python -m legroom.evals suite --tier 1 --ci
 
 # List all available datasets
-python -m headroom.evals list
+python -m legroom.evals list
 ```
 
 ### Running with the Proxy (Recommended)
 
-For the most accurate evaluation, run through the Headroom proxy which provides
+For the most accurate evaluation, run through the Legroom proxy which provides
 the full stack: compression + CCR retrieval + cache alignment.
 
 ```bash
 # Terminal 1: Start the proxy
-headroom proxy --port 8787
+legroom proxy --port 8787
 
 # Terminal 2: Run evals (auto-detects proxy)
-python -m headroom.evals suite --tier 1 -o eval_results/
+python -m legroom.evals suite --tier 1 -o eval_results/
 ```
 
 Without the proxy, the eval runner falls back to local compression only (no CCR).
@@ -68,8 +68,8 @@ Without the proxy, the eval runner falls back to local compression only (no CCR)
 ### Python API
 
 ```python
-from headroom.evals.suite_runner import SuiteRunner
-from headroom.evals.reports.report_card import save_reports
+from legroom.evals.suite_runner import SuiteRunner
+from legroom.evals.reports.report_card import save_reports
 
 # Run Tier 1 suite
 runner = SuiteRunner(model="gpt-4o-mini", tiers=[1])
@@ -88,10 +88,10 @@ LLM or API key:
 ```bash
 # 1. Record: run the proxy with recording enabled (opt-in; recordings contain
 #    full conversation content in plaintext and stay on this machine)
-HEADROOM_PROBE_RECORD_DIR=~/.headroom/probe-recordings headroom proxy start
+LEGROOM_PROBE_RECORD_DIR=~/.legroom/probe-recordings legroom proxy start
 
 # 2. Use your agent through the proxy as normal, then score retention:
-headroom evals probes --recordings ~/.headroom/probe-recordings
+legroom evals probes --recordings ~/.legroom/probe-recordings
 ```
 
 Probe targets are extracted from original tool results across three
@@ -146,7 +146,7 @@ Original Context ──► LLM ──► Response A
 Compressed Context ──► LLM ──► Response B
 ```
 
-When the Headroom proxy is running, the "compressed" path goes through the full
+When the Legroom proxy is running, the "compressed" path goes through the full
 stack (compression + CCR tool injection + cache alignment), which is the real
 production experience.
 
@@ -223,7 +223,7 @@ name: Evaluation Suite
 
 on:
   pull_request:
-    paths: ['headroom/transforms/**', 'headroom/evals/**']
+    paths: ['legroom/transforms/**', 'legroom/evals/**']
   schedule:
     - cron: '0 6 * * 1'  # Weekly
 
@@ -238,14 +238,14 @@ jobs:
       - name: CCR Round-trip (zero cost)
         run: |
           python -c "
-          from headroom.evals.runners.compression_only import CompressionOnlyRunner
+          from legroom.evals.runners.compression_only import CompressionOnlyRunner
           r = CompressionOnlyRunner()
           result = r.evaluate_ccr_lossless(r.generate_ccr_test_cases(50))
           assert result.passed, f'CCR failures: {result.errors}'
           print(f'CCR: {result.passed_cases}/{result.total_cases} PASS')
           "
       - name: Quick eval
-        run: python -m headroom.evals quick -n 8 --provider openai --model gpt-4o-mini
+        run: python -m legroom.evals quick -n 8 --provider openai --model gpt-4o-mini
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 ```
@@ -262,7 +262,7 @@ ANTHROPIC_API_KEY=sk-ant-... # Required for Anthropic models
 ## Architecture
 
 ```
-headroom/evals/
+legroom/evals/
 ├── __init__.py              # Public API
 ├── __main__.py              # CLI (quick, list, benchmark, suite, report)
 ├── core.py                  # EvalCase, EvalResult, EvalSuite

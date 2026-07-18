@@ -1,4 +1,4 @@
-"""Detachment of the shared proxy subprocess in ``headroom wrap``.
+"""Detachment of the shared proxy subprocess in ``legroom wrap``.
 
 ``_start_proxy`` launches the proxy that every wrapped agent on a port shares.
 It must outlive an *ungraceful* close of the agent that happened to start it
@@ -17,7 +17,7 @@ from typing import Any
 
 import pytest
 
-from headroom.cli import wrap as wrap_cli
+from legroom.cli import wrap as wrap_cli
 
 # Windows-only creation flag; not always exported by the host's ``subprocess``.
 _CREATE_BREAKAWAY_FROM_JOB = 0x01000000

@@ -15,7 +15,7 @@ from uuid import uuid4
 
 import pytest
 
-from headroom.learn.scanner import ClaudeCodeScanner, _decode_project_path, _greedy_path_decode
+from legroom.learn.scanner import ClaudeCodeScanner, _decode_project_path, _greedy_path_decode
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -37,9 +37,9 @@ class TestGreedyPathDecode:
     """Unit tests for _greedy_path_decode."""
 
     def test_simple_directory(self, tmp_path: Path) -> None:
-        _make_dirs(tmp_path, "headroom")
-        result = _greedy_path_decode(tmp_path, ["headroom"])
-        assert result == tmp_path / "headroom"
+        _make_dirs(tmp_path, "legroom")
+        result = _greedy_path_decode(tmp_path, ["legroom"])
+        assert result == tmp_path / "legroom"
 
     def test_single_hyphen_in_dirname(self, tmp_path: Path) -> None:
         """Directory name contains one literal hyphen."""
@@ -88,10 +88,10 @@ class TestGreedyPathDecode:
         assert result == tmp_path / "GitHub.nosync" / "my-cool-app"
 
     def test_multi_hyphen_dot_dir_containing_subproject(self, tmp_path: Path) -> None:
-        """Path like my-cool-project.nosync/headroom — hardest combination."""
-        _make_dirs(tmp_path, "my-cool-project.nosync/headroom")
-        result = _greedy_path_decode(tmp_path, ["my", "cool", "project.nosync", "headroom"])
-        assert result == tmp_path / "my-cool-project.nosync" / "headroom"
+        """Path like my-cool-project.nosync/legroom — hardest combination."""
+        _make_dirs(tmp_path, "my-cool-project.nosync/legroom")
+        result = _greedy_path_decode(tmp_path, ["my", "cool", "project.nosync", "legroom"])
+        assert result == tmp_path / "my-cool-project.nosync" / "legroom"
 
     def test_dot_flattened_into_separate_tokens(self, tmp_path: Path) -> None:
         """Flattened encoding like GitHub-nosync should map back to GitHub.nosync."""
@@ -101,9 +101,9 @@ class TestGreedyPathDecode:
 
     def test_hybrid_hyphen_and_dot_flattening(self, tmp_path: Path) -> None:
         """Flattened encoding should reconstruct mixed separators in one component."""
-        _make_dirs(tmp_path, "my-cool-project.nosync/headroom")
-        result = _greedy_path_decode(tmp_path, ["my", "cool", "project", "nosync", "headroom"])
-        assert result == tmp_path / "my-cool-project.nosync" / "headroom"
+        _make_dirs(tmp_path, "my-cool-project.nosync/legroom")
+        result = _greedy_path_decode(tmp_path, ["my", "cool", "project", "nosync", "legroom"])
+        assert result == tmp_path / "my-cool-project.nosync" / "legroom"
 
     # ---- Space tests (issue #997) ----
 
@@ -221,7 +221,7 @@ class TestDecodeProjectPath:
         The encoded name maps directly to the real path because every ``-`` is
         a path separator; dots in directory names are preserved unchanged.
         """
-        project = users_tmp / "GitHub.nosync" / "headroom"
+        project = users_tmp / "GitHub.nosync" / "legroom"
         project.mkdir(parents=True)
         # Build the encoded name exactly as Claude Code does (/  →  -)
         encoded = "-" + str(project)[1:].replace("/", "-")
@@ -250,7 +250,7 @@ class TestDecodeProjectPath:
 
         home = Path.home()
         if str(home).startswith("/Users/"):
-            base = home / ".pytest_headroom_tmp"
+            base = home / ".pytest_legroom_tmp"
             try:
                 base.mkdir(exist_ok=True)
             except PermissionError:
@@ -477,7 +477,7 @@ class TestDecodeProjectPath:
         """D:\\work\\vibe-remote must decode correctly even when an ancestor
         directory has an inaccessible sibling (#1624).
 
-        ``headroom learn --verbosity --project`` reported "No matching
+        ``legroom learn --verbosity --project`` reported "No matching
         project" on real Windows machines: the naive full-token join
         (``vibe-remote`` split into ``vibe`` + ``remote``) doesn't exist, so
         decoding falls through to the greedy walk — which real Windows user
@@ -539,7 +539,7 @@ class TestDecodeProjectPath:
         used to consume only the first token after ``Users``/``home`` as the
         home directory and walk from ``/Users/first`` (which does not exist), so
         it bailed out and callers fell back to the literal
-        ``/Users/first/last`` — causing ``headroom learn --apply`` to fail with
+        ``/Users/first/last`` — causing ``legroom learn --apply`` to fail with
         ``PermissionError: '/Users/first'`` for usernames such as
         ``first.last``. This is the Unix counterpart of
         ``test_windows_username_with_dot_stays_single_component``.
@@ -554,7 +554,7 @@ class TestDecodeProjectPath:
         if len(home.parts) < 3 or home.parts[1] not in ("Users", "home"):
             pytest.skip("decoder branch only activates under /Users or /home")
 
-        base = home / f"pytest_headroom_{uuid4().hex}"
+        base = home / f"pytest_legroom_{uuid4().hex}"
         try:
             base.mkdir()
         except (PermissionError, OSError):

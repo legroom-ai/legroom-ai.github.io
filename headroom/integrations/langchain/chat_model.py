@@ -1,4 +1,4 @@
-"""LangChain integration for Headroom SDK.
+"""LangChain integration for Legroom SDK.
 
 This module provides seamless integration with LangChain, enabling automatic
 context optimization for any LangChain chat model.
@@ -8,20 +8,20 @@ https://github.com/langchain-ai/langchain/issues/8725). Therefore, we wrap
 the chat model itself to intercept and transform messages.
 
 Components:
-1. HeadroomChatModel - Wraps any BaseChatModel to apply Headroom transforms
-2. HeadroomCallbackHandler - Tracks metrics and token usage (observability only)
-3. HeadroomRunnable - LCEL-compatible Runnable for chain composition
+1. LegroomChatModel - Wraps any BaseChatModel to apply Legroom transforms
+2. LegroomCallbackHandler - Tracks metrics and token usage (observability only)
+3. LegroomRunnable - LCEL-compatible Runnable for chain composition
 4. optimize_messages() - Standalone function for manual optimization
 
 Example:
     from langchain_openai import ChatOpenAI
-    from headroom.integrations import HeadroomChatModel
+    from legroom.integrations import LegroomChatModel
 
     # Wrap any LangChain chat model
     llm = ChatOpenAI(model="gpt-4o")
-    optimized_llm = HeadroomChatModel(llm)
+    optimized_llm = LegroomChatModel(llm)
 
-    # Use normally - Headroom automatically optimizes context
+    # Use normally - Legroom automatically optimizes context
     response = optimized_llm.invoke("What is 2+2?")
 """
 
@@ -61,11 +61,11 @@ except ImportError:
     Field = lambda **kwargs: None  # type: ignore[assignment]  # noqa: E731
     PrivateAttr = lambda **kwargs: None  # type: ignore[assignment]  # noqa: E731
 
-from headroom import HeadroomConfig, HeadroomMode
-from headroom.providers import OpenAIProvider
-from headroom.transforms import TransformPipeline
+from legroom import LegroomConfig, LegroomMode
+from legroom.providers import OpenAIProvider
+from legroom.transforms import TransformPipeline
 
-from .providers import get_headroom_provider, get_model_name_from_langchain
+from .providers import get_legroom_provider, get_model_name_from_langchain
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +75,7 @@ def _check_langchain_available() -> None:
     if not LANGCHAIN_AVAILABLE:
         raise ImportError(
             "LangChain is required for this integration. "
-            "Install with: pip install headroom[langchain] "
+            "Install with: pip install legroom[langchain] "
             "or: pip install langchain-core langchain-openai"
         )
 
@@ -115,11 +115,11 @@ class OptimizationMetrics:
     model: str
 
 
-class HeadroomChatModel(BaseChatModel):
-    """LangChain chat model wrapper that applies Headroom optimizations.
+class LegroomChatModel(BaseChatModel):
+    """LangChain chat model wrapper that applies Legroom optimizations.
 
     Wraps any LangChain BaseChatModel and automatically optimizes the context
-    before each API call. This is the recommended way to use Headroom with
+    before each API call. This is the recommended way to use Legroom with
     LangChain because:
 
     1. Callbacks cannot modify messages (LangChain design limitation)
@@ -128,32 +128,32 @@ class HeadroomChatModel(BaseChatModel):
 
     Example:
         from langchain_openai import ChatOpenAI
-        from headroom.integrations import HeadroomChatModel
+        from legroom.integrations import LegroomChatModel
 
         # Basic usage
         llm = ChatOpenAI(model="gpt-4o")
-        optimized = HeadroomChatModel(llm)
+        optimized = LegroomChatModel(llm)
         response = optimized.invoke([HumanMessage("Hello!")])
 
         # With custom config
-        from headroom import HeadroomConfig, HeadroomMode
-        config = HeadroomConfig(default_mode=HeadroomMode.OPTIMIZE)
-        optimized = HeadroomChatModel(llm, config=config)
+        from legroom import LegroomConfig, LegroomMode
+        config = LegroomConfig(default_mode=LegroomMode.OPTIMIZE)
+        optimized = LegroomChatModel(llm, config=config)
 
         # Access metrics
         print(f"Saved {optimized.total_tokens_saved} tokens")
 
     Attributes:
         wrapped_model: The underlying LangChain chat model
-        headroom_client: HeadroomClient instance for optimization
+        legroom_client: LegroomClient instance for optimization
         metrics_history: List of OptimizationMetrics from recent calls
         total_tokens_saved: Running total of tokens saved
     """
 
     # Pydantic model fields
     wrapped_model: Any = Field(description="The wrapped LangChain chat model")
-    headroom_config: Any = Field(default=None, description="Headroom configuration")
-    mode: HeadroomMode = Field(default=HeadroomMode.OPTIMIZE, description="Headroom mode")
+    legroom_config: Any = Field(default=None, description="Legroom configuration")
+    mode: LegroomMode = Field(default=LegroomMode.OPTIMIZE, description="Legroom mode")
     auto_detect_provider: bool = Field(
         default=True,
         description="Auto-detect provider from wrapped model (OpenAI, Anthropic, Google)",
@@ -171,28 +171,28 @@ class HeadroomChatModel(BaseChatModel):
     def __init__(
         self,
         wrapped_model: BaseChatModel,
-        config: HeadroomConfig | None = None,
-        mode: HeadroomMode = HeadroomMode.OPTIMIZE,
+        config: LegroomConfig | None = None,
+        mode: LegroomMode = LegroomMode.OPTIMIZE,
         auto_detect_provider: bool = True,
         **kwargs: Any,
     ) -> None:
-        """Initialize HeadroomChatModel.
+        """Initialize LegroomChatModel.
 
         Args:
             wrapped_model: Any LangChain BaseChatModel to wrap
-            config: HeadroomConfig for optimization settings
-            mode: HeadroomMode (AUDIT, OPTIMIZE, or SIMULATE)
+            config: LegroomConfig for optimization settings
+            mode: LegroomMode (AUDIT, OPTIMIZE, or SIMULATE)
             auto_detect_provider: Auto-detect provider from wrapped model.
                 When True (default), automatically detects if the wrapped model
                 is OpenAI, Anthropic, Google, etc. and uses the appropriate
-                Headroom provider for accurate token counting.
+                Legroom provider for accurate token counting.
             **kwargs: Additional arguments passed to BaseChatModel
         """
         _check_langchain_available()
 
         super().__init__(  # type: ignore[call-arg]
             wrapped_model=wrapped_model,
-            headroom_config=config or HeadroomConfig(),
+            legroom_config=config or LegroomConfig(),
             mode=mode,
             auto_detect_provider=auto_detect_provider,
             **kwargs,
@@ -205,14 +205,14 @@ class HeadroomChatModel(BaseChatModel):
     @property
     def _llm_type(self) -> str:
         """Return identifier for this LLM type."""
-        return f"headroom-{self.wrapped_model._llm_type}"
+        return f"legroom-{self.wrapped_model._llm_type}"
 
     @property
     def _identifying_params(self) -> dict[str, Any]:
         """Return identifying parameters."""
         return {
             "wrapped_model": self.wrapped_model._identifying_params,
-            "headroom_mode": self.mode.value,
+            "legroom_mode": self.mode.value,
         }
 
     @property
@@ -224,12 +224,12 @@ class HeadroomChatModel(BaseChatModel):
         """
         if self._pipeline is None:
             if self.auto_detect_provider:
-                self._provider = get_headroom_provider(self.wrapped_model)
+                self._provider = get_legroom_provider(self.wrapped_model)
                 logger.debug(f"Auto-detected provider: {self._provider.__class__.__name__}")
             else:
                 self._provider = OpenAIProvider()
             self._pipeline = TransformPipeline(
-                config=self.headroom_config,
+                config=self.legroom_config,
                 provider=self._provider,
             )
         pipeline: TransformPipeline = self._pipeline
@@ -246,7 +246,7 @@ class HeadroomChatModel(BaseChatModel):
         return self._metrics_history.copy()
 
     def _convert_messages_to_openai(self, messages: list[BaseMessage]) -> list[dict[str, Any]]:
-        """Convert LangChain messages to OpenAI format for Headroom."""
+        """Convert LangChain messages to OpenAI format for Legroom."""
         result = []
         for msg in messages:
             if isinstance(msg, SystemMessage):
@@ -321,7 +321,7 @@ class HeadroomChatModel(BaseChatModel):
     def _optimize_messages(
         self, messages: list[BaseMessage]
     ) -> tuple[list[BaseMessage], OptimizationMetrics]:
-        """Apply Headroom optimization to messages."""
+        """Apply Legroom optimization to messages."""
         request_id = str(uuid4())
 
         # Convert to OpenAI format
@@ -339,7 +339,7 @@ class HeadroomChatModel(BaseChatModel):
         # Ensure model is a string
         model_str = str(model) if model else "gpt-4o"
 
-        # Apply Headroom transforms via pipeline
+        # Apply Legroom transforms via pipeline
         result = self.pipeline.apply(
             messages=openai_messages,
             model=model_str,
@@ -382,7 +382,7 @@ class HeadroomChatModel(BaseChatModel):
         run_manager: Any = None,
         **kwargs: Any,
     ) -> ChatResult:
-        """Generate response with Headroom optimization.
+        """Generate response with Legroom optimization.
 
         This is the core method called by invoke(), batch(), etc.
         """
@@ -390,7 +390,7 @@ class HeadroomChatModel(BaseChatModel):
         optimized_messages, metrics = self._optimize_messages(messages)
 
         logger.info(
-            f"Headroom optimized: {metrics.tokens_before} -> {metrics.tokens_after} tokens "
+            f"Legroom optimized: {metrics.tokens_before} -> {metrics.tokens_after} tokens "
             f"({metrics.savings_percent:.1f}% saved)"
         )
 
@@ -411,12 +411,12 @@ class HeadroomChatModel(BaseChatModel):
         run_manager: Any = None,
         **kwargs: Any,
     ) -> Iterator[ChatGenerationChunk]:
-        """Stream response with Headroom optimization."""
+        """Stream response with Legroom optimization."""
         # Optimize messages
         optimized_messages, metrics = self._optimize_messages(messages)
 
         logger.info(
-            f"Headroom optimized (streaming): {metrics.tokens_before} -> "
+            f"Legroom optimized (streaming): {metrics.tokens_before} -> "
             f"{metrics.tokens_after} tokens"
         )
 
@@ -435,7 +435,7 @@ class HeadroomChatModel(BaseChatModel):
         run_manager: Any = None,
         **kwargs: Any,
     ) -> ChatResult:
-        """Async generate response with Headroom optimization.
+        """Async generate response with Legroom optimization.
 
         This enables `await model.ainvoke(messages)` to work correctly.
         The optimization step runs in a thread executor since it's CPU-bound.
@@ -447,14 +447,14 @@ class HeadroomChatModel(BaseChatModel):
         )
 
         logger.info(
-            f"Headroom optimized (async): {metrics.tokens_before} -> {metrics.tokens_after} tokens "
+            f"Legroom optimized (async): {metrics.tokens_before} -> {metrics.tokens_after} tokens "
             f"({metrics.savings_percent:.1f}% saved)"
         )
 
         # If the wrapped model has streaming=True, create a per-call copy
         # with streaming=False. This avoids mutating shared state across an
         # await, which would race with concurrent ainvoke() calls on the
-        # same HeadroomChatModel instance. (GitHub #1285, review feedback)
+        # same LegroomChatModel instance. (GitHub #1285, review feedback)
         model_to_call = self.wrapped_model
         if getattr(self.wrapped_model, "streaming", False):
             try:
@@ -485,7 +485,7 @@ class HeadroomChatModel(BaseChatModel):
         run_manager: Any = None,
         **kwargs: Any,
     ) -> AsyncIterator[ChatGenerationChunk]:
-        """Async stream response with Headroom optimization.
+        """Async stream response with Legroom optimization.
 
         This enables `async for chunk in model.astream(messages)` to work correctly.
         """
@@ -496,7 +496,7 @@ class HeadroomChatModel(BaseChatModel):
         )
 
         logger.info(
-            f"Headroom optimized (async streaming): {metrics.tokens_before} -> "
+            f"Legroom optimized (async streaming): {metrics.tokens_before} -> "
             f"{metrics.tokens_after} tokens"
         )
 
@@ -509,12 +509,12 @@ class HeadroomChatModel(BaseChatModel):
         ):
             yield chunk
 
-    def bind_tools(self, tools: Sequence[Any], **kwargs: Any) -> HeadroomChatModel:
+    def bind_tools(self, tools: Sequence[Any], **kwargs: Any) -> LegroomChatModel:
         """Bind tools to the wrapped model."""
         new_wrapped = self.wrapped_model.bind_tools(tools, **kwargs)
-        return HeadroomChatModel(
+        return LegroomChatModel(
             wrapped_model=new_wrapped,
-            config=self.headroom_config,
+            config=self.legroom_config,
             mode=self.mode,
             auto_detect_provider=self.auto_detect_provider,
         )
@@ -538,11 +538,11 @@ class HeadroomChatModel(BaseChatModel):
         }
 
 
-class HeadroomCallbackHandler(BaseCallbackHandler):
-    """LangChain callback handler for Headroom metrics and observability.
+class LegroomCallbackHandler(BaseCallbackHandler):
+    """LangChain callback handler for Legroom metrics and observability.
 
     NOTE: Callbacks CANNOT modify messages in LangChain (by design).
-    Use HeadroomChatModel for actual optimization. This handler is for:
+    Use LegroomChatModel for actual optimization. This handler is for:
 
     1. Tracking token usage across chains
     2. Logging optimization metrics
@@ -551,9 +551,9 @@ class HeadroomCallbackHandler(BaseCallbackHandler):
 
     Example:
         from langchain_openai import ChatOpenAI
-        from headroom.integrations import HeadroomCallbackHandler
+        from legroom.integrations import LegroomCallbackHandler
 
-        handler = HeadroomCallbackHandler(
+        handler = LegroomCallbackHandler(
             log_level="INFO",
             token_alert_threshold=10000,
         )
@@ -757,15 +757,15 @@ class HeadroomCallbackHandler(BaseCallbackHandler):
         self._current_request = None
 
 
-class HeadroomRunnable:
-    """LCEL-compatible Runnable for Headroom optimization.
+class LegroomRunnable:
+    """LCEL-compatible Runnable for Legroom optimization.
 
-    Use this to add Headroom optimization to any LangChain chain using LCEL.
+    Use this to add Legroom optimization to any LangChain chain using LCEL.
 
     Example:
         from langchain_openai import ChatOpenAI
         from langchain_core.prompts import ChatPromptTemplate
-        from headroom.integrations import HeadroomRunnable
+        from legroom.integrations import LegroomRunnable
 
         prompt = ChatPromptTemplate.from_messages([
             ("system", "You are a helpful assistant."),
@@ -773,25 +773,25 @@ class HeadroomRunnable:
         ])
         llm = ChatOpenAI(model="gpt-4o")
 
-        # Add Headroom optimization to chain
-        chain = prompt | HeadroomRunnable() | llm
+        # Add Legroom optimization to chain
+        chain = prompt | LegroomRunnable() | llm
         response = chain.invoke({"input": "Hello!"})
     """
 
     def __init__(
         self,
-        config: HeadroomConfig | None = None,
-        mode: HeadroomMode = HeadroomMode.OPTIMIZE,
+        config: LegroomConfig | None = None,
+        mode: LegroomMode = LegroomMode.OPTIMIZE,
     ):
-        """Initialize HeadroomRunnable.
+        """Initialize LegroomRunnable.
 
         Args:
-            config: HeadroomConfig for optimization settings
-            mode: HeadroomMode (AUDIT, OPTIMIZE, or SIMULATE)
+            config: LegroomConfig for optimization settings
+            mode: LegroomMode (AUDIT, OPTIMIZE, or SIMULATE)
         """
         _check_langchain_available()
 
-        self.config = config or HeadroomConfig()
+        self.config = config or LegroomConfig()
         self.mode = mode
         self._pipeline: TransformPipeline | None = None
         self._provider: OpenAIProvider | None = None
@@ -866,7 +866,7 @@ class HeadroomRunnable:
         model = "gpt-4o"  # Default model for estimation
         model_limit = self._provider.get_context_limit(model) if self._provider else 128000
 
-        # Apply Headroom transforms via pipeline
+        # Apply Legroom transforms via pipeline
         result = self.pipeline.apply(
             messages=openai_messages,
             model=model,
@@ -915,8 +915,8 @@ class HeadroomRunnable:
 
 def optimize_messages(
     messages: list[BaseMessage],
-    config: HeadroomConfig | None = None,
-    mode: HeadroomMode = HeadroomMode.OPTIMIZE,
+    config: LegroomConfig | None = None,
+    mode: LegroomMode = LegroomMode.OPTIMIZE,
     model: str = "gpt-4o",
 ) -> tuple[list[BaseMessage], dict[str, Any]]:
     """Standalone function to optimize LangChain messages.
@@ -925,8 +925,8 @@ def optimize_messages(
 
     Args:
         messages: List of LangChain BaseMessage objects
-        config: HeadroomConfig for optimization settings
-        mode: HeadroomMode (AUDIT, OPTIMIZE, or SIMULATE)
+        config: LegroomConfig for optimization settings
+        mode: LegroomMode (AUDIT, OPTIMIZE, or SIMULATE)
         model: Model name for token estimation
 
     Returns:
@@ -934,7 +934,7 @@ def optimize_messages(
 
     Example:
         from langchain_core.messages import HumanMessage, SystemMessage
-        from headroom.integrations import optimize_messages
+        from legroom.integrations import optimize_messages
 
         messages = [
             SystemMessage(content="You are helpful."),
@@ -946,7 +946,7 @@ def optimize_messages(
     """
     _check_langchain_available()
 
-    config = config or HeadroomConfig()
+    config = config or LegroomConfig()
     provider = OpenAIProvider()
     pipeline = TransformPipeline(config=config, provider=provider)
 

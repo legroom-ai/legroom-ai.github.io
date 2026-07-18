@@ -13,7 +13,7 @@ LiteLLM provides a unified interface to 100+ LLM providers:
 - Groq
 - And many more...
 
-This integration allows Headroom to work with any LiteLLM-supported
+This integration allows Legroom to work with any LiteLLM-supported
 model without needing provider-specific implementations.
 
 Requires: pip install litellm
@@ -25,7 +25,7 @@ import logging
 import os
 from typing import Any
 
-from headroom.tokenizers import EstimatingTokenCounter
+from legroom.tokenizers import EstimatingTokenCounter
 
 from .base import Provider, TokenCounter
 
@@ -145,7 +145,7 @@ class LiteLLMProvider(Provider):
     - Cost estimation (from LiteLLM's model database)
 
     Example:
-        from headroom.providers import LiteLLMProvider
+        from legroom.providers import LiteLLMProvider
 
         provider = LiteLLMProvider()
 

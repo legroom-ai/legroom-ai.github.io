@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { HeadroomPlugin } from "./plugin.js";
+import { LegroomPlugin } from "./plugin.js";
 
 function pluginInput() {
   return {
@@ -19,9 +19,9 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("HeadroomPlugin", () => {
-  it("adds only Headroom metadata to shell env", async () => {
-    const plugin = await HeadroomPlugin(pluginInput(), {
+describe("LegroomPlugin", () => {
+  it("adds only Legroom metadata to shell env", async () => {
+    const plugin = await LegroomPlugin(pluginInput(), {
       proxyUrl: "http://127.0.0.1:8787/",
       backend: "litellm",
     });
@@ -35,26 +35,26 @@ describe("HeadroomPlugin", () => {
     await plugin["shell.env"]?.({ cwd: "/repo" }, output);
 
     expect(output.env).toMatchObject({
-      HEADROOM_ACTIVE: "1",
-      HEADROOM_PROXY_URL: "http://127.0.0.1:8787",
-      HEADROOM_PROJECT: "project-1",
-      HEADROOM_BACKEND: "litellm",
+      LEGROOM_ACTIVE: "1",
+      LEGROOM_PROXY_URL: "http://127.0.0.1:8787",
+      LEGROOM_PROJECT: "project-1",
+      LEGROOM_BACKEND: "litellm",
       OPENAI_BASE_URL: "https://deepseek.example/v1",
       ANTHROPIC_BASE_URL: "https://anthropic.example",
     });
   });
 
-  it("exposes a headroom_retrieve tool backed by the proxy", async () => {
+  it("exposes a legroom_retrieve tool backed by the proxy", async () => {
     const fetchMock = vi.fn(async () => ({
       ok: true,
       json: async () => "original content",
     }));
     vi.stubGlobal("fetch", fetchMock);
 
-    const plugin = await HeadroomPlugin(pluginInput(), {
+    const plugin = await LegroomPlugin(pluginInput(), {
       proxyUrl: "http://127.0.0.1:8787",
     });
-    const result = await plugin.tool?.headroom_retrieve.execute(
+    const result = await plugin.tool?.legroom_retrieve.execute(
       { hash: "0123456789abcdef01234567" },
       {} as never,
     );

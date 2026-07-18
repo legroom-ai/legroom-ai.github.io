@@ -7,8 +7,8 @@ from collections.abc import Iterable
 
 import click
 
-from headroom import paths as _paths
-from headroom.providers.install_registry import build_install_target_envs
+from legroom import paths as _paths
+from legroom.providers.install_registry import build_install_target_envs
 
 from .models import (
     ConfigScope,
@@ -150,22 +150,22 @@ def build_manifest(
     resolved_targets = resolve_targets(provider_mode, targets, scope=scope)
     tool_envs = build_tool_envs(port, backend, resolved_targets)
     base_env = {
-        "HEADROOM_PORT": str(port),
-        "HEADROOM_HOST": "127.0.0.1",
-        "HEADROOM_MODE": proxy_mode,
-        "HEADROOM_BACKEND": backend,
+        "LEGROOM_PORT": str(port),
+        "LEGROOM_HOST": "127.0.0.1",
+        "LEGROOM_MODE": proxy_mode,
+        "LEGROOM_BACKEND": backend,
     }
     if anyllm_provider:
-        base_env["HEADROOM_ANYLLM_PROVIDER"] = anyllm_provider
+        base_env["LEGROOM_ANYLLM_PROVIDER"] = anyllm_provider
     if region:
-        base_env["HEADROOM_REGION"] = region
+        base_env["LEGROOM_REGION"] = region
     # Telemetry is opt-in (off by default). Write the value explicitly so the
     # generated manifest is unambiguous and doesn't depend on the runtime default.
-    base_env["HEADROOM_TELEMETRY"] = "on" if telemetry_enabled else "off"
+    base_env["LEGROOM_TELEMETRY"] = "on" if telemetry_enabled else "off"
     if memory_enabled:
-        base_env["HEADROOM_MEMORY_ENABLED"] = "1"
+        base_env["LEGROOM_MEMORY_ENABLED"] = "1"
     # Applied last so explicit --env overrides win over the auto-derived
-    # defaults above (e.g. a custom HEADROOM_WORKSPACE_DIR).
+    # defaults above (e.g. a custom LEGROOM_WORKSPACE_DIR).
     if extra_env:
         base_env.update(extra_env)
 
@@ -197,7 +197,7 @@ def build_manifest(
     if bedrock_profile:
         proxy_args.extend(["--bedrock-profile", bedrock_profile])
 
-    container_name = f"headroom-{normalized_profile}"
+    container_name = f"legroom-{normalized_profile}"
     return DeploymentManifest(
         profile=normalized_profile,
         preset=preset,
@@ -216,7 +216,7 @@ def build_manifest(
         memory_db_path=str(_paths.memory_db_path()),
         telemetry_enabled=telemetry_enabled,
         image=image,
-        service_name=f"headroom-{normalized_profile}",
+        service_name=f"legroom-{normalized_profile}",
         container_name=container_name,
         health_url=f"http://127.0.0.1:{port}/readyz",
         base_env=base_env,

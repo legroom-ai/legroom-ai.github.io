@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from headroom.proxy.diagnostic_decode_policy import safe_decode_for_logging
-from headroom.proxy.helpers import safe_decode_for_logging as helper_safe_decode_for_logging
+from legroom.proxy.diagnostic_decode_policy import safe_decode_for_logging
+from legroom.proxy.helpers import safe_decode_for_logging as helper_safe_decode_for_logging
 
 
 def test_safe_decode_for_logging_decodes_utf8() -> None:

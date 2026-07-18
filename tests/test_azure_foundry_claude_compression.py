@@ -12,9 +12,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from headroom.cli import wrap as wrap_cli
-from headroom.providers.claude import proxy_base_url as _claude_proxy_base_url
-from headroom.providers.registry import resolve_api_overrides
+from legroom.cli import wrap as wrap_cli
+from legroom.providers.claude import proxy_base_url as _claude_proxy_base_url
+from legroom.providers.registry import resolve_api_overrides
 
 # --------------------------------------------------------------------------
 # Upstream URL derivation from ANTHROPIC_FOUNDRY_RESOURCE

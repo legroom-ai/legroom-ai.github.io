@@ -1,4 +1,4 @@
-//! Integration tests for `headroom_core::auth_mode::classify`.
+//! Integration tests for `legroom_core::auth_mode::classify`.
 //!
 //! Exhaustive matrix per Phase F PR-F1 acceptance criteria. Bonus
 //! cases cover the cross-precedence rules (Subscription UA wins over
@@ -7,7 +7,7 @@
 //! These are mirrored byte-for-byte by `tests/test_auth_mode.py` —
 //! the Python helper MUST agree on every header set we test here.
 
-use headroom_core::auth_mode::{classify, AuthMode};
+use legroom_core::auth_mode::{classify, AuthMode};
 use http::{HeaderMap, HeaderValue};
 
 /// Helper: build a `HeaderMap` from `(name, value)` pairs in one
@@ -113,7 +113,7 @@ fn gemini_x_goog_api_key_classified_payg() {
 fn subscription_takes_precedence_over_oauth_token() {
     // Claude Code CLI happens to send a `Bearer sk-ant-oat-...`
     // token, but it IS a subscription client (rate-limited per
-    // request count, never identify Headroom). UA wins.
+    // request count, never identify Legroom). UA wins.
     let h = headers(&[
         ("user-agent", "claude-code/1.5.0 (linux; x86_64)"),
         ("authorization", "Bearer sk-ant-oat-01-abc123"),
@@ -152,7 +152,7 @@ fn antigravity_ua_classified_subscription() {
 // ── Performance ──────────────────────────────────────────────────
 
 /// Smoke perf check — a strict bench lives at
-/// `crates/headroom-core/benches/auth_mode.rs`. This in-test loop
+/// `crates/legroom-core/benches/auth_mode.rs`. This in-test loop
 /// guards against catastrophic regressions on every `cargo test`
 /// run (e.g., accidental allocator hot-path change).
 #[test]
@@ -189,7 +189,7 @@ fn classify_under_10us_per_call() {
     let elapsed = start.elapsed();
     let per_call_ns = elapsed.as_nanos() / iters as u128;
 
-    // 10us = 10_000 ns. Asserting 10x headroom guards against perf
+    // 10us = 10_000 ns. Asserting 10x legroom guards against perf
     // regressions even on a contended CI runner.
     assert!(
         per_call_ns < 10_000,

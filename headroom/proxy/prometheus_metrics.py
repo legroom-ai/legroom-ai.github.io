@@ -1,4 +1,4 @@
-"""Prometheus-compatible metrics for the Headroom proxy.
+"""Prometheus-compatible metrics for the Legroom proxy.
 
 Tracks request counts, token usage, latency, overhead, TTFB,
 per-transform timing, waste signals, prefix cache stats, and
@@ -17,14 +17,14 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from headroom.observability import HeadroomOtelMetrics
-    from headroom.proxy.cost import CostTracker
+    from legroom.observability import LegroomOtelMetrics
+    from legroom.proxy.cost import CostTracker
 
-from headroom import savings_ledger
-from headroom.observability import get_otel_metrics
-from headroom.proxy.savings_tracker import SavingsTracker
+from legroom import savings_ledger
+from legroom.observability import get_otel_metrics
+from legroom.proxy.savings_tracker import SavingsTracker
 
-logger = logging.getLogger("headroom.proxy")
+logger = logging.getLogger("legroom.proxy")
 
 
 def _escape_label_value(value: str) -> str:
@@ -62,7 +62,7 @@ def _append_metric(
 
 # The proxy persists savings state on every request. Batch that write so a busy
 # event loop isn't blocked re-serializing + fsyncing the whole history each time;
-# the tracker still flushes on graceful shutdown (see HeadroomProxy.shutdown).
+# the tracker still flushes on graceful shutdown (see LegroomProxy.shutdown).
 PROXY_SAVINGS_FLUSH_EVERY = 25
 
 
@@ -73,7 +73,7 @@ class PrometheusMetrics:
         self,
         savings_tracker: SavingsTracker | None = None,
         cost_tracker: CostTracker | None = None,
-        otel_metrics: HeadroomOtelMetrics | None = None,
+        otel_metrics: LegroomOtelMetrics | None = None,
         stateless: bool = False,
     ):
         # Stateless mode: keep live in-memory metrics but never write the
@@ -82,7 +82,7 @@ class PrometheusMetrics:
         self.requests_total = 0
         self.requests_by_provider: dict[str, int] = defaultdict(int)
         self.requests_by_model: dict[str, int] = defaultdict(int)
-        # Populated via X-Headroom-Stack header (TS SDK adapters, etc.)
+        # Populated via X-Legroom-Stack header (TS SDK adapters, etc.)
         self.requests_by_stack: dict[str, int] = defaultdict(int)
         self.requests_cached = 0
         self.requests_rate_limited = 0
@@ -112,7 +112,7 @@ class PrometheusMetrics:
         # SmartCrusher's literal `"smart_crusher"`. The forcing
         # function for catching strategy-level silent regressions:
         # if SmartCrusher events drop to zero in production, the
-        # `headroom_compressions_total{strategy="smart_crusher"}`
+        # `legroom_compressions_total{strategy="smart_crusher"}`
         # counter shows it on day 1, not week 3.
         self.compressions_by_strategy: dict[str, int] = defaultdict(int)
         self.tokens_saved_by_strategy: dict[str, int] = defaultdict(int)
@@ -179,7 +179,7 @@ class PrometheusMetrics:
         self.latency_max_ms = 0.0
         self.latency_count = 0
 
-        # Headroom overhead (optimization time only, excludes LLM)
+        # Legroom overhead (optimization time only, excludes LLM)
         self.overhead_sum_ms = 0.0
         self.overhead_min_ms = float("inf")
         self.overhead_max_ms = 0.0
@@ -392,7 +392,7 @@ class PrometheusMetrics:
             self.ws_session_duration_count.clear()
             self.ws_session_duration_max_ms.clear()
 
-    def _get_otel_metrics(self) -> HeadroomOtelMetrics:
+    def _get_otel_metrics(self) -> LegroomOtelMetrics:
         return self._otel_metrics or get_otel_metrics()
 
     def _current_savings_tracker_totals(self) -> tuple[int, float]:
@@ -434,13 +434,13 @@ class PrometheusMetrics:
     def record_stack(self, stack: str | None) -> None:
         """Increment the per-stack request counter.
 
-        ``stack`` is the ``X-Headroom-Stack`` header value (e.g.
+        ``stack`` is the ``X-Legroom-Stack`` header value (e.g.
         ``adapter_ts_openai``). Called once per inbound request from the
         proxy's stack middleware; a no-op when the header is absent, fails
         validation, or would exceed the cardinality cap.
         """
 
-        from headroom.telemetry.context import MAX_DISTINCT_STACKS, normalize_stack
+        from legroom.telemetry.context import MAX_DISTINCT_STACKS, normalize_stack
 
         slug = normalize_stack(stack)
         if not slug:
@@ -459,7 +459,7 @@ class PrometheusMetrics:
         original_tokens: int,
         compressed_tokens: int,
     ) -> None:
-        """Implements `headroom.transforms.observability.CompressionObserver`.
+        """Implements `legroom.transforms.observability.CompressionObserver`.
 
         Called once per real compression event by the configured
         transforms (ContentRouter at routing-decision granularity;
@@ -659,7 +659,7 @@ class PrometheusMetrics:
         client: str | None = None,
     ):
         """Record metrics for a request."""
-        # Post-guard invariant (all providers): Headroom never forwards a request
+        # Post-guard invariant (all providers): Legroom never forwards a request
         # larger than the original — handlers revert any inflation before sending
         # (verified clean on the wire). So compression savings are >= 0; a negative
         # here is an intermediate/hook token-count artifact that never reached the
@@ -719,7 +719,7 @@ class PrometheusMetrics:
             self.latency_max_ms = max(self.latency_max_ms, latency_ms)
             self.latency_count += 1
 
-            # Track Headroom overhead separately
+            # Track Legroom overhead separately
             if overhead_ms > 0:
                 self.overhead_sum_ms += overhead_ms
                 self.overhead_min_ms = min(self.overhead_min_ms, overhead_ms)
@@ -785,7 +785,7 @@ class PrometheusMetrics:
             )
 
             # Also append to the durable, multi-process savings ledger so
-            # `headroom savings` reflects proxy traffic alongside MCP-tool usage.
+            # `legroom savings` reflects proxy traffic alongside MCP-tool usage.
             # The real upstream model means litellm prices it accurately. The
             # client is the harness classified from the User-Agent / X-Client
             # (claude-code, codex, cursor, ...); it falls back to "proxy" only
@@ -795,7 +795,7 @@ class PrometheusMetrics:
                 # that was actually forwarded — see emit_request_outcome, which
                 # passes `input_tokens=outcome.optimized_tokens`. The ledger's
                 # `before` is the pre-compression original and `after` is what we
-                # forwarded, and `headroom savings` derives the reduction percent
+                # forwarded, and `legroom savings` derives the reduction percent
                 # as saved / before. Passing the forwarded count as `before`
                 # understated the original by `tokens_saved`, inflating that
                 # percentage (e.g. a real 40% reduction was reported as ~67%).
@@ -951,105 +951,105 @@ class PrometheusMetrics:
             lines: list[str] = []
             _append_metric(
                 lines,
-                name="headroom_requests_total",
+                name="legroom_requests_total",
                 metric_type="counter",
                 help_text="Total number of requests",
                 value=self.requests_total,
             )
             _append_metric(
                 lines,
-                name="headroom_requests_cached_total",
+                name="legroom_requests_cached_total",
                 metric_type="counter",
                 help_text="Cached request count",
                 value=self.requests_cached,
             )
             _append_metric(
                 lines,
-                name="headroom_requests_rate_limited_total",
+                name="legroom_requests_rate_limited_total",
                 metric_type="counter",
                 help_text="Rate limited requests",
                 value=self.requests_rate_limited,
             )
             _append_metric(
                 lines,
-                name="headroom_requests_failed_total",
+                name="legroom_requests_failed_total",
                 metric_type="counter",
                 help_text="Failed requests",
                 value=self.requests_failed,
             )
             _append_metric(
                 lines,
-                name="headroom_inbound_requests_total",
+                name="legroom_inbound_requests_total",
                 metric_type="counter",
                 help_text="All inbound HTTP requests accepted by the proxy",
                 value=self.inbound_requests_total,
             )
             _append_metric(
                 lines,
-                name="headroom_inbound_requests_completed_total",
+                name="legroom_inbound_requests_completed_total",
                 metric_type="counter",
                 help_text="Inbound HTTP requests completed or aborted by the proxy",
                 value=self.inbound_requests_completed,
             )
             _append_metric(
                 lines,
-                name="headroom_inbound_requests_active",
+                name="legroom_inbound_requests_active",
                 metric_type="gauge",
                 help_text="Inbound HTTP requests currently active in the proxy",
                 value=self.inbound_requests_active,
             )
             _append_metric(
                 lines,
-                name="headroom_tokens_input_total",
+                name="legroom_tokens_input_total",
                 metric_type="counter",
                 help_text="Total input tokens",
                 value=self.tokens_input_total,
             )
             _append_metric(
                 lines,
-                name="headroom_tokens_output_total",
+                name="legroom_tokens_output_total",
                 metric_type="counter",
                 help_text="Total output tokens",
                 value=self.tokens_output_total,
             )
             _append_metric(
                 lines,
-                name="headroom_tokens_saved_total",
+                name="legroom_tokens_saved_total",
                 metric_type="counter",
                 help_text="Tokens saved by optimization",
                 value=self.tokens_saved_total,
             )
             _append_metric(
                 lines,
-                name="headroom_persistent_savings_requests_total",
+                name="legroom_persistent_savings_requests_total",
                 metric_type="counter",
                 help_text="Durable lifetime requests recorded by the proxy savings tracker",
                 value=lifetime_savings["requests"],
             )
             _append_metric(
                 lines,
-                name="headroom_persistent_savings_tokens_saved_total",
+                name="legroom_persistent_savings_tokens_saved_total",
                 metric_type="counter",
                 help_text="Durable lifetime input tokens saved by proxy compression",
                 value=lifetime_savings["tokens_saved"],
             )
             _append_metric(
                 lines,
-                name="headroom_persistent_savings_input_tokens_total",
+                name="legroom_persistent_savings_input_tokens_total",
                 metric_type="counter",
                 help_text="Durable lifetime input tokens recorded by the proxy savings tracker",
                 value=lifetime_savings["total_input_tokens"],
             )
             _append_metric(
                 lines,
-                name="headroom_persistent_savings_input_cost_usd_total",
+                name="legroom_persistent_savings_input_cost_usd_total",
                 metric_type="counter",
                 help_text="Durable lifetime input spend in USD estimated by the proxy savings tracker",
                 value=lifetime_savings["total_input_cost_usd"],
             )
             _append_metric(
                 lines,
-                name="headroom_persistent_savings_compression_savings_usd_total",
+                name="legroom_persistent_savings_compression_savings_usd_total",
                 metric_type="counter",
                 help_text=(
                     "Durable lifetime compression savings in USD estimated by the "
@@ -1066,98 +1066,98 @@ class PrometheusMetrics:
             # introspection.
             _append_metric(
                 lines,
-                name="headroom_latency_ms_sum",
+                name="legroom_latency_ms_sum",
                 metric_type="counter",
                 help_text="Sum of request latencies in milliseconds",
                 value=round(self.latency_sum_ms, 2),
             )
             _append_metric(
                 lines,
-                name="headroom_latency_ms_count",
+                name="legroom_latency_ms_count",
                 metric_type="counter",
                 help_text="Count of observed request latencies",
                 value=self.latency_count,
             )
             _append_metric(
                 lines,
-                name="headroom_latency_ms_min",
+                name="legroom_latency_ms_min",
                 metric_type="gauge",
                 help_text="Minimum observed request latency in milliseconds",
                 value=0 if self.latency_count == 0 else round(self.latency_min_ms, 2),
             )
             _append_metric(
                 lines,
-                name="headroom_latency_ms_max",
+                name="legroom_latency_ms_max",
                 metric_type="gauge",
                 help_text="Maximum observed request latency in milliseconds",
                 value=round(self.latency_max_ms, 2),
             )
             _append_metric(
                 lines,
-                name="headroom_overhead_ms_sum",
+                name="legroom_overhead_ms_sum",
                 metric_type="counter",
-                help_text="Sum of Headroom processing overhead in milliseconds",
+                help_text="Sum of Legroom processing overhead in milliseconds",
                 value=round(self.overhead_sum_ms, 2),
             )
             _append_metric(
                 lines,
-                name="headroom_overhead_ms_count",
+                name="legroom_overhead_ms_count",
                 metric_type="counter",
-                help_text="Count of observed Headroom overhead samples",
+                help_text="Count of observed Legroom overhead samples",
                 value=self.overhead_count,
             )
             _append_metric(
                 lines,
-                name="headroom_overhead_ms_min",
+                name="legroom_overhead_ms_min",
                 metric_type="gauge",
-                help_text="Minimum observed Headroom overhead in milliseconds",
+                help_text="Minimum observed Legroom overhead in milliseconds",
                 value=0 if self.overhead_count == 0 else round(self.overhead_min_ms, 2),
             )
             _append_metric(
                 lines,
-                name="headroom_overhead_ms_max",
+                name="legroom_overhead_ms_max",
                 metric_type="gauge",
-                help_text="Maximum observed Headroom overhead in milliseconds",
+                help_text="Maximum observed Legroom overhead in milliseconds",
                 value=round(self.overhead_max_ms, 2),
             )
             _append_metric(
                 lines,
-                name="headroom_ttfb_ms_sum",
+                name="legroom_ttfb_ms_sum",
                 metric_type="counter",
                 help_text="Sum of time to first byte in milliseconds",
                 value=round(self.ttfb_sum_ms, 2),
             )
             _append_metric(
                 lines,
-                name="headroom_ttfb_ms_count",
+                name="legroom_ttfb_ms_count",
                 metric_type="counter",
                 help_text="Count of observed time-to-first-byte samples",
                 value=self.ttfb_count,
             )
             _append_metric(
                 lines,
-                name="headroom_ttfb_ms_min",
+                name="legroom_ttfb_ms_min",
                 metric_type="gauge",
                 help_text="Minimum observed time to first byte in milliseconds",
                 value=0 if self.ttfb_count == 0 else round(self.ttfb_min_ms, 2),
             )
             _append_metric(
                 lines,
-                name="headroom_ttfb_ms_max",
+                name="legroom_ttfb_ms_max",
                 metric_type="gauge",
                 help_text="Maximum observed time to first byte in milliseconds",
                 value=round(self.ttfb_max_ms, 2),
             )
             _append_metric(
                 lines,
-                name="headroom_cache_bust_total",
+                name="legroom_cache_bust_total",
                 metric_type="counter",
                 help_text="Requests that lost provider cache efficiency because of compression",
                 value=self.cache_bust_count,
             )
             _append_metric(
                 lines,
-                name="headroom_cache_bust_tokens_lost_total",
+                name="legroom_cache_bust_tokens_lost_total",
                 metric_type="counter",
                 help_text="Tokens that lost provider cache discount because of compression",
                 value=self.cache_bust_tokens_lost,
@@ -1166,15 +1166,15 @@ class PrometheusMetrics:
             if self.cache_miss_attribution_by_provider:
                 lines.extend(
                     [
-                        "# HELP headroom_cache_miss_attribution_total Cache misses on an "
+                        "# HELP legroom_cache_miss_attribution_total Cache misses on an "
                         "expected-cached prefix, bucketed by reason (ttl_expiry|prefix_change|unknown)",
-                        "# TYPE headroom_cache_miss_attribution_total counter",
+                        "# TYPE legroom_cache_miss_attribution_total counter",
                     ]
                 )
                 for _provider, _reasons in self.cache_miss_attribution_by_provider.items():
                     for _reason, _count in _reasons.items():
                         lines.append(
-                            f'headroom_cache_miss_attribution_total{{provider="{_provider}",'
+                            f'legroom_cache_miss_attribution_total{{provider="{_provider}",'
                             f'reason="{_reason}"}} {_count}'
                         )
                 lines.append("")
@@ -1189,297 +1189,297 @@ class PrometheusMetrics:
             if compression_failed:
                 lines.extend(
                     [
-                        "# HELP headroom_compression_failed_total Fail-open compression failures by reason",
-                        "# TYPE headroom_compression_failed_total counter",
+                        "# HELP legroom_compression_failed_total Fail-open compression failures by reason",
+                        "# TYPE legroom_compression_failed_total counter",
                     ]
                 )
                 for reason, count in compression_failed.items():
                     lines.append(
-                        f'headroom_compression_failed_total{{reason="{_escape_label_value(reason)}"}} {count}'
+                        f'legroom_compression_failed_total{{reason="{_escape_label_value(reason)}"}} {count}'
                     )
                 lines.append("")
 
             if kompress_size_gate:
                 lines.extend(
                     [
-                        "# HELP headroom_kompress_size_gate_total Kompress size-gate decisions by outcome; within counts a gate pass, not whether ML compression then ran",
-                        "# TYPE headroom_kompress_size_gate_total counter",
+                        "# HELP legroom_kompress_size_gate_total Kompress size-gate decisions by outcome; within counts a gate pass, not whether ML compression then ran",
+                        "# TYPE legroom_kompress_size_gate_total counter",
                     ]
                 )
                 for outcome, count in kompress_size_gate.items():
                     lines.append(
-                        f'headroom_kompress_size_gate_total{{outcome="{_escape_label_value(outcome)}"}} {count}'
+                        f'legroom_kompress_size_gate_total{{outcome="{_escape_label_value(outcome)}"}} {count}'
                     )
                 lines.append("")
 
             if compression_quarantine:
                 lines.extend(
                     [
-                        "# HELP headroom_compression_quarantine_total Timeout-debt quarantine events by type",
-                        "# TYPE headroom_compression_quarantine_total counter",
+                        "# HELP legroom_compression_quarantine_total Timeout-debt quarantine events by type",
+                        "# TYPE legroom_compression_quarantine_total counter",
                     ]
                 )
                 for event, count in compression_quarantine.items():
                     lines.append(
-                        f'headroom_compression_quarantine_total{{event="{_escape_label_value(event)}"}} {count}'
+                        f'legroom_compression_quarantine_total{{event="{_escape_label_value(event)}"}} {count}'
                     )
                 lines.append("")
 
             lines.extend(
                 [
-                    "# HELP headroom_requests_by_provider Requests by provider",
-                    "# TYPE headroom_requests_by_provider counter",
+                    "# HELP legroom_requests_by_provider Requests by provider",
+                    "# TYPE legroom_requests_by_provider counter",
                 ]
             )
             for provider, count in self.requests_by_provider.items():
-                lines.append(f'headroom_requests_by_provider{{provider="{provider}"}} {count}')
+                lines.append(f'legroom_requests_by_provider{{provider="{provider}"}} {count}')
             lines.append("")
 
             lines.extend(
                 [
-                    "# HELP headroom_requests_by_model Requests by model",
-                    "# TYPE headroom_requests_by_model counter",
+                    "# HELP legroom_requests_by_model Requests by model",
+                    "# TYPE legroom_requests_by_model counter",
                 ]
             )
             for model, count in self.requests_by_model.items():
-                lines.append(f'headroom_requests_by_model{{model="{model}"}} {count}')
+                lines.append(f'legroom_requests_by_model{{model="{model}"}} {count}')
             lines.append("")
 
             if self.transform_timing_sum:
                 lines.extend(
                     [
-                        "# HELP headroom_transform_timing_ms_sum Sum of transform timing in milliseconds",
-                        "# TYPE headroom_transform_timing_ms_sum counter",
+                        "# HELP legroom_transform_timing_ms_sum Sum of transform timing in milliseconds",
+                        "# TYPE legroom_transform_timing_ms_sum counter",
                     ]
                 )
                 for name, total in self.transform_timing_sum.items():
                     lines.append(
-                        f'headroom_transform_timing_ms_sum{{transform="{_escape_label_value(name)}"}} {round(total, 2)}'
+                        f'legroom_transform_timing_ms_sum{{transform="{_escape_label_value(name)}"}} {round(total, 2)}'
                     )
                 lines.extend(
                     [
                         "",
-                        "# HELP headroom_transform_timing_ms_count Count of transform timing samples",
-                        "# TYPE headroom_transform_timing_ms_count counter",
+                        "# HELP legroom_transform_timing_ms_count Count of transform timing samples",
+                        "# TYPE legroom_transform_timing_ms_count counter",
                     ]
                 )
                 for name, count in self.transform_timing_count.items():
                     lines.append(
-                        f'headroom_transform_timing_ms_count{{transform="{_escape_label_value(name)}"}} {count}'
+                        f'legroom_transform_timing_ms_count{{transform="{_escape_label_value(name)}"}} {count}'
                     )
                 lines.extend(
                     [
                         "",
-                        "# HELP headroom_transform_timing_ms_max Maximum transform timing in milliseconds",
-                        "# TYPE headroom_transform_timing_ms_max gauge",
+                        "# HELP legroom_transform_timing_ms_max Maximum transform timing in milliseconds",
+                        "# TYPE legroom_transform_timing_ms_max gauge",
                     ]
                 )
                 for name, max_value in self.transform_timing_max.items():
                     lines.append(
-                        f'headroom_transform_timing_ms_max{{transform="{_escape_label_value(name)}"}} {round(max_value, 2)}'
+                        f'legroom_transform_timing_ms_max{{transform="{_escape_label_value(name)}"}} {round(max_value, 2)}'
                     )
                 lines.append("")
 
             if stage_timing_sum_snapshot:
                 lines.extend(
                     [
-                        "# HELP headroom_stage_timing_ms_sum Sum of per-stage handler timings in milliseconds",
-                        "# TYPE headroom_stage_timing_ms_sum counter",
+                        "# HELP legroom_stage_timing_ms_sum Sum of per-stage handler timings in milliseconds",
+                        "# TYPE legroom_stage_timing_ms_sum counter",
                     ]
                 )
                 for (path_label, stage), total in stage_timing_sum_snapshot.items():
                     lines.append(
-                        f'headroom_stage_timing_ms_sum{{path="{_escape_label_value(path_label)}",stage="{_escape_label_value(stage)}"}} {round(total, 2)}'
+                        f'legroom_stage_timing_ms_sum{{path="{_escape_label_value(path_label)}",stage="{_escape_label_value(stage)}"}} {round(total, 2)}'
                     )
                 lines.extend(
                     [
                         "",
-                        "# HELP headroom_stage_timing_ms_count Count of per-stage handler timing samples",
-                        "# TYPE headroom_stage_timing_ms_count counter",
+                        "# HELP legroom_stage_timing_ms_count Count of per-stage handler timing samples",
+                        "# TYPE legroom_stage_timing_ms_count counter",
                     ]
                 )
                 for (path_label, stage), count in stage_timing_count_snapshot.items():
                     lines.append(
-                        f'headroom_stage_timing_ms_count{{path="{_escape_label_value(path_label)}",stage="{_escape_label_value(stage)}"}} {count}'
+                        f'legroom_stage_timing_ms_count{{path="{_escape_label_value(path_label)}",stage="{_escape_label_value(stage)}"}} {count}'
                     )
                 lines.extend(
                     [
                         "",
-                        "# HELP headroom_stage_timing_ms_max Maximum per-stage handler timing in milliseconds",
-                        "# TYPE headroom_stage_timing_ms_max gauge",
+                        "# HELP legroom_stage_timing_ms_max Maximum per-stage handler timing in milliseconds",
+                        "# TYPE legroom_stage_timing_ms_max gauge",
                     ]
                 )
                 for (path_label, stage), max_value in stage_timing_max_snapshot.items():
                     lines.append(
-                        f'headroom_stage_timing_ms_max{{path="{_escape_label_value(path_label)}",stage="{_escape_label_value(stage)}"}} {round(max_value, 2)}'
+                        f'legroom_stage_timing_ms_max{{path="{_escape_label_value(path_label)}",stage="{_escape_label_value(stage)}"}} {round(max_value, 2)}'
                     )
                 lines.append("")
 
             # Unit 3: WS session lifecycle gauges + duration histogram.
             lines.extend(
                 [
-                    "# HELP headroom_active_ws_sessions Active Codex WebSocket sessions",
-                    "# TYPE headroom_active_ws_sessions gauge",
-                    f"headroom_active_ws_sessions {self.active_ws_sessions}",
+                    "# HELP legroom_active_ws_sessions Active Codex WebSocket sessions",
+                    "# TYPE legroom_active_ws_sessions gauge",
+                    f"legroom_active_ws_sessions {self.active_ws_sessions}",
                     "",
-                    "# HELP headroom_active_relay_tasks Active Codex WS relay tasks",
-                    "# TYPE headroom_active_relay_tasks gauge",
-                    f"headroom_active_relay_tasks {self.active_relay_tasks}",
+                    "# HELP legroom_active_relay_tasks Active Codex WS relay tasks",
+                    "# TYPE legroom_active_relay_tasks gauge",
+                    f"legroom_active_relay_tasks {self.active_relay_tasks}",
                     "",
                 ]
             )
             if self.ws_session_duration_sum_ms:
                 lines.extend(
                     [
-                        "# HELP headroom_ws_session_duration_ms_sum Sum of Codex WS session durations",
-                        "# TYPE headroom_ws_session_duration_ms_sum counter",
+                        "# HELP legroom_ws_session_duration_ms_sum Sum of Codex WS session durations",
+                        "# TYPE legroom_ws_session_duration_ms_sum counter",
                     ]
                 )
                 for cause, total in self.ws_session_duration_sum_ms.items():
                     lines.append(
-                        f'headroom_ws_session_duration_ms_sum{{cause="{_escape_label_value(cause)}"}} {round(total, 2)}'
+                        f'legroom_ws_session_duration_ms_sum{{cause="{_escape_label_value(cause)}"}} {round(total, 2)}'
                     )
                 lines.extend(
                     [
                         "",
-                        "# HELP headroom_ws_session_duration_ms_count Count of completed Codex WS sessions",
-                        "# TYPE headroom_ws_session_duration_ms_count counter",
+                        "# HELP legroom_ws_session_duration_ms_count Count of completed Codex WS sessions",
+                        "# TYPE legroom_ws_session_duration_ms_count counter",
                     ]
                 )
                 for cause, count in self.ws_session_duration_count.items():
                     lines.append(
-                        f'headroom_ws_session_duration_ms_count{{cause="{_escape_label_value(cause)}"}} {count}'
+                        f'legroom_ws_session_duration_ms_count{{cause="{_escape_label_value(cause)}"}} {count}'
                     )
                 lines.extend(
                     [
                         "",
-                        "# HELP headroom_ws_session_duration_ms_max Maximum Codex WS session duration",
-                        "# TYPE headroom_ws_session_duration_ms_max gauge",
+                        "# HELP legroom_ws_session_duration_ms_max Maximum Codex WS session duration",
+                        "# TYPE legroom_ws_session_duration_ms_max gauge",
                     ]
                 )
                 for cause, max_value in self.ws_session_duration_max_ms.items():
                     lines.append(
-                        f'headroom_ws_session_duration_ms_max{{cause="{_escape_label_value(cause)}"}} {round(max_value, 2)}'
+                        f'legroom_ws_session_duration_ms_max{{cause="{_escape_label_value(cause)}"}} {round(max_value, 2)}'
                     )
                 lines.append("")
 
             if self.waste_signals_total:
                 lines.extend(
                     [
-                        "# HELP headroom_waste_signal_tokens_total Tokens attributed to detected waste signals",
-                        "# TYPE headroom_waste_signal_tokens_total counter",
+                        "# HELP legroom_waste_signal_tokens_total Tokens attributed to detected waste signals",
+                        "# TYPE legroom_waste_signal_tokens_total counter",
                     ]
                 )
                 for signal_name, token_count in self.waste_signals_total.items():
                     lines.append(
-                        f'headroom_waste_signal_tokens_total{{signal="{_escape_label_value(signal_name)}"}} {token_count}'
+                        f'legroom_waste_signal_tokens_total{{signal="{_escape_label_value(signal_name)}"}} {token_count}'
                     )
                 lines.append("")
 
             if self.cache_by_provider:
                 lines.extend(
                     [
-                        "# HELP headroom_cache_read_tokens_total Provider cache read tokens",
-                        "# TYPE headroom_cache_read_tokens_total counter",
+                        "# HELP legroom_cache_read_tokens_total Provider cache read tokens",
+                        "# TYPE legroom_cache_read_tokens_total counter",
                     ]
                 )
                 for provider, stats in self.cache_by_provider.items():
                     lines.append(
-                        f'headroom_cache_read_tokens_total{{provider="{provider}"}} {stats["cache_read_tokens"]}'
+                        f'legroom_cache_read_tokens_total{{provider="{provider}"}} {stats["cache_read_tokens"]}'
                     )
                 lines.extend(
                     [
                         "",
-                        "# HELP headroom_cache_write_tokens_total Provider cache write tokens",
-                        "# TYPE headroom_cache_write_tokens_total counter",
+                        "# HELP legroom_cache_write_tokens_total Provider cache write tokens",
+                        "# TYPE legroom_cache_write_tokens_total counter",
                     ]
                 )
                 for provider, stats in self.cache_by_provider.items():
                     lines.append(
-                        f'headroom_cache_write_tokens_total{{provider="{provider}"}} {stats["cache_write_tokens"]}'
+                        f'legroom_cache_write_tokens_total{{provider="{provider}"}} {stats["cache_write_tokens"]}'
                     )
                 lines.extend(
                     [
                         "",
-                        "# HELP headroom_cache_write_ttl_tokens_total Provider cache write tokens by observed TTL bucket",
-                        "# TYPE headroom_cache_write_ttl_tokens_total counter",
+                        "# HELP legroom_cache_write_ttl_tokens_total Provider cache write tokens by observed TTL bucket",
+                        "# TYPE legroom_cache_write_ttl_tokens_total counter",
                     ]
                 )
                 for provider, stats in self.cache_by_provider.items():
                     lines.append(
-                        f'headroom_cache_write_ttl_tokens_total{{provider="{provider}",ttl="5m"}} {stats["cache_write_5m_tokens"]}'
+                        f'legroom_cache_write_ttl_tokens_total{{provider="{provider}",ttl="5m"}} {stats["cache_write_5m_tokens"]}'
                     )
                     lines.append(
-                        f'headroom_cache_write_ttl_tokens_total{{provider="{provider}",ttl="1h"}} {stats["cache_write_1h_tokens"]}'
+                        f'legroom_cache_write_ttl_tokens_total{{provider="{provider}",ttl="1h"}} {stats["cache_write_1h_tokens"]}'
                     )
                 lines.extend(
                     [
                         "",
-                        "# HELP headroom_cache_write_ttl_requests_total Provider cache write requests by observed TTL bucket",
-                        "# TYPE headroom_cache_write_ttl_requests_total counter",
+                        "# HELP legroom_cache_write_ttl_requests_total Provider cache write requests by observed TTL bucket",
+                        "# TYPE legroom_cache_write_ttl_requests_total counter",
                     ]
                 )
                 for provider, stats in self.cache_by_provider.items():
                     lines.append(
-                        f'headroom_cache_write_ttl_requests_total{{provider="{provider}",ttl="5m"}} {stats["cache_write_5m_requests"]}'
+                        f'legroom_cache_write_ttl_requests_total{{provider="{provider}",ttl="5m"}} {stats["cache_write_5m_requests"]}'
                     )
                     lines.append(
-                        f'headroom_cache_write_ttl_requests_total{{provider="{provider}",ttl="1h"}} {stats["cache_write_1h_requests"]}'
-                    )
-                lines.extend(
-                    [
-                        "",
-                        "# HELP headroom_uncached_input_tokens_total Input tokens not served from provider cache",
-                        "# TYPE headroom_uncached_input_tokens_total counter",
-                    ]
-                )
-                for provider, stats in self.cache_by_provider.items():
-                    lines.append(
-                        f'headroom_uncached_input_tokens_total{{provider="{provider}"}} {stats["uncached_input_tokens"]}'
+                        f'legroom_cache_write_ttl_requests_total{{provider="{provider}",ttl="1h"}} {stats["cache_write_1h_requests"]}'
                     )
                 lines.extend(
                     [
                         "",
-                        "# HELP headroom_provider_cache_requests_total Requests with provider cache observations",
-                        "# TYPE headroom_provider_cache_requests_total counter",
+                        "# HELP legroom_uncached_input_tokens_total Input tokens not served from provider cache",
+                        "# TYPE legroom_uncached_input_tokens_total counter",
                     ]
                 )
                 for provider, stats in self.cache_by_provider.items():
                     lines.append(
-                        f'headroom_provider_cache_requests_total{{provider="{provider}"}} {stats["requests"]}'
+                        f'legroom_uncached_input_tokens_total{{provider="{provider}"}} {stats["uncached_input_tokens"]}'
                     )
                 lines.extend(
                     [
                         "",
-                        "# HELP headroom_provider_cache_hit_requests_total Requests with provider cache reads",
-                        "# TYPE headroom_provider_cache_hit_requests_total counter",
+                        "# HELP legroom_provider_cache_requests_total Requests with provider cache observations",
+                        "# TYPE legroom_provider_cache_requests_total counter",
                     ]
                 )
                 for provider, stats in self.cache_by_provider.items():
                     lines.append(
-                        f'headroom_provider_cache_hit_requests_total{{provider="{provider}"}} {stats["hit_requests"]}'
+                        f'legroom_provider_cache_requests_total{{provider="{provider}"}} {stats["requests"]}'
                     )
                 lines.extend(
                     [
                         "",
-                        "# HELP headroom_provider_cache_bust_total Provider-specific cache bust count",
-                        "# TYPE headroom_provider_cache_bust_total counter",
+                        "# HELP legroom_provider_cache_hit_requests_total Requests with provider cache reads",
+                        "# TYPE legroom_provider_cache_hit_requests_total counter",
                     ]
                 )
                 for provider, stats in self.cache_by_provider.items():
                     lines.append(
-                        f'headroom_provider_cache_bust_total{{provider="{provider}"}} {stats["bust_count"]}'
+                        f'legroom_provider_cache_hit_requests_total{{provider="{provider}"}} {stats["hit_requests"]}'
                     )
                 lines.extend(
                     [
                         "",
-                        "# HELP headroom_provider_cache_bust_write_tokens_total Provider cache write tokens attributed to busts",
-                        "# TYPE headroom_provider_cache_bust_write_tokens_total counter",
+                        "# HELP legroom_provider_cache_bust_total Provider-specific cache bust count",
+                        "# TYPE legroom_provider_cache_bust_total counter",
                     ]
                 )
                 for provider, stats in self.cache_by_provider.items():
                     lines.append(
-                        f'headroom_provider_cache_bust_write_tokens_total{{provider="{provider}"}} {stats["bust_write_tokens"]}'
+                        f'legroom_provider_cache_bust_total{{provider="{provider}"}} {stats["bust_count"]}'
+                    )
+                lines.extend(
+                    [
+                        "",
+                        "# HELP legroom_provider_cache_bust_write_tokens_total Provider cache write tokens attributed to busts",
+                        "# TYPE legroom_provider_cache_bust_write_tokens_total counter",
+                    ]
+                )
+                for provider, stats in self.cache_by_provider.items():
+                    lines.append(
+                        f'legroom_provider_cache_bust_write_tokens_total{{provider="{provider}"}} {stats["bust_write_tokens"]}'
                     )
                 lines.append("")
 
@@ -1494,7 +1494,7 @@ class PrometheusMetrics:
             # PrometheusMetrics instance, so we never lose a count
             # to ordering between RequestLogger setup and metrics
             # init.
-            from headroom.proxy.request_logger import redactions_total
+            from legroom.proxy.request_logger import redactions_total
 
             _append_metric(
                 lines,
@@ -1509,11 +1509,11 @@ class PrometheusMetrics:
 
             # Phase G PR-G3 remediation (C4): RTK invocations counter
             # also lives Python-side. RTK is wrapped by the
-            # `headroom wrap` CLI (headroom.cli.wrap); the proxy
+            # `legroom wrap` CLI (legroom.cli.wrap); the proxy
             # observes invocation counts via a process-local tracker
             # the wrap tail bumps. The Rust proxy previously held a
             # dead counter for this; that's been removed.
-            from headroom.cli.wrap_rtk_metrics import rtk_invocation_counts
+            from legroom.cli.wrap_rtk_metrics import rtk_invocation_counts
 
             counts = rtk_invocation_counts()
             lines.extend(

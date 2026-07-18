@@ -10,13 +10,13 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner
 
-from headroom.cli.main import main
-from headroom.cli.wrap import _setup_lean_ctx_agent
+from legroom.cli.main import main
+from legroom.cli.wrap import _setup_lean_ctx_agent
 
 
 @pytest.fixture(autouse=True)
 def _default_context_tool(monkeypatch) -> None:
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
     monkeypatch.delenv("LEAN_CTX_AGENT", raising=False)
     monkeypatch.delenv("LEAN_CTX_DATA_DIR", raising=False)
 
@@ -30,8 +30,8 @@ def _set_test_home(monkeypatch, tmp_path: Path) -> None:
 def test_wrap_claude_prepare_only_skips_host_binary_lookup() -> None:
     runner = CliRunner()
 
-    with patch("headroom.cli.wrap._prepare_wrap_rtk") as prepare_rtk:
-        with patch("headroom.cli.wrap.shutil.which") as which_mock:
+    with patch("legroom.cli.wrap._prepare_wrap_rtk") as prepare_rtk:
+        with patch("legroom.cli.wrap.shutil.which") as which_mock:
             result = runner.invoke(main, ["wrap", "claude", "--prepare-only", "--context-tool"])
 
     assert result.exit_code == 0, result.output
@@ -41,11 +41,11 @@ def test_wrap_claude_prepare_only_skips_host_binary_lookup() -> None:
 
 def test_wrap_claude_prepare_only_uses_lean_ctx_when_configured(monkeypatch) -> None:
     runner = CliRunner()
-    monkeypatch.setenv("HEADROOM_CONTEXT_TOOL", "lean-ctx")
+    monkeypatch.setenv("LEGROOM_CONTEXT_TOOL", "lean-ctx")
 
-    with patch("headroom.cli.wrap._prepare_wrap_rtk") as prepare_rtk:
+    with patch("legroom.cli.wrap._prepare_wrap_rtk") as prepare_rtk:
         with patch(
-            "headroom.cli.wrap._setup_lean_ctx_agent",
+            "legroom.cli.wrap._setup_lean_ctx_agent",
             return_value=Path("lean-ctx"),
         ) as setup:
             result = runner.invoke(main, ["wrap", "claude", "--prepare-only", "--context-tool"])
@@ -68,8 +68,8 @@ def test_setup_lean_ctx_agent_runs_outside_project_root(monkeypatch, tmp_path: P
         return subprocess.CompletedProcess(args[0], 0, stdout="", stderr="")
 
     monkeypatch.chdir(project_root)
-    monkeypatch.setattr("headroom.lean_ctx.get_lean_ctx_path", lambda: lean_ctx)
-    monkeypatch.setattr("headroom.cli.wrap.subprocess.run", fake_run)
+    monkeypatch.setattr("legroom.lean_ctx.get_lean_ctx_path", lambda: lean_ctx)
+    monkeypatch.setattr("legroom.cli.wrap.subprocess.run", fake_run)
 
     assert _setup_lean_ctx_agent("codex") == lean_ctx
 
@@ -83,14 +83,14 @@ def test_wrap_codex_prepare_only_updates_config(monkeypatch, tmp_path: Path) -> 
     _set_test_home(monkeypatch, tmp_path)
     runner = CliRunner()
 
-    with patch("headroom.cli.wrap._ensure_rtk_binary", return_value=None):
+    with patch("legroom.cli.wrap._ensure_rtk_binary", return_value=None):
         result = runner.invoke(main, ["wrap", "codex", "--prepare-only", "--port", "8787"])
 
     assert result.exit_code == 0, result.output
     config_file = tmp_path / ".codex" / "config.toml"
     assert config_file.exists()
     content = config_file.read_text(encoding="utf-8")
-    assert 'model_provider = "headroom"' in content
+    assert 'model_provider = "legroom"' in content
     assert 'base_url = "http://127.0.0.1:8787/v1"' in content
 
 
@@ -101,7 +101,7 @@ def test_wrap_grok_build_uses_actual_proxy_port(monkeypatch, tmp_path: Path) -> 
     def fake_watcher(**kwargs) -> None:
         kwargs["print_setup_lines"](9999)
 
-    monkeypatch.setattr("headroom.cli.wrap._run_proxy_only_watcher", fake_watcher)
+    monkeypatch.setattr("legroom.cli.wrap._run_proxy_only_watcher", fake_watcher)
 
     result = runner.invoke(main, ["wrap", "grok-build", "--no-context-tool", "--port", "8787"])
 
@@ -117,13 +117,13 @@ def test_wrap_grok_build_uses_actual_proxy_port(monkeypatch, tmp_path: Path) -> 
 
 def test_wrap_codex_prepare_only_uses_lean_ctx_when_configured(monkeypatch, tmp_path: Path) -> None:
     _set_test_home(monkeypatch, tmp_path)
-    monkeypatch.setenv("HEADROOM_CONTEXT_TOOL", "lean-ctx")
+    monkeypatch.setenv("LEGROOM_CONTEXT_TOOL", "lean-ctx")
     runner = CliRunner()
 
     with runner.isolated_filesystem(temp_dir=str(tmp_path)):
-        with patch("headroom.cli.wrap._ensure_rtk_binary") as ensure_rtk:
+        with patch("legroom.cli.wrap._ensure_rtk_binary") as ensure_rtk:
             with patch(
-                "headroom.cli.wrap._setup_lean_ctx_agent",
+                "legroom.cli.wrap._setup_lean_ctx_agent",
                 return_value=Path("lean-ctx"),
             ) as setup:
                 result = runner.invoke(
@@ -139,12 +139,12 @@ def test_wrap_codex_prepare_only_uses_lean_ctx_when_configured(monkeypatch, tmp_
 
 def test_wrap_codex_prepare_only_accepts_no_context_tool_alias(monkeypatch, tmp_path: Path) -> None:
     _set_test_home(monkeypatch, tmp_path)
-    monkeypatch.setenv("HEADROOM_CONTEXT_TOOL", "lean-ctx")
+    monkeypatch.setenv("LEGROOM_CONTEXT_TOOL", "lean-ctx")
     runner = CliRunner()
 
     with runner.isolated_filesystem(temp_dir=str(tmp_path)):
-        with patch("headroom.cli.wrap._ensure_rtk_binary") as ensure_rtk:
-            with patch("headroom.cli.wrap._setup_lean_ctx_agent") as setup:
+        with patch("legroom.cli.wrap._ensure_rtk_binary") as ensure_rtk:
+            with patch("legroom.cli.wrap._setup_lean_ctx_agent") as setup:
                 result = runner.invoke(
                     main,
                     [
@@ -164,27 +164,27 @@ def test_wrap_codex_prepare_only_accepts_no_context_tool_alias(monkeypatch, tmp_
 
 def test_wrap_aider_prepare_only_injects_conventions(monkeypatch, tmp_path: Path) -> None:
     _set_test_home(monkeypatch, tmp_path)
-    monkeypatch.setenv("HEADROOM_RTK", "1")  # RTK is opt-in; exercise the RTK-on path
+    monkeypatch.setenv("LEGROOM_RTK", "1")  # RTK is opt-in; exercise the RTK-on path
     runner = CliRunner()
 
     with runner.isolated_filesystem(temp_dir=str(tmp_path)):
-        with patch("headroom.cli.wrap._ensure_rtk_binary", return_value=Path("rtk")):
+        with patch("legroom.cli.wrap._ensure_rtk_binary", return_value=Path("rtk")):
             result = runner.invoke(main, ["wrap", "aider", "--prepare-only"])
 
         assert result.exit_code == 0, result.output
         conventions = Path("CONVENTIONS.md")
         assert conventions.exists()
-        assert "headroom:rtk-instructions" in conventions.read_text(encoding="utf-8")
+        assert "legroom:rtk-instructions" in conventions.read_text(encoding="utf-8")
 
 
 def test_wrap_cursor_prepare_only_registers_native_hook(monkeypatch, tmp_path: Path) -> None:
     # GH #756: when rtk's own `--agent cursor` hook registers successfully,
-    # headroom must not also inject RTK_INSTRUCTIONS_BLOCK into .cursorrules.
+    # legroom must not also inject RTK_INSTRUCTIONS_BLOCK into .cursorrules.
     _set_test_home(monkeypatch, tmp_path)
-    monkeypatch.setenv("HEADROOM_RTK", "1")  # RTK is opt-in; exercise the RTK-on path
+    monkeypatch.setenv("LEGROOM_RTK", "1")  # RTK is opt-in; exercise the RTK-on path
     runner = CliRunner()
 
-    # headroom trusts the on-disk hook, not rtk's exit code, so simulate rtk
+    # legroom trusts the on-disk hook, not rtk's exit code, so simulate rtk
     # actually writing ~/.cursor/hooks.json when registration succeeds.
     def _register(_rtk_path, *, agent):
         hooks = tmp_path / ".cursor" / "hooks.json"
@@ -194,8 +194,8 @@ def test_wrap_cursor_prepare_only_registers_native_hook(monkeypatch, tmp_path: P
 
     with runner.isolated_filesystem(temp_dir=str(tmp_path)):
         with (
-            patch("headroom.cli.wrap._ensure_rtk_binary", return_value=Path("rtk")),
-            patch("headroom.rtk.installer.register_agent_hooks", side_effect=_register) as register,
+            patch("legroom.cli.wrap._ensure_rtk_binary", return_value=Path("rtk")),
+            patch("legroom.rtk.installer.register_agent_hooks", side_effect=_register) as register,
         ):
             result = runner.invoke(main, ["wrap", "cursor", "--prepare-only"])
 
@@ -208,33 +208,33 @@ def test_wrap_cursor_prepare_only_falls_back_to_cursorrules_when_hook_fails(
     monkeypatch, tmp_path: Path
 ) -> None:
     _set_test_home(monkeypatch, tmp_path)
-    monkeypatch.setenv("HEADROOM_RTK", "1")  # RTK is opt-in; exercise the RTK-on path
+    monkeypatch.setenv("LEGROOM_RTK", "1")  # RTK is opt-in; exercise the RTK-on path
     runner = CliRunner()
 
     with runner.isolated_filesystem(temp_dir=str(tmp_path)):
         with (
-            patch("headroom.cli.wrap._ensure_rtk_binary", return_value=Path("rtk")),
-            patch("headroom.rtk.installer.register_agent_hooks", return_value=False),
+            patch("legroom.cli.wrap._ensure_rtk_binary", return_value=Path("rtk")),
+            patch("legroom.rtk.installer.register_agent_hooks", return_value=False),
         ):
             result = runner.invoke(main, ["wrap", "cursor", "--prepare-only"])
 
         assert result.exit_code == 0, result.output
         cursorrules = Path(".cursorrules")
         assert cursorrules.exists()
-        assert "headroom:rtk-instructions" in cursorrules.read_text(encoding="utf-8")
+        assert "legroom:rtk-instructions" in cursorrules.read_text(encoding="utf-8")
 
 
 def test_wrap_cursor_prepare_only_uses_lean_ctx_when_configured(
     monkeypatch, tmp_path: Path
 ) -> None:
     _set_test_home(monkeypatch, tmp_path)
-    monkeypatch.setenv("HEADROOM_CONTEXT_TOOL", "lean-ctx")
+    monkeypatch.setenv("LEGROOM_CONTEXT_TOOL", "lean-ctx")
     runner = CliRunner()
 
     with runner.isolated_filesystem(temp_dir=str(tmp_path)):
-        with patch("headroom.cli.wrap._ensure_rtk_binary") as ensure_rtk:
+        with patch("legroom.cli.wrap._ensure_rtk_binary") as ensure_rtk:
             with patch(
-                "headroom.cli.wrap._setup_lean_ctx_agent",
+                "legroom.cli.wrap._setup_lean_ctx_agent",
                 return_value=Path("lean-ctx"),
             ) as setup:
                 result = runner.invoke(main, ["wrap", "cursor", "--prepare-only"])

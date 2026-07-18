@@ -1,11 +1,11 @@
-"""Headroom Proxy Server.
+"""Legroom Proxy Server.
 
 A transparent proxy that sits between LLM clients (Claude Code, Cursor, etc.)
-and LLM APIs (Anthropic, OpenAI), applying Headroom optimizations.
+and LLM APIs (Anthropic, OpenAI), applying Legroom optimizations.
 
 Usage:
     # Start the proxy
-    python -m headroom.proxy.server
+    python -m legroom.proxy.server
 
     # Use with Claude Code
     ANTHROPIC_BASE_URL=http://localhost:8787 claude

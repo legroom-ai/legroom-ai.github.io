@@ -1,12 +1,12 @@
-"""`headroom update` — self-update across the supported install methods.
+"""`legroom update` — self-update across the supported install methods.
 
-Detects how Headroom was installed and runs the matching upgrade command, or
+Detects how Legroom was installed and runs the matching upgrade command, or
 refuses with clear guidance when in-tool self-update isn't appropriate (git
 checkout, editable install, Docker image, system package manager).
 
 The upgrade always runs through ``sys.executable -m pip`` for the pip path so
 it can never touch a different interpreter than the one actually running
-Headroom.
+Legroom.
 """
 
 from __future__ import annotations
@@ -22,8 +22,8 @@ from pathlib import Path
 
 import click
 
-from headroom._subprocess import run as _subprocess_run
-from headroom.update_check import (
+from legroom._subprocess import run as _subprocess_run
+from legroom.update_check import (
     PACKAGE_NAME,
     fetch_latest_version,
     installed_version,
@@ -35,7 +35,7 @@ from .main import main
 
 @dataclass(frozen=True)
 class InstallMethod:
-    """How Headroom is installed and how (or whether) to upgrade it."""
+    """How Legroom is installed and how (or whether) to upgrade it."""
 
     kind: str
     can_self_update: bool
@@ -45,7 +45,7 @@ class InstallMethod:
 
 def _is_source_checkout() -> bool:
     try:
-        from headroom._version import _source_root
+        from legroom._version import _source_root
 
         return _source_root() is not None
     except Exception:
@@ -72,7 +72,7 @@ def _in_docker() -> bool:
         from pathlib import Path
 
         return Path("/.dockerenv").exists() or bool(
-            os.environ.get("HEADROOM_IN_DOCKER", "").strip()
+            os.environ.get("LEGROOM_IN_DOCKER", "").strip()
         )
     except Exception:
         return False
@@ -100,7 +100,7 @@ def _norm(path: str | os.PathLike[str] | None) -> str:
 
 
 def _package_location() -> str | None:
-    """Normalized base directory the headroom-ai distribution is installed in."""
+    """Normalized base directory the legroom-ai distribution is installed in."""
     try:
         from importlib.metadata import distribution
 
@@ -167,24 +167,24 @@ def _spec(extras: str | None) -> str:
 
 def _managed_env_guidance() -> str:
     if sys.platform == "darwin":
-        hint = "`brew upgrade headroom-ai` (if installed via Homebrew), or reinstall with pipx"
+        hint = "`brew upgrade legroom-ai` (if installed via Homebrew), or reinstall with pipx"
     elif sys.platform.startswith("win"):
-        hint = "reinstall with pipx (`pipx install headroom-ai`) or use a virtualenv"
+        hint = "reinstall with pipx (`pipx install legroom-ai`) or use a virtualenv"
     else:
         hint = "use your distro package manager, or reinstall with pipx / a virtualenv"
     return (
-        "Headroom is installed in an externally-managed system Python (PEP 668). "
+        "Legroom is installed in an externally-managed system Python (PEP 668). "
         f"Don't pip into it — {hint}."
     )
 
 
 def _find_core_pyd() -> Path | None:
-    """Locate the _core.pyd file inside the headroom site-packages directory."""
+    """Locate the _core.pyd file inside the legroom site-packages directory."""
     try:
-        import headroom
+        import legroom
 
-        headroom_path = Path(headroom.__file__).parent
-        core_pyd = headroom_path / "_core.pyd"
+        legroom_path = Path(legroom.__file__).parent
+        core_pyd = legroom_path / "_core.pyd"
         return core_pyd if core_pyd.exists() else None
     except Exception:
         return None
@@ -213,10 +213,10 @@ def _restore_backup(pyd_path: Path, backup_path: Path) -> None:
 
 
 def _test_core_integrity() -> bool:
-    """Test if headroom._core can be imported successfully."""
+    """Test if legroom._core can be imported successfully."""
     try:
         result = _subprocess_run(
-            [sys.executable, "-c", "from headroom._core import hello"],
+            [sys.executable, "-c", "from legroom._core import hello"],
             capture_output=True,
             text=True,
             timeout=10,
@@ -229,7 +229,7 @@ def _test_core_integrity() -> bool:
 def safe_update(argv: list[str]) -> int:
     """Execute update with protection against .pyd corruption on Windows.
 
-    Detects if _core.pyd is locked (indicating that headroom proxy is running),
+    Detects if _core.pyd is locked (indicating that legroom proxy is running),
     makes a backup, executes the update, tests integrity, and restores the
     backup in case of failure.
 
@@ -245,12 +245,12 @@ def safe_update(argv: list[str]) -> int:
         if sys.platform.startswith("win") and core_pyd:
             if _is_pyd_locked(core_pyd):
                 click.secho(
-                    "Warning: headroom._core is locked (headroom proxy is running).",
+                    "Warning: legroom._core is locked (legroom proxy is running).",
                     fg="yellow",
                 )
                 click.echo("If the upgrade fails, stop the proxy and try again.")
             else:
-                click.echo("Creating a backup of headroom._core before upgrading...")
+                click.echo("Creating a backup of legroom._core before upgrading...")
                 try:
                     backup_path = _make_backup(core_pyd)
                     click.echo(f"Backup created: {backup_path}")
@@ -276,10 +276,10 @@ def safe_update(argv: list[str]) -> int:
 
         # Upgrade successful: test integrity
         if core_pyd:
-            click.echo("Testing integrity of headroom._core module...")
+            click.echo("Testing integrity of legroom._core module...")
             if not _test_core_integrity():
                 click.secho(
-                    "ERROR: headroom._core could not be imported after upgrade.",
+                    "ERROR: legroom._core could not be imported after upgrade.",
                     fg="red",
                 )
                 if backup_path and backup_path.exists():
@@ -356,7 +356,7 @@ def detect_install_method(extras: str | None = None) -> InstallMethod:
             kind="docker",
             can_self_update=False,
             guidance=(
-                "Running inside a container — pull a newer Headroom image instead of self-updating."
+                "Running inside a container — pull a newer Legroom image instead of self-updating."
             ),
         )
 
@@ -431,7 +431,7 @@ def detect_install_method(extras: str | None = None) -> InstallMethod:
     help="Re-request extras for the pip path, e.g. 'all' or 'proxy'.",
 )
 def update(check_only: bool, assume_yes: bool, allow_pre: bool, extras: str | None) -> None:
-    """Update Headroom to the latest release.
+    """Update Legroom to the latest release.
 
     Detects pipx / uv tool / pip installs and runs the right upgrade. Refuses
     (with guidance) for git checkouts, editable installs, Docker, and system
@@ -439,7 +439,7 @@ def update(check_only: bool, assume_yes: bool, allow_pre: bool, extras: str | No
     """
     current = installed_version()
 
-    click.echo("Checking PyPI for the latest Headroom release...")
+    click.echo("Checking PyPI for the latest Legroom release...")
     latest = fetch_latest_version(allow_pre=allow_pre)
     if latest is None:
         raise click.ClickException("Could not reach PyPI to check for updates. Try again later.")
@@ -452,13 +452,13 @@ def update(check_only: bool, assume_yes: bool, allow_pre: bool, extras: str | No
 
         try:
             if Version(latest) <= Version(current):
-                click.echo(f"Headroom is up to date ({current}).")
+                click.echo(f"Legroom is up to date ({current}).")
                 return
         except InvalidVersion:
             pass
         click.echo(f"Update available: {current} → {latest}")
     else:
-        click.echo(f"Latest Headroom release: {latest}")
+        click.echo(f"Latest Legroom release: {latest}")
 
     method = detect_install_method(extras)
 
@@ -486,8 +486,8 @@ def update(check_only: bool, assume_yes: bool, allow_pre: bool, extras: str | No
             raise click.ClickException(
                 f"`{handoff_argv[0]}` was not found on PATH. Upgrade manually: {cmd_str}"
             ) from None
-        click.echo("Upgrade started in a child process so pip can replace headroom.exe.")
-        click.echo("Wait for the pip output to finish, then rerun `headroom --version`.")
+        click.echo("Upgrade started in a child process so pip can replace legroom.exe.")
+        click.echo("Wait for the pip output to finish, then rerun `legroom --version`.")
         return
 
     try:
@@ -501,8 +501,8 @@ def update(check_only: bool, assume_yes: bool, allow_pre: bool, extras: str | No
         raise click.ClickException(f"Upgrade failed (exit {returncode}). Run manually: {cmd_str}")
 
     # ASCII-only output — emoji can raise UnicodeEncodeError on some Windows consoles.
-    click.echo(f"Headroom upgraded to {latest}.")
-    click.echo("Restart any running `headroom proxy` to pick up the new version.")
+    click.echo(f"Legroom upgraded to {latest}.")
+    click.echo("Restart any running `legroom proxy` to pick up the new version.")
 
 
 __all__ = [

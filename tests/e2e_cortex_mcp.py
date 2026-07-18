@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-MCP mode e2e test: Cortex Code + Headroom MCP Server
+MCP mode e2e test: Cortex Code + Legroom MCP Server
 
 Tests the FULL MCP path using the official MCP Python SDK client:
-  1. Start headroom MCP server (stdio transport via mcp_server.py)
+  1. Start legroom MCP server (stdio transport via mcp_server.py)
   2. Connect using mcp.ClientSession (same protocol Cortex Code uses)
-  3. List tools → verify headroom_compress / headroom_retrieve / headroom_stats
-  4. Call headroom_compress with large JSON payloads
+  3. List tools → verify legroom_compress / legroom_retrieve / legroom_stats
+  4. Call legroom_compress with large JSON payloads
   5. Use compressed output to call Snowflake Cortex REST API
   6. Compare prompt_tokens: direct vs MCP-compressed
 
@@ -27,7 +27,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 _VENV_SITE = REPO_ROOT / ".venv" / "lib"
 try:
-    from headroom import compress as _hc  # noqa: F401
+    from legroom import compress as _hc  # noqa: F401
 except ImportError:
     sys.path.insert(0, str(REPO_ROOT))
     for _d in _VENV_SITE.glob("python*/site-packages"):
@@ -37,7 +37,7 @@ _SF_CONN = os.environ.get("SF_CONN", "")
 _SF_HOST = os.environ.get("SF_HOST", "")
 _SF_MODEL = os.environ.get("SF_MODEL", "claude-sonnet-4-6")
 
-MCP_SERVER_SCRIPT = REPO_ROOT / "headroom" / "ccr" / "mcp_server.py"
+MCP_SERVER_SCRIPT = REPO_ROOT / "legroom" / "ccr" / "mcp_server.py"
 
 
 # ── Snowflake auth ─────────────────────────────────────────────────────────────
@@ -77,7 +77,7 @@ def _cortex_call(messages: list[dict], token: str, host: str) -> dict:
         headers={
             "Authorization": f'Snowflake Token="{token}"',
             "Content-Type": "application/json",
-            "User-Agent": "headroom-mcp-test/1.0",
+            "User-Agent": "legroom-mcp-test/1.0",
         },
         method="POST",
     )
@@ -139,7 +139,7 @@ async def run_mcp_test(token: str, host: str) -> int:
 
     print()
     print("╔═══════════════════════════════════════════════════════════════╗")
-    print("║  Cortex Code × Headroom  —  MCP Mode E2E Test                ║")
+    print("║  Cortex Code × Legroom  —  MCP Mode E2E Test                ║")
     print("║  MCP Python SDK Client  │  stdio transport  │  Cortex        ║")
     print("╚═══════════════════════════════════════════════════════════════╝")
     print(f"\n  Model : {_SF_MODEL}  │  Host : {host}")
@@ -151,7 +151,7 @@ async def run_mcp_test(token: str, host: str) -> int:
     )
 
     # ── Connect via MCP SDK ───────────────────────────────────────────────────
-    print("\n  [1/6] Connecting to headroom MCP server ...", end=" ", flush=True)
+    print("\n  [1/6] Connecting to legroom MCP server ...", end=" ", flush=True)
     async with stdio_client(server_params) as (read, write):
         async with ClientSession(read, write) as session:
             await session.initialize()
@@ -163,7 +163,7 @@ async def run_mcp_test(token: str, host: str) -> int:
             tool_names = [t.name for t in tools_result.tools]
             print(f"found: {tool_names}")
 
-            required = {"headroom_compress", "headroom_retrieve", "headroom_stats"}
+            required = {"legroom_compress", "legroom_retrieve", "legroom_stats"}
             missing = required - set(tool_names)
             if missing:
                 print(f"\n  ✗  Missing tools: {missing}")
@@ -187,8 +187,8 @@ async def run_mcp_test(token: str, host: str) -> int:
             )
             print(f"prompt={d1_pt:,} tokens")
 
-            print("    ├─ MCP headroom_compress ...", end=" ", flush=True)
-            r1 = await session.call_tool("headroom_compress", {"content": dbt_content})
+            print("    ├─ MCP legroom_compress ...", end=" ", flush=True)
+            r1 = await session.call_tool("legroom_compress", {"content": dbt_content})
             text1 = r1.content[0].text if r1.content else "{}"
             data1 = json.loads(text1) if text1.startswith("{") else {}
             compressed1 = data1.get("compressed", dbt_content)
@@ -236,8 +236,8 @@ async def run_mcp_test(token: str, host: str) -> int:
             )
             print(f"prompt={d2_pt:,} tokens")
 
-            print("    ├─ MCP headroom_compress ...", end=" ", flush=True)
-            r2 = await session.call_tool("headroom_compress", {"content": tbl_content})
+            print("    ├─ MCP legroom_compress ...", end=" ", flush=True)
+            r2 = await session.call_tool("legroom_compress", {"content": tbl_content})
             text2 = r2.content[0].text if r2.content else "{}"
             data2 = json.loads(text2) if text2.startswith("{") else {}
             compressed2 = data2.get("compressed", tbl_content)
@@ -266,10 +266,10 @@ async def run_mcp_test(token: str, host: str) -> int:
             sym2 = "✓" if api_saved2 > 0 else "·"
             print(f"{sym2}  prompt={m2_pt:,}  saved {api_saved2:,} ({api_pct2:.1f}%)")
 
-            # ── Test 3: headroom_retrieve ─────────────────────────────────────
+            # ── Test 3: legroom_retrieve ─────────────────────────────────────
             if hash1:
-                print(f"\n  [5/6] headroom_retrieve — CCR round-trip (hash={hash1[:8]}...)")
-                r3 = await session.call_tool("headroom_retrieve", {"hash": hash1})
+                print(f"\n  [5/6] legroom_retrieve — CCR round-trip (hash={hash1[:8]}...)")
+                r3 = await session.call_tool("legroom_retrieve", {"hash": hash1})
                 text3 = r3.content[0].text if r3.content else "{}"
                 data3 = json.loads(text3) if text3.startswith("{") else {}
                 if "original_content" in data3 or "results" in data3:
@@ -279,9 +279,9 @@ async def run_mcp_test(token: str, host: str) -> int:
                 else:
                     print(f"    ✓  retrieved (keys: {list(data3.keys())})")
 
-            # ── headroom_stats ────────────────────────────────────────────────
-            print("\n  [6/6] headroom_stats")
-            r4 = await session.call_tool("headroom_stats", {})
+            # ── legroom_stats ────────────────────────────────────────────────
+            print("\n  [6/6] legroom_stats")
+            r4 = await session.call_tool("legroom_stats", {})
             stats_text = r4.content[0].text if r4.content else ""
             for line in stats_text.split("\n")[:6]:
                 if line.strip():
@@ -308,7 +308,7 @@ async def run_mcp_test(token: str, host: str) -> int:
             print(f"  {'TOTAL':<35} {total_direct:>8,}  {total_mcp:>8,}  {avg_pct:>6.1f}%")
             print()
             print("  MCP transport  : stdio (MCP Python SDK — same as Cortex Code)")
-            print("  Tools verified : headroom_compress ✓  headroom_retrieve ✓  headroom_stats ✓")
+            print("  Tools verified : legroom_compress ✓  legroom_retrieve ✓  legroom_stats ✓")
             if avg_pct > 0:
                 print(f"\n  ✓  MCP TEST PASSED — {avg_pct:.1f}% avg token reduction via MCP tools")
             else:

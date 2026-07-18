@@ -1,4 +1,4 @@
-"""RTK-loop eval — does Headroom Learn catch a loop and write a guardrail that
+"""RTK-loop eval — does Legroom Learn catch a loop and write a guardrail that
 would prevent it recurring?
 
 This is the agentic eval for the loop-weighting work. It runs in two phases:
@@ -27,7 +27,7 @@ rule, using an API key (ANTHROPIC/OPENAI/GEMINI) or an installed CLI backend.
 Usage:
     python benchmarks/rtk_loop_learn_eval.py                          # deterministic
     python benchmarks/rtk_loop_learn_eval.py --real                   # real LLM (API key)
-    HEADROOM_LEARN_CLI=claude python benchmarks/rtk_loop_learn_eval.py --real  # via CLI
+    LEGROOM_LEARN_CLI=claude python benchmarks/rtk_loop_learn_eval.py --real  # via CLI
 """
 
 from __future__ import annotations
@@ -43,10 +43,10 @@ from unittest.mock import patch
 # Allow running as a plain script from the repo root.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from headroom.learn.analyzer import SessionAnalyzer  # noqa: E402
-from headroom.learn.fixtures import rtk_refetch_loop_session  # noqa: E402
-from headroom.learn.loops import detect_loops  # noqa: E402
-from headroom.learn.models import (  # noqa: E402
+from legroom.learn.analyzer import SessionAnalyzer  # noqa: E402
+from legroom.learn.fixtures import rtk_refetch_loop_session  # noqa: E402
+from legroom.learn.loops import detect_loops  # noqa: E402
+from legroom.learn.models import (  # noqa: E402
     ProjectInfo,
     SessionData,
     ToolCall,
@@ -168,7 +168,7 @@ def run_eval(*, use_real_llm: bool) -> Scorecard:
     phase1_ctx = (
         nullcontext()
         if use_real_llm
-        else patch("headroom.learn.analyzer._call_llm", _stub_llm_phase1)
+        else patch("legroom.learn.analyzer._call_llm", _stub_llm_phase1)
     )
     with phase1_ctx:
         result = analyzer.analyze(project, [loop_session])
@@ -215,16 +215,16 @@ def run_eval(*, use_real_llm: bool) -> Scorecard:
     if guardrail:
         ctx_path = Path("/tmp/rtk-loop-eval-CLAUDE.md")
         ctx_path.write_text(
-            "<!-- headroom:learn:start -->\n"
+            "<!-- legroom:learn:start -->\n"
             f"### {guardrail.section}\n{guardrail.content}\n"
-            "<!-- headroom:learn:end -->\n",
+            "<!-- legroom:learn:end -->\n",
             encoding="utf-8",
         )
         project.context_file = ctx_path
         phase2_ctx = (
             nullcontext()
             if use_real_llm
-            else patch("headroom.learn.analyzer._call_llm", _stub_llm_phase2)
+            else patch("legroom.learn.analyzer._call_llm", _stub_llm_phase2)
         )
         with phase2_ctx:
             held_result = analyzer.analyze(project, [_guarded_session()])
@@ -260,7 +260,7 @@ def main() -> int:
         action="store_true",
         help="Drive the real analyzer LLM — needs an API key (ANTHROPIC_API_KEY / "
         "OPENAI_API_KEY / GEMINI_API_KEY) or an installed CLI backend "
-        "(claude / gemini / codex; force one with HEADROOM_LEARN_CLI=claude).",
+        "(claude / gemini / codex; force one with LEGROOM_LEARN_CLI=claude).",
     )
     args = parser.parse_args()
 

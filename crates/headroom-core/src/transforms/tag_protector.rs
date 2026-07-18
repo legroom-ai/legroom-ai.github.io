@@ -3,7 +3,7 @@
 //! # Why this exists
 //!
 //! LLM workflows carry XML-style markers (`<system-reminder>`,
-//! `<tool_call>`, `<thinking>`, `<headroom:tool_digest>`, etc.) that
+//! `<tool_call>`, `<thinking>`, `<legroom:tool_digest>`, etc.) that
 //! downstream code parses as structure. Kompress / LLMLingua sees them
 //! as droppable noise and silently strips them, breaking everything
 //! that depends on them. ContentRouter calls [`protect_tags`] before
@@ -57,7 +57,7 @@
 //!   second loop with the same `replace_first` bug for self-closing
 //!   tags. Rust handles self-closers in the same single pass.
 //! * **#5: Placeholder collision** — if input contains a literal
-//!   `{{HEADROOM_TAG_…}}` substring, Python silently let the collision
+//!   `{{LEGROOM_TAG_…}}` substring, Python silently let the collision
 //!   stand. We detect that and pick a salted prefix (with a tracing
 //!   warn) so restoration can't be ambiguous.
 //!
@@ -223,7 +223,7 @@ fn known_html_tags() -> &'static HashSet<&'static str> {
 /// Default placeholder prefix. Brace-doubled to look unlike anything a
 /// real workflow tag would emit. Falls back to a salted variant if the
 /// input itself contains the prefix (see [`pick_placeholder_prefix`]).
-const DEFAULT_PREFIX: &str = "{{HEADROOM_TAG_";
+const DEFAULT_PREFIX: &str = "{{LEGROOM_TAG_";
 const PLACEHOLDER_SUFFIX: &str = "}}";
 
 /// Sidecar diagnostics — same shape every Rust transform uses.
@@ -238,7 +238,7 @@ pub struct ProtectStats {
     /// worth tracking but not necessarily a bug.
     pub orphan_closes: usize,
     /// True iff the placeholder prefix had to be salted because the
-    /// input contained a literal `{{HEADROOM_TAG_` substring.
+    /// input contained a literal `{{LEGROOM_TAG_` substring.
     pub placeholder_collision_avoided: bool,
 }
 
@@ -263,7 +263,7 @@ pub fn known_html_tag_names() -> &'static [&'static str] {
 }
 
 /// Pick a placeholder prefix that doesn't collide with anything in
-/// `text`. We try `{{HEADROOM_TAG_` first; if the input contains it
+/// `text`. We try `{{LEGROOM_TAG_` first; if the input contains it
 /// literally we salt with a per-call counter until we miss. The salt
 /// is bounded; in practice we never need more than one attempt.
 fn pick_placeholder_prefix(text: &str) -> (String, bool) {
@@ -271,7 +271,7 @@ fn pick_placeholder_prefix(text: &str) -> (String, bool) {
         return (DEFAULT_PREFIX.to_string(), false);
     }
     for salt in 0u32..16 {
-        let candidate = format!("{{{{HEADROOM_TAG_{salt}_");
+        let candidate = format!("{{{{LEGROOM_TAG_{salt}_");
         if !text.contains(&candidate) {
             return (candidate, true);
         }
@@ -281,7 +281,7 @@ fn pick_placeholder_prefix(text: &str) -> (String, bool) {
     // process don't pay the formatting cost.
     static FALLBACK: OnceLock<String> = OnceLock::new();
     let prefix = FALLBACK
-        .get_or_init(|| "{{HEADROOM_TAG_FALLBACK_a4f1c7e2_".to_string())
+        .get_or_init(|| "{{LEGROOM_TAG_FALLBACK_a4f1c7e2_".to_string())
         .clone();
     (prefix, true)
 }
@@ -716,7 +716,7 @@ fn tag_lost_error(original: &str, compressed_length: usize, request_id: Option<&
     let preview: String = original.chars().take(80).collect();
     match request_id {
         Some(rid) => tracing::error!(
-            target: "headroom::tag_protector",
+            target: "legroom::tag_protector",
             event = "tag_protector_placeholder_lost",
             tag_preview = %preview,
             compressed_length = compressed_length,
@@ -725,7 +725,7 @@ fn tag_lost_error(original: &str, compressed_length: usize, request_id: Option<&
             "tag placeholder lost during compression — wrap discarded"
         ),
         None => tracing::error!(
-            target: "headroom::tag_protector",
+            target: "legroom::tag_protector",
             event = "tag_protector_placeholder_lost",
             tag_preview = %preview,
             compressed_length = compressed_length,
@@ -887,7 +887,7 @@ mod tests {
         // appending the tag at the trailing edge produced silently
         // malformed XML in ~350 production requests over 9 days.)
         let blocks = vec![(
-            "{{HEADROOM_TAG_0}}".to_string(),
+            "{{LEGROOM_TAG_0}}".to_string(),
             "<tag>data</tag>".to_string(),
         )];
         let compressed = "text without placeholder";
@@ -905,9 +905,9 @@ mod tests {
         // compressed text, the function returns the compressed text
         // byte-for-byte unchanged.
         let blocks = vec![
-            ("{{HEADROOM_TAG_0}}".to_string(), "<a>1</a>".to_string()),
-            ("{{HEADROOM_TAG_1}}".to_string(), "<b>2</b>".to_string()),
-            ("{{HEADROOM_TAG_2}}".to_string(), "<c>3</c>".to_string()),
+            ("{{LEGROOM_TAG_0}}".to_string(), "<a>1</a>".to_string()),
+            ("{{LEGROOM_TAG_1}}".to_string(), "<b>2</b>".to_string()),
+            ("{{LEGROOM_TAG_2}}".to_string(), "<c>3</c>".to_string()),
         ];
         let compressed = "compressor stripped every placeholder";
         let restored = restore_tags(compressed, &blocks);
@@ -920,13 +920,13 @@ mod tests {
         // surviving ones get substituted; the lost ones are discarded.
         // No orphan-tag bytes appear anywhere in the output.
         let blocks = vec![
-            ("{{HEADROOM_TAG_0}}".to_string(), "<a>1</a>".to_string()),
+            ("{{LEGROOM_TAG_0}}".to_string(), "<a>1</a>".to_string()),
             (
-                "{{HEADROOM_TAG_1}}".to_string(),
+                "{{LEGROOM_TAG_1}}".to_string(),
                 "<lost>x</lost>".to_string(),
             ),
         ];
-        let compressed = "head {{HEADROOM_TAG_0}} tail";
+        let compressed = "head {{LEGROOM_TAG_0}} tail";
         let restored = restore_tags(compressed, &blocks);
         assert_eq!(restored, "head <a>1</a> tail");
         assert!(!restored.contains("<lost"));
@@ -1002,16 +1002,16 @@ mod tests {
 
     #[test]
     fn fixed_in_3e4_placeholder_collision_is_avoided() {
-        // Bug #5: input contains literal `{{HEADROOM_TAG_…}}`. The
+        // Bug #5: input contains literal `{{LEGROOM_TAG_…}}`. The
         // walker should pick a salted prefix and report the collision
         // in stats.
-        let text = "User wrote {{HEADROOM_TAG_0}} on purpose. \
+        let text = "User wrote {{LEGROOM_TAG_0}} on purpose. \
              <system-reminder>real one</system-reminder>";
         let (_cleaned, blocks, stats) = protect_tags(text, false);
         assert!(stats.placeholder_collision_avoided);
         assert_eq!(blocks.len(), 1);
         // Placeholder used must NOT collide with the user's literal.
-        assert_ne!(blocks[0].0, "{{HEADROOM_TAG_0}}");
+        assert_ne!(blocks[0].0, "{{LEGROOM_TAG_0}}");
     }
 
     // ─── Edge-case correctness ────────────────────────────────────────

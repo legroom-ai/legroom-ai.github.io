@@ -1,28 +1,28 @@
 ---
 title: Troubleshooting
-description: Solutions for common Headroom issues including proxy startup, connection errors, no token savings, high latency, and installation problems.
+description: Solutions for common Legroom issues including proxy startup, connection errors, no token savings, high latency, and installation problems.
 ---
 
-Solutions for common Headroom issues.
+Solutions for common Legroom issues.
 
 ## Proxy Server Issues
 
 ### Proxy will not start
 
-**Symptom**: `headroom proxy` fails or hangs.
+**Symptom**: `legroom proxy` fails or hangs.
 
 ```bash
 # Check if port is already in use
 lsof -i :8787
 
 # Try a different port
-headroom proxy --port 8788
+legroom proxy --port 8788
 
 # Check for missing dependencies
-pip install "headroom-ai[proxy]"
+pip install "legroom-ai[proxy]"
 
 # Run with debug logging
-headroom proxy --log-file ~/.headroom/logs/proxy.jsonl --log-messages
+legroom proxy --log-file ~/.legroom/logs/proxy.jsonl --log-messages
 ```
 
 ### Connection refused when calling proxy
@@ -34,7 +34,7 @@ headroom proxy --log-file ~/.headroom/logs/proxy.jsonl --log-messages
 curl http://localhost:8787/health
 
 # Check if proxy started on a different port
-ps aux | grep headroom
+ps aux | grep legroom
 ```
 
 ### Proxy returns errors for some requests
@@ -43,7 +43,7 @@ ps aux | grep headroom
 
 ```bash
 # Check proxy logs for the actual error
-headroom proxy --log-file ~/.headroom/logs/proxy.jsonl --log-messages
+legroom proxy --log-file ~/.legroom/logs/proxy.jsonl --log-messages
 
 # Verify API key is set
 echo $OPENAI_API_KEY   # or ANTHROPIC_API_KEY
@@ -66,8 +66,8 @@ non-ML fallback tiers. The proxy log may show
 `C:\Windows\System32\onnxruntime.dll` — the Windows ML OS component (1.17.x),
 which deadlocks ort session initialization instead of returning an error.
 
-**Fix**: Headroom pins `ORT_DYLIB_PATH` automatically at import time to the
-DLL inside the `onnxruntime` pip package (included in `headroom-ai[proxy]`).
+**Fix**: Legroom pins `ORT_DYLIB_PATH` automatically at import time to the
+DLL inside the `onnxruntime` pip package (included in `legroom-ai[proxy]`).
 Confirm in the startup log:
 
 ```
@@ -83,7 +83,7 @@ pip install onnxruntime
 $env:ORT_DYLIB_PATH = "C:\path\to\onnxruntime.dll"
 ```
 
-`HEADROOM_MAGIKA_INIT_TIMEOUT_SECS` (default `5`) bounds the init as a safety
+`LEGROOM_MAGIKA_INIT_TIMEOUT_SECS` (default `5`) bounds the init as a safety
 net; on timeout detection degrades to non-ML tiers for the process lifetime.
 
 ## No Token Savings
@@ -110,7 +110,7 @@ print(f"SmartCrusher: {stats['transforms']['smart_crusher_enabled']}")
 <Tabs groupId="lang" items={['TypeScript', 'Python']}>
 <Tab value="TypeScript">
 ```ts twoslash
-import { compress } from 'headroom-ai';
+import { compress } from 'legroom-ai';
 
 // Ensure the proxy is running in optimize mode
 // (default, unless --no-optimize was passed)
@@ -122,7 +122,7 @@ console.log(`Compressed: ${result.compressed}`);
 <Tab value="Python">
 ```python
 # 1. Ensure mode is "optimize"
-client = HeadroomClient(
+client = LegroomClient(
     original_client=OpenAI(),
     provider=OpenAIProvider(),
     default_mode="optimize",  # NOT "audit"
@@ -132,11 +132,11 @@ client = HeadroomClient(
 response = client.chat.completions.create(
     model="gpt-4o",
     messages=messages,
-    headroom_mode="optimize",
+    legroom_mode="optimize",
 )
 
 # 3. Lower the compression threshold
-config = HeadroomConfig()
+config = LegroomConfig()
 config.smart_crusher.min_tokens_to_crush = 100  # Default is 200
 ```
 </Tab>
@@ -144,7 +144,7 @@ config.smart_crusher.min_tokens_to_crush = 100  # Default is 200
 
 ## Claude Code context window is larger through the proxy
 
-**Symptom**: After pointing Claude Code at Headroom (`ANTHROPIC_BASE_URL`), `/context all`
+**Symptom**: After pointing Claude Code at Legroom (`ANTHROPIC_BASE_URL`), `/context all`
 shows **more** tokens used than a direct session — the "System tools" and "MCP tools"
 lines grow by tens of thousands of tokens, before you send any message.
 
@@ -161,12 +161,12 @@ proxy. The proxy forwards the `tool_reference` blocks correctly, so deferral wor
 end-to-end (both streaming and non-streaming, subscription and API-key auth).
 
 ```bash
-# Easiest: `headroom wrap claude` sets ENABLE_TOOL_SEARCH=true automatically.
-headroom wrap claude
+# Easiest: `legroom wrap claude` sets ENABLE_TOOL_SEARCH=true automatically.
+legroom wrap claude
 
 # Choose the mode (true = always defer, the default; auto / auto:N = defer only
 # when tool definitions exceed N% of the budget; false = off):
-headroom wrap claude --tool-search auto
+legroom wrap claude --tool-search auto
 
 # Running `claude` manually instead of via wrap? Set it yourself:
 ENABLE_TOOL_SEARCH=true ANTHROPIC_BASE_URL=http://localhost:8787 claude
@@ -181,26 +181,26 @@ ENABLE_TOOL_SEARCH=true ANTHROPIC_BASE_URL=http://localhost:8787 claude
 
 When deferral is off, the proxy log also prints a one-time hint naming the fix.
 
-See [issue #746](https://github.com/ghaliba3/headroom/issues/746) for the full analysis.
+See [issue #746](https://github.com/legroom-ai/legroom-ai.github.io/issues/746) for the full analysis.
 
 <Callout type="warning" title="Claude Code VSCode extension caveat">
   Anthropic's VSCode extension webview does not currently render the deferred-tool
-  content blocks that `ENABLE_TOOL_SEARCH=true` enables through Headroom. Tool
+  content blocks that `ENABLE_TOOL_SEARCH=true` enables through Legroom. Tool
   results can show up as `unsupported content type` in the extension even though
   the standalone `claude` CLI works correctly. If you use Claude Code inside
-  VSCode, set `ENABLE_TOOL_SEARCH=false` for that target and restart the Headroom
-  deployment. See [issue #2028](https://github.com/headroomlabs-ai/headroom/issues/2028).
+  VSCode, set `ENABLE_TOOL_SEARCH=false` for that target and restart the Legroom
+  deployment. See [issue #2028](https://github.com/legroom-ai/legroom/issues/2028).
 </Callout>
 
 ## Remote Control unavailable through custom ANTHROPIC_BASE_URL
 
-**Symptom**: When Claude Code runs with `ANTHROPIC_BASE_URL` set to a custom host (for example, Headroom), the Remote Control menu is absent.
+**Symptom**: When Claude Code runs with `ANTHROPIC_BASE_URL` set to a custom host (for example, Legroom), the Remote Control menu is absent.
 
-**Cause**: This is a Claude-side gate. Headroom only receives normal API traffic and can still compress it, but Claude evaluates Remote Control availability before proxy traffic reaches the server.
+**Cause**: This is a Claude-side gate. Legroom only receives normal API traffic and can still compress it, but Claude evaluates Remote Control availability before proxy traffic reaches the server.
 
-**Fix**: Use Headroom for normal proxied API sessions, and launch Claude directly (without `ANTHROPIC_BASE_URL`) when you need Claude Remote Control.
+**Fix**: Use Legroom for normal proxied API sessions, and launch Claude directly (without `ANTHROPIC_BASE_URL`) when you need Claude Remote Control.
 
-`ENABLE_TOOL_SEARCH` is unaffected and can stay enabled for context-window savings while routing through Headroom.
+`ENABLE_TOOL_SEARCH` is unaffected and can stay enabled for context-window savings while routing through Legroom.
 
 ## Compression Too Aggressive
 
@@ -208,14 +208,14 @@ See [issue #746](https://github.com/ghaliba3/headroom/issues/746) for the full a
 
 ```python
 # 1. Keep more items
-config = HeadroomConfig()
+config = LegroomConfig()
 config.smart_crusher.max_items_after_crush = 50  # Default: 15
 
 # 2. Skip compression for specific tools
 response = client.chat.completions.create(
     model="gpt-4o",
     messages=messages,
-    headroom_tool_profiles={
+    legroom_tool_profiles={
         "important_tool": {"skip_compression": True},
     },
 )
@@ -245,7 +245,7 @@ print(f"Total time: {time.time() - start:.2f}s")
 
 ```python
 # 1. Use BM25 instead of embeddings (faster)
-config = HeadroomConfig()
+config = LegroomConfig()
 config.smart_crusher.relevance.tier = "bm25"
 
 # 2. Increase threshold to skip small payloads
@@ -258,14 +258,14 @@ config.rolling_window.enabled = False
 
 ## Installation Issues
 
-### pipx installs an older Headroom version
+### pipx installs an older Legroom version
 
-**Symptom**: PyPI shows a newer `headroom-ai` release, but `pipx install` or
+**Symptom**: PyPI shows a newer `legroom-ai` release, but `pipx install` or
 `pipx upgrade` keeps an older version. A pinned install can also fail with
 `No matching distribution found`.
 
 **Cause**: `pipx` resolves packages inside its app virtual environment. If that
-environment uses a Python version that Headroom does not publish wheels for yet,
+environment uses a Python version that Legroom does not publish wheels for yet,
 pip may skip newer releases and choose the newest compatible build it can use.
 
 Check the interpreter:
@@ -277,16 +277,16 @@ pipx list
 Install with a supported Python explicitly:
 
 ```bash
-pipx install --python python3.13 "headroom-ai[all]"
+pipx install --python python3.13 "legroom-ai[all]"
 ```
 
 For a pinned release:
 
 ```bash
-pipx install --python python3.13 "headroom-ai[all]==0.21.4"
+pipx install --python python3.13 "legroom-ai[all]==0.21.4"
 ```
 
-If you already have Headroom installed under `pipx`, uninstall it first or
+If you already have Legroom installed under `pipx`, uninstall it first or
 reinstall it with the supported interpreter.
 
 ### pip install fails with C++ compilation error
@@ -295,10 +295,10 @@ reinstall it with the supported interpreter.
 
 ```bash
 # Linux / Debian-based (including Docker)
-apt-get install -y build-essential && pip install headroom-ai
+apt-get install -y build-essential && pip install legroom-ai
 
 # macOS (Xcode command line tools)
-xcode-select --install && pip install headroom-ai
+xcode-select --install && pip install legroom-ai
 ```
 
 For Docker, install and remove build tools in one layer:
@@ -306,43 +306,43 @@ For Docker, install and remove build tools in one layer:
 ```dockerfile
 FROM python:3.11-slim
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential \
-    && pip install "headroom-ai[proxy]" \
+    && pip install "legroom-ai[proxy]" \
     && apt-get purge -y build-essential && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
 ```
 
-### ModuleNotFoundError: No module named 'headroom'
+### ModuleNotFoundError: No module named 'legroom'
 
 ```bash
 # Check it is installed in the right environment
-pip show headroom-ai
+pip show legroom-ai
 
 # If using virtual environment, ensure it is activated
 source venv/bin/activate
 
 # Reinstall
-pip install --upgrade headroom-ai
+pip install --upgrade legroom-ai
 ```
 
 ### Missing optional dependency
 
 ```bash
 # For proxy server
-pip install "headroom-ai[proxy]"
+pip install "legroom-ai[proxy]"
 
 # For embedding-based relevance scoring
-pip install "headroom-ai[relevance]"
+pip install "legroom-ai[relevance]"
 
 # For code compression (tree-sitter)
-pip install "headroom-ai[code]"
+pip install "legroom-ai[code]"
 
 # For everything
-pip install "headroom-ai[all]"
+pip install "legroom-ai[all]"
 ```
 
 ### Windows: Defender blocks ast-grep-cli (sg.exe) during install
 
-**Symptom**: On Windows, `uv tool install "headroom-ai[all]"` (or `pip install`) fails while installing the `ast-grep-cli` wheel, and Windows Defender flags `sg.exe`:
+**Symptom**: On Windows, `uv tool install "legroom-ai[all]"` (or `pip install`) fails while installing the `ast-grep-cli` wheel, and Windows Defender flags `sg.exe`:
 
 ```text
 error: Failed to install: ast_grep_cli-0.44.1-py3-none-win_amd64.whl (ast-grep-cli==0.44.1)
@@ -353,11 +353,11 @@ or potentially unwanted software. (os error 225)
 Threat: Trojan:Win64/Lazy!MTB
 ```
 
-**Cause**: A known **false positive** in the upstream `ast-grep-cli` wheel's bundled `sg.exe` ([ast-grep/ast-grep#2799](https://github.com/ast-grep/ast-grep/issues/2799)), not a Headroom issue. `ast-grep` is a base dependency, so the block also affects the `[proxy]` extra. Headroom uses `ast-grep` only for optional AST-based Read-output outlining and **runs normally without it** — the only impact is the install-time quarantine.
+**Cause**: A known **false positive** in the upstream `ast-grep-cli` wheel's bundled `sg.exe` ([ast-grep/ast-grep#2799](https://github.com/ast-grep/ast-grep/issues/2799)), not a Legroom issue. `ast-grep` is a base dependency, so the block also affects the `[proxy]` extra. Legroom uses `ast-grep` only for optional AST-based Read-output outlining and **runs normally without it** — the only impact is the install-time quarantine.
 
 **Workarounds** (safest first):
 
-1. **Run the proxy in Docker** — no local wheel is installed, so Defender is never triggered. See [Docker install](/docs/docker-install); the image is `ghcr.io/headroomlabs-ai/headroom`.
+1. **Run the proxy in Docker** — no local wheel is installed, so Defender is never triggered. See [Docker install](/docs/docker-install); the image is `ghcr.io/legroom-ai/legroom`.
 
 2. **Restore the file from quarantine and retry** — open **Windows Security → Virus & threat protection → Protection history**, select the `sg.exe` detection, choose **Restore**, then re-run the install command. This changes no persistent settings.
 
@@ -367,7 +367,7 @@ Threat: Trojan:Win64/Lazy!MTB
    # Scope the exclusion to uv's tools directory, install, then remove it
    $uvTools = (uv tool dir)
    Add-MpPreference -ExclusionPath $uvTools
-   uv tool install "headroom-ai[all]"
+   uv tool install "legroom-ai[all]"
    Remove-MpPreference -ExclusionPath $uvTools
    ```
 
@@ -387,7 +387,7 @@ api_key = os.environ.get("OPENAI_API_KEY")
 if not api_key:
     raise ValueError("OPENAI_API_KEY not set")
 
-client = HeadroomClient(
+client = LegroomClient(
     original_client=OpenAI(api_key=api_key),
     provider=OpenAIProvider(),
 )
@@ -400,7 +400,7 @@ import os
 from anthropic import Anthropic
 
 api_key = os.environ.get("ANTHROPIC_API_KEY")
-client = HeadroomClient(
+client = LegroomClient(
     original_client=Anthropic(api_key=api_key),
     provider=AnthropicProvider(),
 )
@@ -410,7 +410,7 @@ client = HeadroomClient(
 
 ```python
 # For custom/fine-tuned models, specify context limit
-client = HeadroomClient(
+client = LegroomClient(
     original_client=OpenAI(),
     provider=OpenAIProvider(),
     model_context_limits={
@@ -440,7 +440,7 @@ print(result)
 For testing, use in-memory storage:
 
 ```python
-client = HeadroomClient(
+client = LegroomClient(
     original_client=OpenAI(),
     provider=OpenAIProvider(),
     store_url="sqlite:///:memory:",
@@ -460,8 +460,8 @@ logging.basicConfig(
     format="%(asctime)s %(name)s %(levelname)s %(message)s",
 )
 
-# Or just Headroom logs
-logging.getLogger("headroom").setLevel(logging.DEBUG)
+# Or just Legroom logs
+logging.getLogger("legroom").setLevel(logging.DEBUG)
 ```
 
 ### Use Simulation to Inspect Transforms
@@ -483,8 +483,8 @@ print(json.dumps(plan.messages_optimized, indent=2))
 ### Test Transforms Directly
 
 ```python
-from headroom import SmartCrusher, Tokenizer
-from headroom.config import SmartCrusherConfig
+from legroom import SmartCrusher, Tokenizer
+from legroom.config import SmartCrusherConfig
 import json
 
 config = SmartCrusherConfig()
@@ -508,4 +508,4 @@ print(f"Tokens: {result.tokens_before} -> {result.tokens_after}")
 1. Enable debug logging and check the output
 2. Use `simulate()` to see what transforms would apply
 3. Run `validate_setup()` for configuration issues
-4. File an issue at [github.com/ghaliba3/headroom](https://github.com/ghaliba3/headroom/issues) with your Headroom version, Python version, provider, debug log output, and minimal reproduction code
+4. File an issue at [github.com/legroom-ai/legroom-ai.github.io](https://github.com/legroom-ai/legroom-ai.github.io/issues) with your Legroom version, Python version, provider, debug log output, and minimal reproduction code

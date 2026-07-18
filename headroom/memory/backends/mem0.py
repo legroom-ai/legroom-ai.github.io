@@ -1,4 +1,4 @@
-"""Mem0 backend adapter for Headroom's hierarchical memory system.
+"""Mem0 backend adapter for Legroom's hierarchical memory system.
 
 Provides integration with Mem0's graph and vector memory capabilities:
 - Graph database for relationships (Neo4j)
@@ -17,17 +17,17 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
-from headroom.memory import qdrant_env
-from headroom.memory.models import Memory
-from headroom.memory.ports import MemoryFilter, VectorFilter, VectorSearchResult
+from legroom.memory import qdrant_env
+from legroom.memory.models import Memory
+from legroom.memory.ports import MemoryFilter, VectorFilter, VectorSearchResult
 
 
 @dataclass
 class Mem0Config:
     """Configuration for Mem0 backend.
 
-    Qdrant connection fields default to values read from ``HEADROOM_QDRANT_*``
-    environment variables (see :mod:`headroom.memory.qdrant_env`). Passing an
+    Qdrant connection fields default to values read from ``LEGROOM_QDRANT_*``
+    environment variables (see :mod:`legroom.memory.qdrant_env`). Passing an
     explicit value to the constructor always wins over the environment.
 
     Attributes:
@@ -58,7 +58,7 @@ class Mem0Config:
     neo4j_uri: str = "neo4j://localhost:7687"
     neo4j_user: str = "neo4j"
     neo4j_password: str = "password"
-    # Qdrant settings (defaults resolve from HEADROOM_QDRANT_* env vars)
+    # Qdrant settings (defaults resolve from LEGROOM_QDRANT_* env vars)
     qdrant_url: str | None = field(default_factory=qdrant_env.qdrant_env_url)
     qdrant_host: str = field(default_factory=qdrant_env.qdrant_env_host)
     qdrant_port: int = field(default_factory=qdrant_env.qdrant_env_port)
@@ -73,12 +73,12 @@ class Mem0Config:
     enable_graph: bool = True  # Set to False to disable graph storage (vector-only)
 
     # Collection settings
-    collection_name: str = "headroom_memories"
+    collection_name: str = "legroom_memories"
 
 
 class Mem0Backend:
     """
-    Mem0 backend implementation for Headroom memory system.
+    Mem0 backend implementation for Legroom memory system.
 
     Mem0 provides:
     - Graph database for relationships (Neo4j)
@@ -86,7 +86,7 @@ class Mem0Backend:
     - Automatic entity extraction
     - Relationship inference
 
-    This adapter maps Mem0's API to Headroom's MemoryBackend interface:
+    This adapter maps Mem0's API to Legroom's MemoryBackend interface:
     - mem0.add() -> save_memory()
     - mem0.search() -> search_memories()
     - mem0.update() -> update_memory()
@@ -124,7 +124,7 @@ class Mem0Backend:
                 from mem0 import Memory as Mem0Memory
             except ImportError:
                 raise ImportError(
-                    "mem0 package not installed. Install with: pip install 'headroom-ai[memory-stack]'"
+                    "mem0 package not installed. Install with: pip install 'legroom-ai[memory-stack]'"
                 ) from None
 
             if self._config.mode == "cloud":
@@ -191,7 +191,7 @@ class Mem0Backend:
             Dict of metadata for Mem0.
         """
         metadata = {
-            "headroom_id": memory.id,
+            "legroom_id": memory.id,
             "user_id": memory.user_id,
             "importance": memory.importance,
             "created_at": memory.created_at.isoformat(),
@@ -235,7 +235,7 @@ class Mem0Backend:
         metadata = result.get("metadata", {})
 
         # Extract fields from metadata, with defaults
-        memory_id = metadata.get("headroom_id", result.get("id", str(uuid.uuid4())))
+        memory_id = metadata.get("legroom_id", result.get("id", str(uuid.uuid4())))
         user_id = metadata.get("user_id", "")
         importance = metadata.get("importance", 0.5)
 

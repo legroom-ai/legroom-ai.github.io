@@ -1,4 +1,4 @@
-"""SQLite graph store for Headroom's knowledge graph memory system.
+"""SQLite graph store for Legroom's knowledge graph memory system.
 
 Provides persistent storage for entities and relationships with efficient
 lookup via database indexes and BFS-based traversal. Memory usage is bounded
@@ -56,7 +56,7 @@ class SQLiteGraphStore:
 
     def __init__(
         self,
-        db_path: str | Path = "headroom_graph.db",
+        db_path: str | Path = "legroom_graph.db",
         page_cache_size_kb: int = 8192,  # 8MB default cache
     ) -> None:
         """Initialize the SQLite graph store.

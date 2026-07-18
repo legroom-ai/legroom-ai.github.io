@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Comprehensive Headroom Evaluation: Real Data, Real Accuracy
+Comprehensive Legroom Evaluation: Real Data, Real Accuracy
 
 This benchmark uses REAL data from established sources:
 1. Berkeley Function Calling Leaderboard (BFCL) - Real API schemas and ground truth
@@ -604,7 +604,7 @@ class EvalResult:
     """Result from a single evaluation run."""
 
     scenario_name: str
-    mode: str  # "baseline" or "headroom"
+    mode: str  # "baseline" or "legroom"
     tokens_before: int
     tokens_after: int
     compression_ratio: float
@@ -614,16 +614,16 @@ class EvalResult:
     response: str
 
 
-def run_scenario_with_headroom(
+def run_scenario_with_legroom(
     scenario: Scenario,
     model_id: str = "claude-sonnet-4-20250514",
 ) -> tuple[EvalResult, EvalResult]:
-    """Run a scenario with and without Headroom, measure accuracy."""
+    """Run a scenario with and without Legroom, measure accuracy."""
     from agno.agent import Agent
     from agno.models.anthropic import Claude
     from agno.tools import tool
 
-    from headroom.integrations.agno import HeadroomAgnoModel
+    from legroom.integrations.agno import LegroomAgnoModel
 
     # Create tools that return our scenario data
     tool_data = {t["tool"]: t["result"] for t in scenario.tool_outputs}
@@ -640,10 +640,10 @@ def run_scenario_with_headroom(
     # Estimate tokens (rough)
     baseline_tokens = len(full_context) // 4
 
-    # Run with Headroom
+    # Run with Legroom
     base_model = Claude(id=model_id)
-    headroom_model = HeadroomAgnoModel(wrapped_model=base_model)
-    agent = Agent(model=headroom_model, tools=[search_tool], markdown=True)
+    legroom_model = LegroomAgnoModel(wrapped_model=base_model)
+    agent = Agent(model=legroom_model, tools=[search_tool], markdown=True)
 
     prompt = f"""Based on the following information from various tools:
 
@@ -658,8 +658,8 @@ Provide a clear, specific answer."""
     response_text = response.content if hasattr(response, "content") else str(response)
     latency = (time.time() - start) * 1000
 
-    # Get Headroom stats
-    stats = headroom_model.get_savings_summary()
+    # Get Legroom stats
+    stats = legroom_model.get_savings_summary()
     tokens_after = stats.get("total_tokens_after", baseline_tokens)
     tokens_before = stats.get("total_tokens_before", baseline_tokens)
 
@@ -689,9 +689,9 @@ Provide a clear, specific answer."""
         response="(baseline - not run separately)",
     )
 
-    headroom_result = EvalResult(
+    legroom_result = EvalResult(
         scenario_name=scenario.name,
-        mode="headroom",
+        mode="legroom",
         tokens_before=tokens_before,
         tokens_after=tokens_after,
         compression_ratio=compression_ratio,
@@ -701,13 +701,13 @@ Provide a clear, specific answer."""
         response=response_text[:500],
     )
 
-    return baseline_result, headroom_result
+    return baseline_result, legroom_result
 
 
 def main():
     """Run comprehensive evaluation."""
     print("\n" + "=" * 70)
-    print("  COMPREHENSIVE HEADROOM EVALUATION")
+    print("  COMPREHENSIVE LEGROOM EVALUATION")
     print("  Real Data | Real Accuracy | Mixed Content")
     print("=" * 70)
 
@@ -747,14 +747,14 @@ def main():
         print(f"    {scenario.description}")
 
         try:
-            baseline, headroom = run_scenario_with_headroom(scenario)
-            results.append((baseline, headroom))
+            baseline, legroom = run_scenario_with_legroom(scenario)
+            results.append((baseline, legroom))
 
             print(
-                f"    Tokens: {headroom.tokens_before:,} → {headroom.tokens_after:,} ({headroom.compression_ratio:.1%} saved)"
+                f"    Tokens: {legroom.tokens_before:,} → {legroom.tokens_after:,} ({legroom.compression_ratio:.1%} saved)"
             )
-            print(f"    Accuracy preserved: {'✓' if headroom.accuracy_preserved else '✗'}")
-            print(f"    F1 score: {headroom.f1_score:.2f}")
+            print(f"    Accuracy preserved: {'✓' if legroom.accuracy_preserved else '✗'}")
+            print(f"    F1 score: {legroom.f1_score:.2f}")
         except Exception as e:
             print(f"    ERROR: {e}")
 

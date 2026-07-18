@@ -11,7 +11,7 @@ MODE_ALIASES = {
     "token": PROXY_MODE_TOKEN,
     "token_mode": PROXY_MODE_TOKEN,
     "token_savings": PROXY_MODE_TOKEN,
-    "token_headroom": PROXY_MODE_TOKEN,
+    "token_legroom": PROXY_MODE_TOKEN,
     "cache": PROXY_MODE_CACHE,
     "cache_mode": PROXY_MODE_CACHE,
     "cost_savings": PROXY_MODE_CACHE,

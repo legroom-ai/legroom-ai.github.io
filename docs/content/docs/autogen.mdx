@@ -3,12 +3,12 @@ title: AutoGen
 description: Automatic tool output compression for AutoGen agents with per-tool metrics tracking.
 ---
 
-Headroom integrates with [AutoGen](https://github.com/microsoft/autogen) (`autogen-agentchat` >=0.7) to compress tool outputs before they enter the agent's model context. Tool-heavy agents that return large JSON arrays, database results, or verbose logs see 60-90% token reduction.
+Legroom integrates with [AutoGen](https://github.com/microsoft/autogen) (`autogen-agentchat` >=0.7) to compress tool outputs before they enter the agent's model context. Tool-heavy agents that return large JSON arrays, database results, or verbose logs see 60-90% token reduction.
 
 ## Installation
 
 ```bash
-pip install headroom-ai autogen-agentchat
+pip install legroom-ai autogen-agentchat
 ```
 
 ## Quick start
@@ -18,14 +18,14 @@ Wrap tools in one line:
 ```python
 from autogen_agentchat.agents import AssistantAgent
 from autogen_core.tools import FunctionTool
-from headroom.integrations.autogen import wrap_tools_with_headroom
+from legroom.integrations.autogen import wrap_tools_with_legroom
 
 def search_database(query: str) -> str:
     """Search the database and return results."""
     return json.dumps({"results": [...], "total": 1000})
 
 tool = FunctionTool(search_database, description="Search the database")
-wrapped = wrap_tools_with_headroom([tool])
+wrapped = wrap_tools_with_legroom([tool])
 
 agent = AssistantAgent(
     name="researcher",
@@ -39,7 +39,7 @@ agent = AssistantAgent(
 Track compression stats across all tool invocations:
 
 ```python
-from headroom.integrations.autogen import get_tool_metrics
+from legroom.integrations.autogen import get_tool_metrics
 
 metrics = get_tool_metrics()
 print(metrics.get_summary())
@@ -57,7 +57,7 @@ print(metrics.get_summary())
 Reset between sessions:
 
 ```python
-from headroom.integrations.autogen import reset_tool_metrics
+from legroom.integrations.autogen import reset_tool_metrics
 
 reset_tool_metrics()
 ```
@@ -67,7 +67,7 @@ reset_tool_metrics()
 Control the compression threshold:
 
 ```python
-wrapped = wrap_tools_with_headroom(
+wrapped = wrap_tools_with_legroom(
     [search_tool, log_tool],
     min_chars_to_compress=500,  # Default: 1000
 )
@@ -76,10 +76,10 @@ wrapped = wrap_tools_with_headroom(
 Use a dedicated metrics collector:
 
 ```python
-from headroom.integrations.autogen import ToolMetricsCollector, wrap_tools_with_headroom
+from legroom.integrations.autogen import ToolMetricsCollector, wrap_tools_with_legroom
 
 collector = ToolMetricsCollector()
-wrapped = wrap_tools_with_headroom(
+wrapped = wrap_tools_with_legroom(
     [search_tool],
     metrics_collector=collector,
 )
@@ -92,9 +92,9 @@ print(collector.get_summary())
 For finer control, wrap tools individually:
 
 ```python
-from headroom.integrations.autogen import HeadroomToolWrapper
+from legroom.integrations.autogen import LegroomToolWrapper
 
-wrapper = HeadroomToolWrapper(
+wrapper = LegroomToolWrapper(
     search_tool,
     min_chars_to_compress=500,
 )
@@ -121,7 +121,7 @@ async def async_search(query: str) -> str:
     return json.dumps(results)
 
 tool = FunctionTool(async_search, description="Async search")
-wrapped = wrap_tools_with_headroom([tool])
+wrapped = wrap_tools_with_legroom([tool])
 # Compression works identically for async tools
 ```
 
@@ -131,11 +131,11 @@ AutoGen routes tool execution through `FunctionTool`, which wraps a plain
 Python function. The function's return value is stringified and becomes
 `FunctionExecutionResult.content` — what the LLM reads on its next turn.
 
-`HeadroomToolWrapper` creates a new `FunctionTool` with a wrapper function that:
+`LegroomToolWrapper` creates a new `FunctionTool` with a wrapper function that:
 
 1. Calls the original function
 2. Checks if the stringified output exceeds `min_chars_to_compress`
-3. If so, compresses via Headroom's `compress_tool_result()`
+3. If so, compresses via Legroom's `compress_tool_result()`
 4. Records metrics and returns the compressed string
 
 The wrapper preserves the original tool's name, description, and parameter

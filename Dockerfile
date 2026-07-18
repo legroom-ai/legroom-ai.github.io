@@ -8,7 +8,7 @@ FROM python:${PYTHON_VERSION}-slim AS builder
 
 ARG UV_VERSION
 ARG PYTHON_SITE_PACKAGES
-ARG HEADROOM_BUILD_VERSION=""
+ARG LEGROOM_BUILD_VERSION=""
 
 # build-essential / g++ for any C extension wheels uv may need to build
 # from source. curl + ca-certificates are required by the rustup
@@ -27,10 +27,10 @@ RUN apt-get update && \
 
 RUN python -m pip install --no-cache-dir uv==${UV_VERSION}
 
-# Rust toolchain for the headroom._core extension. With single-wheel
+# Rust toolchain for the legroom._core extension. With single-wheel
 # architecture (post-#355), `pip install -e .` invokes maturin via
 # pyproject.toml's [build-system], which calls cargo. No more separate
-# headroom-core-py package.
+# legroom-core-py package.
 ENV CARGO_HOME=/usr/local/cargo \
     RUSTUP_HOME=/usr/local/rustup \
     PATH=/usr/local/cargo/bin:${PATH}
@@ -45,17 +45,17 @@ WORKDIR /build
 COPY pyproject.toml uv.lock README.md ./
 COPY Cargo.toml Cargo.lock rust-toolchain.toml ./
 COPY crates/ crates/
-COPY headroom/ headroom/
+COPY legroom/ legroom/
 
-ARG HEADROOM_EXTRAS=proxy,code
+ARG LEGROOM_EXTRAS=proxy,code
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/build/target \
-    uv pip install --system ".[${HEADROOM_EXTRAS}]"
+    uv pip install --system ".[${LEGROOM_EXTRAS}]"
 
 RUN --mount=type=bind,source=.,target=/context,readonly \
-    HEADROOM_BUILD_VERSION="${HEADROOM_BUILD_VERSION}" PYTHON_SITE_PACKAGES="${PYTHON_SITE_PACKAGES}" python - <<'PY'
+    LEGROOM_BUILD_VERSION="${LEGROOM_BUILD_VERSION}" PYTHON_SITE_PACKAGES="${PYTHON_SITE_PACKAGES}" python - <<'PY'
 import hashlib
 import os
 from pathlib import Path
@@ -98,7 +98,7 @@ def source_digest(root: Path) -> str:
         "Cargo.lock",
         "rust-toolchain.toml",
         "crates",
-        "headroom",
+        "legroom",
     )
     for name in inputs:
         path = root / name
@@ -113,9 +113,9 @@ def source_digest(root: Path) -> str:
     return digest.hexdigest()[:12]
 
 
-build_version = os.environ["HEADROOM_BUILD_VERSION"].strip()
+build_version = os.environ["LEGROOM_BUILD_VERSION"].strip()
 if not build_version:
-    print("no Headroom build version override provided; using installed package metadata")
+    print("no Legroom build version override provided; using installed package metadata")
     raise SystemExit(0)
 if build_version == "source-build":
     revision = git_revision(Path("/context"))
@@ -125,33 +125,33 @@ if build_version == "source-build":
         else f"source-build+sha256.{source_digest(Path('/build'))}"
     )
 
-package_dir = Path(os.environ["PYTHON_SITE_PACKAGES"]) / "headroom"
+package_dir = Path(os.environ["PYTHON_SITE_PACKAGES"]) / "legroom"
 (package_dir / "_build_info.py").write_text(
     "BUILD_VERSION = " + repr(build_version) + "\n",
     encoding="utf-8",
 )
-print("baked Headroom build version: " + build_version)
+print("baked Legroom build version: " + build_version)
 PY
 
 # Build-stage smoke check: verify the extension loads end-to-end inside
 # the build image before we copy site-packages into the runtime image.
 # If this fails, the runtime image would fail Phase A0's fail-loud
 # startup check on every restart. Run from /tmp so cwd doesn't shadow
-# site-packages with /build/headroom/ (which has no _core.so since
+# site-packages with /build/legroom/ (which has no _core.so since
 # maturin installed the .so into site-packages).
-RUN cd /tmp && python -c "from headroom._core import DiffCompressor, SmartCrusher; \
+RUN cd /tmp && python -c "from legroom._core import DiffCompressor, SmartCrusher; \
     print(f'build-stage rust core verify OK: {DiffCompressor.__name__}, {SmartCrusher.__name__}')"
 
 # Build the native Rust reverse proxy binary and stage it for the runtime
 # images (issue #976). These images already run "the proxy"; bundling the
-# native `headroom-proxy` binary lets operators front the Python proxy with
+# native `legroom-proxy` binary lets operators front the Python proxy with
 # the Rust SigV4 / live-zone compression path from the same image. The
 # binary is copied out of the cache-mounted target dir into a persistent
 # path so the COPY in the runtime stages can pick it up.
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/build/target \
-    cargo build --release --locked --bin headroom-proxy && \
-    cp target/release/headroom-proxy /usr/local/bin/headroom-proxy
+    cargo build --release --locked --bin legroom-proxy && \
+    cp target/release/legroom-proxy /usr/local/bin/legroom-proxy
 
 # ---- Runtime stage (python-slim): supports root/nonroot via build arg ----
 FROM python:${PYTHON_VERSION}-slim AS runtime-slim-base
@@ -165,40 +165,40 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder ${PYTHON_SITE_PACKAGES} ${PYTHON_SITE_PACKAGES}
-COPY --from=builder /usr/local/bin/headroom /usr/local/bin/headroom
+COPY --from=builder /usr/local/bin/legroom /usr/local/bin/legroom
 # Native Rust reverse proxy binary (issue #976).
-COPY --from=builder /usr/local/bin/headroom-proxy /usr/local/bin/headroom-proxy
+COPY --from=builder /usr/local/bin/legroom-proxy /usr/local/bin/legroom-proxy
 
 RUN mkdir -p /home/nonroot /data && \
     if [ "$RUNTIME_USER" = "nonroot" ]; then \
       groupadd --gid 1000 nonroot && \
       useradd --uid 1000 --gid nonroot --create-home nonroot && \
-      mkdir -p /home/nonroot/.headroom && \
+      mkdir -p /home/nonroot/.legroom && \
       chown -R nonroot:nonroot /data /home/nonroot; \
     else \
-      mkdir -p /root/.headroom; \
+      mkdir -p /root/.legroom; \
     fi
 
 USER ${RUNTIME_USER}
 WORKDIR ${RUNTIME_HOME}
 
-ENV HEADROOM_HOST=0.0.0.0 \
+ENV LEGROOM_HOST=0.0.0.0 \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-# Declare ~/.headroom as a volume so Docker (and ACA) can attach persistent
+# Declare ~/.legroom as a volume so Docker (and ACA) can attach persistent
 # storage here.  Bare `docker run` gets an anonymous volume as a fallback so
 # state is never silently written to the ephemeral container layer.
 # RUNTIME_HOME defaults to /home/nonroot (the published image default); pass
 # --build-arg RUNTIME_HOME=/root when building with RUNTIME_USER=root.
-VOLUME ${RUNTIME_HOME}/.headroom
+VOLUME ${RUNTIME_HOME}/.legroom
 
 EXPOSE 8787
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD ["curl", "--fail", "--silent", "http://127.0.0.1:8787/readyz"]
 
-ENTRYPOINT ["headroom", "proxy"]
+ENTRYPOINT ["legroom", "proxy"]
 CMD ["--host", "0.0.0.0", "--port", "8787"]
 
 FROM ${DISTROLESS_IMAGE} AS runtime-slim
@@ -208,12 +208,12 @@ ARG PYTHON_SITE_PACKAGES
 
 COPY --from=builder ${PYTHON_SITE_PACKAGES} ${PYTHON_SITE_PACKAGES}
 # Native Rust reverse proxy binary (issue #976).
-COPY --from=builder /usr/local/bin/headroom-proxy /usr/local/bin/headroom-proxy
+COPY --from=builder /usr/local/bin/legroom-proxy /usr/local/bin/legroom-proxy
 
 USER ${RUNTIME_USER}
 WORKDIR /app
 
-ENV HEADROOM_HOST=0.0.0.0 \
+ENV LEGROOM_HOST=0.0.0.0 \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=${PYTHON_SITE_PACKAGES}
@@ -223,7 +223,7 @@ EXPOSE 8787
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD ["python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8787/readyz', timeout=5)"]
 
-ENTRYPOINT ["python3", "-m", "headroom.cli", "proxy"]
+ENTRYPOINT ["python3", "-m", "legroom.cli", "proxy"]
 CMD ["--host", "0.0.0.0", "--port", "8787"]
 
 # Default published image remains python-slim runtime

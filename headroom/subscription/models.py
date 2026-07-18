@@ -4,7 +4,7 @@ Mirrors the Anthropic OAuth usage API response exactly, including:
   - five_hour / seven_day rolling windows (utilization + reset times)
   - seven_day_opus / seven_day_sonnet per-model 7-day windows
   - extra_usage overage block (credits stored in cents by Anthropic)
-  - Headroom contribution: tokens conserved by compression, CLI filtering, cache
+  - Legroom contribution: tokens conserved by compression, CLI filtering, cache
   - Window discrepancy detection (surge pricing, cache-miss anomalies)
 """
 
@@ -366,13 +366,13 @@ class WindowTokens:
 
 
 # ---------------------------------------------------------------------------
-# Headroom contribution estimate
+# Legroom contribution estimate
 # ---------------------------------------------------------------------------
 
 
 @dataclass
-class HeadroomContribution:
-    """Tokens conserved within the current 5h window by Headroom's layers.
+class LegroomContribution:
+    """Tokens conserved within the current 5h window by Legroom's layers.
 
     These are cumulative counters reset when the 5h window rolls over.
     """
@@ -413,19 +413,19 @@ class HeadroomContribution:
     def total_savings_usd(self) -> float:
         return self.compression_savings_usd + self.cache_savings_usd
 
-    def raw_without_headroom(self) -> int:
+    def raw_without_legroom(self) -> int:
         return self.tokens_submitted + self.tokens_saved_compression + self.cli_filtering_saved()
 
     def efficiency_pct(self) -> float:
-        # Fraction of the pre-Headroom input that compression + CLI filtering
+        # Fraction of the pre-Legroom input that compression + CLI filtering
         # removed. Use compression_saved() (which excludes cache reads) as the
-        # numerator: raw_without_headroom() also excludes cache reads, so mixing
+        # numerator: raw_without_legroom() also excludes cache reads, so mixing
         # total_saved() (which adds tokens_saved_cache_reads) into this ratio
         # made it inconsistent with its own denominator and let efficiency exceed
         # 100% (e.g. submitted=100, cache_reads=1000 -> 1000%). Cache reads are a
         # provider-side discount on tokens that were still forwarded, not tokens
-        # Headroom removed, so they do not belong in a removal-efficiency ratio.
-        raw = self.raw_without_headroom()
+        # Legroom removed, so they do not belong in a removal-efficiency ratio.
+        raw = self.raw_without_legroom()
         if raw == 0:
             return 0.0
         return round(self.compression_saved() / raw * 100, 1)
@@ -450,7 +450,7 @@ class HeadroomContribution:
                 "cache_reads": self.tokens_saved_cache_reads,
                 "total": self.total_saved(),
             },
-            "raw_without_headroom": self.raw_without_headroom(),
+            "raw_without_legroom": self.raw_without_legroom(),
             "efficiency_pct": self.efficiency_pct(),
             "savings_usd": {
                 "compression": round(self.compression_savings_usd, 4),
@@ -504,7 +504,7 @@ class SubscriptionState:
     window_tokens: WindowTokens | None = None
     """Transcript-derived token breakdown for the current 5h window."""
 
-    contribution: HeadroomContribution = field(default_factory=HeadroomContribution)
+    contribution: LegroomContribution = field(default_factory=LegroomContribution)
     discrepancies: list[WindowDiscrepancy] = field(default_factory=list)
     history: list[SubscriptionSnapshot] = field(default_factory=list)
 

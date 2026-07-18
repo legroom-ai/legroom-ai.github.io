@@ -1,6 +1,6 @@
 //! Dynamic anchor selection for array compression.
 //!
-//! Direct port of `headroom/transforms/anchor_selector.py`. Used by
+//! Direct port of `legroom/transforms/anchor_selector.py`. Used by
 //! `smart_crusher::analyzer` (and the not-yet-ported planning layer)
 //! to allocate position-based anchor slots — the items that are kept
 //! purely for their position in the array, not their relevance score.
@@ -35,12 +35,12 @@ use serde_json::Value;
 use std::collections::{BTreeSet, HashMap, HashSet};
 
 // ============================================================================
-// Configuration (Python `headroom/config.py:294` AnchorConfig)
+// Configuration (Python `legroom/config.py:294` AnchorConfig)
 // ============================================================================
 
 /// Configuration for dynamic anchor allocation.
 ///
-/// Direct port of Python `AnchorConfig` (`headroom/config.py:294-348`).
+/// Direct port of Python `AnchorConfig` (`legroom/config.py:294-348`).
 /// Defaults must match Python byte-for-byte — they're consulted by
 /// every anchor decision and parity fixtures lock the resulting choices.
 #[derive(Debug, Clone)]

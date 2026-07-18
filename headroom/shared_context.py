@@ -1,12 +1,12 @@
 """SharedContext — compressed inter-agent context sharing.
 
 When agents hand off to each other, context gets replayed in full.
-SharedContext compresses what moves between agents, using Headroom's
+SharedContext compresses what moves between agents, using Legroom's
 existing CCR (Compress-Cache-Retrieve) architecture.
 
 Usage:
 
-    from headroom import SharedContext
+    from legroom import SharedContext
 
     ctx = SharedContext()
 
@@ -105,7 +105,7 @@ class SharedContext:
         Returns:
             ContextEntry with compression stats.
         """
-        from headroom.compress import compress
+        from legroom.compress import compress
 
         messages = [{"role": "tool", "content": content}]
         result = compress(messages, model=self._model)

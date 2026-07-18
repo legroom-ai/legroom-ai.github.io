@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from headroom import fsutil
+from legroom import fsutil
 
 from .base import MCPRegistrar, RegisterResult, RegisterStatus, ServerSpec
 
@@ -28,20 +28,20 @@ else:  # pragma: no cover — exercised only on 3.10
 
 logger = logging.getLogger(__name__)
 
-_MARKER_START = "# --- Headroom MCP server ---"
-_MARKER_END = "# --- end Headroom MCP server ---"
+_MARKER_START = "# --- Legroom MCP server ---"
+_MARKER_END = "# --- end Legroom MCP server ---"
 
 
 def _marker_start(server_name: str) -> str:
-    if server_name == "headroom":
+    if server_name == "legroom":
         return _MARKER_START
-    return f"# --- Headroom MCP server: {server_name} ---"
+    return f"# --- Legroom MCP server: {server_name} ---"
 
 
 def _marker_end(server_name: str) -> str:
-    if server_name == "headroom":
+    if server_name == "legroom":
         return _MARKER_END
-    return f"# --- end Headroom MCP server: {server_name} ---"
+    return f"# --- end Legroom MCP server: {server_name} ---"
 
 
 class CodexRegistrar(MCPRegistrar):
@@ -89,7 +89,7 @@ class CodexRegistrar(MCPRegistrar):
                 return RegisterResult(
                     RegisterStatus.MISMATCH,
                     "user-managed [mcp_servers."
-                    f"{spec.name}] entry outside Headroom markers; "
+                    f"{spec.name}] entry outside Legroom markers; "
                     f"{_diff_specs(existing, spec)}",
                 )
             return RegisterResult(RegisterStatus.MISMATCH, _diff_specs(existing, spec))
@@ -98,16 +98,16 @@ class CodexRegistrar(MCPRegistrar):
             content = self._read_text()
             if _marker_start(spec.name) not in content:
                 # Even force=True is only allowed to replace blocks that
-                # Headroom owns. Otherwise appending our table would create a
+                # Legroom owns. Otherwise appending our table would create a
                 # duplicate [mcp_servers.<name>] TOML section and may clobber a
                 # user-managed integration.
                 return RegisterResult(
                     RegisterStatus.MISMATCH,
                     "user-managed [mcp_servers."
-                    f"{spec.name}] entry outside Headroom markers; "
+                    f"{spec.name}] entry outside Legroom markers; "
                     f"{_diff_specs(existing, spec)}",
                 )
-            # Drop any prior Headroom block before re-writing.
+            # Drop any prior Legroom block before re-writing.
             self.unregister_server(spec.name)
 
         # `existing is None` here can also mean the file is present but
@@ -239,7 +239,7 @@ class CodexRegistrar(MCPRegistrar):
 
 
 def _render_block(spec: ServerSpec) -> str:
-    """Render a Headroom-marked TOML block for ``spec``."""
+    """Render a Legroom-marked TOML block for ``spec``."""
     lines: list[str] = [
         _marker_start(spec.name),
         f"[mcp_servers.{spec.name}]",

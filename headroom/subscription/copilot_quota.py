@@ -12,7 +12,7 @@ Token discovery order (first non-empty wins):
 
 The poll is triggered every ``poll_interval_s`` seconds (default 60) as long as
 a GitHub token is available.  No proxy traffic interception is needed — tokens
-come from the environment at headroom start-up.
+come from the environment at legroom start-up.
 
 API response schema (relevant fields from ``/copilot_internal/user``):
     login                  str        GitHub username
@@ -41,7 +41,7 @@ from dataclasses import dataclass, field
 from threading import Lock
 from typing import Any
 
-from headroom.subscription.base import QuotaTracker
+from legroom.subscription.base import QuotaTracker
 
 logger = logging.getLogger(__name__)
 
@@ -207,8 +207,8 @@ def discover_github_token() -> str | None:
 class _CopilotQuotaTracker(QuotaTracker):
     """Singleton background poller for GitHub Copilot quota.
 
-    Implements :class:`~headroom.subscription.base.QuotaTracker` so it can be
-    registered with the :class:`~headroom.subscription.base.QuotaTrackerRegistry`.
+    Implements :class:`~legroom.subscription.base.QuotaTracker` so it can be
+    registered with the :class:`~legroom.subscription.base.QuotaTrackerRegistry`.
     Availability is gated on a GitHub token being present in the environment.
     """
 
@@ -286,7 +286,7 @@ class _CopilotQuotaTracker(QuotaTracker):
                 # NOTE: do NOT wrap in asyncio.shield() — shield prevents the
                 # inner Event.wait() from being cancelled when wait_for times
                 # out, leaking one Task per poll interval. See the matching
-                # note in headroom/subscription/tracker.py:_poll_loop.
+                # note in legroom/subscription/tracker.py:_poll_loop.
                 await asyncio.wait_for(
                     self._stop_event.wait(),
                     timeout=self._poll_interval_s,

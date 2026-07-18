@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from headroom.ccr.tool_injection import CCR_TOOL_NAME, create_ccr_tool_definition
-from headroom.proxy.ccr_golden_policy import (
+from legroom.ccr.tool_injection import CCR_TOOL_NAME, create_ccr_tool_definition
+from legroom.proxy.ccr_golden_policy import (
     create_fresh_ccr_tool_definition,
     replay_golden_ccr_tool_definition,
     serialize_ccr_tool_definition_canonical,
@@ -11,7 +11,7 @@ from headroom.proxy.ccr_golden_policy import (
 
 
 def test_replays_golden_definition_without_reserializing() -> None:
-    golden = b'{ "name" : "headroom_retrieve" , "description" : "client bytes" }'
+    golden = b'{ "name" : "legroom_retrieve" , "description" : "client bytes" }'
 
     replay = replay_golden_ccr_tool_definition(golden)
 

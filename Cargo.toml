@@ -1,30 +1,30 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/headroom-core",
-    "crates/headroom-proxy",
-    "crates/headroom-simulators",
-    "crates/headroom-py",
-    "crates/headroom-parity",
+    "crates/legroom-core",
+    "crates/legroom-proxy",
+    "crates/legroom-simulators",
+    "crates/legroom-py",
+    "crates/legroom-parity",
 ]
-# headroom-py is a Python extension module — it must be built via maturin, not
+# legroom-py is a Python extension module — it must be built via maturin, not
 # plain cargo (the "extension-module" feature tells pyo3 not to link libpython,
 # which is required for `import` to work). `cargo build --workspace` without
 # explicit members skips it; `cargo test --workspace` still runs its tests
 # because pyo3 can dynamically link here for the cdylib used by tests.
 default-members = [
-    "crates/headroom-core",
-    "crates/headroom-proxy",
-    "crates/headroom-simulators",
-    "crates/headroom-parity",
+    "crates/legroom-core",
+    "crates/legroom-proxy",
+    "crates/legroom-simulators",
+    "crates/legroom-parity",
 ]
 
 [workspace.package]
 edition = "2021"
 rust-version = "1.80"
 license = "Apache-2.0"
-repository = "https://github.com/ghaliba3/headroom"
-authors = ["Headroom Maintainers"]
+repository = "https://github.com/legroom-ai/legroom-ai.github.io"
+authors = ["Legroom Maintainers"]
 
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }
@@ -51,7 +51,7 @@ serde_json = { version = "1", features = ["preserve_order", "arbitrary_precision
 bytes = "1"
 thiserror = "2"
 # `log` compat: when no tracing subscriber is active (the case inside the
-# headroom-py cdylib), events are re-emitted as `log` records so pyo3-log
+# legroom-py cdylib), events are re-emitted as `log` records so pyo3-log
 # can forward them to Python's logging. No effect on binaries that install
 # a real subscriber.
 tracing = { version = "0.1", features = ["log"] }

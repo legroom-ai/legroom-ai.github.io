@@ -26,10 +26,10 @@ Compression Strategy:
 5. Reassemble into valid code
 
 Installation:
-    pip install headroom-ai[code]
+    pip install legroom-ai[code]
 
 Usage:
-    >>> from headroom.transforms import CodeAwareCompressor
+    >>> from legroom.transforms import CodeAwareCompressor
     >>> compressor = CodeAwareCompressor()
     >>> result = compressor.compress(python_code)
     >>> print(result.compressed)  # Valid Python code
@@ -113,7 +113,7 @@ def _get_parser(language: str) -> Any:
 
     tree-sitter ≥ 0.23 wraps the C ``TSParser`` in a PyO3
     ``#[pyclass(unsendable)]`` which hard-panics if the object is accessed
-    from any thread other than its creator.  Because Headroom runs
+    from any thread other than its creator.  Because Legroom runs
     compression inside a ``ThreadPoolExecutor``, a single shared parser
     would be touched from arbitrary pool threads → instant crash.
 
@@ -140,7 +140,7 @@ def _get_parser(language: str) -> Any:
     # _get_parser; guarding on it here would recurse.
     if not _tree_sitter_importable():
         raise ImportError(
-            "tree-sitter is not installed. Install with: pip install headroom-ai[code]\n"
+            "tree-sitter is not installed. Install with: pip install legroom-ai[code]\n"
             "This adds ~50MB for tree-sitter grammars."
         )
 
@@ -1174,7 +1174,7 @@ class CodeAwareCompressor(Transform):
 
         # Check if tree-sitter is available
         if not _check_tree_sitter_available():
-            logger.warning("tree-sitter not available. Install with: pip install headroom-ai[code]")
+            logger.warning("tree-sitter not available. Install with: pip install legroom-ai[code]")
             if self.config.fallback_to_kompress:
                 return self._fallback_compress(code, original_tokens)
             return CodeCompressionResult(
@@ -2053,7 +2053,7 @@ class CodeAwareCompressor(Transform):
                 import ast
 
                 ast.parse(code)
-                compile(code, "<headroom-compressed>", "exec")
+                compile(code, "<legroom-compressed>", "exec")
 
             parser = _get_parser(language.value)
             tree = parser.parse(bytes(code, "utf-8"))
@@ -2182,7 +2182,7 @@ class CodeAwareCompressor(Transform):
 
         if not _check_tree_sitter_available():
             warnings.append(
-                "tree-sitter not installed. Install with: pip install headroom-ai[code]"
+                "tree-sitter not installed. Install with: pip install legroom-ai[code]"
             )
 
         return TransformResult(

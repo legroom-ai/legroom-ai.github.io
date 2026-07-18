@@ -1,6 +1,6 @@
 """Provider detection for Agno models.
 
-Automatically detects the correct Headroom provider based on the Agno model type.
+Automatically detects the correct Legroom provider based on the Agno model type.
 """
 
 from __future__ import annotations
@@ -8,17 +8,17 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from headroom.providers import (
+from legroom.providers import (
     AnthropicProvider,
     CohereProvider,
     GoogleProvider,
     OpenAIProvider,
 )
-from headroom.providers.base import Provider
+from legroom.providers.base import Provider
 
 logger = logging.getLogger(__name__)
 
-# Mapping from Agno model class names to Headroom providers
+# Mapping from Agno model class names to Legroom providers
 _AGNO_MODEL_PROVIDERS: dict[str, type[Provider]] = {
     # OpenAI models
     "OpenAIChat": OpenAIProvider,
@@ -61,8 +61,8 @@ _AGNO_MODEL_PROVIDERS: dict[str, type[Provider]] = {
 }
 
 
-def get_headroom_provider(agno_model: Any) -> Provider:
-    """Get the appropriate Headroom provider for an Agno model.
+def get_legroom_provider(agno_model: Any) -> Provider:
+    """Get the appropriate Legroom provider for an Agno model.
 
     Detection strategy:
     1. Check model class name against known Agno model types
@@ -73,14 +73,14 @@ def get_headroom_provider(agno_model: Any) -> Provider:
         agno_model: An Agno model instance (OpenAIChat, Claude, etc.)
 
     Returns:
-        Appropriate Headroom Provider instance.
+        Appropriate Legroom Provider instance.
 
     Example:
         from agno.models.openai import OpenAIChat
-        from headroom.integrations.agno.providers import get_headroom_provider
+        from legroom.integrations.agno.providers import get_legroom_provider
 
         model = OpenAIChat(id="gpt-4o")
-        provider = get_headroom_provider(model)  # Returns OpenAIProvider
+        provider = get_legroom_provider(model)  # Returns OpenAIProvider
     """
     # Strategy 1: Class name matching
     class_name = agno_model.__class__.__name__

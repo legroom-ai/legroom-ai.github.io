@@ -4,13 +4,13 @@ import time
 
 import pytest
 
-from headroom.cache import (
+from legroom.cache import (
     AnthropicCacheOptimizer,
     OptimizationContext,
     SemanticCache,
     SemanticCacheLayer,
 )
-from headroom.cache.semantic import SemanticCacheConfig
+from legroom.cache.semantic import SemanticCacheConfig
 
 
 class TestSemanticCacheConfig:

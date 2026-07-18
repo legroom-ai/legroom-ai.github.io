@@ -1,4 +1,4 @@
-"""Configuration dataclasses for Headroom's hierarchical memory system.
+"""Configuration dataclasses for Legroom's hierarchical memory system.
 
 Provides configuration options for all pluggable components:
 - Storage backends (SQLite, future: PostgreSQL, DynamoDB)
@@ -15,14 +15,14 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 
-from headroom.models.config import ML_MODEL_DEFAULTS
+from legroom.models.config import ML_MODEL_DEFAULTS
 
 
 class StoreBackend(Enum):
     """Supported memory store backends."""
 
     SQLITE = "sqlite"
-    EXTERNAL = "external"  # Loaded from entry_points(group="headroom.memory_store")
+    EXTERNAL = "external"  # Loaded from entry_points(group="legroom.memory_store")
 
 
 class VectorBackend(Enum):
@@ -31,14 +31,14 @@ class VectorBackend(Enum):
     AUTO = "auto"  # Auto-select: SQLITE_VEC if available, else HNSW
     SQLITE_VEC = "sqlite_vec"  # SQLite-based, bounded memory, recommended
     HNSW = "hnsw"  # hnswlib-based, unbounded unless max_entries set
-    EXTERNAL = "external"  # Loaded from entry_points(group="headroom.memory_vector")
+    EXTERNAL = "external"  # Loaded from entry_points(group="legroom.memory_vector")
 
 
 class TextBackend(Enum):
     """Supported text index backends."""
 
     FTS5 = "fts5"
-    EXTERNAL = "external"  # Loaded from entry_points(group="headroom.memory_text")
+    EXTERNAL = "external"  # Loaded from entry_points(group="legroom.memory_text")
 
 
 class EmbedderBackend(Enum):
@@ -98,7 +98,7 @@ class MemoryConfig:
     # Storage
     store_backend: StoreBackend = StoreBackend.SQLITE
     store_backend_name: str | None = None  # Required when store_backend == EXTERNAL
-    db_path: Path = field(default_factory=lambda: Path("headroom_memory.db"))
+    db_path: Path = field(default_factory=lambda: Path("legroom_memory.db"))
 
     # Vector index
     vector_backend: VectorBackend = VectorBackend.AUTO  # Auto-select best available

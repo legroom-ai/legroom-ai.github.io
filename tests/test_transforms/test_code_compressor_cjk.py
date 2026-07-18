@@ -6,7 +6,7 @@ blob and never isolated/matched an ASCII symbol name the user asked to keep.
 These exercise the extracted pure helpers (no tree-sitter needed).
 """
 
-from headroom.transforms.code_compressor import (
+from legroom.transforms.code_compressor import (
     _query_context_tokens,
     _symbol_in_context,
 )

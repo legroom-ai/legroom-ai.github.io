@@ -4,7 +4,7 @@ This module provides tool injection and retrieval handling for the CCR architect
 When tool outputs are compressed, the LLM can retrieve more data if needed.
 
 Four key components:
-1. Tool Injection: Proxy injects headroom_retrieve tool into requests
+1. Tool Injection: Proxy injects legroom_retrieve tool into requests
 2. Response Handler: Intercepts responses, handles CCR tool calls automatically
 3. Context Tracker: Tracks compressed content across turns, enables proactive expansion
 4. Batch Processing: Handles CCR tool calls in batch API results (async processing)
@@ -66,11 +66,11 @@ from .tool_injection import (
 
 # MCP server is optional (requires mcp package)
 try:
-    from .mcp_server import HeadroomMCPServer, create_ccr_mcp_server
+    from .mcp_server import LegroomMCPServer, create_ccr_mcp_server
 
     MCP_SERVER_AVAILABLE = True
 except ImportError:
-    HeadroomMCPServer = None  # type: ignore
+    LegroomMCPServer = None  # type: ignore
     create_ccr_mcp_server = None  # type: ignore
     MCP_SERVER_AVAILABLE = False
 
@@ -110,7 +110,7 @@ __all__ = [
     "process_batch_results",
     "reset_batch_context_store",
     # MCP server
-    "HeadroomMCPServer",
+    "LegroomMCPServer",
     "create_ccr_mcp_server",
     "MCP_SERVER_AVAILABLE",
 ]

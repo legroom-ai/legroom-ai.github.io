@@ -1,4 +1,4 @@
-"""Core HierarchicalMemory orchestrator for Headroom.
+"""Core HierarchicalMemory orchestrator for Legroom.
 
 This module provides the main HierarchicalMemory class that coordinates
 all memory system components: store, vector index, text index, embedder,
@@ -12,13 +12,13 @@ import logging
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-from headroom.memory.config import MemoryConfig
-from headroom.memory.factory import create_memory_system
-from headroom.memory.models import Memory, ScopeLevel
-from headroom.memory.ports import MemoryFilter, TextFilter, VectorFilter
+from legroom.memory.config import MemoryConfig
+from legroom.memory.factory import create_memory_system
+from legroom.memory.models import Memory, ScopeLevel
+from legroom.memory.ports import MemoryFilter, TextFilter, VectorFilter
 
 if TYPE_CHECKING:
-    from headroom.memory.ports import (
+    from legroom.memory.ports import (
         Embedder,
         MemoryCache,
         MemoryStore,

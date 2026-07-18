@@ -45,8 +45,8 @@ plugins/
 !plugins/
 !plugins/openclaw/
 !plugins/openclaw/**
-!plugins/headroom-agent-hooks/
-!plugins/headroom-agent-hooks/**
+!plugins/legroom-agent-hooks/
+!plugins/legroom-agent-hooks/**
 node_modules/
 *.tgz
 

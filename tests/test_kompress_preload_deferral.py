@@ -8,10 +8,10 @@ from __future__ import annotations
 
 import pytest
 
-from headroom import onnx_runtime
-from headroom.transforms import kompress_compressor as kc
-from headroom.transforms.content_router import ContentRouter, ContentRouterConfig
-from headroom.transforms.kompress_compressor import KompressModelNotCached
+from legroom import onnx_runtime
+from legroom.transforms import kompress_compressor as kc
+from legroom.transforms.content_router import ContentRouter, ContentRouterConfig
+from legroom.transforms.kompress_compressor import KompressModelNotCached
 
 
 def test_local_first_no_network_when_disallowed(monkeypatch):
@@ -164,8 +164,8 @@ def test_non_kompress_warmups_continue_when_kompress_is_deferred(monkeypatch):
     router = _router_kompress_only()
     stub = _StubCompressor(cached=True)
     monkeypatch.setattr(router, "_get_kompress", lambda: stub)
-    monkeypatch.setattr("headroom.compression.detector._magika_available", lambda: True)
-    monkeypatch.setattr("headroom.compression.detector._get_magika", lambda: object())
+    monkeypatch.setattr("legroom.compression.detector._magika_available", lambda: True)
+    monkeypatch.setattr("legroom.compression.detector._get_magika", lambda: object())
 
     status = router.eager_load_compressors()
 
@@ -177,9 +177,9 @@ def test_non_kompress_warmups_continue_when_kompress_is_deferred(monkeypatch):
 @pytest.mark.asyncio
 async def test_proxy_startup_does_not_enter_cached_kompress_native_loader(monkeypatch):
     pytest.importorskip("httpx")
-    from headroom.proxy.server import HeadroomProxy, ProxyConfig
+    from legroom.proxy.server import LegroomProxy, ProxyConfig
 
-    proxy = HeadroomProxy(
+    proxy = LegroomProxy(
         ProxyConfig(
             optimize=True,
             cache_enabled=False,

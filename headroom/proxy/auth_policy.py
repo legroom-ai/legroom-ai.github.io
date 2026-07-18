@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 
 class AuthMode(str, enum.Enum):
-    """Auth-mode classes Headroom routes compression policy through."""
+    """Auth-mode classes Legroom routes compression policy through."""
 
     PAYG = "payg"
     OAUTH = "oauth"

@@ -1,9 +1,9 @@
 use std::net::SocketAddr;
 
-use headroom_simulators::config::{
+use legroom_simulators::config::{
     ConfiguredResponse, JsonPointerMatch, SimulatorConfig, StubRule,
 };
-use headroom_simulators::{build_app, Simulator};
+use legroom_simulators::{build_app, Simulator};
 use serde_json::{json, Value};
 use tokio::sync::oneshot;
 

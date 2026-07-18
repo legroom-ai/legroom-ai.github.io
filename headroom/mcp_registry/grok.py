@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from headroom import fsutil
+from legroom import fsutil
 
 from .base import MCPRegistrar, RegisterResult, RegisterStatus, ServerSpec
 
@@ -26,20 +26,20 @@ else:  # pragma: no cover — exercised only on 3.10
 
 logger = logging.getLogger(__name__)
 
-_MARKER_START = "# --- Headroom MCP server ---"
-_MARKER_END = "# --- end Headroom MCP server ---"
+_MARKER_START = "# --- Legroom MCP server ---"
+_MARKER_END = "# --- end Legroom MCP server ---"
 
 
 def _marker_start(server_name: str) -> str:
-    if server_name == "headroom":
+    if server_name == "legroom":
         return _MARKER_START
-    return f"# --- Headroom MCP server: {server_name} ---"
+    return f"# --- Legroom MCP server: {server_name} ---"
 
 
 def _marker_end(server_name: str) -> str:
-    if server_name == "headroom":
+    if server_name == "legroom":
         return _MARKER_END
-    return f"# --- end Headroom MCP server: {server_name} ---"
+    return f"# --- end Legroom MCP server: {server_name} ---"
 
 
 class GrokRegistrar(MCPRegistrar):
@@ -82,7 +82,7 @@ class GrokRegistrar(MCPRegistrar):
                 return RegisterResult(
                     RegisterStatus.MISMATCH,
                     "user-managed [mcp_servers."
-                    f"{spec.name}] entry outside Headroom markers; "
+                    f"{spec.name}] entry outside Legroom markers; "
                     f"{_diff_specs(existing, spec)}",
                 )
             return RegisterResult(RegisterStatus.MISMATCH, _diff_specs(existing, spec))
@@ -93,7 +93,7 @@ class GrokRegistrar(MCPRegistrar):
                 return RegisterResult(
                     RegisterStatus.MISMATCH,
                     "user-managed [mcp_servers."
-                    f"{spec.name}] entry outside Headroom markers; "
+                    f"{spec.name}] entry outside Legroom markers; "
                     f"{_diff_specs(existing, spec)}",
                 )
             self.unregister_server(spec.name)

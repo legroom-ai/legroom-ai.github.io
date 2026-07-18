@@ -1,4 +1,4 @@
-"""Air-gap / no-egress master switch (``HEADROOM_OFFLINE``).
+"""Air-gap / no-egress master switch (``LEGROOM_OFFLINE``).
 
 A single predicate the individual egress paths consult so a regulated or
 air-gapped deployment can disable **all** outbound network access with one
@@ -16,11 +16,11 @@ import os
 
 _TRUE_VALUES = frozenset({"1", "true", "yes", "on"})
 
-OFFLINE_ENV = "HEADROOM_OFFLINE"
+OFFLINE_ENV = "LEGROOM_OFFLINE"
 
 
 def is_offline() -> bool:
-    """Return True when ``HEADROOM_OFFLINE`` selects fully-offline operation."""
+    """Return True when ``LEGROOM_OFFLINE`` selects fully-offline operation."""
     return os.environ.get(OFFLINE_ENV, "").strip().lower() in _TRUE_VALUES
 
 

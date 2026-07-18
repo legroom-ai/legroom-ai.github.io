@@ -1,5 +1,5 @@
 NAME                                               VERSION                        TYPE                                      
-./.github/actions/headroom-e2e-setup               UNKNOWN                        github-action           (+2 duplicates)   
+./.github/actions/legroom-e2e-setup               UNKNOWN                        github-action           (+2 duplicates)   
 ./.github/workflows/docker.yml                     UNKNOWN                        github-action-workflow                    
 @emnapi/runtime                                    1.11.0                         npm                     (+1 duplicate)    
 @esbuild/aix-ppc64                                 0.28.1                         npm                     (+1 duplicate)    
@@ -481,16 +481,16 @@ hast-util-to-jsx-runtime                           2.3.6                        
 hast-util-to-parse5                                8.0.1                          npm                     (+1 duplicate)    
 hast-util-whitespace                               3.0.0                          npm                     (+1 duplicate)    
 hastscript                                         9.0.1                          npm                     (+1 duplicate)    
-headroom-ai                                        0.22.4                         npm                                       
-headroom-ai                                        0.27.0                         npm                     (+1 duplicate)    
-headroom-ai                                        0.27.0                         python                                    
-headroom-ai                                        UNKNOWN                        npm                                       
-headroom-core                                      0.1.0                          rust-crate                                
-headroom-docs                                      0.0.0                          npm                                       
-headroom-openclaw                                  0.27.0                         npm                                       
-headroom-parity                                    0.1.0                          rust-crate                                
-headroom-proxy                                     0.1.0                          rust-crate                                
-headroom-py                                        0.1.0                          rust-crate                                
+legroom-ai                                        0.22.4                         npm                                       
+legroom-ai                                        0.27.0                         npm                     (+1 duplicate)    
+legroom-ai                                        0.27.0                         python                                    
+legroom-ai                                        UNKNOWN                        npm                                       
+legroom-core                                      0.1.0                          rust-crate                                
+legroom-docs                                      0.0.0                          npm                                       
+legroom-openclaw                                  0.27.0                         npm                                       
+legroom-parity                                    0.1.0                          rust-crate                                
+legroom-proxy                                     0.1.0                          rust-crate                                
+legroom-py                                        0.1.0                          rust-crate                                
 heck                                               0.5.0                          rust-crate                                
 hermit-abi                                         0.5.2                          rust-crate                                
 hex                                                0.4.3                          rust-crate                                

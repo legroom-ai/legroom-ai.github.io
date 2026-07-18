@@ -14,15 +14,15 @@ import json
 
 import pytest
 
-from headroom.providers import OpenAIProvider
-from headroom.tokenizer import Tokenizer
-from headroom.transforms.content_router import (
+from legroom.providers import OpenAIProvider
+from legroom.tokenizer import Tokenizer
+from legroom.transforms.content_router import (
     ContentRouter,
     ContentRouterConfig,
     _bash_command_is_search,
     _bash_program,
 )
-from headroom.transforms.lossless_compaction import search_unheading
+from legroom.transforms.lossless_compaction import search_unheading
 
 SEARCH = frozenset({"grep", "egrep", "fgrep", "rg", "ripgrep", "ag", "ack"})
 GREP = "".join(
@@ -46,7 +46,7 @@ def tokenizer():
     "command",
     [
         "grep -rn foo .",
-        "rtk grep def headroom/transforms",  # the user's token-proxy wrapper
+        "rtk grep def legroom/transforms",  # the user's token-proxy wrapper
         "rg --heading pattern src/",
         "git grep -n TODO",
         "sudo grep root /etc/passwd",
@@ -64,7 +64,7 @@ def test_detects_search_commands(command):
 @pytest.mark.parametrize(
     "command",
     [
-        "cat headroom/server.py",
+        "cat legroom/server.py",
         "cargo test",
         "pytest tests/ -x",
         "git diff HEAD~1",  # diff, NOT search
@@ -132,14 +132,14 @@ def test_openai_bash_grep_folds_and_recovers(tokenizer):
 
 
 def test_anthropic_bash_rtk_grep_folds_and_recovers(tokenizer):
-    out, transforms = _anthropic("rtk grep foo headroom/", GREP, tokenizer)
+    out, transforms = _anthropic("rtk grep foo legroom/", GREP, tokenizer)
     assert "router:bash:lossless_search" in transforms
     assert search_unheading(out) == GREP
 
 
 def test_non_search_bash_command_not_folded(tokenizer):
     # `cat` is not a search — must NOT take the bash-search fold.
-    _out, transforms = _openai("cat headroom/server.py", GREP, tokenizer)
+    _out, transforms = _openai("cat legroom/server.py", GREP, tokenizer)
     assert "router:bash:lossless_search" not in transforms
 
 
@@ -152,13 +152,13 @@ def test_source_output_from_search_command_untouched(tokenizer):
 
 
 # ---- path-listing fold (find/ls -1/rg -l): fold repeated parent dirs ----
-from headroom.transforms.lossless_compaction import (
+from legroom.transforms.lossless_compaction import (
     compact_lossless as _cl,
 )
-from headroom.transforms.lossless_compaction import (
+from legroom.transforms.lossless_compaction import (
     path_heading as _ph,
 )
-from headroom.transforms.lossless_compaction import (
+from legroom.transforms.lossless_compaction import (
     path_unheading as _puh,
 )
 
@@ -189,18 +189,18 @@ def test_path_fold_mixed_content_roundtrips_or_passes_through():
     assert _puh(_ph(c)) == c or _cl(c, "paths") == c
 
 
-# ---- EXPERIMENT: HEADROOM_EXPERIMENTAL_READ_KEEP_RATIO (light Kompress on reads) ----
+# ---- EXPERIMENT: LEGROOM_EXPERIMENTAL_READ_KEEP_RATIO (light Kompress on reads) ----
 def test_experimental_read_keep_ratio_flag_and_gating(monkeypatch):
-    from headroom.transforms.content_router import ContentRouter, ContentRouterConfig
+    from legroom.transforms.content_router import ContentRouter, ContentRouterConfig
 
     # OFF by default -> verbatim (helper returns None, no compression attempted)
-    monkeypatch.delenv("HEADROOM_EXPERIMENTAL_READ_KEEP_RATIO", raising=False)
+    monkeypatch.delenv("LEGROOM_EXPERIMENTAL_READ_KEEP_RATIO", raising=False)
     r_off = ContentRouter(ContentRouterConfig())
     assert r_off._exp_read_keep_ratio == 0.0
     assert r_off._experimental_compress_read("x" * 500) is None
 
     # ON -> calls Kompress at the ratio; keeps result only if it actually shrank
-    monkeypatch.setenv("HEADROOM_EXPERIMENTAL_READ_KEEP_RATIO", "0.9")
+    monkeypatch.setenv("LEGROOM_EXPERIMENTAL_READ_KEEP_RATIO", "0.9")
     r_on = ContentRouter(ContentRouterConfig())
     assert r_on._exp_read_keep_ratio == 0.9
     seen = {}

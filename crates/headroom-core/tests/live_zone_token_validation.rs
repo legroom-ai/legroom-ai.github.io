@@ -8,9 +8,9 @@
 //! property test: the dispatcher's emitted body has token-count <= the
 //! input's token-count for any well-formed body.
 
-use headroom_core::tokenizer::get_tokenizer;
-use headroom_core::transforms::live_zone::DEFAULT_MODEL;
-use headroom_core::transforms::{
+use legroom_core::tokenizer::get_tokenizer;
+use legroom_core::transforms::live_zone::DEFAULT_MODEL;
+use legroom_core::transforms::{
     compress_anthropic_live_zone, AuthMode, BlockAction, LiveZoneOutcome,
 };
 use proptest::prelude::*;

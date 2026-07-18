@@ -1,43 +1,43 @@
-"""LangChain integration for Headroom.
+"""LangChain integration for Legroom.
 
 This package provides seamless integration with LangChain, including:
-- HeadroomChatModel: Drop-in wrapper for any LangChain chat model
-- HeadroomChatMessageHistory: Automatic conversation compression
-- HeadroomDocumentCompressor: Relevance-based document filtering
-- HeadroomToolWrapper: Tool output compression for agents
+- LegroomChatModel: Drop-in wrapper for any LangChain chat model
+- LegroomChatMessageHistory: Automatic conversation compression
+- LegroomDocumentCompressor: Relevance-based document filtering
+- LegroomToolWrapper: Tool output compression for agents
 - StreamingMetricsTracker: Token counting during streaming
-- HeadroomLangSmithCallbackHandler: LangSmith trace enrichment
+- LegroomLangSmithCallbackHandler: LangSmith trace enrichment
 - compress_tool_messages: LangGraph pre-model hook for ToolMessage compression
 - create_compress_tool_messages_node: LangGraph node factory
 
 Example:
     from langchain_openai import ChatOpenAI
-    from headroom.integrations.langchain import HeadroomChatModel
+    from legroom.integrations.langchain import LegroomChatModel
 
     # Wrap any LangChain model
-    llm = HeadroomChatModel(ChatOpenAI(model="gpt-4o"))
+    llm = LegroomChatModel(ChatOpenAI(model="gpt-4o"))
 
     # Use like normal - optimization happens automatically
     response = llm.invoke("Hello!")
 
-Install: pip install headroom[langchain]
+Install: pip install legroom[langchain]
 """
 
 # Agent tool wrapping
 from .agents import (
-    HeadroomToolWrapper,
+    LegroomToolWrapper,
     ToolCompressionMetrics,
     ToolMetricsCollector,
     get_tool_metrics,
     reset_tool_metrics,
-    wrap_tools_with_headroom,
+    wrap_tools_with_legroom,
 )
 
 # Core chat model wrapper
 from .chat_model import (
-    HeadroomCallbackHandler,
-    HeadroomChatModel,
-    HeadroomRunnable,
+    LegroomCallbackHandler,
+    LegroomChatModel,
+    LegroomRunnable,
     OptimizationMetrics,
     langchain_available,
     optimize_messages,
@@ -54,23 +54,23 @@ from .langgraph import (
 
 # LangSmith integration
 from .langsmith import (
-    HeadroomLangSmithCallbackHandler,
+    LegroomLangSmithCallbackHandler,
     is_langsmith_available,
     is_langsmith_tracing_enabled,
 )
 
 # Memory integration
-from .memory import HeadroomChatMessageHistory
+from .memory import LegroomChatMessageHistory
 
 # Provider auto-detection
 from .providers import (
     detect_provider,
-    get_headroom_provider,
+    get_legroom_provider,
     get_model_name_from_langchain,
 )
 
 # Retriever integration
-from .retriever import CompressionMetrics, HeadroomDocumentCompressor
+from .retriever import CompressionMetrics, LegroomDocumentCompressor
 
 # Streaming metrics
 from .streaming import (
@@ -83,26 +83,26 @@ from .streaming import (
 
 __all__ = [
     # Core
-    "HeadroomChatModel",
-    "HeadroomCallbackHandler",
-    "HeadroomRunnable",
+    "LegroomChatModel",
+    "LegroomCallbackHandler",
+    "LegroomRunnable",
     "OptimizationMetrics",
     "optimize_messages",
     "langchain_available",
     # Provider Detection
     "detect_provider",
-    "get_headroom_provider",
+    "get_legroom_provider",
     "get_model_name_from_langchain",
     # Memory
-    "HeadroomChatMessageHistory",
+    "LegroomChatMessageHistory",
     # Retrievers
-    "HeadroomDocumentCompressor",
+    "LegroomDocumentCompressor",
     "CompressionMetrics",
     # Agents
-    "HeadroomToolWrapper",
+    "LegroomToolWrapper",
     "ToolCompressionMetrics",
     "ToolMetricsCollector",
-    "wrap_tools_with_headroom",
+    "wrap_tools_with_legroom",
     "get_tool_metrics",
     "reset_tool_metrics",
     # LangGraph
@@ -112,7 +112,7 @@ __all__ = [
     "CompressToolMessagesResult",
     "ToolMessageCompressionMetrics",
     # LangSmith
-    "HeadroomLangSmithCallbackHandler",
+    "LegroomLangSmithCallbackHandler",
     "is_langsmith_available",
     "is_langsmith_tracing_enabled",
     # Streaming

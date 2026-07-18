@@ -1,6 +1,6 @@
 """Report generation for evaluation results."""
 
-from headroom.evals.reports.report_card import (
+from legroom.evals.reports.report_card import (
     BenchmarkRunResult,
     SuiteResult,
     generate_html,

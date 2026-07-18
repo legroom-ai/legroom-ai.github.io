@@ -1,5 +1,5 @@
-import type { CompressResult } from "headroom-ai";
-import { compress } from "headroom-ai";
+import type { CompressResult } from "legroom-ai";
+import { compress } from "legroom-ai";
 
 let _proxyUrlCache: string | null = null;
 
@@ -8,20 +8,20 @@ export function setDefaultProxyUrl(url: string): void {
 }
 
 export function getDefaultProxyUrl(): string {
-  return _proxyUrlCache ?? process.env.HEADROOM_BASE_URL ?? "http://localhost:8787";
+  return _proxyUrlCache ?? process.env.LEGROOM_BASE_URL ?? "http://localhost:8787";
 }
 
 export interface RetrieveToolConfig {
   proxyBaseUrl: string;
 }
 
-export function createHeadroomRetrieveTool(config: RetrieveToolConfig) {
+export function createLegroomRetrieveTool(config: RetrieveToolConfig) {
   const origin = config.proxyBaseUrl.replace(/\/+$/, "");
 
   return {
-    name: "headroom_retrieve",
+    name: "legroom_retrieve",
     description:
-      "Retrieve original uncompressed content from Headroom's compression store. " +
+      "Retrieve original uncompressed content from Legroom's compression store. " +
       "Use when compressed context mentions a hash and you need the full details. " +
       "Pass the hash from the compression marker (24 hex characters). " +
       "Retrieval is by hash and always returns the full original content.",
@@ -71,7 +71,7 @@ export function createHeadroomRetrieveTool(config: RetrieveToolConfig) {
   };
 }
 
-export async function compressWithHeadroom(
+export async function compressWithLegroom(
   messages: unknown[],
   options: {
     model?: string;

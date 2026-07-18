@@ -17,14 +17,14 @@ import pytest
 # Skip entire module if trafilatura not installed
 pytest.importorskip("trafilatura")
 
-from headroom.evals.html_extraction import (
+from legroom.evals.html_extraction import (
     HTMLEvalCase,
     HTMLEvalResult,
     HTMLEvalSuiteResult,
     HTMLExtractionEvaluator,
     get_sample_eval_cases,
 )
-from headroom.transforms.html_extractor import HTMLExtractor
+from legroom.transforms.html_extractor import HTMLExtractor
 
 
 class TestHTMLEvalInfrastructure:

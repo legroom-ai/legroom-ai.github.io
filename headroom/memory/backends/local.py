@@ -1,4 +1,4 @@
-"""Local backend adapter for Headroom's hierarchical memory system.
+"""Local backend adapter for Legroom's hierarchical memory system.
 
 Provides a fully local memory backend using embedded databases:
 - SQLite for memory storage
@@ -20,15 +20,15 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from headroom.memory.adapters.graph_models import Entity, Relationship, Subgraph
-from headroom.memory.models import Memory
-from headroom.memory.ports import MemorySearchResult
-from headroom.models.config import ML_MODEL_DEFAULTS
+from legroom.memory.adapters.graph_models import Entity, Relationship, Subgraph
+from legroom.memory.models import Memory
+from legroom.memory.ports import MemorySearchResult
+from legroom.models.config import ML_MODEL_DEFAULTS
 
 if TYPE_CHECKING:
-    from headroom.memory.adapters.graph import InMemoryGraphStore
-    from headroom.memory.adapters.sqlite_graph import SQLiteGraphStore
-    from headroom.memory.core import HierarchicalMemory
+    from legroom.memory.adapters.graph import InMemoryGraphStore
+    from legroom.memory.adapters.sqlite_graph import SQLiteGraphStore
+    from legroom.memory.core import HierarchicalMemory
 
 logger = logging.getLogger(__name__)
 
@@ -169,8 +169,8 @@ class LocalBackend:
 
     async def _init_locked(self) -> None:
         """Actual init body. Must be called with ``_init_lock`` held."""
-        from headroom.memory import HierarchicalMemory, MemoryConfig
-        from headroom.memory.config import EmbedderBackend
+        from legroom.memory import HierarchicalMemory, MemoryConfig
+        from legroom.memory.config import EmbedderBackend
 
         # Map string embedder_backend to enum
         embedder_backend_map = {
@@ -198,7 +198,7 @@ class LocalBackend:
 
         # Choose graph store based on config
         if self._config.graph_persist:
-            from headroom.memory.adapters.sqlite_graph import SQLiteGraphStore
+            from legroom.memory.adapters.sqlite_graph import SQLiteGraphStore
 
             # Derive graph db path from main db path if not specified
             if self._config.graph_db_path:
@@ -217,7 +217,7 @@ class LocalBackend:
                 f"(cache: {self._config.graph_cache_size_kb}KB)"
             )
         else:
-            from headroom.memory.adapters.graph import InMemoryGraphStore
+            from legroom.memory.adapters.graph import InMemoryGraphStore
 
             self._graph = InMemoryGraphStore()
             logger.info("LocalBackend: Using InMemoryGraphStore (unbounded)")
@@ -803,7 +803,7 @@ class LocalBackend:
 
         # Build text filter and call text index directly
         # (HierarchicalMemory.text_search has a signature mismatch with the protocol)
-        from headroom.memory.ports import TextFilter
+        from legroom.memory.ports import TextFilter
 
         text_filter = TextFilter(
             query=query,

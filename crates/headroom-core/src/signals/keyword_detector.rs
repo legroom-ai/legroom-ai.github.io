@@ -72,7 +72,7 @@ pub struct KeywordRegistry {
 }
 
 impl KeywordRegistry {
-    /// The default Headroom keyword set — superset of Python's pre-3e.1
+    /// The default Legroom keyword set — superset of Python's pre-3e.1
     /// `error_detection.py` minus the dropped `token` security keyword
     /// and plus the four error keywords the Python regex was missing.
     pub fn default_set() -> Self {
@@ -175,7 +175,7 @@ impl CategoryAutomaton {
 
 /// Pattern-based [`LineImportanceDetector`] backed by aho-corasick.
 ///
-/// Construct with [`KeywordDetector::new`] for the default Headroom
+/// Construct with [`KeywordDetector::new`] for the default Legroom
 /// keyword set, or [`KeywordDetector::with_registry`] for a custom one.
 pub struct KeywordDetector {
     registry: KeywordRegistry,

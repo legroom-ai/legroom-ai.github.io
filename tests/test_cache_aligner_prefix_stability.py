@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from copy import deepcopy
 
-from headroom import OpenAIProvider
-from headroom.tokenizer import Tokenizer
-from headroom.transforms.cache_aligner import CacheAligner
-from headroom.utils import compute_short_hash
+from legroom import OpenAIProvider
+from legroom.tokenizer import Tokenizer
+from legroom.transforms.cache_aligner import CacheAligner
+from legroom.utils import compute_short_hash
 
 _provider = OpenAIProvider()
 
@@ -21,7 +21,7 @@ def _claude_code_messages(
     live_tail: str = "latest live turn",
 ) -> list[dict[str, object]]:
     return [
-        {"role": "system", "content": "You are Headroom. Keep the cached prefix stable."},
+        {"role": "system", "content": "You are Legroom. Keep the cached prefix stable."},
         {"role": "user", "content": "Summarize the repo state."},
         {"role": "assistant", "content": cached_tool_output},
         {"role": "user", "content": live_tail},

@@ -149,7 +149,7 @@ def evaluate_scrapinghub_benchmark(
         ) from None
 
     if extractor is None:
-        from headroom.transforms.html_extractor import HTMLExtractor
+        from legroom.transforms.html_extractor import HTMLExtractor
 
         extractor = HTMLExtractor()
 
@@ -279,7 +279,7 @@ def evaluate_qa_accuracy_preservation(
         raise ImportError("HuggingFace datasets required") from None
 
     if extractor is None:
-        from headroom.transforms.html_extractor import HTMLExtractor
+        from legroom.transforms.html_extractor import HTMLExtractor
 
         extractor = HTMLExtractor()
 
@@ -453,7 +453,7 @@ def run_full_benchmark_suite(
         HTMLExtractorBenchmarkSuite with all results
     """
     if extractor is None:
-        from headroom.transforms.html_extractor import HTMLExtractor
+        from legroom.transforms.html_extractor import HTMLExtractor
 
         extractor = HTMLExtractor()
 

@@ -8,7 +8,7 @@ omitted ``attempted_input_tokens=``, only 4 sites emitted a structured
 PERF log at all. This module is the structural fix: every handler
 converges on building a :class:`RequestOutcome` at end-of-request and
 hands it to :func:`emit_request_outcome` (also exposed as
-:meth:`HeadroomProxy._record_request_outcome`), which owns the four
+:meth:`LegroomProxy._record_request_outcome`), which owns the four
 downstream effects (Prometheus, cost tracker, request logger, PERF
 log).
 
@@ -30,7 +30,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
-logger = logging.getLogger("headroom.proxy")
+logger = logging.getLogger("legroom.proxy")
 
 
 @dataclass(frozen=True)
@@ -80,7 +80,7 @@ class RequestOutcome:
     cache_write_1h_tokens: int = 0
     uncached_input_tokens: int = 0
     cache_inferred: bool = False
-    # Response-cache hit (Headroom's own semantic cache served the
+    # Response-cache hit (Legroom's own semantic cache served the
     # response from a prior call — completely distinct from
     # upstream-prompt-cache `cache_read_tokens`). True means the proxy
     # never reached the provider at all. Used to drive the
@@ -121,7 +121,7 @@ class RequestOutcome:
     #     claude-code / aider / cursor / opencode / zed / ...).
     #     ``None`` when neither the ``X-Client`` header nor the
     #     User-Agent matched a known harness. Populated by handlers
-    #     via :func:`headroom.proxy.auth_mode.classify_client`. The
+    #     via :func:`legroom.proxy.auth_mode.classify_client`. The
     #     funnel surfaces this in the PERF log (``client=X``) and
     #     copies it into ``RequestLog.tags["client"]`` so dashboards
     #     can slice by harness without a separate column. This is the
@@ -148,7 +148,7 @@ class RequestOutcome:
     @property
     def cache_hit(self) -> bool:
         """True iff EITHER upstream reported a cache read OR the response
-        was served from Headroom's own response cache.
+        was served from Legroom's own response cache.
 
         Two distinct concepts collapsed into one observable boolean for
         downstream consumers (Prometheus ``cached`` counter, RequestLog
@@ -234,7 +234,7 @@ class RequestOutcome:
           * ``transforms_applied`` list → tuple (frozen-dataclass contract)
           * ``tags or {}`` normalization
         """
-        from headroom.proxy.helpers import compute_turn_id
+        from legroom.proxy.helpers import compute_turn_id
 
         request_items = body.get("messages")
         turn_messages = request_items
@@ -321,7 +321,7 @@ async def emit_request_outcome(handler: Any, outcome: RequestOutcome) -> None:
          (skipped when cost_tracker is None, i.e. ``--no-cost``)
       3. ``handler.logger.log(RequestLog(...))`` — per-request log feed
          (skipped when logger is None, i.e. ``--no-request-logging``)
-      4. structured PERF log line — consumed by ``headroom perf``
+      4. structured PERF log line — consumed by ``legroom perf``
 
     A failure outcome (``status_code >= 500``, e.g. a 529 surfaced after retry
     exhaustion) short-circuits before these four effects: it records a failed
@@ -329,7 +329,7 @@ async def emit_request_outcome(handler: Any, outcome: RequestOutcome) -> None:
 
     Takes the handler as a free argument rather than ``self`` so this
     function is callable from:
-    * ``HeadroomProxy._record_request_outcome`` (production)
+    * ``LegroomProxy._record_request_outcome`` (production)
     * any test dummy that has the three required attributes
       (``metrics``, ``cost_tracker``, optionally ``logger``)
     * any provider handler mixin
@@ -339,9 +339,9 @@ async def emit_request_outcome(handler: Any, outcome: RequestOutcome) -> None:
     and is awaitable-compatible. We could lift this to a typing.Protocol
     if/when another contract surface emerges, but YAGNI.
     """
-    from headroom.proxy.cost import _summarize_transforms
-    from headroom.proxy.models import RequestLog
-    from headroom.proxy.project_context import get_current_project
+    from legroom.proxy.cost import _summarize_transforms
+    from legroom.proxy.models import RequestLog
+    from legroom.proxy.project_context import get_current_project
 
     # Upstream failure (>= 500, e.g. a 529 Overloaded surfaced after retry
     # exhaustion) must not feed the savings/cost/log success stats; that would
@@ -360,7 +360,7 @@ async def emit_request_outcome(handler: Any, outcome: RequestOutcome) -> None:
     output_tokens_saved_est = 0
     if any(str(t).startswith("output_shaper:") for t in outcome.transforms_applied):
         try:
-            from headroom.proxy.output_savings import get_recorder
+            from legroom.proxy.output_savings import get_recorder
 
             _rec = get_recorder()
             _rec.record_from_labels(outcome.transforms_applied, outcome.output_tokens)
@@ -371,7 +371,7 @@ async def emit_request_outcome(handler: Any, outcome: RequestOutcome) -> None:
             pass
 
     # Project attribution: explicit outcome field wins, else the value the
-    # HTTP middleware / WS accept captured from ``X-Headroom-Project``.
+    # HTTP middleware / WS accept captured from ``X-Legroom-Project``.
     project = outcome.project or get_current_project()
 
     # 1. Prometheus / SavingsTracker.
@@ -450,7 +450,7 @@ async def emit_request_outcome(handler: Any, outcome: RequestOutcome) -> None:
 
     # 4. Structured PERF log line. ``client=X`` is appended only when
     #    a harness was identified — keeps the unidentified-traffic
-    #    line unchanged, and gives ``headroom perf --client X``
+    #    line unchanged, and gives ``legroom perf --client X``
     #    parsers a clean key to filter on.
     client_part = f" client={outcome.client}" if outcome.client else ""
     logger.info(

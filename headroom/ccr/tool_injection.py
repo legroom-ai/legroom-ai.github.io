@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 # Tool name constant - used for matching tool calls
-CCR_TOOL_NAME = "headroom_retrieve"
+CCR_TOOL_NAME = "legroom_retrieve"
 
 
 def create_ccr_tool_definition(
@@ -305,12 +305,12 @@ class CCRToolInjector:
         ``session_has_done_ccr=True`` so the tool is injected even when
         THIS request has no fresh compression markers. That is the
         sticky-on path: once a session has done CCR, the
-        ``headroom_retrieve`` tool must stay in ``body["tools"]`` for
+        ``legroom_retrieve`` tool must stay in ``body["tools"]`` for
         every subsequent request, otherwise the tool list bytes flip
         on/off mid-session and bust the prompt cache.
 
         Most callers should prefer
-        :func:`headroom.proxy.helpers.apply_session_sticky_ccr_tool`
+        :func:`legroom.proxy.helpers.apply_session_sticky_ccr_tool`
         which threads the ``SessionCcrTracker`` directly. This method
         is the per-request fallback used when no session_id is available
         (e.g. Google handler, legacy code paths).

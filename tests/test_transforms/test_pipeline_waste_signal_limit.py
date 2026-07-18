@@ -12,9 +12,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from headroom.config import HeadroomConfig, TransformResult
-from headroom.transforms.base import Transform
-from headroom.transforms.pipeline import TransformPipeline
+from legroom.config import LegroomConfig, TransformResult
+from legroom.transforms.base import Transform
+from legroom.transforms.pipeline import TransformPipeline
 
 
 class _FakeTokenizer:
@@ -53,7 +53,7 @@ class _ShrinkTransform(Transform):
 
 def _run(monkeypatch, *, before: int, after: int, limit: int):
     """Run the pipeline with a stub transform; return (result, parse_called)."""
-    pipeline = TransformPipeline(HeadroomConfig())
+    pipeline = TransformPipeline(LegroomConfig())
     pipeline.transforms = [_ShrinkTransform()]
     monkeypatch.setattr(pipeline, "_get_tokenizer", lambda _model: _FakeTokenizer(before, after))
 
@@ -64,7 +64,7 @@ def _run(monkeypatch, *, before: int, after: int, limit: int):
         parse_called = True
         return [], {}, None
 
-    monkeypatch.setattr("headroom.parser.parse_messages", _tracked_parse_messages)
+    monkeypatch.setattr("legroom.parser.parse_messages", _tracked_parse_messages)
 
     messages = [{"role": "user", "content": "x" * 1000}]
     result = pipeline.apply(

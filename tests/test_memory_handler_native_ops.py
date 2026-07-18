@@ -8,8 +8,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from headroom.proxy import memory_handler as memory_handler_module
-from headroom.proxy.memory_handler import MemoryConfig, MemoryHandler
+from legroom.proxy import memory_handler as memory_handler_module
+from legroom.proxy.memory_handler import MemoryConfig, MemoryHandler
 
 
 @pytest.fixture
@@ -909,7 +909,7 @@ async def test_memory_handler_misc_helpers(monkeypatch: pytest.MonkeyPatch, tmp_
     calls = {"count": 0}
     monkeypatch.setitem(
         __import__("sys").modules,
-        "headroom.memory.tools",
+        "legroom.memory.tools",
         SimpleNamespace(
             get_memory_tools_optimized=lambda: (
                 calls.__setitem__("count", calls["count"] + 1) or [{"name": "tool"}]
@@ -1195,7 +1195,7 @@ async def test_init_backend_locked_local_and_bridge_import(
 
     monkeypatch.setitem(
         sys.modules,
-        "headroom.memory.backends.local",
+        "legroom.memory.backends.local",
         SimpleNamespace(
             LocalBackend=FakeLocalBackend,
             LocalBackendConfig=FakeLocalBackendConfig,
@@ -1251,12 +1251,12 @@ async def test_init_and_import_bridge_success_and_failure(
 
     monkeypatch.setitem(
         sys.modules,
-        "headroom.memory.bridge",
+        "legroom.memory.bridge",
         SimpleNamespace(MemoryBridge=FakeMemoryBridge),
     )
     monkeypatch.setitem(
         sys.modules,
-        "headroom.memory.bridge_config",
+        "legroom.memory.bridge_config",
         SimpleNamespace(
             BridgeConfig=FakeBridgeConfig,
             MarkdownFormat=FakeMarkdownFormat,
@@ -1280,7 +1280,7 @@ async def test_init_and_import_bridge_success_and_failure(
     handler._bridge = None
     monkeypatch.setitem(
         sys.modules,
-        "headroom.memory.bridge",
+        "legroom.memory.bridge",
         SimpleNamespace(MemoryBridge=BrokenMemoryBridge),
     )
     await handler._init_and_import_bridge()
@@ -1292,7 +1292,7 @@ def test_memory_handler_init_defaults_and_tool_injection_edges(
 ) -> None:
     native_dir = tmp_path / "workspace-memory"
     monkeypatch.setattr(
-        "headroom.paths.native_memory_dir",
+        "legroom.paths.native_memory_dir",
         lambda: native_dir,
     )
     handler = MemoryHandler(MemoryConfig(enabled=False, use_native_tool=True), agent_type="codex")
@@ -1344,7 +1344,7 @@ async def test_ensure_initialized_fast_paths_and_qdrant_variants(
 
     monkeypatch.setitem(
         sys.modules,
-        "headroom.memory.backends.direct_mem0",
+        "legroom.memory.backends.direct_mem0",
         SimpleNamespace(DirectMem0Adapter=FakeAdapter, Mem0Config=FakeMem0Config),
     )
     await qdrant_handler._init_backend_locked()
@@ -1361,13 +1361,13 @@ async def test_ensure_initialized_fast_paths_and_qdrant_variants(
         "enable_graph": True,
     }
 
-    monkeypatch.setitem(sys.modules, "headroom.memory.backends.direct_mem0", None)
+    monkeypatch.setitem(sys.modules, "legroom.memory.backends.direct_mem0", None)
     import builtins
 
     real_import = builtins.__import__
 
     def fake_import(name, globals=None, locals=None, fromlist=(), level=0):
-        if name == "headroom.memory.backends.direct_mem0":
+        if name == "legroom.memory.backends.direct_mem0":
             raise ImportError("missing mem0")
         return real_import(name, globals, locals, fromlist, level)
 

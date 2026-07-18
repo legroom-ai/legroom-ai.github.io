@@ -3,8 +3,8 @@
 The MCP protocol is universal but each agent's *registration* mechanism is
 not — Claude Code uses its own CLI + ``~/.claude/.claude.json``, Cursor
 writes ``~/.cursor/mcp.json``, Codex patches a TOML file, and so on. This
-module provides a uniform interface so headroom can install its MCP server
-(``headroom mcp serve``) into every detected agent.
+module provides a uniform interface so legroom can install its MCP server
+(``legroom mcp serve``) into every detected agent.
 
 Wave 1 ships :class:`ClaudeRegistrar`. Other registrars (Cursor, Codex,
 Continue, Cline, Windsurf, Goose, OpenHands) are added in subsequent waves
@@ -20,7 +20,7 @@ from .display import any_succeeded, format_result, format_results
 from .grok import GrokRegistrar
 from .install import (
     DEFAULT_PROXY_URL,
-    build_headroom_spec,
+    build_legroom_spec,
     build_serena_spec,
     build_tokensave_spec,
     get_all_registrars,
@@ -40,7 +40,7 @@ __all__ = [
     "RegisterStatus",
     "ServerSpec",
     "any_succeeded",
-    "build_headroom_spec",
+    "build_legroom_spec",
     "build_serena_spec",
     "build_server_json",
     "build_tokensave_spec",

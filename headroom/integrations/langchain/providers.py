@@ -2,14 +2,14 @@
 
 This module provides automatic provider detection from LangChain chat models
 without requiring explicit provider imports. It uses duck-typing based on
-class paths to identify the appropriate Headroom provider.
+class paths to identify the appropriate Legroom provider.
 
 Example:
     from langchain_anthropic import ChatAnthropic
-    from headroom.integrations.langchain import get_headroom_provider
+    from legroom.integrations.langchain import get_legroom_provider
 
     model = ChatAnthropic(model="claude-3-5-sonnet-20241022")
-    provider = get_headroom_provider(model)  # Returns AnthropicProvider
+    provider = get_legroom_provider(model)  # Returns AnthropicProvider
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from headroom.providers.base import Provider
+    from legroom.providers.base import Provider
 
 logger = logging.getLogger(__name__)
 
@@ -132,28 +132,28 @@ def _get_model_name(model: Any) -> str | None:
     return None
 
 
-def get_headroom_provider(model: Any) -> Provider:
-    """Get appropriate Headroom Provider instance for a LangChain model.
+def get_legroom_provider(model: Any) -> Provider:
+    """Get appropriate Legroom Provider instance for a LangChain model.
 
     This function automatically detects the provider from the model type
-    and returns a configured Headroom provider for accurate token counting
+    and returns a configured Legroom provider for accurate token counting
     and context limit detection.
 
     Args:
         model: Any LangChain chat model instance
 
     Returns:
-        Configured Headroom Provider instance
+        Configured Legroom Provider instance
 
     Example:
         >>> from langchain_anthropic import ChatAnthropic
         >>> model = ChatAnthropic(model="claude-3-5-sonnet-20241022")
-        >>> provider = get_headroom_provider(model)
+        >>> provider = get_legroom_provider(model)
         >>> provider.name
         'anthropic'
     """
     # Import providers lazily to avoid circular imports
-    from headroom.providers import (
+    from legroom.providers import (
         AnthropicProvider,
         GoogleProvider,
         OpenAIProvider,

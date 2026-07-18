@@ -1,6 +1,6 @@
 """Memory integration handler for the proxy server.
 
-This module provides memory capabilities for the Headroom proxy:
+This module provides memory capabilities for the Legroom proxy:
 1. MemoryHandler - Unified handler for memory operations
    - inject_tools() - Add memory tools to requests
    - search_and_format_context() - Search memories, format for injection
@@ -35,8 +35,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
-from headroom.memory import qdrant_env
-from headroom.memory.storage_router import (
+from legroom.memory import qdrant_env
+from legroom.memory.storage_router import (
     BackendRouter,
     BackendRouterConfig,
     MemoryStorageMode,
@@ -45,7 +45,7 @@ from headroom.memory.storage_router import (
 )
 
 if TYPE_CHECKING:
-    from headroom.memory.backends.local import LocalBackend
+    from legroom.memory.backends.local import LocalBackend
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ class MemoryMode(str, enum.Enum):
     TOOL = "tool"
 
 
-# Memory tool names for detection (Headroom's custom tools)
+# Memory tool names for detection (Legroom's custom tools)
 MEMORY_TOOL_NAMES = {
     "memory_save",
     "memory_search",
@@ -119,14 +119,14 @@ def _serialize_created_at(value: Any) -> str | None:
 class MemoryConfig:
     """Configuration for memory handler.
 
-    Qdrant connection fields default to values read from ``HEADROOM_QDRANT_*``
-    environment variables (see :mod:`headroom.memory.qdrant_env`). Passing an
+    Qdrant connection fields default to values read from ``LEGROOM_QDRANT_*``
+    environment variables (see :mod:`legroom.memory.qdrant_env`). Passing an
     explicit value to the constructor always wins over the environment.
     """
 
     enabled: bool = False
     backend: Literal["local", "qdrant-neo4j"] = "local"
-    db_path: str = "headroom_memory.db"
+    db_path: str = "legroom_memory.db"
     inject_tools: bool = True
     inject_context: bool = True
     top_k: int = 10
@@ -146,8 +146,8 @@ class MemoryConfig:
     mode: MemoryMode = MemoryMode.AUTO_TAIL
     # Native memory tool (Anthropic's built-in memory_20250818)
     use_native_tool: bool = False
-    native_memory_dir: str = ""  # Directory for native memory files (default: ~/.headroom/memories)
-    # Qdrant+Neo4j config (Qdrant defaults resolve from HEADROOM_QDRANT_* env vars)
+    native_memory_dir: str = ""  # Directory for native memory files (default: ~/.legroom/memories)
+    # Qdrant+Neo4j config (Qdrant defaults resolve from LEGROOM_QDRANT_* env vars)
     qdrant_url: str | None = field(default_factory=qdrant_env.qdrant_env_url)
     qdrant_host: str = field(default_factory=qdrant_env.qdrant_env_host)
     qdrant_port: int = field(default_factory=qdrant_env.qdrant_env_port)
@@ -155,7 +155,7 @@ class MemoryConfig:
     neo4j_uri: str = "neo4j://localhost:7687"
     neo4j_user: str = "neo4j"
     neo4j_password: str = "password"
-    # Memory Bridge (bidirectional markdown <-> Headroom sync)
+    # Memory Bridge (bidirectional markdown <-> Legroom sync)
     bridge_enabled: bool = False
     bridge_md_paths: list[str] = field(default_factory=list)
     bridge_md_format: str = "auto"
@@ -173,7 +173,7 @@ class MemoryHandler:
     4. Handle memory tool calls in responses
 
     Supports two modes:
-    - Custom tools: Headroom's memory_save, memory_search, etc. (default)
+    - Custom tools: Legroom's memory_save, memory_search, etc. (default)
     - Native tool: Anthropic's memory_20250818 built-in tool (experimental)
     """
 
@@ -235,8 +235,8 @@ class MemoryHandler:
         if self.config.native_memory_dir:
             self._native_memory_dir = Path(self.config.native_memory_dir)
         else:
-            # Default: workspace memories directory (respects HEADROOM_WORKSPACE_DIR)
-            from headroom import paths as _paths
+            # Default: workspace memories directory (respects LEGROOM_WORKSPACE_DIR)
+            from legroom import paths as _paths
 
             self._native_memory_dir = _paths.native_memory_dir()
 
@@ -320,20 +320,20 @@ class MemoryHandler:
     async def _init_backend_locked(self) -> None:
         """Actual backend-init body. Must be called with ``_init_lock`` held."""
         if self.config.backend == "local":
-            from headroom.memory.backends.local import LocalBackend, LocalBackendConfig
+            from legroom.memory.backends.local import LocalBackend, LocalBackendConfig
 
             # Auto-detect embedder: ONNX (default, ~86MB, no torch) → local (if torch available)
             embedder_backend = "onnx"
             embedder_model = "all-MiniLM-L6-v2"
             vector_dimension = 384
 
-            # Opt-in GPU offload: HEADROOM_EMBEDDER_RUNTIME=pytorch_mps routes embedding
+            # Opt-in GPU offload: LEGROOM_EMBEDDER_RUNTIME=pytorch_mps routes embedding
             # through the torch sentence-transformers backend on the Apple GPU (MPS).
             # LocalEmbedder serializes MPS encode calls (torch-MPS is not thread-safe).
             # We switch only when MPS is actually available; otherwise keep the
             # existing default embedder selection path (ONNX when available, then
             # the pre-existing local sentence-transformers fallback).
-            if os.environ.get("HEADROOM_EMBEDDER_RUNTIME", "").strip().lower() == "pytorch_mps":
+            if os.environ.get("LEGROOM_EMBEDDER_RUNTIME", "").strip().lower() == "pytorch_mps":
                 try:
                     import sentence_transformers  # noqa: F401
                     import torch
@@ -341,17 +341,17 @@ class MemoryHandler:
                     if torch.backends.mps.is_available():
                         embedder_backend = "local"
                         logger.info(
-                            "Memory: HEADROOM_EMBEDDER_RUNTIME=pytorch_mps → "
+                            "Memory: LEGROOM_EMBEDDER_RUNTIME=pytorch_mps → "
                             "torch embedder on Apple GPU (MPS)"
                         )
                     else:
                         logger.warning(
-                            "Memory: HEADROOM_EMBEDDER_RUNTIME=pytorch_mps requested but "
+                            "Memory: LEGROOM_EMBEDDER_RUNTIME=pytorch_mps requested but "
                             "MPS is not available; using default embedder selection"
                         )
                 except ImportError:
                     logger.warning(
-                        "Memory: HEADROOM_EMBEDDER_RUNTIME=pytorch_mps requested but "
+                        "Memory: LEGROOM_EMBEDDER_RUNTIME=pytorch_mps requested but "
                         "torch/sentence-transformers not installed; using default embedder selection"
                     )
 
@@ -412,7 +412,7 @@ class MemoryHandler:
 
         elif self.config.backend == "qdrant-neo4j":
             try:
-                from headroom.memory.backends.direct_mem0 import (
+                from legroom.memory.backends.direct_mem0 import (
                     DirectMem0Adapter,
                     Mem0Config,
                 )
@@ -436,7 +436,7 @@ class MemoryHandler:
             except ImportError as e:
                 logger.error(
                     f"Memory: Failed to import qdrant-neo4j dependencies: {e}. "
-                    "Install with: pip install 'headroom-ai[memory-stack]'"
+                    "Install with: pip install 'legroom-ai[memory-stack]'"
                 )
                 raise
         else:
@@ -453,8 +453,8 @@ class MemoryHandler:
         if self._bridge is not None:
             return
         try:
-            from headroom.memory.bridge import MemoryBridge
-            from headroom.memory.bridge_config import BridgeConfig, MarkdownFormat
+            from legroom.memory.bridge import MemoryBridge
+            from legroom.memory.bridge_config import BridgeConfig, MarkdownFormat
 
             bridge_config = BridgeConfig(
                 md_paths=[Path(p) for p in self.config.bridge_md_paths],
@@ -476,7 +476,7 @@ class MemoryHandler:
     def _get_memory_tools(self) -> list[dict[str, Any]]:
         """Get memory tool definitions (cached)."""
         if self._memory_tools is None:
-            from headroom.memory.tools import get_memory_tools_optimized
+            from legroom.memory.tools import get_memory_tools_optimized
 
             self._memory_tools = get_memory_tools_optimized()
         return self._memory_tools
@@ -686,7 +686,7 @@ class MemoryHandler:
 
         Args:
             user_id: User identifier for memory scoping (the base user
-                id, derived from ``x-headroom-user-id`` upstream).
+                id, derived from ``x-legroom-user-id`` upstream).
             messages: Conversation messages (used to extract query when
                 ``query`` is not provided).
             request_context: Optional request envelope (headers, system
@@ -696,7 +696,7 @@ class MemoryHandler:
                 omitted, behaves as before this fix — single-bucket search
                 against the legacy backend. Production handlers always
                 pass it; tests / mocks can keep the simpler call shape.
-            ranker: Optional :class:`~headroom.proxy.memory_ranker.MemoryRanker`
+            ranker: Optional :class:`~legroom.proxy.memory_ranker.MemoryRanker`
                 — re-ranks the backend's cosine-only candidates by an
                 additional signal (recency, source, access count, …).
                 When ``None`` (default), behaviour is pure cosine +
@@ -724,7 +724,7 @@ class MemoryHandler:
         returns ``None`` unconditionally so the proxy never auto-injects.
         The model must call ``memory_search`` explicitly to retrieve.
         """
-        from headroom.proxy.memory_injection import MemoryInjectionBudget
+        from legroom.proxy.memory_injection import MemoryInjectionBudget
 
         if not self.config.inject_context:
             return None
@@ -748,7 +748,7 @@ class MemoryHandler:
         # PROJECT mode and `unresolved_project_fallback="empty"` (the
         # default after the 2026-05-26 incident). The sentinel signal is
         # `mode=PROJECT` + `project_key=None`: project mode was requested
-        # but no x-headroom-project-id / x-headroom-cwd / system-prompt
+        # but no x-legroom-project-id / x-legroom-cwd / system-prompt
         # cwd: was available, so we have no idea which project this
         # request belongs to. Returning None here skips injection
         # entirely — better than pooling into GLOBAL and surfacing
@@ -822,7 +822,7 @@ class MemoryHandler:
             # in play.
             selected_memory_ids: list[str] = []
             if ranker is not None:
-                from headroom.proxy.memory_ranker import MemoryCandidate
+                from legroom.proxy.memory_ranker import MemoryCandidate
 
                 candidates = [MemoryCandidate.from_backend_result(r) for r in results]
                 ranked = ranker.rank(candidates)
@@ -986,8 +986,8 @@ your responses, not to drive new actions."""
 
         if provider == "anthropic":
             # Late import to avoid circular: AnthropicHandlerMixin lives in
-            # headroom.proxy.handlers.anthropic which imports MemoryHandler.
-            from headroom.proxy.handlers.anthropic import AnthropicHandlerMixin
+            # legroom.proxy.handlers.anthropic which imports MemoryHandler.
+            from legroom.proxy.handlers.anthropic import AnthropicHandlerMixin
 
             new_messages = AnthropicHandlerMixin._append_context_to_latest_non_frozen_user_turn(
                 messages,
@@ -999,7 +999,7 @@ your responses, not to drive new actions."""
             return new_messages, len(context_text)
 
         if provider == "openai":
-            from headroom.proxy.helpers import append_text_to_latest_user_chat_message
+            from legroom.proxy.helpers import append_text_to_latest_user_chat_message
 
             return append_text_to_latest_user_chat_message(messages, context_text)
 

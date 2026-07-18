@@ -1,4 +1,4 @@
-"""Request logger for the Headroom proxy.
+"""Request logger for the Legroom proxy.
 
 Logs requests to an in-memory deque and optionally to a JSONL file.
 
@@ -33,8 +33,8 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from ..memory.tracker import ComponentStats
 
-from headroom.proxy import request_log_redaction_policy
-from headroom.proxy.models import RequestLog
+from legroom.proxy import request_log_redaction_policy
+from legroom.proxy.models import RequestLog
 
 IMAGE_BASE64_REDACT_THRESHOLD_BYTES = (
     request_log_redaction_policy.IMAGE_BASE64_REDACT_THRESHOLD_BYTES

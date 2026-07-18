@@ -133,9 +133,9 @@ def _batch_nonce(batch: CompressionBatch) -> str:
 def _batch_envelope(batch: CompressionBatch, nonce: str, texts: list[str]) -> str:
     return "\n".join(
         (
-            f"<headroom-batch-{nonce}-{entry.entry_id}>"
+            f"<legroom-batch-{nonce}-{entry.entry_id}>"
             f"{text}"
-            f"</headroom-batch-{nonce}-{entry.entry_id}>"
+            f"</legroom-batch-{nonce}-{entry.entry_id}>"
         )
         for entry, text in zip(batch.entries, texts, strict=True)
     )
@@ -153,7 +153,7 @@ def _protect_ccr_markers(
 
         def replace_marker(match: re.Match[str], entry_index: int = entry_index) -> str:
             nonlocal marker_index
-            placeholder = f"[[HEADROOM_BATCH_CCR_{nonce}_{entry_index}_{marker_index}]]"
+            placeholder = f"[[LEGROOM_BATCH_CCR_{nonce}_{entry_index}_{marker_index}]]"
             marker_index += 1
             marker_blocks[placeholder] = (entry_index, match.group(0))
             return placeholder
@@ -174,7 +174,7 @@ def _parse_batch_envelope(
     for entry in batch.entries:
         while cursor < len(text) and text[cursor].isspace():
             cursor += 1
-        tag_name = f"headroom-batch-{nonce}-{entry.entry_id}"
+        tag_name = f"legroom-batch-{nonce}-{entry.entry_id}"
         pattern = re.compile(
             rf"<{re.escape(tag_name)}>(.*?)</{re.escape(tag_name)}>",
             flags=re.DOTALL,

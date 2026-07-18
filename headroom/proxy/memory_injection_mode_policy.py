@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal, cast
 
-MEMORY_INJECTION_MODE_ENV = "HEADROOM_MEMORY_INJECTION_MODE"
+MEMORY_INJECTION_MODE_ENV = "LEGROOM_MEMORY_INJECTION_MODE"
 MEMORY_INJECTION_MODE_DEFAULT: Literal["live_zone_tail", "disabled"] = "live_zone_tail"
 MemoryInjectionMode = Literal["live_zone_tail", "disabled"]
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from headroom.proxy.body_forwarding import serialize_body_canonical
-from headroom.proxy.tool_definition_serialization import serialize_tool_definition_canonical
+from legroom.proxy.body_forwarding import serialize_body_canonical
+from legroom.proxy.tool_definition_serialization import serialize_tool_definition_canonical
 
 
 def test_serialize_tool_definition_canonical_uses_compact_separators() -> None:

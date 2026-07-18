@@ -11,7 +11,7 @@ instance via ``object.__new__``.
 
 from __future__ import annotations
 
-from headroom.proxy.memory_tool_adapter import MemoryToolAdapter
+from legroom.proxy.memory_tool_adapter import MemoryToolAdapter
 
 _adapter = object.__new__(MemoryToolAdapter)
 

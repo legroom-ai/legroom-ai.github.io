@@ -19,7 +19,7 @@ stays byte-identical (so the provider prefix still hits).
 
 import copy
 
-from headroom.proxy.handlers.anthropic import AnthropicHandlerMixin
+from legroom.proxy.handlers.anthropic import AnthropicHandlerMixin
 
 delta = AnthropicHandlerMixin._extract_cache_stable_delta
 

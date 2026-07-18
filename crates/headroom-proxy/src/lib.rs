@@ -1,5 +1,5 @@
-//! headroom-proxy library: transparent reverse proxy in front of the Python
-//! Headroom proxy. Used by both `main.rs` and the integration tests.
+//! legroom-proxy library: transparent reverse proxy in front of the Python
+//! Legroom proxy. Used by both `main.rs` and the integration tests.
 
 pub mod bedrock;
 pub mod cache_stabilization;

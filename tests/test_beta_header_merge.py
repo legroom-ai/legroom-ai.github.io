@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from headroom.proxy.beta_header_merge import (
+from legroom.proxy.beta_header_merge import (
     merge_anthropic_beta,
     merge_beta_tokens,
     merge_openai_beta,

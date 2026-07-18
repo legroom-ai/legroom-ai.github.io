@@ -1,5 +1,5 @@
 //! Smart statistical tool output compression — Rust port of
-//! `headroom/transforms/smart_crusher.py`.
+//! `legroom/transforms/smart_crusher.py`.
 //!
 //! # Stage 3c.1: like-for-like parity port
 //!
@@ -12,7 +12,7 @@
 //!
 //! # Bugs fixed in BOTH Python and Rust during 3c.1
 //!
-//! Four defects in the Python source (`headroom/transforms/smart_crusher.py`)
+//! Four defects in the Python source (`legroom/transforms/smart_crusher.py`)
 //! were caught during port review. They're fixed in both languages
 //! simultaneously so the parity fixtures continue to byte-match:
 //!

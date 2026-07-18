@@ -3,7 +3,7 @@ title: Reversible Compression (CCR)
 description: Compress-Cache-Retrieve architecture that makes compression lossless — the LLM can always get the original data back.
 ---
 
-Headroom's CCR (Compress-Cache-Retrieve) architecture makes compression **reversible**. When content is compressed, the original data is cached locally. If the LLM needs the full data, it retrieves it instantly.
+Legroom's CCR (Compress-Cache-Retrieve) architecture makes compression **reversible**. When content is compressed, the original data is cached locally. If the LLM needs the full data, it retrieves it instantly.
 
 <Callout type="info" title="Nothing is ever thrown away">
   Unlike traditional lossy compression, CCR guarantees that every piece of original data remains accessible. You get 70-90% token savings with zero risk of permanent data loss.
@@ -30,7 +30,7 @@ TOOL OUTPUT (1000 items)
 
 LLM PROCESSING
   Option A: LLM solves task with 20 items -> Done (90% savings)
-  Option B: LLM calls headroom_retrieve(hash=abc123)
+  Option B: LLM calls legroom_retrieve(hash=abc123)
             -> Response Handler returns full data automatically
 ```
 
@@ -48,12 +48,12 @@ When SmartCrusher compresses tool output:
 
 ## Phase 2: Tool Injection
 
-Headroom injects a `headroom_retrieve` tool into the LLM's available tools:
+Legroom injects a `legroom_retrieve` tool into the LLM's available tools:
 
 ```json
 {
-  "name": "headroom_retrieve",
-  "description": "Retrieve original uncompressed data from Headroom cache",
+  "name": "legroom_retrieve",
+  "description": "Retrieve original uncompressed data from Legroom cache",
   "parameters": {
     "hash": "The hash key from the compression marker"
   }
@@ -64,22 +64,22 @@ The LLM sees this tool alongside your application's tools and can call it whenev
 
 ## Phase 3: Response Handler
 
-When the LLM calls `headroom_retrieve`:
+When the LLM calls `legroom_retrieve`:
 
 1. The Response Handler intercepts the tool call
 2. Data is retrieved from the local cache (around 1ms)
 3. The result is added to the conversation
 4. The API call continues automatically
 
-The client never sees CCR tool calls on the Anthropic and OpenAI proxy paths; Headroom resolves them transparently there.
+The client never sees CCR tool calls on the Anthropic and OpenAI proxy paths; Legroom resolves them transparently there.
 
 <Callout type="warning" title="Current Gemini limitation">
   Native Gemini requests do not yet run the server-side CCR response handler, so
-  `headroom_retrieve` is not resolved transparently on that path today. Google's
+  `legroom_retrieve` is not resolved transparently on that path today. Google's
   OpenAI-compatible Gemini endpoint can also return
   `finish_reason=MALFORMED_FUNCTION_CALL` on large function-response continuations
   after CCR retrieval. If you need fully transparent CCR resolution today, use the
-  Anthropic or OpenAI proxy paths. See [issue #2041](https://github.com/headroomlabs-ai/headroom/issues/2041).
+  Anthropic or OpenAI proxy paths. See [issue #2041](https://github.com/legroom-ai/legroom/issues/2041).
 </Callout>
 
 ## Phase 4: Context Tracker
@@ -108,8 +108,8 @@ CCR works automatically on the Anthropic and OpenAI proxy paths, but you can als
 <Tabs groupId="lang" items={['TypeScript', 'Python']}>
 <Tab value="TypeScript">
 ```ts twoslash
-import { compress } from "headroom-ai";
-import type { CCRConfig } from "headroom-ai";
+import { compress } from "legroom-ai";
+import type { CCRConfig } from "legroom-ai";
 
 // CCR is enabled by default when compressing through the proxy.
 const result = await compress(messages, {
@@ -122,7 +122,7 @@ console.log(result.messages);
 // CCR configuration options
 const ccrConfig: CCRConfig = {
   enabled: true,
-  injectTool: true,             // Inject headroom_retrieve tool
+  injectTool: true,             // Inject legroom_retrieve tool
   injectRetrievalMarker: true,  // Add retrieval markers to compressed output
   feedbackEnabled: true,        // Learn from retrieval patterns
   storeMaxEntries: 1000,        // Max cached items
@@ -132,17 +132,17 @@ const ccrConfig: CCRConfig = {
 </Tab>
 <Tab value="Python">
 ```python
-from headroom import HeadroomClient, OpenAIProvider
+from legroom import LegroomClient, OpenAIProvider
 from openai import OpenAI
 
-client = HeadroomClient(
+client = LegroomClient(
     original_client=OpenAI(),
     provider=OpenAIProvider(),
     default_mode="optimize",
 )
 
 # CCR happens automatically during chat completions.
-# The LLM calls headroom_retrieve when it needs more data.
+# The LLM calls legroom_retrieve when it needs more data.
 response = client.chat.completions.create(
     model="gpt-4o",
     messages=messages,
@@ -157,10 +157,10 @@ response = client.chat.completions.create(
 ## Retention
 
 Proxy CCR originals are kept for 1800 seconds (30 minutes) by default. For longer autonomous
-agent runs, set `HEADROOM_CCR_TTL_SECONDS` before starting the proxy:
+agent runs, set `LEGROOM_CCR_TTL_SECONDS` before starting the proxy:
 
 ```bash
-HEADROOM_CCR_TTL_SECONDS=7200 headroom proxy
+LEGROOM_CCR_TTL_SECONDS=7200 legroom proxy
 ```
 
 Check the effective setting at `/v1/retrieve/stats` under

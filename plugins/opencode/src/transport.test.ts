@@ -4,10 +4,10 @@ import http2 from "node:http2";
 import https from "node:https";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { installHeadroomTransport, uninstallHeadroomTransport } from "./transport.js";
+import { installLegroomTransport, uninstallLegroomTransport } from "./transport.js";
 
 afterEach(() => {
-  uninstallHeadroomTransport();
+  uninstallLegroomTransport();
   vi.restoreAllMocks();
 });
 
@@ -56,7 +56,7 @@ function proxyServer(pathPrefix: string = "/v1"): Promise<{
   });
 }
 
-describe("Headroom OpenCode transport", () => {
+describe("Legroom OpenCode transport", () => {
   it("routes fetch chat paths through /v1/chat/completions with proxy base and normalized-path header", async () => {
     const proxyTargets = ["http://127.0.0.1:8787", "http://127.0.0.1:8787/v1"];
     const upstreamPath = "/api/coding/paas/v4/chat/completions";
@@ -66,18 +66,18 @@ describe("Headroom OpenCode transport", () => {
       const fetchMock = vi.fn(async (..._args: FetchCall) => new Response("ok"));
       globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-      installHeadroomTransport({ proxyUrl });
+      installLegroomTransport({ proxyUrl });
 
       await fetch(`https://open.bigmodel.cn${upstreamPath}`, { method: "POST", headers: { "content-type": "application/json" } });
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
       expect(fetchMock.mock.calls[0][0]).toEqual(new URL(`${proxyOrigin}/v1/chat/completions`));
       const headers = new Headers(fetchMock.mock.calls[0][1]?.headers);
-      expect(headers.get("x-headroom-base-url")).toBe("https://open.bigmodel.cn");
-      expect(headers.get("x-headroom-original-path")).toBe(upstreamPath);
+      expect(headers.get("x-legroom-base-url")).toBe("https://open.bigmodel.cn");
+      expect(headers.get("x-legroom-original-path")).toBe(upstreamPath);
 
       globalThis.fetch = originalFetch;
-      uninstallHeadroomTransport();
+      uninstallLegroomTransport();
     }
   });
 
@@ -90,18 +90,18 @@ describe("Headroom OpenCode transport", () => {
       const fetchMock = vi.fn(async (..._args: FetchCall) => new Response("ok"));
       globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-      installHeadroomTransport({ proxyUrl });
+      installLegroomTransport({ proxyUrl });
 
       await fetch(`https://open.bigmodel.cn${upstreamPath}`, { method: "POST", headers: { "content-type": "application/json" } });
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
       expect(fetchMock.mock.calls[0][0]).toEqual(new URL(`${proxyOrigin}/v1/responses`));
       const headers = new Headers(fetchMock.mock.calls[0][1]?.headers);
-      expect(headers.get("x-headroom-base-url")).toBe("https://open.bigmodel.cn");
-      expect(headers.get("x-headroom-original-path")).toBe(upstreamPath);
+      expect(headers.get("x-legroom-base-url")).toBe("https://open.bigmodel.cn");
+      expect(headers.get("x-legroom-original-path")).toBe(upstreamPath);
 
       globalThis.fetch = originalFetch;
-      uninstallHeadroomTransport();
+      uninstallLegroomTransport();
     }
   });
 
@@ -110,7 +110,7 @@ describe("Headroom OpenCode transport", () => {
     const fetchMock = vi.fn(async (..._args: FetchCall) => new Response("ok"));
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-    installHeadroomTransport({ proxyUrl: "http://127.0.0.1:8787/v1" });
+    installLegroomTransport({ proxyUrl: "http://127.0.0.1:8787/v1" });
 
     await fetch("https://api.deepseek.com/v1/chat/completions?x=1", {
       method: "POST",
@@ -123,11 +123,11 @@ describe("Headroom OpenCode transport", () => {
       new URL("http://127.0.0.1:8787/v1/chat/completions?x=1"),
       expect.objectContaining({ method: "POST" }),
     );
-    expect(new Headers(fetchMock.mock.calls[0][1]?.headers).get("x-headroom-base-url")).toBe(
+    expect(new Headers(fetchMock.mock.calls[0][1]?.headers).get("x-legroom-base-url")).toBe(
       "https://api.deepseek.com",
     );
     expect(fetchMock.mock.calls[1][0]).toEqual(new URL("http://127.0.0.1:8787/base/v1/messages"));
-    expect(new Headers(fetchMock.mock.calls[1][1]?.headers).get("x-headroom-base-url")).toBe(
+    expect(new Headers(fetchMock.mock.calls[1][1]?.headers).get("x-legroom-base-url")).toBe(
       "https://new-provider.example",
     );
 
@@ -139,23 +139,23 @@ describe("Headroom OpenCode transport", () => {
     const fetchMock = vi.fn(async (..._args: FetchCall) => new Response("ok"));
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-    installHeadroomTransport({ proxyUrl: "http://127.0.0.1:8787/v1" });
+    installLegroomTransport({ proxyUrl: "http://127.0.0.1:8787/v1" });
 
     await fetch("https://example.test/base/v1/messages", { method: "POST" });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0][0]).toEqual(new URL("http://127.0.0.1:8787/base/v1/messages"));
-    expect(new Headers(fetchMock.mock.calls[0][1]?.headers).get("x-headroom-original-path")).toBeNull();
+    expect(new Headers(fetchMock.mock.calls[0][1]?.headers).get("x-legroom-original-path")).toBeNull();
 
     globalThis.fetch = originalFetch;
   });
 
-  it("bypasses local, OpenCode, and Headroom proxy fetch URLs", async () => {
+  it("bypasses local, OpenCode, and Legroom proxy fetch URLs", async () => {
     const originalFetch = globalThis.fetch;
     const fetchMock = vi.fn(async (..._args: FetchCall) => new Response("ok"));
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-    installHeadroomTransport({ proxyUrl: "http://127.0.0.1:8787/v1" });
+    installLegroomTransport({ proxyUrl: "http://127.0.0.1:8787/v1" });
 
     await fetch("http://127.0.0.1:8787/v1/retrieve");
     await fetch("http://localhost:4096/config");
@@ -168,7 +168,7 @@ describe("Headroom OpenCode transport", () => {
 
   it("routes external https.request calls through the proxy", async () => {
     const proxy = await proxyServer();
-    installHeadroomTransport({ proxyUrl: proxy.url });
+    installLegroomTransport({ proxyUrl: proxy.url });
 
     await new Promise<void>((resolve, reject) => {
       const req = https.request(
@@ -185,7 +185,7 @@ describe("Headroom OpenCode transport", () => {
 
     expect(proxy.seen).toHaveLength(1);
     expect(proxy.seen[0]).toMatchObject({ method: "POST", url: "/v1/messages?beta=1" });
-    expect(proxy.seen[0].headers["x-headroom-base-url"]).toBe("https://api.anthropic.com");
+    expect(proxy.seen[0].headers["x-legroom-base-url"]).toBe("https://api.anthropic.com");
     expect(proxy.seen[0].headers.host).toMatch(/^127\.0\.0\.1:/);
     expect(proxy.seen[0].body).toBe("{\"model\":\"claude\"}");
 
@@ -194,7 +194,7 @@ describe("Headroom OpenCode transport", () => {
 
   it("normalizes Node HTTP(S) requests for /chat/completions and /responses", async () => {
     const proxy = await proxyServer("");
-    installHeadroomTransport({ proxyUrl: proxy.url });
+    installLegroomTransport({ proxyUrl: proxy.url });
     const httpChatPath = "/api/coding/paas/v4/chat/completions";
     const httpResponsesPath = "/api/coding/paas/v4/responses";
     const httpsChatPath = "/v4/openai/chat/completions";
@@ -256,32 +256,32 @@ describe("Headroom OpenCode transport", () => {
       method: "POST",
       url: "/v1/chat/completions",
       headers: expect.objectContaining({
-        "x-headroom-base-url": "http://open.bigmodel.cn",
-        "x-headroom-original-path": httpChatPath,
+        "x-legroom-base-url": "http://open.bigmodel.cn",
+        "x-legroom-original-path": httpChatPath,
       }),
     });
     expect(proxy.seen[1]).toMatchObject({
       method: "POST",
       url: "/v1/responses",
       headers: expect.objectContaining({
-        "x-headroom-base-url": "http://open.bigmodel.cn",
-        "x-headroom-original-path": httpResponsesPath,
+        "x-legroom-base-url": "http://open.bigmodel.cn",
+        "x-legroom-original-path": httpResponsesPath,
       }),
     });
     expect(proxy.seen[2]).toMatchObject({
       method: "POST",
       url: "/v1/chat/completions",
       headers: expect.objectContaining({
-        "x-headroom-base-url": "https://api.deepseek.com",
-        "x-headroom-original-path": httpsChatPath,
+        "x-legroom-base-url": "https://api.deepseek.com",
+        "x-legroom-original-path": httpsChatPath,
       }),
     });
     expect(proxy.seen[3]).toMatchObject({
       method: "POST",
       url: "/v1/responses",
       headers: expect.objectContaining({
-        "x-headroom-base-url": "https://api.deepseek.com",
-        "x-headroom-original-path": httpsResponsesPath,
+        "x-legroom-base-url": "https://api.deepseek.com",
+        "x-legroom-original-path": httpsResponsesPath,
       }),
     });
 
@@ -289,29 +289,29 @@ describe("Headroom OpenCode transport", () => {
   });
 
   it("blocks external http2 connections instead of leaking them", () => {
-    installHeadroomTransport({ proxyUrl: "http://127.0.0.1:8787/v1" });
+    installLegroomTransport({ proxyUrl: "http://127.0.0.1:8787/v1" });
 
     expect(() => http2.connect("https://api.openai.com")).toThrow(
       /blocked direct HTTP\/2 connection to https:\/\/api\.openai\.com/,
     );
   });
 
-  it("preloads the Headroom shim into child Node processes", () => {
+  it("preloads the Legroom shim into child Node processes", () => {
     const originalNodeOptions = process.env.NODE_OPTIONS;
-    const originalProxyUrl = process.env.HEADROOM_OPENCODE_TRANSPORT_PROXY_URL;
+    const originalProxyUrl = process.env.LEGROOM_OPENCODE_TRANSPORT_PROXY_URL;
 
     try {
       process.env.NODE_OPTIONS = "--trace-warnings";
-      delete process.env.HEADROOM_OPENCODE_TRANSPORT_PROXY_URL;
+      delete process.env.LEGROOM_OPENCODE_TRANSPORT_PROXY_URL;
 
-      installHeadroomTransport({ proxyUrl: "http://127.0.0.1:8787/v1" });
+      installLegroomTransport({ proxyUrl: "http://127.0.0.1:8787/v1" });
 
-      expect(process.env.HEADROOM_OPENCODE_TRANSPORT_PROXY_URL).toBe("http://127.0.0.1:8787/v1");
+      expect(process.env.LEGROOM_OPENCODE_TRANSPORT_PROXY_URL).toBe("http://127.0.0.1:8787/v1");
       expect(process.env.NODE_OPTIONS).toContain("--trace-warnings");
       expect(process.env.NODE_OPTIONS).toContain("--import=file:");
       expect(process.env.NODE_OPTIONS).toContain("/hook-shim/handler.js");
 
-      installHeadroomTransport({ proxyUrl: "http://127.0.0.1:8787/v1" });
+      installLegroomTransport({ proxyUrl: "http://127.0.0.1:8787/v1" });
       expect(process.env.NODE_OPTIONS?.match(/hook-shim\/handler\.js/g)).toHaveLength(1);
     } finally {
       if (originalNodeOptions === undefined) {
@@ -320,15 +320,15 @@ describe("Headroom OpenCode transport", () => {
         process.env.NODE_OPTIONS = originalNodeOptions;
       }
       if (originalProxyUrl === undefined) {
-        delete process.env.HEADROOM_OPENCODE_TRANSPORT_PROXY_URL;
+        delete process.env.LEGROOM_OPENCODE_TRANSPORT_PROXY_URL;
       } else {
-        process.env.HEADROOM_OPENCODE_TRANSPORT_PROXY_URL = originalProxyUrl;
+        process.env.LEGROOM_OPENCODE_TRANSPORT_PROXY_URL = originalProxyUrl;
       }
-      uninstallHeadroomTransport();
+      uninstallLegroomTransport();
     }
   });
 
-  it("injects the Headroom shim into child processes with custom env", () => {
+  it("injects the Legroom shim into child processes with custom env", () => {
     const originalSpawn = childProcess.spawn;
     const spawnMock = vi.fn(() => ({
       on: vi.fn(),
@@ -341,17 +341,17 @@ describe("Headroom OpenCode transport", () => {
     childProcess.spawn = spawnMock as unknown as typeof childProcess.spawn;
 
     try {
-      installHeadroomTransport({ proxyUrl: "http://127.0.0.1:8787/v1" });
+      installLegroomTransport({ proxyUrl: "http://127.0.0.1:8787/v1" });
       childProcess.spawn("node", ["agent.js"], { env: { PATH: "/bin", NODE_OPTIONS: "--trace-warnings" } });
 
       const options = (spawnMock.mock.calls[0] as unknown[])[2] as { env: NodeJS.ProcessEnv };
       expect(options.env.PATH).toBe("/bin");
-      expect(options.env.HEADROOM_OPENCODE_TRANSPORT_PROXY_URL).toBe("http://127.0.0.1:8787/v1");
+      expect(options.env.LEGROOM_OPENCODE_TRANSPORT_PROXY_URL).toBe("http://127.0.0.1:8787/v1");
       expect(options.env.NODE_OPTIONS).toContain("--trace-warnings");
       expect(options.env.NODE_OPTIONS).toContain("--import=file:");
       expect(options.env.NODE_OPTIONS).toContain("/hook-shim/handler.js");
     } finally {
-      uninstallHeadroomTransport();
+      uninstallLegroomTransport();
       childProcess.spawn = originalSpawn;
     }
   });
@@ -360,8 +360,8 @@ describe("Headroom OpenCode transport", () => {
     const originalFetch = globalThis.fetch;
     const originalHttpRequest = http.request;
     const originalHttpsRequest = https.request;
-    const firstDispose = installHeadroomTransport({ proxyUrl: "http://127.0.0.1:8787/v1" });
-    const secondDispose = installHeadroomTransport({ proxyUrl: "http://127.0.0.1:8788/v1" });
+    const firstDispose = installLegroomTransport({ proxyUrl: "http://127.0.0.1:8787/v1" });
+    const secondDispose = installLegroomTransport({ proxyUrl: "http://127.0.0.1:8788/v1" });
 
     expect(globalThis.fetch).not.toBe(originalFetch);
     expect(http.request).not.toBe(originalHttpRequest);

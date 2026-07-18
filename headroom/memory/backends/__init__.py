@@ -1,4 +1,4 @@
-"""Memory backends for Headroom's hierarchical memory system.
+"""Memory backends for Legroom's hierarchical memory system.
 
 This module provides backend adapters for the memory system:
 - LocalBackend: Fully local using SQLite + HNSW + InMemoryGraph (default)
@@ -16,7 +16,7 @@ Performance comparison:
 """
 
 # LocalBackend is always available (no optional dependencies)
-from headroom.memory.backends.local import LocalBackend, LocalBackendConfig
+from legroom.memory.backends.local import LocalBackend, LocalBackendConfig
 
 # Lazy imports for optional backends
 _Mem0Backend = None
@@ -32,35 +32,35 @@ def __getattr__(name: str) -> type:
 
     if name == "Mem0Backend":
         if _Mem0Backend is None:
-            from headroom.memory.backends.mem0 import Mem0Backend
+            from legroom.memory.backends.mem0 import Mem0Backend
 
             _Mem0Backend = Mem0Backend
         return _Mem0Backend
 
     if name == "Mem0Config":
         if _Mem0Config is None:
-            from headroom.memory.backends.mem0 import Mem0Config
+            from legroom.memory.backends.mem0 import Mem0Config
 
             _Mem0Config = Mem0Config
         return _Mem0Config
 
     if name == "Mem0SystemAdapter":
         if _Mem0SystemAdapter is None:
-            from headroom.memory.backends.mem0_system_adapter import Mem0SystemAdapter
+            from legroom.memory.backends.mem0_system_adapter import Mem0SystemAdapter
 
             _Mem0SystemAdapter = Mem0SystemAdapter
         return _Mem0SystemAdapter
 
     if name == "DirectMem0Adapter":
         if _DirectMem0Adapter is None:
-            from headroom.memory.backends.direct_mem0 import DirectMem0Adapter
+            from legroom.memory.backends.direct_mem0 import DirectMem0Adapter
 
             _DirectMem0Adapter = DirectMem0Adapter
         return _DirectMem0Adapter
 
     if name == "DirectMem0Config":
         if _DirectMem0Config is None:
-            from headroom.memory.backends.direct_mem0 import Mem0Config as DirectMem0Config
+            from legroom.memory.backends.direct_mem0 import Mem0Config as DirectMem0Config
 
             _DirectMem0Config = DirectMem0Config
         return _DirectMem0Config

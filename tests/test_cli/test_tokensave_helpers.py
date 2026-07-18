@@ -7,8 +7,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from headroom.cli import wrap as wrap_cli
-from headroom.graph import tokensave_installer as ts
+from legroom.cli import wrap as wrap_cli
+from legroom.graph import tokensave_installer as ts
 
 _FAKE_BIN = Path("/usr/local/bin/tokensave")
 

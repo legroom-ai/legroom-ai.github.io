@@ -20,7 +20,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from headroom.memory.backends.local import LocalBackend, LocalBackendConfig
+from legroom.memory.backends.local import LocalBackend, LocalBackendConfig
 
 
 def _backend(tmp_path) -> LocalBackend:
@@ -44,7 +44,7 @@ async def test_concurrent_ensure_initialized_runs_init_once(tmp_path, monkeypatc
         await release.wait()
         return MagicMock(name="HierarchicalMemory")
 
-    monkeypatch.setattr("headroom.memory.HierarchicalMemory.create", fake_create)
+    monkeypatch.setattr("legroom.memory.HierarchicalMemory.create", fake_create)
 
     backend = _backend(tmp_path)
     tasks = [asyncio.create_task(backend._ensure_initialized()) for _ in range(10)]
@@ -70,7 +70,7 @@ async def test_cancelled_cold_start_resets_state_and_retries(tmp_path, monkeypat
             await block_first.wait()  # never released → this attempt is cancelled
         return MagicMock(name="HierarchicalMemory")
 
-    monkeypatch.setattr("headroom.memory.HierarchicalMemory.create", fake_create)
+    monkeypatch.setattr("legroom.memory.HierarchicalMemory.create", fake_create)
 
     backend = _backend(tmp_path)
 

@@ -1,4 +1,4 @@
-"""Batch handler mixin for HeadroomProxy.
+"""Batch handler mixin for LegroomProxy.
 
 Contains all batch API handlers for Google and OpenAI batch operations.
 """
@@ -14,15 +14,15 @@ if TYPE_CHECKING:
     from fastapi import Request
     from fastapi.responses import Response
 
-from headroom.proxy.auth_mode import classify_client
-from headroom.proxy.helpers import COMPRESSION_TIMEOUT_SECONDS, extract_tags
-from headroom.proxy.outcome import RequestOutcome
+from legroom.proxy.auth_mode import classify_client
+from legroom.proxy.helpers import COMPRESSION_TIMEOUT_SECONDS, extract_tags
+from legroom.proxy.outcome import RequestOutcome
 
-logger = logging.getLogger("headroom.proxy")
+logger = logging.getLogger("legroom.proxy")
 
 
 class BatchHandlerMixin:
-    """Mixin providing batch API handler methods for HeadroomProxy."""
+    """Mixin providing batch API handler methods for LegroomProxy."""
 
     async def handle_google_batch_create(
         self,
@@ -52,9 +52,9 @@ class BatchHandlerMixin:
         """
         from fastapi.responses import JSONResponse, Response
 
-        from headroom.ccr import CCRToolInjector
-        from headroom.proxy.helpers import MAX_REQUEST_BODY_SIZE, _read_request_json
-        from headroom.utils import extract_user_query
+        from legroom.ccr import CCRToolInjector
+        from legroom.proxy.helpers import MAX_REQUEST_BODY_SIZE, _read_request_json
+        from legroom.utils import extract_user_query
 
         start_time = time.time()
         request_id = await self._next_request_id()
@@ -105,10 +105,10 @@ class BatchHandlerMixin:
         headers.pop("content-length", None)
         client = classify_client(headers)
         tags = extract_tags(headers)
-        # PR-A5 (P5-49): strip internal x-headroom-* before forwarding upstream.
-        from headroom.proxy.helpers import _strip_internal_headers, log_outbound_headers
+        # PR-A5 (P5-49): strip internal x-legroom-* before forwarding upstream.
+        from legroom.proxy.helpers import _strip_internal_headers, log_outbound_headers
 
-        _pre_strip_count_gb = sum(1 for k in headers if k.lower().startswith("x-headroom-"))
+        _pre_strip_count_gb = sum(1 for k in headers if k.lower().startswith("x-legroom-"))
         headers = _strip_internal_headers(headers)
         log_outbound_headers(
             forwarder="google_batch",
@@ -388,10 +388,10 @@ class BatchHandlerMixin:
         headers.pop("content-length", None)
         client = classify_client(headers)
         tags = extract_tags(headers)
-        # PR-A5 (P5-49): strip internal x-headroom-* before forwarding upstream.
-        from headroom.proxy.helpers import _strip_internal_headers, log_outbound_headers
+        # PR-A5 (P5-49): strip internal x-legroom-* before forwarding upstream.
+        from legroom.proxy.helpers import _strip_internal_headers, log_outbound_headers
 
-        _pre_strip_count_gpt = sum(1 for k in headers if k.lower().startswith("x-headroom-"))
+        _pre_strip_count_gpt = sum(1 for k in headers if k.lower().startswith("x-legroom-"))
         headers = _strip_internal_headers(headers)
         log_outbound_headers(
             forwarder="google_batch_passthrough",
@@ -408,13 +408,13 @@ class BatchHandlerMixin:
 
         # Byte-faithful body bytes (PR-A3, fixes P0-2). When ``body`` is
         # None we forward the original bytes verbatim; otherwise the dict
-        # has been synthesized by Headroom and is canonically serialized.
-        from headroom.proxy.body_forwarding import (
+        # has been synthesized by Legroom and is canonically serialized.
+        from legroom.proxy.body_forwarding import (
             get_python_forwarder_mode,
             prepare_outbound_body_bytes,
             serialize_body_canonical,
         )
-        from headroom.proxy.helpers import log_outbound_request
+        from legroom.proxy.helpers import log_outbound_request
 
         if body is None:
             from starlette.requests import ClientDisconnect
@@ -513,10 +513,10 @@ class BatchHandlerMixin:
         headers.pop("host", None)
         client = classify_client(headers)
         tags = extract_tags(headers)
-        # PR-A5 (P5-49): strip internal x-headroom-* before forwarding upstream.
-        from headroom.proxy.helpers import _strip_internal_headers, log_outbound_headers
+        # PR-A5 (P5-49): strip internal x-legroom-* before forwarding upstream.
+        from legroom.proxy.helpers import _strip_internal_headers, log_outbound_headers
 
-        _pre_strip_count_gp = sum(1 for k in headers if k.lower().startswith("x-headroom-"))
+        _pre_strip_count_gp = sum(1 for k in headers if k.lower().startswith("x-legroom-"))
         headers = _strip_internal_headers(headers)
         log_outbound_headers(
             forwarder="gemini_passthrough",
@@ -593,7 +593,7 @@ class BatchHandlerMixin:
             model: The model used for the batch.
             api_key: The API key for continuation calls.
         """
-        from headroom.ccr import BatchContext, BatchRequestContext, get_batch_context_store
+        from legroom.ccr import BatchContext, BatchRequestContext, get_batch_context_store
 
         store = get_batch_context_store()
         context = BatchContext(
@@ -648,7 +648,7 @@ class BatchHandlerMixin:
         """
         from fastapi.responses import JSONResponse, Response
 
-        from headroom.ccr import BatchResultProcessor, get_batch_context_store
+        from legroom.ccr import BatchResultProcessor, get_batch_context_store
 
         start_time = time.time()
 
@@ -662,10 +662,10 @@ class BatchHandlerMixin:
         headers.pop("host", None)
         client = classify_client(headers)
         tags = extract_tags(headers)
-        # PR-A5 (P5-49): strip internal x-headroom-* before forwarding upstream.
-        from headroom.proxy.helpers import _strip_internal_headers, log_outbound_headers
+        # PR-A5 (P5-49): strip internal x-legroom-* before forwarding upstream.
+        from legroom.proxy.helpers import _strip_internal_headers, log_outbound_headers
 
-        _pre_strip_count_gbr = sum(1 for k in headers if k.lower().startswith("x-headroom-"))
+        _pre_strip_count_gbr = sum(1 for k in headers if k.lower().startswith("x-legroom-"))
         headers = _strip_internal_headers(headers)
         log_outbound_headers(
             forwarder="google_batch_results",
@@ -804,7 +804,7 @@ class BatchHandlerMixin:
         """
         from fastapi.responses import JSONResponse, Response
 
-        from headroom.proxy.helpers import _read_request_json
+        from legroom.proxy.helpers import _read_request_json
 
         start_time = time.time()
         request_id = await self._next_request_id()
@@ -863,10 +863,10 @@ class BatchHandlerMixin:
         headers.pop("content-length", None)
         client = classify_client(headers)
         tags = extract_tags(headers)
-        # PR-A5 (P5-49): strip internal x-headroom-* before forwarding upstream.
-        from headroom.proxy.helpers import _strip_internal_headers, log_outbound_headers
+        # PR-A5 (P5-49): strip internal x-legroom-* before forwarding upstream.
+        from legroom.proxy.helpers import _strip_internal_headers, log_outbound_headers
 
-        _pre_strip_count_oacc = sum(1 for k in headers if k.lower().startswith("x-headroom-"))
+        _pre_strip_count_oacc = sum(1 for k in headers if k.lower().startswith("x-legroom-"))
         headers = _strip_internal_headers(headers)
         log_outbound_headers(
             forwarder="openai_batch_chat_completions",
@@ -934,13 +934,13 @@ class BatchHandlerMixin:
             # Add compression stats to metadata
             compression_metadata = {
                 **metadata,
-                "headroom_compressed": "true",
-                "headroom_original_file_id": input_file_id,
-                "headroom_total_requests": str(stats["total_requests"]),
-                "headroom_tokens_saved": str(stats["total_tokens_saved"]),
-                "headroom_original_tokens": str(stats["total_original_tokens"]),
-                "headroom_compressed_tokens": str(stats["total_compressed_tokens"]),
-                "headroom_savings_percent": f"{stats['savings_percent']:.1f}",
+                "legroom_compressed": "true",
+                "legroom_original_file_id": input_file_id,
+                "legroom_total_requests": str(stats["total_requests"]),
+                "legroom_tokens_saved": str(stats["total_tokens_saved"]),
+                "legroom_original_tokens": str(stats["total_original_tokens"]),
+                "legroom_compressed_tokens": str(stats["total_compressed_tokens"]),
+                "legroom_savings_percent": f"{stats['savings_percent']:.1f}",
             }
 
             batch_body = {
@@ -953,11 +953,11 @@ class BatchHandlerMixin:
             url = f"{self.OPENAI_API_URL}/v1/batches"
 
             # Byte-faithful re-serialization (PR-A3, fixes P0-2).
-            # batch_body is synthesized by Headroom (compressed file_id +
+            # batch_body is synthesized by Legroom (compressed file_id +
             # metadata), so it is treated as mutated and goes through the
             # canonical serializer.
-            from headroom.proxy.body_forwarding import prepare_outbound_body_bytes
-            from headroom.proxy.helpers import log_outbound_request
+            from legroom.proxy.body_forwarding import prepare_outbound_body_bytes
+            from legroom.proxy.helpers import log_outbound_request
 
             outbound_bytes, outbound_source = prepare_outbound_body_bytes(
                 body=batch_body,
@@ -1013,8 +1013,8 @@ class BatchHandlerMixin:
             response_headers = dict(response.headers)
             response_headers.pop("content-encoding", None)
             response_headers.pop("content-length", None)
-            response_headers["x-headroom-tokens-saved"] = str(stats["total_tokens_saved"])
-            response_headers["x-headroom-savings-percent"] = f"{stats['savings_percent']:.1f}"
+            response_headers["x-legroom-tokens-saved"] = str(stats["total_tokens_saved"])
+            response_headers["x-legroom-savings-percent"] = f"{stats['savings_percent']:.1f}"
 
             return Response(
                 content=response.content,
@@ -1085,9 +1085,9 @@ class BatchHandlerMixin:
         Returns:
             Tuple of (compressed_lines, stats_dict)
         """
-        from headroom.ccr import CCRToolInjector
-        from headroom.tokenizers import get_tokenizer
-        from headroom.utils import extract_user_query
+        from legroom.ccr import CCRToolInjector
+        from legroom.tokenizers import get_tokenizer
+        from legroom.utils import extract_user_query
 
         lines = content.strip().split("\n")
         compressed_lines = []
@@ -1205,8 +1205,8 @@ class BatchHandlerMixin:
         """
         from fastapi.responses import Response
 
-        from headroom.proxy.body_forwarding import prepare_outbound_body_bytes
-        from headroom.proxy.helpers import (
+        from legroom.proxy.body_forwarding import prepare_outbound_body_bytes
+        from legroom.proxy.helpers import (
             _read_request_body_bytes,
             _strip_internal_headers,
             log_outbound_headers,
@@ -1216,8 +1216,8 @@ class BatchHandlerMixin:
         headers = dict(request.headers.items())
         headers.pop("host", None)
         headers.pop("content-length", None)
-        # PR-A5 (P5-49): strip internal x-headroom-* before forwarding upstream.
-        _pre_strip_count_obp = sum(1 for k in headers if k.lower().startswith("x-headroom-"))
+        # PR-A5 (P5-49): strip internal x-legroom-* before forwarding upstream.
+        _pre_strip_count_obp = sum(1 for k in headers if k.lower().startswith("x-legroom-"))
         headers = _strip_internal_headers(headers)
         log_outbound_headers(
             forwarder="openai_batch_passthrough",

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from headroom.proxy.request_log_redaction_policy import (
+from legroom.proxy.request_log_redaction_policy import (
     IMAGE_BASE64_REDACT_THRESHOLD_BYTES,
     IMAGE_BASE64_REPLACEMENT_TEMPLATE,
     is_base64_image_payload,

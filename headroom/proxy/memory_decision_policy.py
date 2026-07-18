@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from headroom.proxy.helpers import _headroom_bypass_enabled
+from legroom.proxy.helpers import _legroom_bypass_enabled
 
 
 @dataclass(frozen=True)
@@ -28,7 +28,7 @@ def decide_memory_injection(
     mode_name: str,
 ) -> MemoryInjectionDecision:
     """Compute the canonical memory-injection decision."""
-    bypass = _headroom_bypass_enabled(headers)
+    bypass = _legroom_bypass_enabled(headers)
 
     if bypass:
         reason: str | None = "bypass_header"

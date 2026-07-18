@@ -7,7 +7,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from headroom.models.ml_models import MLModelRegistry
+from legroom.models.ml_models import MLModelRegistry
 
 
 @pytest.fixture(autouse=True)
@@ -84,7 +84,7 @@ def test_unload_delegates_to_unload_many(monkeypatch) -> None:
 
 def test_release_runtime_memory_handles_missing_torch(monkeypatch) -> None:
     collect = Mock()
-    monkeypatch.setattr("headroom.models.ml_models.gc.collect", collect)
+    monkeypatch.setattr("legroom.models.ml_models.gc.collect", collect)
     real_import = builtins.__import__
 
     def fake_import(name, *args, **kwargs):  # noqa: ANN001, ANN202
@@ -104,7 +104,7 @@ def test_release_runtime_memory_clears_available_torch_caches(monkeypatch) -> No
     cuda = SimpleNamespace(is_available=Mock(return_value=True), empty_cache=Mock())
     mps = SimpleNamespace(empty_cache=Mock())
     fake_torch = SimpleNamespace(cuda=cuda, mps=mps)
-    monkeypatch.setattr("headroom.models.ml_models.gc.collect", collect)
+    monkeypatch.setattr("legroom.models.ml_models.gc.collect", collect)
     monkeypatch.setitem(sys.modules, "torch", fake_torch)
 
     MLModelRegistry._release_runtime_memory()

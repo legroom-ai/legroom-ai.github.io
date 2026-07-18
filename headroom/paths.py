@@ -1,12 +1,12 @@
-"""Canonical filesystem contract for Headroom.
+"""Canonical filesystem contract for Legroom.
 
-This module defines the single source of truth for where Headroom reads and
+This module defines the single source of truth for where Legroom reads and
 writes files. It introduces two canonical roots:
 
-* ``HEADROOM_CONFIG_DIR`` -- read-mostly configuration (defaults to
-  ``~/.headroom/config``). Holds model catalogs, plugin settings, and other
+* ``LEGROOM_CONFIG_DIR`` -- read-mostly configuration (defaults to
+  ``~/.legroom/config``). Holds model catalogs, plugin settings, and other
   configuration that users or admins edit.
-* ``HEADROOM_WORKSPACE_DIR`` -- read-write state (defaults to ``~/.headroom``).
+* ``LEGROOM_WORKSPACE_DIR`` -- read-write state (defaults to ``~/.legroom``).
   Holds runtime caches, telemetry outputs, logs, savings history, memory
   databases, and anything else that the running proxy/CLI writes to.
 
@@ -16,8 +16,8 @@ Precedence for every per-resource helper is::
     default
 
 Adding the canonical root env vars is strictly additive: every existing
-per-resource override (``HEADROOM_SAVINGS_PATH``, ``HEADROOM_TOIN_PATH``,
-``HEADROOM_SUBSCRIPTION_STATE_PATH``, ``HEADROOM_MODEL_LIMITS``, ...)
+per-resource override (``LEGROOM_SAVINGS_PATH``, ``LEGROOM_TOIN_PATH``,
+``LEGROOM_SUBSCRIPTION_STATE_PATH``, ``LEGROOM_MODEL_LIMITS``, ...)
 continues to take precedence with identical semantics.
 
 Implementation notes:
@@ -39,24 +39,24 @@ from pathlib import Path
 # Canonical env var names
 # ---------------------------------------------------------------------------
 
-HEADROOM_CONFIG_DIR_ENV = "HEADROOM_CONFIG_DIR"
-HEADROOM_WORKSPACE_DIR_ENV = "HEADROOM_WORKSPACE_DIR"
+LEGROOM_CONFIG_DIR_ENV = "LEGROOM_CONFIG_DIR"
+LEGROOM_WORKSPACE_DIR_ENV = "LEGROOM_WORKSPACE_DIR"
 
 # ---------------------------------------------------------------------------
 # Legacy per-resource env vars (kept for backward compatibility)
 # ---------------------------------------------------------------------------
 
-HEADROOM_SAVINGS_PATH_ENV = "HEADROOM_SAVINGS_PATH"
-HEADROOM_SAVINGS_EVENTS_PATH_ENV = "HEADROOM_SAVINGS_EVENTS_PATH"
-HEADROOM_TOIN_PATH_ENV = "HEADROOM_TOIN_PATH"
-HEADROOM_SUBSCRIPTION_STATE_PATH_ENV = "HEADROOM_SUBSCRIPTION_STATE_PATH"
-HEADROOM_SETTINGS_PATH_ENV = "HEADROOM_SETTINGS_PATH"
+LEGROOM_SAVINGS_PATH_ENV = "LEGROOM_SAVINGS_PATH"
+LEGROOM_SAVINGS_EVENTS_PATH_ENV = "LEGROOM_SAVINGS_EVENTS_PATH"
+LEGROOM_TOIN_PATH_ENV = "LEGROOM_TOIN_PATH"
+LEGROOM_SUBSCRIPTION_STATE_PATH_ENV = "LEGROOM_SUBSCRIPTION_STATE_PATH"
+LEGROOM_SETTINGS_PATH_ENV = "LEGROOM_SETTINGS_PATH"
 
 # ---------------------------------------------------------------------------
 # Default sub-path fragments
 # ---------------------------------------------------------------------------
 
-_WORKSPACE_DIR_DEFAULT = ".headroom"
+_WORKSPACE_DIR_DEFAULT = ".legroom"
 _CONFIG_DIR_DEFAULT_SUFFIX = "config"
 
 # Resource file/sub-dir names (kept here so nothing else has to hardcode them)
@@ -117,13 +117,13 @@ def set_process_stateless(value: bool) -> None:
 def process_is_stateless() -> bool:
     """True when the process must not write to the workspace.
 
-    True if ``set_process_stateless(True)`` was called OR the ``HEADROOM_STATELESS``
+    True if ``set_process_stateless(True)`` was called OR the ``LEGROOM_STATELESS``
     environment variable is set, so non-proxy entrypoints honor it too.
     """
 
     if _PROCESS_STATELESS:
         return True
-    return _env("HEADROOM_STATELESS").lower() in ("1", "true", "yes", "on")
+    return _env("LEGROOM_STATELESS").lower() in ("1", "true", "yes", "on")
 
 
 def _resolve(explicit: str | os.PathLike[str] | None, env_var: str, derived: Path) -> Path:
@@ -151,11 +151,11 @@ def workspace_dir() -> Path:
 
     Resolution order:
 
-    1. ``$HEADROOM_WORKSPACE_DIR`` (trimmed, tilde-expanded) if set.
-    2. ``~/.headroom`` otherwise.
+    1. ``$LEGROOM_WORKSPACE_DIR`` (trimmed, tilde-expanded) if set.
+    2. ``~/.legroom`` otherwise.
     """
 
-    env_value = _env(HEADROOM_WORKSPACE_DIR_ENV)
+    env_value = _env(LEGROOM_WORKSPACE_DIR_ENV)
     if env_value:
         return Path(env_value).expanduser()
     return Path.home() / _WORKSPACE_DIR_DEFAULT
@@ -166,16 +166,16 @@ def config_dir() -> Path:
 
     Resolution order:
 
-    1. ``$HEADROOM_CONFIG_DIR`` (trimmed, tilde-expanded) if set.
-    2. ``$HEADROOM_WORKSPACE_DIR/config`` when the workspace env var is set
+    1. ``$LEGROOM_CONFIG_DIR`` (trimmed, tilde-expanded) if set.
+    2. ``$LEGROOM_WORKSPACE_DIR/config`` when the workspace env var is set
        so that a single override relocates both roots coherently.
-    3. ``~/.headroom/config`` otherwise.
+    3. ``~/.legroom/config`` otherwise.
     """
 
-    env_value = _env(HEADROOM_CONFIG_DIR_ENV)
+    env_value = _env(LEGROOM_CONFIG_DIR_ENV)
     if env_value:
         return Path(env_value).expanduser()
-    workspace_env = _env(HEADROOM_WORKSPACE_DIR_ENV)
+    workspace_env = _env(LEGROOM_WORKSPACE_DIR_ENV)
     if workspace_env:
         return Path(workspace_env).expanduser() / _CONFIG_DIR_DEFAULT_SUFFIX
     return Path.home() / _WORKSPACE_DIR_DEFAULT / _CONFIG_DIR_DEFAULT_SUFFIX
@@ -207,7 +207,7 @@ def savings_path(explicit: str | os.PathLike[str] | None = None) -> Path:
 
     return _resolve(
         explicit,
-        HEADROOM_SAVINGS_PATH_ENV,
+        LEGROOM_SAVINGS_PATH_ENV,
         workspace_dir() / _SAVINGS_FILE,
     )
 
@@ -217,7 +217,7 @@ def settings_path(explicit: str | os.PathLike[str] | None = None) -> Path:
 
     return _resolve(
         explicit,
-        HEADROOM_SETTINGS_PATH_ENV,
+        LEGROOM_SETTINGS_PATH_ENV,
         workspace_dir() / _SETTINGS_FILE,
     )
 
@@ -227,12 +227,12 @@ def toin_path(explicit: str | os.PathLike[str] | None = None) -> Path:
 
     TOIN is classified as workspace state because it is actively written by
     the running proxy (it's a compression feedback loop). The default stays
-    ``~/.headroom/toin.json`` to preserve byte-for-byte backward compat.
+    ``~/.legroom/toin.json`` to preserve byte-for-byte backward compat.
     """
 
     return _resolve(
         explicit,
-        HEADROOM_TOIN_PATH_ENV,
+        LEGROOM_TOIN_PATH_ENV,
         workspace_dir() / _TOIN_FILE,
     )
 
@@ -242,7 +242,7 @@ def subscription_state_path(explicit: str | os.PathLike[str] | None = None) -> P
 
     return _resolve(
         explicit,
-        HEADROOM_SUBSCRIPTION_STATE_PATH_ENV,
+        LEGROOM_SUBSCRIPTION_STATE_PATH_ENV,
         workspace_dir() / _SUBSCRIPTION_FILE,
     )
 
@@ -276,12 +276,12 @@ def savings_events_path(explicit: str | os.PathLike[str] | None = None) -> Path:
 
     Unlike :func:`session_stats_path` (pruned to a short rolling window), this
     file accrues one line per compression across proxy restarts and concurrent
-    MCP processes, and is the source of truth for ``headroom savings``.
+    MCP processes, and is the source of truth for ``legroom savings``.
     """
 
     return _resolve(
         explicit,
-        HEADROOM_SAVINGS_EVENTS_PATH_ENV,
+        LEGROOM_SAVINGS_EVENTS_PATH_ENV,
         workspace_dir() / _SAVINGS_EVENTS_FILE,
     )
 
@@ -299,7 +299,7 @@ def bridge_state_path() -> Path:
 
 
 def log_dir() -> Path:
-    """Return the directory for Headroom log files."""
+    """Return the directory for Legroom log files."""
 
     return workspace_dir() / _LOGS_DIR
 
@@ -323,7 +323,7 @@ def codex_wire_debug_dir() -> Path:
 
 
 def bin_dir() -> Path:
-    """Return the directory where Headroom ships vendored binaries."""
+    """Return the directory where Legroom ships vendored binaries."""
 
     return workspace_dir() / _BIN_DIR
 
@@ -368,10 +368,10 @@ def beacon_lock_path(port: int) -> Path:
 def models_config_path() -> Path:
     """Return the default path for the models catalog JSON.
 
-    Note: the ``HEADROOM_MODEL_LIMITS`` env var is a *content* override
+    Note: the ``LEGROOM_MODEL_LIMITS`` env var is a *content* override
     (it can hold either a JSON string or a filesystem path) and is handled
     by the provider layer. This helper only returns the default file
-    location and deliberately ignores ``HEADROOM_MODEL_LIMITS``.
+    location and deliberately ignores ``LEGROOM_MODEL_LIMITS``.
     """
 
     return config_dir() / _MODELS_FILE
@@ -418,13 +418,13 @@ def plugin_workspace_dir(plugin_name: str) -> Path:
 
 
 __all__ = [
-    "HEADROOM_CONFIG_DIR_ENV",
-    "HEADROOM_WORKSPACE_DIR_ENV",
-    "HEADROOM_SAVINGS_PATH_ENV",
-    "HEADROOM_SAVINGS_EVENTS_PATH_ENV",
-    "HEADROOM_TOIN_PATH_ENV",
-    "HEADROOM_SUBSCRIPTION_STATE_PATH_ENV",
-    "HEADROOM_SETTINGS_PATH_ENV",
+    "LEGROOM_CONFIG_DIR_ENV",
+    "LEGROOM_WORKSPACE_DIR_ENV",
+    "LEGROOM_SAVINGS_PATH_ENV",
+    "LEGROOM_SAVINGS_EVENTS_PATH_ENV",
+    "LEGROOM_TOIN_PATH_ENV",
+    "LEGROOM_SUBSCRIPTION_STATE_PATH_ENV",
+    "LEGROOM_SETTINGS_PATH_ENV",
     "set_process_stateless",
     "process_is_stateless",
     "config_dir",

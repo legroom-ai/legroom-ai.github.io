@@ -1,6 +1,6 @@
-"""Transform benchmarks for Headroom SDK.
+"""Transform benchmarks for Legroom SDK.
 
-This module contains performance benchmarks for Headroom transforms:
+This module contains performance benchmarks for Legroom transforms:
 - SmartCrusher: Statistical tool output compression
 - CacheAligner: Cache-aligned prefix optimization
 
@@ -43,7 +43,7 @@ class TestSmartCrusherBenchmarks:
     @pytest.fixture
     def crusher(self, smart_crusher_config):
         """Create SmartCrusher instance."""
-        from headroom.transforms.smart_crusher import SmartCrusher
+        from legroom.transforms.smart_crusher import SmartCrusher
 
         return SmartCrusher(config=smart_crusher_config)
 
@@ -237,7 +237,7 @@ class TestCacheAlignerBenchmarks:
     @pytest.fixture
     def aligner(self, cache_aligner_config):
         """Create CacheAligner instance."""
-        from headroom.transforms.cache_aligner import CacheAligner
+        from legroom.transforms.cache_aligner import CacheAligner
 
         return CacheAligner(config=cache_aligner_config)
 
@@ -394,9 +394,9 @@ class TestTransformPipelineBenchmarks:
         runs CacheAligner → SmartCrusher (followed by ContentRouter
         in production, omitted here to keep the fixture pure-stage).
         """
-        from headroom.transforms.cache_aligner import CacheAligner
-        from headroom.transforms.pipeline import TransformPipeline
-        from headroom.transforms.smart_crusher import SmartCrusher
+        from legroom.transforms.cache_aligner import CacheAligner
+        from legroom.transforms.pipeline import TransformPipeline
+        from legroom.transforms.smart_crusher import SmartCrusher
 
         return TransformPipeline(
             transforms=[

@@ -12,7 +12,7 @@ from pathlib import Path
 
 import click
 
-from headroom._subprocess import run
+from legroom._subprocess import run
 
 from .models import ArtifactRecord, DeploymentManifest, SupervisorKind
 from .paths import (
@@ -24,7 +24,7 @@ from .paths import (
     windows_run_script_path,
 )
 from .providers import _powershell_literal
-from .runtime import resolve_headroom_command
+from .runtime import resolve_legroom_command
 
 # After `launchctl bootout`, a follow-up `bootstrap` of the same label can
 # return EIO (error 5) for several seconds while launchd releases it. Retry the
@@ -80,7 +80,7 @@ def _bootstrap_with_retry(domain: str, plist_path: Path, *, action: str = "boots
 
 
 def _command_for_script(*parts: str) -> list[str]:
-    return [*resolve_headroom_command(), *parts]
+    return [*resolve_legroom_command(), *parts]
 
 
 def _render_unix_runner(
@@ -89,9 +89,9 @@ def _render_unix_runner(
     path.parent.mkdir(parents=True, exist_ok=True)
     # Supervisors (launchd, systemd, cron) invoke this script with a bare
     # environment — they do not inherit the interactive shell's exports (e.g.
-    # AWS_PROFILE, a custom HEADROOM_WORKSPACE_DIR). Export base_env here, before
-    # the exec, so `headroom install agent run` itself (which loads the manifest
-    # from HEADROOM_WORKSPACE_DIR) sees the same environment `install apply` was
+    # AWS_PROFILE, a custom LEGROOM_WORKSPACE_DIR). Export base_env here, before
+    # the exec, so `legroom install agent run` itself (which loads the manifest
+    # from LEGROOM_WORKSPACE_DIR) sees the same environment `install apply` was
     # run under, not just the proxy subprocess it spawns.
     export_lines = "".join(
         f"export {name}={shlex.quote(value)}\n" for name, value in _validated_env_items(env)
@@ -115,7 +115,7 @@ def _render_windows_runner(
         [f'"{item}"' if (" " in item or item.endswith(".cmd")) else item for item in command]
     )
     # See _render_unix_runner: Windows services/tasks also start with a bare
-    # environment, so base_env must be set explicitly before invoking headroom.
+    # environment, so base_env must be set explicitly before invoking legroom.
     env_lines = "".join(
         f"$env:{name} = {_powershell_literal(value)}\n" for name, value in _validated_env_items(env)
     )
@@ -178,7 +178,7 @@ def _linux_service_unit(manifest: DeploymentManifest, run_script: Path) -> tuple
             Path.home() / ".config" / "systemd" / "user" / f"{manifest.service_name}.service"
         )
     content = f"""[Unit]
-Description=Headroom ({manifest.profile})
+Description=Legroom ({manifest.profile})
 After=network-online.target
 
 [Service]
@@ -204,7 +204,7 @@ def _macos_launchd_plist(
         )
     else:
         base_dir = Path.home() / "Library" / "LaunchAgents"
-    plist_path = base_dir / f"com.headroom.{manifest.profile}.plist"
+    plist_path = base_dir / f"com.legroom.{manifest.profile}.plist"
     program = str(command_path)
     keys = [
         '<?xml version="1.0" encoding="UTF-8"?>',
@@ -212,7 +212,7 @@ def _macos_launchd_plist(
         '<plist version="1.0">',
         "<dict>",
         "  <key>Label</key>",
-        f"  <string>com.headroom.{manifest.profile}</string>",
+        f"  <string>com.legroom.{manifest.profile}</string>",
         "  <key>ProgramArguments</key>",
         "  <array>",
         f"    <string>{program}</string>",
@@ -234,8 +234,8 @@ def _linux_task_spec(manifest: DeploymentManifest, ensure_script: Path) -> tuple
         content = f"@reboot root {ensure_script}\n*/5 * * * * root {ensure_script}\n"
         return cron_path, content
 
-    marker_start = f"# >>> headroom {manifest.profile} >>>"
-    marker_end = f"# <<< headroom {manifest.profile} <<<"
+    marker_start = f"# >>> legroom {manifest.profile} >>>"
+    marker_end = f"# <<< legroom {manifest.profile} <<<"
     content = (
         f"{marker_start}\n@reboot {ensure_script}\n*/5 * * * * {ensure_script}\n{marker_end}\n"
     )
@@ -255,7 +255,7 @@ def install_supervisor(manifest: DeploymentManifest) -> list[ArtifactRecord]:
         sys.platform.startswith("linux")
         and manifest.supervisor_kind == SupervisorKind.SERVICE.value
     ):
-        unit_path, content = _linux_service_unit(manifest, artifact_paths["run-headroom.sh"])
+        unit_path, content = _linux_service_unit(manifest, artifact_paths["run-legroom.sh"])
         unit_path.parent.mkdir(parents=True, exist_ok=True)
         unit_path.write_text(content)
         flags = [] if manifest.scope == "system" else ["--user"]
@@ -265,7 +265,7 @@ def install_supervisor(manifest: DeploymentManifest) -> list[ArtifactRecord]:
         return records
 
     if sys.platform.startswith("linux") and manifest.supervisor_kind == SupervisorKind.TASK.value:
-        cron_path, content = _linux_task_spec(manifest, artifact_paths["ensure-headroom.sh"])
+        cron_path, content = _linux_task_spec(manifest, artifact_paths["ensure-legroom.sh"])
         if cron_path is not None:
             cron_path.parent.mkdir(parents=True, exist_ok=True)
             cron_path.write_text(content)
@@ -277,8 +277,8 @@ def install_supervisor(manifest: DeploymentManifest) -> list[ArtifactRecord]:
                 text=True,
             )
             existing = current.stdout if current.returncode == 0 else ""
-            marker_start = f"# >>> headroom {manifest.profile} >>>"
-            marker_end = f"# <<< headroom {manifest.profile} <<<"
+            marker_start = f"# >>> legroom {manifest.profile} >>>"
+            marker_end = f"# <<< legroom {manifest.profile} <<<"
             pattern = re.compile(
                 re.escape(marker_start) + r".*?" + re.escape(marker_end), re.DOTALL
             )
@@ -295,10 +295,10 @@ def install_supervisor(manifest: DeploymentManifest) -> list[ArtifactRecord]:
 
     if sys.platform == "darwin":
         if manifest.supervisor_kind == SupervisorKind.SERVICE.value:
-            plist_path, content = _macos_launchd_plist(manifest, artifact_paths["run-headroom.sh"])
+            plist_path, content = _macos_launchd_plist(manifest, artifact_paths["run-legroom.sh"])
         else:
             plist_path, content = _macos_launchd_plist(
-                manifest, artifact_paths["ensure-headroom.sh"], interval=300
+                manifest, artifact_paths["ensure-legroom.sh"], interval=300
             )
         plist_path.parent.mkdir(parents=True, exist_ok=True)
         plist_path.write_text(content)
@@ -397,7 +397,7 @@ def start_supervisor(manifest: DeploymentManifest) -> None:
         subprocess.run(["systemctl", *flags, "restart", manifest.service_name], check=True)
         return
     if sys.platform == "darwin":
-        label = f"com.headroom.{manifest.profile}"
+        label = f"com.legroom.{manifest.profile}"
         domain = (
             "system"
             if manifest.scope == "system"
@@ -441,7 +441,7 @@ def stop_supervisor(manifest: DeploymentManifest) -> None:
         subprocess.run(["systemctl", *flags, "stop", manifest.service_name], check=True)
         return
     if sys.platform == "darwin":
-        label = f"com.headroom.{manifest.profile}"
+        label = f"com.legroom.{manifest.profile}"
         domain = (
             "system"
             if manifest.scope == "system"
@@ -502,8 +502,8 @@ def remove_supervisor(manifest: DeploymentManifest) -> None:
         )
         if current.returncode != 0:
             return
-        marker_start = f"# >>> headroom {manifest.profile} >>>"
-        marker_end = f"# <<< headroom {manifest.profile} <<<"
+        marker_start = f"# >>> legroom {manifest.profile} >>>"
+        marker_end = f"# <<< legroom {manifest.profile} <<<"
         pattern = re.compile(re.escape(marker_start) + r".*?" + re.escape(marker_end), re.DOTALL)
         content = pattern.sub("", current.stdout).strip()
         run(
@@ -522,7 +522,7 @@ def remove_supervisor(manifest: DeploymentManifest) -> None:
             else unix_ensure_script_path(manifest.profile),
             interval=300 if manifest.supervisor_kind == SupervisorKind.TASK.value else None,
         )
-        label = f"com.headroom.{manifest.profile}"
+        label = f"com.legroom.{manifest.profile}"
         domain = (
             "system"
             if manifest.scope == "system"

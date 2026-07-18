@@ -1,7 +1,7 @@
 //! Magika-based content detection (Stage 3d Tier 1).
 //!
 //! Wraps Google's [`magika`] crate — an ONNX-backed content classifier —
-//! and maps its 200+ labels onto Headroom's existing
+//! and maps its 200+ labels onto Legroom's existing
 //! [`crate::transforms::content_detector::ContentType`] enum so the
 //! ContentRouter dispatch (PR5) can stay enum-stable.
 //!
@@ -67,7 +67,7 @@ pub(crate) fn magika_onnx_runtime_supported_by_cpu() -> bool {
 /// This is stricter than the CPU check. On dynamic-ORT platforms, the runtime
 /// loader must be pinned before `Session::new()` runs; otherwise Windows can
 /// resolve the OS-provided `System32\onnxruntime.dll` and hang inside ORT
-/// initialization. Python callers get the pin from `headroom._ort`; direct Rust
+/// initialization. Python callers get the pin from `legroom._ort`; direct Rust
 /// binaries/tests need this fail-fast guard.
 pub(crate) fn magika_runtime_available_for_session_init() -> Result<(), String> {
     if !magika_onnx_runtime_supported_by_cpu() {
@@ -136,7 +136,7 @@ fn initialize_dynamic_ort() -> Result<PathBuf, String> {
     if candidates.is_empty() {
         Err(
             "no pip onnxruntime native library was found for Magika dynamic ONNX Runtime loading; \
-             install headroom-ai[proxy], install onnxruntime, or set ORT_DYLIB_PATH"
+             install legroom-ai[proxy], install onnxruntime, or set ORT_DYLIB_PATH"
                 .to_string(),
         )
     } else {
@@ -346,14 +346,14 @@ static MAGIKA_SESSION: OnceLock<Mutex<Result<Session, String>>> = OnceLock::new(
 /// [`crate::transforms::detection`], so it stalls the entire compression
 /// pipeline until the proxy's own 30s+ timeout fires on every request.
 ///
-/// The real fix is `headroom/_ort.py`, which pins `ORT_DYLIB_PATH` to the
+/// The real fix is `legroom/_ort.py`, which pins `ORT_DYLIB_PATH` to the
 /// pip-installed `onnxruntime` DLL before this crate can load ort. This
 /// timeout remains as the safety net for unpinned embedders of the crate.
-/// Override with `HEADROOM_MAGIKA_INIT_TIMEOUT_SECS`.
+/// Override with `LEGROOM_MAGIKA_INIT_TIMEOUT_SECS`.
 const MAGIKA_INIT_TIMEOUT_SECS_DEFAULT: u64 = 5;
 
 fn magika_init_timeout() -> Duration {
-    let secs = std::env::var("HEADROOM_MAGIKA_INIT_TIMEOUT_SECS")
+    let secs = std::env::var("LEGROOM_MAGIKA_INIT_TIMEOUT_SECS")
         .ok()
         .and_then(|v| v.trim().parse::<u64>().ok())
         .filter(|&s| s > 0)
@@ -410,7 +410,7 @@ fn session() -> &'static Mutex<Result<Session, String>> {
     })
 }
 
-/// Classify `content` and return the mapped Headroom [`ContentType`].
+/// Classify `content` and return the mapped Legroom [`ContentType`].
 ///
 /// Empty input shortcuts to [`ContentType::PlainText`] without touching
 /// the model — saves the round trip on every empty tool result.
@@ -433,7 +433,7 @@ pub fn magika_detect(content: &str) -> Result<ContentType, MagikaDetectorError> 
     Ok(map_magika_label(file_type.info().label))
 }
 
-/// Map a magika label string to Headroom's [`ContentType`] enum.
+/// Map a magika label string to Legroom's [`ContentType`] enum.
 ///
 /// **Why explicit cases instead of `group == "code"`:** magika's
 /// `group` field is a coarse bucket ("code", "text", "binary",
@@ -713,7 +713,7 @@ index abc123..def456 100644
     #[test]
     fn windows_onnxruntime_candidate_matches_pip_layout() {
         let root = std::env::temp_dir().join(format!(
-            "headroom-ort-discovery-{}",
+            "legroom-ort-discovery-{}",
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()

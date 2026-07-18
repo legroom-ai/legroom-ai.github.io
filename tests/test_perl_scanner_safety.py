@@ -2,15 +2,15 @@ from unittest.mock import patch
 
 import pytest
 
-import headroom.transforms.code_compressor as cc
-from headroom.transforms.code_compressor import (
+import legroom.transforms.code_compressor as cc
+from legroom.transforms.code_compressor import (
     CodeAwareCompressor,
     CodeCompressionResult,
     CodeCompressorConfig,
     CodeLanguage,
     unload_tree_sitter,
 )
-from headroom.transforms.content_router import ContentRouter, ContentRouterConfig
+from legroom.transforms.content_router import ContentRouter, ContentRouterConfig
 
 
 @pytest.fixture(autouse=True)

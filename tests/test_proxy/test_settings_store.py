@@ -1,4 +1,4 @@
-"""Tests for the file-backed HEADROOM_* settings store (Phase 1).
+"""Tests for the file-backed LEGROOM_* settings store (Phase 1).
 
 Covers: JSON round-trip with coercion, unknown-key drop, fail-open load on a
 corrupt file, atomic save, setdefault precedence (explicit export wins), the
@@ -11,15 +11,15 @@ from dataclasses import replace
 
 import pytest
 
-from headroom import paths, settings_store
+from legroom import paths, settings_store
 
 
 @pytest.fixture
 def workspace(tmp_path, monkeypatch):
     """Point the workspace dir (and thus settings.json) at an isolated tmp dir."""
-    monkeypatch.setenv(paths.HEADROOM_WORKSPACE_DIR_ENV, str(tmp_path))
+    monkeypatch.setenv(paths.LEGROOM_WORKSPACE_DIR_ENV, str(tmp_path))
     # Ensure no per-resource override leaks in from the ambient environment.
-    monkeypatch.delenv(settings_store.paths.HEADROOM_SETTINGS_PATH_ENV, raising=False)
+    monkeypatch.delenv(settings_store.paths.LEGROOM_SETTINGS_PATH_ENV, raising=False)
     return tmp_path
 
 
@@ -117,19 +117,19 @@ class TestApplyToEnviron:
     def test_setdefault_fills_unset_env(self, workspace, monkeypatch):
         _clear_env(monkeypatch)
         settings_store.apply_to_environ({"port": 9898, "disable_kompress": True})
-        assert os.environ["HEADROOM_PORT"] == "9898"
-        assert os.environ["HEADROOM_DISABLE_KOMPRESS"] == "1"
+        assert os.environ["LEGROOM_PORT"] == "9898"
+        assert os.environ["LEGROOM_DISABLE_KOMPRESS"] == "1"
 
     def test_explicit_export_wins(self, workspace, monkeypatch):
         _clear_env(monkeypatch)
-        monkeypatch.setenv("HEADROOM_PORT", "7777")
+        monkeypatch.setenv("LEGROOM_PORT", "7777")
         settings_store.apply_to_environ({"port": 9898})
-        assert os.environ["HEADROOM_PORT"] == "7777"
+        assert os.environ["LEGROOM_PORT"] == "7777"
 
     def test_bool_false_serializes_to_zero(self, workspace, monkeypatch):
         _clear_env(monkeypatch)
         settings_store.apply_to_environ({"code_aware_enabled": False})
-        assert os.environ["HEADROOM_CODE_AWARE_ENABLED"] == "0"
+        assert os.environ["LEGROOM_CODE_AWARE_ENABLED"] == "0"
 
 
 class TestEffectiveValues:
@@ -141,7 +141,7 @@ class TestEffectiveValues:
         settings_store.save({"savings_profile": "balanced"})
         assert settings_store.effective_values()["savings_profile"] == "balanced"
         # env overrides file
-        monkeypatch.setenv("HEADROOM_SAVINGS_PROFILE", "general")
+        monkeypatch.setenv("LEGROOM_SAVINGS_PROFILE", "general")
         assert settings_store.effective_values()["savings_profile"] == "general"
 
 
@@ -209,7 +209,7 @@ class TestSecretMasking:
     def test_anthropic_extra_headers_invalid_json_raises(self, workspace, monkeypatch):
         """Invalid JSON in anthropic_extra_headers field raises SettingsValidationError."""
         _clear_env(monkeypatch)
-        from headroom.settings_store import SettingsValidationError
+        from legroom.settings_store import SettingsValidationError
 
         with pytest.raises(SettingsValidationError) as exc_info:
             settings_store.save({"anthropic_extra_headers": "not json"})
@@ -218,7 +218,7 @@ class TestSecretMasking:
     def test_anthropic_extra_headers_non_string_values_raises(self, workspace, monkeypatch):
         """Header-map JSON with non-string values raises SettingsValidationError."""
         _clear_env(monkeypatch)
-        from headroom.settings_store import SettingsValidationError
+        from legroom.settings_store import SettingsValidationError
 
         with pytest.raises(SettingsValidationError) as exc_info:
             settings_store.save({"anthropic_extra_headers": '{"header": 123}'})
@@ -227,7 +227,7 @@ class TestSecretMasking:
     def test_anthropic_extra_headers_non_object_raises(self, workspace, monkeypatch):
         """Header-map with non-object JSON raises SettingsValidationError."""
         _clear_env(monkeypatch)
-        from headroom.settings_store import SettingsValidationError
+        from legroom.settings_store import SettingsValidationError
 
         with pytest.raises(SettingsValidationError) as exc_info:
             settings_store.save({"anthropic_extra_headers": '["header", "value"]'})
@@ -268,23 +268,23 @@ class TestRegistryDriftAgainstClick:
 
     Introspects the ``proxy`` Click command's own parameter objects (not a
     regex over the source) so a future contributor who adds a new
-    ``@click.option(..., envvar="HEADROOM_...")`` to cli/proxy.py without
+    ``@click.option(..., envvar="LEGROOM_...")`` to cli/proxy.py without
     adding a matching SettingField gets a failing test, not a silent gap.
     """
 
-    def test_every_headroom_click_envvar_is_in_the_registry(self):
-        from headroom.cli.proxy import proxy
+    def test_every_legroom_click_envvar_is_in_the_registry(self):
+        from legroom.cli.proxy import proxy
 
         click_envvars = {
             param.envvar
             for param in proxy.params
             if isinstance(getattr(param, "envvar", None), str)
-            and param.envvar.startswith("HEADROOM_")
+            and param.envvar.startswith("LEGROOM_")
         }
         registry_envvars = {field.env for field in settings_store.SETTINGS}
         missing = click_envvars - registry_envvars
         assert not missing, (
-            f"New HEADROOM_* Click option(s) not covered by settings_store.SETTINGS: "
+            f"New LEGROOM_* Click option(s) not covered by settings_store.SETTINGS: "
             f"{sorted(missing)}. Add a SettingField for each, or document why it's "
             "deliberately excluded (e.g. a secret)."
         )

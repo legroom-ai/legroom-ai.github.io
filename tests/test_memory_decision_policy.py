@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from headroom.proxy.memory_decision_policy import (
+from legroom.proxy.memory_decision_policy import (
     apply_memory_skip_reason,
     decide_memory_injection,
 )
@@ -22,7 +22,7 @@ def test_decide_memory_injection_allows_happy_path() -> None:
 
 def test_decide_memory_injection_uses_canonical_precedence() -> None:
     decision = decide_memory_injection(
-        headers={"x-headroom-bypass": "true"},
+        headers={"x-legroom-bypass": "true"},
         memory_handler_present=False,
         memory_user_id_present=False,
         mode_name="disabled",

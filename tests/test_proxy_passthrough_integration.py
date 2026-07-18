@@ -21,7 +21,7 @@ pytest.importorskip("httpx")
 
 from fastapi.testclient import TestClient
 
-from headroom.proxy.server import ProxyConfig, create_app
+from legroom.proxy.server import ProxyConfig, create_app
 
 # =============================================================================
 # Fixtures
@@ -501,7 +501,7 @@ class TestPassthroughErrorHandling:
 
 def test_head_root_returns_200_not_405(monkeypatch: pytest.MonkeyPatch) -> None:
     """HEAD / must not return 405; Claude Code uses it as connectivity preflight."""
-    from headroom.proxy.server import ProxyConfig, create_app
+    from legroom.proxy.server import ProxyConfig, create_app
 
     # Dummy upstream so the proxy doesn't crash on missing HTTP client.
     monkeypatch.setenv("ANTHROPIC_TARGET_API_URL", "https://api.anthropic.example")

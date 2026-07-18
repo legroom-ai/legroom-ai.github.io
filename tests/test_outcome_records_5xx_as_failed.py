@@ -8,7 +8,7 @@ instead of collapsing it to a 502.
 
 import asyncio
 
-from headroom.proxy.outcome import RequestOutcome, emit_request_outcome
+from legroom.proxy.outcome import RequestOutcome, emit_request_outcome
 
 
 class _Metrics:

@@ -8,7 +8,7 @@ filter instead of bytes). These exercise the Python legacy scorer that mirrors
 Rust.
 """
 
-from headroom.transforms.search_compressor import (
+from legroom.transforms.search_compressor import (
     SearchCompressor,
     SearchCompressorConfig,
     _cjk_bigrams,

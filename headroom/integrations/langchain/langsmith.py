@@ -1,9 +1,9 @@
-"""LangSmith integration for Headroom compression metrics.
+"""LangSmith integration for Legroom compression metrics.
 
-This module provides HeadroomLangSmithCallbackHandler, a LangChain callback
-handler that adds Headroom compression metrics to LangSmith traces.
+This module provides LegroomLangSmithCallbackHandler, a LangChain callback
+handler that adds Legroom compression metrics to LangSmith traces.
 
-When used with HeadroomChatModel, it automatically captures:
+When used with LegroomChatModel, it automatically captures:
 - Tokens before/after optimization
 - Savings percentage
 - Transforms applied
@@ -12,9 +12,9 @@ When used with HeadroomChatModel, it automatically captures:
 Example:
     import os
     from langchain_openai import ChatOpenAI
-    from headroom.integrations import (
-        HeadroomChatModel,
-        HeadroomLangSmithCallbackHandler,
+    from legroom.integrations import (
+        LegroomChatModel,
+        LegroomLangSmithCallbackHandler,
     )
 
     # Enable LangSmith tracing
@@ -22,15 +22,15 @@ Example:
     os.environ["LANGCHAIN_API_KEY"] = "..."
 
     # Create handler
-    handler = HeadroomLangSmithCallbackHandler()
+    handler = LegroomLangSmithCallbackHandler()
 
-    # Use with HeadroomChatModel
-    llm = HeadroomChatModel(
+    # Use with LegroomChatModel
+    llm = LegroomChatModel(
         ChatOpenAI(model="gpt-4o"),
         callbacks=[handler],
     )
 
-    # Traces will include headroom.* metadata
+    # Traces will include legroom.* metadata
     response = llm.invoke("Hello!")
 """
 
@@ -72,7 +72,7 @@ def _check_langchain_available() -> None:
     if not LANGCHAIN_AVAILABLE:
         raise ImportError(
             "LangChain is required for this integration. "
-            "Install with: pip install headroom[langchain] "
+            "Install with: pip install legroom[langchain] "
             "or: pip install langchain-core"
         )
 
@@ -89,37 +89,37 @@ class PendingMetrics:
     timestamp: datetime = field(default_factory=datetime.now)
 
 
-class HeadroomLangSmithCallbackHandler(BaseCallbackHandler):
-    """Callback handler that adds Headroom metrics to LangSmith traces.
+class LegroomLangSmithCallbackHandler(BaseCallbackHandler):
+    """Callback handler that adds Legroom metrics to LangSmith traces.
 
     Integrates with LangSmith to provide visibility into context
     optimization within traces. Metrics appear as metadata with
-    the `headroom.` prefix.
+    the `legroom.` prefix.
 
     Works automatically when:
     1. LANGCHAIN_TRACING_V2=true is set
-    2. Used as a callback with HeadroomChatModel
+    2. Used as a callback with LegroomChatModel
     3. LangSmith API key is configured
 
     Example:
-        from headroom.integrations import (
-            HeadroomChatModel,
-            HeadroomLangSmithCallbackHandler,
+        from legroom.integrations import (
+            LegroomChatModel,
+            LegroomLangSmithCallbackHandler,
         )
 
-        handler = HeadroomLangSmithCallbackHandler()
-        llm = HeadroomChatModel(
+        handler = LegroomLangSmithCallbackHandler()
+        llm = LegroomChatModel(
             ChatOpenAI(model="gpt-4o"),
             callbacks=[handler],
         )
 
         response = llm.invoke("Hello!")
         # LangSmith trace now includes:
-        # - headroom.tokens_before
-        # - headroom.tokens_after
-        # - headroom.tokens_saved
-        # - headroom.savings_percent
-        # - headroom.transforms_applied
+        # - legroom.tokens_before
+        # - legroom.tokens_after
+        # - legroom.tokens_saved
+        # - legroom.savings_percent
+        # - legroom.transforms_applied
 
     Attributes:
         langsmith_client: LangSmith client for updating runs.
@@ -131,13 +131,13 @@ class HeadroomLangSmithCallbackHandler(BaseCallbackHandler):
         langsmith_client: Any = None,
         auto_update_runs: bool = True,
     ):
-        """Initialize HeadroomLangSmithCallbackHandler.
+        """Initialize LegroomLangSmithCallbackHandler.
 
         Args:
             langsmith_client: LangSmith client instance. Auto-creates
                 one if not provided and LangSmith is available.
             auto_update_runs: If True, automatically updates LangSmith
-                runs with Headroom metadata. Default True.
+                runs with Legroom metadata. Default True.
         """
         _check_langchain_available()
 
@@ -154,16 +154,16 @@ class HeadroomLangSmithCallbackHandler(BaseCallbackHandler):
             except Exception as e:
                 logger.debug(f"Could not initialize LangSmith client: {e}")
 
-    def set_headroom_metrics(
+    def set_legroom_metrics(
         self,
         run_id: str | UUID,
         tokens_before: int,
         tokens_after: int,
         transforms_applied: list[str] | None = None,
     ) -> None:
-        """Set Headroom metrics for a run.
+        """Set Legroom metrics for a run.
 
-        Call this from HeadroomChatModel after optimization to attach
+        Call this from LegroomChatModel after optimization to attach
         metrics to the current run.
 
         Args:
@@ -187,7 +187,7 @@ class HeadroomLangSmithCallbackHandler(BaseCallbackHandler):
         self._pending_metrics[run_id_str] = metrics
 
         logger.debug(
-            f"Headroom metrics set for run {run_id_str}: "
+            f"Legroom metrics set for run {run_id_str}: "
             f"{tokens_before} -> {tokens_after} tokens ({savings_percent:.1f}% saved)"
         )
 
@@ -216,7 +216,7 @@ class HeadroomLangSmithCallbackHandler(BaseCallbackHandler):
     ) -> None:
         """Called when LLM completes.
 
-        Attaches pending Headroom metrics to the LangSmith run.
+        Attaches pending Legroom metrics to the LangSmith run.
         """
         run_id_str = str(run_id)
 
@@ -226,19 +226,19 @@ class HeadroomLangSmithCallbackHandler(BaseCallbackHandler):
             self._attach_metrics_to_run(run_id_str, metrics)
 
     def _attach_metrics_to_run(self, run_id: str, metrics: PendingMetrics) -> None:
-        """Attach Headroom metrics to a LangSmith run.
+        """Attach Legroom metrics to a LangSmith run.
 
         Args:
             run_id: The run ID.
             metrics: Metrics to attach.
         """
         metadata = {
-            "headroom.tokens_before": metrics.tokens_before,
-            "headroom.tokens_after": metrics.tokens_after,
-            "headroom.tokens_saved": metrics.tokens_saved,
-            "headroom.savings_percent": round(metrics.savings_percent, 2),
-            "headroom.transforms_applied": metrics.transforms_applied,
-            "headroom.optimization_timestamp": metrics.timestamp.isoformat(),
+            "legroom.tokens_before": metrics.tokens_before,
+            "legroom.tokens_after": metrics.tokens_after,
+            "legroom.tokens_saved": metrics.tokens_saved,
+            "legroom.savings_percent": round(metrics.savings_percent, 2),
+            "legroom.transforms_applied": metrics.transforms_applied,
+            "legroom.optimization_timestamp": metrics.timestamp.isoformat(),
         }
 
         # Store in run metrics
@@ -251,18 +251,18 @@ class HeadroomLangSmithCallbackHandler(BaseCallbackHandler):
                     run_id=run_id,
                     extra={"metadata": metadata},
                 )
-                logger.debug(f"Updated LangSmith run {run_id} with Headroom metrics")
+                logger.debug(f"Updated LangSmith run {run_id} with Legroom metrics")
             except Exception as e:
                 logger.debug(f"Could not update LangSmith run: {e}")
 
     def get_run_metrics(self, run_id: str | UUID) -> dict[str, Any]:
-        """Get Headroom metrics for a specific run.
+        """Get Legroom metrics for a specific run.
 
         Args:
             run_id: The run ID.
 
         Returns:
-            Dictionary of headroom.* metrics for the run.
+            Dictionary of legroom.* metrics for the run.
         """
         return self._run_metrics.get(str(run_id), {})
 
@@ -287,9 +287,9 @@ class HeadroomLangSmithCallbackHandler(BaseCallbackHandler):
                 "average_savings_percent": 0,
             }
 
-        total_saved = sum(m.get("headroom.tokens_saved", 0) for m in self._run_metrics.values())
+        total_saved = sum(m.get("legroom.tokens_saved", 0) for m in self._run_metrics.values())
         savings_percents = [
-            m.get("headroom.savings_percent", 0) for m in self._run_metrics.values()
+            m.get("legroom.savings_percent", 0) for m in self._run_metrics.values()
         ]
 
         return {

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal, cast
 
-PYTHON_FORWARDER_MODE_ENV = "HEADROOM_PROXY_PYTHON_FORWARDER_MODE"
+PYTHON_FORWARDER_MODE_ENV = "LEGROOM_PROXY_PYTHON_FORWARDER_MODE"
 PythonForwarderMode = Literal["byte_faithful", "legacy_json_kwarg"]
 PYTHON_FORWARDER_MODE_DEFAULT: PythonForwarderMode = "byte_faithful"
 

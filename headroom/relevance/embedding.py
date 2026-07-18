@@ -1,4 +1,4 @@
-"""Embedding-based relevance scorer for Headroom SDK.
+"""Embedding-based relevance scorer for Legroom SDK.
 
 This module provides semantic relevance scoring using `fastembed`
 (BAAI/bge-small-en-v1.5 by default — 33M params, 384 dims, ~30 MB
@@ -13,7 +13,7 @@ Key features:
 - ~2-3x faster than sentence-transformers' all-MiniLM-L6-v2
 - Outranks all-MiniLM-L6-v2 by ~6 MTEB points
 
-Install with: pip install headroom[relevance]
+Install with: pip install legroom[relevance]
 
 History: this module previously wrapped `sentence-transformers`
 (PyTorch). Switched to fastembed in Stage 3c.1 of the Rust port to:
@@ -47,7 +47,7 @@ def _get_numpy():
         except ImportError as e:
             raise ImportError(
                 "numpy is required for EmbeddingScorer. "
-                "Install with: pip install headroom[relevance]"
+                "Install with: pip install legroom[relevance]"
             ) from e
     return _numpy
 
@@ -65,16 +65,16 @@ DEFAULT_MODEL_NAME = "BAAI/bge-small-en-v1.5"
 # fastembed's TextEmbedding signature omits ``revision`` but forwards **kwargs to
 # huggingface_hub.snapshot_download, so passing it pins the download for
 # supply-chain integrity. Only the default model is pinned; custom models float.
-# Set HEADROOM_HF_PIN=off to bypass (mirrors headroom.onnx_runtime pinning).
+# Set LEGROOM_HF_PIN=off to bypass (mirrors legroom.onnx_runtime pinning).
 _DEFAULT_MODEL_PINNED_REVISION = "52398278842ec682c6f32300af41344b1c0b0bb2"
 
 
 def _pinned_revision(model_name: str) -> str | None:
     """Return the pinned HF revision for ``model_name`` (default model only).
 
-    Returns ``None`` for custom models or when ``HEADROOM_HF_PIN=off``.
+    Returns ``None`` for custom models or when ``LEGROOM_HF_PIN=off``.
     """
-    if os.environ.get("HEADROOM_HF_PIN", "").strip().lower() in ("off", "0", "false", "no"):
+    if os.environ.get("LEGROOM_HF_PIN", "").strip().lower() in ("off", "0", "false", "no"):
         return None
     if model_name == DEFAULT_MODEL_NAME:
         return _DEFAULT_MODEL_PINNED_REVISION
@@ -119,7 +119,7 @@ class EmbeddingScorer(RelevanceScorer):
         # score.score > 0.5 (semantic match between "failed"/"error" and "errors")
 
     Note:
-        Requires fastembed: pip install headroom[relevance]
+        Requires fastembed: pip install legroom[relevance]
     """
 
     def __init__(
@@ -165,7 +165,7 @@ class EmbeddingScorer(RelevanceScorer):
         """
         if not self.is_available():
             raise RuntimeError(
-                "EmbeddingScorer requires fastembed. Install with: pip install headroom[relevance]"
+                "EmbeddingScorer requires fastembed. Install with: pip install legroom[relevance]"
             )
 
         if self._model is None:

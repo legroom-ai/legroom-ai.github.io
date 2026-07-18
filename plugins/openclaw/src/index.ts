@@ -1,8 +1,8 @@
-export { default, registerHeadroomPlugin } from "./plugin/index.js";
-export { HeadroomContextEngine } from "./engine.js";
-export { ProxyManager, normalizeAndValidateProxyUrl, isLocalProxyUrl, defaultLogger, probeHeadroomProxy } from "./proxy-manager.js";
+export { default, registerLegroomPlugin } from "./plugin/index.js";
+export { LegroomContextEngine } from "./engine.js";
+export { ProxyManager, normalizeAndValidateProxyUrl, isLocalProxyUrl, defaultLogger, probeLegroomProxy } from "./proxy-manager.js";
 export { agentToOpenAI, normalizeAgentMessages, openAIToAgent } from "./convert.js";
-export { createHeadroomRetrieveTool } from "./tools/headroom-retrieve.js";
+export { createLegroomRetrieveTool } from "./tools/legroom-retrieve.js";
 export {
   DEFAULT_GATEWAY_PROVIDER_IDS,
   applyGatewayProviderBaseUrls,

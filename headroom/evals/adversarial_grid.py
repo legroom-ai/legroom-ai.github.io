@@ -1,4 +1,4 @@
-"""Adversarial robustness grid for Headroom compressors (offline, no LLM).
+"""Adversarial robustness grid for Legroom compressors (offline, no LLM).
 
 CompressionAttack (arXiv:2510.22963) showed that prompt compressors are
 themselves an attack surface for LLM middleware: adversarial text embedded
@@ -6,7 +6,7 @@ in compressible content (tool outputs, fetched pages) can
 
 - preferentially *survive* compression while the benign context around it
   is dropped, amplifying injection density in what the model finally sees;
-- abuse compressor control surfaces. Headroom has a concrete instance:
+- abuse compressor control surfaces. Legroom has a concrete instance:
   content carrying a CCR retrieval marker is pinned as already-compressed,
   so a spoofed marker can make the surrounding content compression-immune.
 
@@ -41,7 +41,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
-from headroom.transforms.content_router import ContentRouter, ContentRouterConfig
+from legroom.transforms.content_router import ContentRouter, ContentRouterConfig
 
 POSITIONS = ("head", "middle", "tail")
 
@@ -65,7 +65,7 @@ class PayloadSpec:
 
 
 # Payload classes follow the CompressionAttack taxonomy plus the
-# Headroom-specific CCR marker spoof. benign_control anchors the baseline.
+# Legroom-specific CCR marker spoof. benign_control anchors the baseline.
 PAYLOADS: tuple[PayloadSpec, ...] = (
     PayloadSpec(
         "instruction_override",
@@ -322,7 +322,7 @@ def run_adversarial_grid(
         payloads: Payload corpus; defaults to the full taxonomy.
     """
     if carriers is None:
-        from headroom.evals.datasets import load_tool_output_samples
+        from legroom.evals.datasets import load_tool_output_samples
 
         carriers = {case.id: case.context for case in load_tool_output_samples().cases}
         carriers.update(synthetic_carriers())

@@ -141,7 +141,7 @@ const integrations: {
     title: 'LangChain',
     description:
       'Wrap any chat model. Supports memory, retrievers, tools, streaming, async.',
-    code: 'from headroom.integrations.langchain import HeadroomChatModel\nllm = HeadroomChatModel(ChatOpenAI())',
+    code: 'from legroom.integrations.langchain import LegroomChatModel\nllm = LegroomChatModel(ChatOpenAI())',
     lang: 'python',
     href: '/docs/langchain',
   },
@@ -149,7 +149,7 @@ const integrations: {
     title: 'Agno',
     description:
       'Full agent framework integration with observability hooks.',
-    code: 'from headroom.integrations.agno import HeadroomAgnoModel\nmodel = HeadroomAgnoModel(Claude())\nagent = Agent(model=model)',
+    code: 'from legroom.integrations.agno import LegroomAgnoModel\nmodel = LegroomAgnoModel(Claude())\nagent = Agent(model=model)',
     lang: 'python',
     href: '/docs/agno',
   },
@@ -157,15 +157,15 @@ const integrations: {
     title: 'Strands',
     description:
       'Model wrapping + tool output hook provider for Strands Agents.',
-    code: 'from headroom.integrations.strands import HeadroomStrandsModel\nmodel = HeadroomStrandsModel(...)\nagent = Agent(model=model)',
+    code: 'from legroom.integrations.strands import LegroomStrandsModel\nmodel = LegroomStrandsModel(...)\nagent = Agent(model=model)',
     lang: 'python',
     href: '/docs/strands',
   },
   {
     title: 'MCP Tools',
     description:
-      'Three tools for Claude Code, Cursor, or any MCP client: headroom_compress, headroom_retrieve, headroom_stats.',
-    code: 'headroom mcp install && claude',
+      'Three tools for Claude Code, Cursor, or any MCP client: legroom_compress, legroom_retrieve, legroom_stats.',
+    code: 'legroom mcp install && claude',
     lang: 'bash',
     href: '/docs/mcp',
   },
@@ -173,15 +173,15 @@ const integrations: {
     title: 'TypeScript SDK',
     description:
       'compress(), Vercel AI SDK middleware, OpenAI and Anthropic client wrappers.',
-    code: 'npm install headroom-ai',
+    code: 'npm install legroom-ai',
     lang: 'bash',
     href: '/docs/vercel-ai-sdk',
   },
   {
     title: 'Vercel AI SDK',
     description:
-      'One-liner withHeadroom() or headroomMiddleware() for any Vercel AI SDK model.',
-    code: "import { withHeadroom } from 'headroom-ai/vercel-ai'\nconst model = withHeadroom(openai('gpt-4o'))",
+      'One-liner withLegroom() or legroomMiddleware() for any Vercel AI SDK model.',
+    code: "import { withLegroom } from 'legroom-ai/vercel-ai'\nconst model = withLegroom(openai('gpt-4o'))",
     lang: 'typescript',
     href: '/docs/vercel-ai-sdk',
   },

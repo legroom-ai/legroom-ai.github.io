@@ -3,17 +3,17 @@
  * Matches Python client.simulate() behavior.
  */
 
-import { HeadroomClient } from "./client.js";
-import type { HeadroomClientOptions } from "./types.js";
+import { LegroomClient } from "./client.js";
+import type { LegroomClientOptions } from "./types.js";
 import type { SimulationResult } from "./types/models.js";
-import type { HeadroomConfig } from "./types/config.js";
+import type { LegroomConfig } from "./types/config.js";
 import { deepCamelCase, deepSnakeCase } from "./utils/case.js";
 import { detectFormat, toOpenAI } from "./utils/format.js";
 
-export interface SimulateOptions extends HeadroomClientOptions {
+export interface SimulateOptions extends LegroomClientOptions {
   model?: string;
-  config?: HeadroomConfig;
-  client?: HeadroomClient;
+  config?: LegroomConfig;
+  client?: LegroomClient;
 }
 
 /**
@@ -34,7 +34,7 @@ export async function simulate(
   const { client: providedClient, model, config, ...clientOptions } = options;
 
   const openaiMessages = toOpenAI(messages);
-  const client = providedClient ?? new HeadroomClient(clientOptions);
+  const client = providedClient ?? new LegroomClient(clientOptions);
 
   const body: Record<string, any> = {
     messages: openaiMessages,

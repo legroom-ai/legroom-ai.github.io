@@ -1,7 +1,7 @@
 """Response handling for CCR (Compress-Cache-Retrieve).
 
 This module provides response interception and CCR tool call handling.
-When the LLM calls headroom_retrieve, this handler:
+When the LLM calls legroom_retrieve, this handler:
 1. Detects the tool call in the response
 2. Retrieves content from the compression store
 3. Continues the conversation with the tool result
@@ -33,12 +33,12 @@ logger = logging.getLogger(__name__)
 # Residual-CCR status signals (provider-generic).
 #
 # ``handle_response`` may return a response that still contains
-# ``headroom_retrieve`` tool calls. Callers need to know *why* so they can
+# ``legroom_retrieve`` tool calls. Callers need to know *why* so they can
 # decide whether that is a safe passthrough or a genuine failure:
 #
 # - RESIDUAL_CCR_RESOLVED:       no CCR tool calls remain — fully handled.
 # - RESIDUAL_CCR_SKIPPED_MIXED:  CCR was intentionally skipped because the model
-#                                emitted headroom_retrieve alongside a non-CCR
+#                                emitted legroom_retrieve alongside a non-CCR
 #                                client tool (#839). The client must resolve both
 #                                tool calls; the proxy must pass the turn through
 #                                unchanged (200), not fail closed.
@@ -85,7 +85,7 @@ class CCRResponseHandler:
     the LLM produces a response without CCR tool calls.
 
     Example flow:
-    1. LLM response contains: tool_use(headroom_retrieve, hash=abc123)
+    1. LLM response contains: tool_use(legroom_retrieve, hash=abc123)
     2. Handler detects this, retrieves original content
     3. Handler makes another API call with tool result
     4. LLM responds with actual content (no CCR tool call)
@@ -125,7 +125,7 @@ class CCRResponseHandler:
             provider: The provider type.
 
         Returns:
-            True if response contains headroom_retrieve tool calls.
+            True if response contains legroom_retrieve tool calls.
         """
         return has_ccr_tool_calls(response, provider)
 
@@ -141,12 +141,12 @@ class CCRResponseHandler:
         and works identically for every provider/harness.
 
         Returns one of:
-        - ``RESIDUAL_CCR_RESOLVED``: no headroom_retrieve tool calls remain.
-        - ``RESIDUAL_CCR_SKIPPED_MIXED``: headroom_retrieve remains *alongside*
+        - ``RESIDUAL_CCR_RESOLVED``: no legroom_retrieve tool calls remain.
+        - ``RESIDUAL_CCR_SKIPPED_MIXED``: legroom_retrieve remains *alongside*
           a non-CCR client tool call. This is an intentional skip (#839) — the
           proxy cannot synthesize the client tool_result, so the turn must be
           handed back to the client unchanged rather than failed closed.
-        - ``RESIDUAL_CCR_ERROR``: headroom_retrieve remains with no accompanying
+        - ``RESIDUAL_CCR_ERROR``: legroom_retrieve remains with no accompanying
           client tool call — a genuine handling/conversion failure.
         """
         ccr_calls, other_calls = self._parse_ccr_tool_calls(response, provider)
@@ -460,7 +460,7 @@ class CCRResponseHandler:
             if other_calls:
                 logger.warning(
                     "CCR: Skipping CCR handling — model called %d non-CCR tool(s) "
-                    "alongside headroom_retrieve. Cannot create a valid continuation "
+                    "alongside legroom_retrieve. Cannot create a valid continuation "
                     "without results for the other tools. Client must handle all tool calls.",
                     len(other_calls),
                 )
@@ -717,7 +717,7 @@ class StreamingCCRHandler:
         event is an upstream protocol bug — surfaced loudly, not
         silently corrupted.
         """
-        from headroom.proxy.helpers import parse_sse_events_from_byte_buffer
+        from legroom.proxy.helpers import parse_sse_events_from_byte_buffer
 
         # Accumulate all event data via the canonical bytes-buffer
         # splitter. ``data`` is a closed payload here, so any partial
@@ -927,7 +927,7 @@ class StreamingCCRHandler:
         to chunk the response more granularly.
         """
         if self.provider == "anthropic":
-            from headroom.proxy.handlers.streaming import StreamingMixin
+            from legroom.proxy.handlers.streaming import StreamingMixin
 
             for chunk in StreamingMixin()._response_to_sse(response, "anthropic"):
                 yield chunk

@@ -1,5 +1,5 @@
-from headroom.transforms.content_detector import ContentType
-from headroom.transforms.mixed_content import (
+from legroom.transforms.content_detector import ContentType
+from legroom.transforms.mixed_content import (
     _extract_json_block,
     is_mixed_content,
     split_into_sections,

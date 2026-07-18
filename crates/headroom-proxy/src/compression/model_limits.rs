@@ -6,7 +6,7 @@
 //! covering Claude / GPT-4o / GPT-3.5. Two failure modes that cost us:
 //!
 //! 1. **Static rot.** Anthropic and OpenAI ship new models monthly.
-//!    A hardcoded table goes stale between Headroom releases; new
+//!    A hardcoded table goes stale between Legroom releases; new
 //!    models silently fall through to a default that is often wrong.
 //! 2. **Long tail.** Bedrock, Cohere, Mistral, Gemini, AzureML — each
 //!    has dozens of model variants. We aren't going to maintain
@@ -23,7 +23,7 @@
 //! # Vendoring strategy
 //!
 //! We **check the JSON into the repo** at
-//! `crates/headroom-proxy/data/model_prices_and_context_window.json`
+//! `crates/legroom-proxy/data/model_prices_and_context_window.json`
 //! and `include_str!` it at compile time. Reasons over alternatives:
 //!
 //! - **Build-time fetch (`build.rs` + curl):** breaks for offline /

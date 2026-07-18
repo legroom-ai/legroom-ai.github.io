@@ -5,9 +5,9 @@ from typing import Any
 import httpx
 from fastapi.testclient import TestClient
 
-from headroom.memory.traffic_learner import TrafficLearner
-from headroom.proxy.handlers.openai import _responses_input_to_learner_messages
-from headroom.proxy.server import ProxyConfig, create_app
+from legroom.memory.traffic_learner import TrafficLearner
+from legroom.proxy.handlers.openai import _responses_input_to_learner_messages
+from legroom.proxy.server import ProxyConfig, create_app
 
 
 class _CompletedResponseTransport(httpx.AsyncBaseTransport):

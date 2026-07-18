@@ -1,39 +1,39 @@
 /**
- * Headroom OpenClaw Plugin — register ContextEngine + CCR retrieval tool.
+ * Legroom OpenClaw Plugin — register ContextEngine + CCR retrieval tool.
  *
  * Usage:
- *   openclaw plugins install headroom-ai/openclaw
+ *   openclaw plugins install legroom-ai/openclaw
  *
  * Configuration (in ~/.openclaw/config.json or ~/.clawdbot/clawdbot.json):
  *   {
  *     "plugins": {
- *       "slots": { "contextEngine": "headroom" },
- *       "entries": { "headroom": { "enabled": true } }
+ *       "slots": { "contextEngine": "legroom" },
+ *       "entries": { "legroom": { "enabled": true } }
  *     }
  *   }
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { HeadroomContextEngine } from "../engine.js";
+import { LegroomContextEngine } from "../engine.js";
 import {
   applyGatewayProviderBaseUrlsInPlace,
   resolveGatewayProviderIds,
 } from "../gateway-config.js";
-import { normalizeAndValidateProxyUrl, probeHeadroomProxy } from "../proxy-manager.js";
-import { createHeadroomRetrieveTool } from "../tools/headroom-retrieve.js";
+import { normalizeAndValidateProxyUrl, probeLegroomProxy } from "../proxy-manager.js";
+import { createLegroomRetrieveTool } from "../tools/legroom-retrieve.js";
 
 /**
  * OpenClaw 2026.x plugin API requires a `{ register(api) }` object export.
  * The previous bare-function default export was silently skipped by the loader.
- * See: https://github.com/ghaliba3/headroom/issues/XXX
+ * See: https://github.com/legroom-ai/legroom-ai.github.io/issues/XXX
  */
 export default {
-  register: registerHeadroomPlugin,
+  register: registerLegroomPlugin,
 };
 
-export function registerHeadroomPlugin(api: any) {
-  const config = api.config?.plugins?.entries?.headroom?.config ?? {};
+export function registerLegroomPlugin(api: any) {
+  const config = api.config?.plugins?.entries?.legroom?.config ?? {};
   const logger = api.logger ?? console;
   const rawProxyUrl = config.proxyUrl;
   const proxyUrl =
@@ -41,7 +41,7 @@ export function registerHeadroomPlugin(api: any) {
       ? normalizeAndValidateProxyUrl(rawProxyUrl)
       : undefined;
 
-  const engine = new HeadroomContextEngine({ ...config, proxyUrl }, {
+  const engine = new LegroomContextEngine({ ...config, proxyUrl }, {
     info: (m: string) => logger.info(m),
     warn: (m: string) => logger.warn(m),
     error: (m: string) => logger.error(m),
@@ -61,15 +61,15 @@ export function registerHeadroomPlugin(api: any) {
 
       if (changed) {
         logger.info(
-          `[headroom] Routed ${gatewayProviderIds.join(", ")} through Headroom proxy in memory at ${activeProxyUrl}`,
+          `[legroom] Routed ${gatewayProviderIds.join(", ")} through Legroom proxy in memory at ${activeProxyUrl}`,
         );
       } else {
         logger.info(
-          `[headroom] Upstream gateway already routed in memory for ${gatewayProviderIds.join(", ")} at ${activeProxyUrl}`,
+          `[legroom] Upstream gateway already routed in memory for ${gatewayProviderIds.join(", ")} at ${activeProxyUrl}`,
         );
       }
     } catch (error) {
-      logger.warn(`[headroom] Failed to configure upstream gateway routing: ${error}`);
+      logger.warn(`[legroom] Failed to configure upstream gateway routing: ${error}`);
     }
   };
 
@@ -81,21 +81,21 @@ export function registerHeadroomPlugin(api: any) {
       return validatedConfiguredProxyUrl;
     }
     if (!configuredProxyProbePromise) {
-      configuredProxyProbePromise = probeHeadroomProxy(proxyUrl)
+      configuredProxyProbePromise = probeLegroomProxy(proxyUrl)
         .then((probe) => {
-          if (probe.reachable && probe.isHeadroom) {
+          if (probe.reachable && probe.isLegroom) {
             validatedConfiguredProxyUrl = proxyUrl;
             return proxyUrl;
           }
           logger.warn(
-            `[headroom] Skipping upstream gateway routing: configured proxyUrl is not a ready Headroom proxy at ${proxyUrl}` +
+            `[legroom] Skipping upstream gateway routing: configured proxyUrl is not a ready Legroom proxy at ${proxyUrl}` +
               (probe.reason ? ` (${probe.reason})` : ""),
           );
           return null;
         })
         .catch((error) => {
           logger.warn(
-            `[headroom] Skipping upstream gateway routing: failed to probe configured proxyUrl ${proxyUrl}: ${error}`,
+            `[legroom] Skipping upstream gateway routing: failed to probe configured proxyUrl ${proxyUrl}: ${error}`,
           );
           return null;
         })
@@ -112,7 +112,7 @@ export function registerHeadroomPlugin(api: any) {
     }
     const activeProxyUrl = engine.getProxyUrl() ?? (await getConfiguredRoutingProxyUrl());
     if (!activeProxyUrl) {
-      logger.debug?.("[headroom] Deferring upstream gateway routing until proxy is available");
+      logger.debug?.("[legroom] Deferring upstream gateway routing until proxy is available");
       return;
     }
     await applyGatewayRouting(activeProxyUrl);
@@ -123,14 +123,14 @@ export function registerHeadroomPlugin(api: any) {
   });
 
   // Register as context engine
-  api.registerContextEngine("headroom", () => engine);
+  api.registerContextEngine("legroom", () => engine);
 
   // Register CCR retrieval tool (active once proxy is running)
   api.registerTool((ctx: any) => {
     const activeProxyUrl = engine.getProxyUrl() ?? proxyUrl;
     if (!activeProxyUrl) return null;
-    return createHeadroomRetrieveTool({ proxyUrl: activeProxyUrl });
-  }, { names: ["headroom_retrieve"] });
+    return createLegroomRetrieveTool({ proxyUrl: activeProxyUrl });
+  }, { names: ["legroom_retrieve"] });
 
   api.on("gateway_start", async () => {
     await ensureGatewayRouting();
@@ -138,5 +138,5 @@ export function registerHeadroomPlugin(api: any) {
 
   void ensureGatewayRouting();
 
-  logger.info("[headroom] Plugin registered");
+  logger.info("[legroom] Plugin registered");
 }

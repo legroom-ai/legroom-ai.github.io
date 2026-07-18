@@ -2,7 +2,7 @@
 
 import pytest
 
-from headroom.providers.openai import (
+from legroom.providers.openai import (
     _get_encoding_name_for_model,
 )
 

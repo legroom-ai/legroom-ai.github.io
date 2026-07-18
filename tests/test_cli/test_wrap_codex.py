@@ -1,7 +1,7 @@
-"""Tests for `headroom wrap codex` and `headroom unwrap codex`.
+"""Tests for `legroom wrap codex` and `legroom unwrap codex`.
 
 These exercise the Codex-specific ``config.toml`` injection and restoration
-helpers that route Codex through the Headroom proxy.  They are deliberately
+helpers that route Codex through the Legroom proxy.  They are deliberately
 end-to-end-ish: the unit tests call the helpers directly against a temp
 ``$HOME``, and the integration tests invoke the real Click commands the same
 way a user would from the shell.
@@ -23,9 +23,9 @@ if sys.version_info >= (3, 11):
 else:  # pragma: no cover - exercised in the Python 3.10 test job
     import tomli as tomllib
 
-from headroom.cli import wrap as wrap_mod
-from headroom.cli.main import main
-from headroom.mcp_registry.install import build_headroom_spec
+from legroom.cli import wrap as wrap_mod
+from legroom.cli.main import main
+from legroom.mcp_registry.install import build_legroom_spec
 
 
 def _set_test_home(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -45,53 +45,53 @@ def runner() -> CliRunner:
 # ---------------------------------------------------------------------------
 
 
-class TestStripCodexHeadroomBlocks:
+class TestStripCodexLegroomBlocks:
     """Tests for the regex-based cleanup helper."""
 
     def test_empty_content_returns_empty(self) -> None:
-        assert wrap_mod._strip_codex_headroom_blocks("") == ""
+        assert wrap_mod._strip_codex_legroom_blocks("") == ""
 
     def test_returns_content_unchanged_when_no_markers(self) -> None:
         original = '[profiles.default]\nmodel = "gpt-4o"\n'
-        cleaned = wrap_mod._strip_codex_headroom_blocks(original)
+        cleaned = wrap_mod._strip_codex_legroom_blocks(original)
         # Trailing whitespace normalization only — semantic content preserved.
         assert 'model = "gpt-4o"' in cleaned
         assert "[profiles.default]" in cleaned
 
-    def test_removes_complete_headroom_block(self) -> None:
+    def test_removes_complete_legroom_block(self) -> None:
         wrapped = (
             f"{wrap_mod._CODEX_TOP_LEVEL_MARKER}\n"
-            'model_provider = "headroom"\n'
+            'model_provider = "legroom"\n'
             "\n"
-            "[model_providers.headroom]\n"
+            "[model_providers.legroom]\n"
             'base_url = "http://127.0.0.1:8787/v1"\n'
             f"{wrap_mod._CODEX_END_MARKER}\n"
         )
-        assert wrap_mod._strip_codex_headroom_blocks(wrapped) == ""
+        assert wrap_mod._strip_codex_legroom_blocks(wrapped) == ""
 
     def test_preserves_user_content_around_block(self) -> None:
         user_pre = '[profiles.default]\nmodel = "gpt-4o"\n'
         user_post = '[mcp_servers.foo]\ncommand = "echo"\n'
         wrapped = (
             f"{wrap_mod._CODEX_TOP_LEVEL_MARKER}\n"
-            'model_provider = "headroom"\n'
+            'model_provider = "legroom"\n'
             f"{wrap_mod._CODEX_END_MARKER}\n" + user_pre + "\n"
             f"{wrap_mod._CODEX_TOP_LEVEL_MARKER}\n"
-            "[model_providers.headroom]\n"
+            "[model_providers.legroom]\n"
             'base_url = "http://127.0.0.1:8787/v1"\n'
             f"{wrap_mod._CODEX_END_MARKER}\n" + user_post
         )
-        cleaned = wrap_mod._strip_codex_headroom_blocks(wrapped)
+        cleaned = wrap_mod._strip_codex_legroom_blocks(wrapped)
         assert wrap_mod._CODEX_TOP_LEVEL_MARKER not in cleaned
         assert wrap_mod._CODEX_END_MARKER not in cleaned
         assert 'model = "gpt-4o"' in cleaned
         assert "[mcp_servers.foo]" in cleaned
 
     def test_removes_stray_top_level_model_provider_line(self) -> None:
-        # Old wrap versions left `model_provider = "headroom"` outside markers.
-        content = 'foo = 1\nmodel_provider = "headroom"\nbar = 2\n'
-        cleaned = wrap_mod._strip_codex_headroom_blocks(content, remove_mcp=True)
-        assert 'model_provider = "headroom"' not in cleaned
+        # Old wrap versions left `model_provider = "legroom"` outside markers.
+        content = 'foo = 1\nmodel_provider = "legroom"\nbar = 2\n'
+        cleaned = wrap_mod._strip_codex_legroom_blocks(content, remove_mcp=True)
+        assert 'model_provider = "legroom"' not in cleaned
         assert "foo = 1" in cleaned
         assert "bar = 2" in cleaned
 
@@ -99,44 +99,44 @@ class TestStripCodexHeadroomBlocks:
         content = (
             '[profiles.default]\nmodel = "gpt-4o"\n\n'
             f"{wrap_mod._CODEX_MCP_MARKER}\n"
-            "[mcp_servers.headroom]\n"
-            'command = "headroom"\n'
+            "[mcp_servers.legroom]\n"
+            'command = "legroom"\n'
             f"{wrap_mod._CODEX_MCP_END}\n\n"
-            "# --- Headroom MCP server: serena ---\n"
+            "# --- Legroom MCP server: serena ---\n"
             "[mcp_servers.serena]\n"
             'command = "uvx"\n'
-            "# --- end Headroom MCP server: serena ---\n\n"
+            "# --- end Legroom MCP server: serena ---\n\n"
             f"{wrap_mod._MEMORY_MCP_MARKER}\n"
-            "[mcp_servers.headroom_memory]\n"
+            "[mcp_servers.legroom_memory]\n"
             'command = "python"\n'
             f"{wrap_mod._MEMORY_MCP_END}\n"
         )
 
-        cleaned = wrap_mod._strip_codex_headroom_blocks(content, remove_mcp=True)
+        cleaned = wrap_mod._strip_codex_legroom_blocks(content, remove_mcp=True)
 
-        assert "[mcp_servers.headroom]" not in cleaned
+        assert "[mcp_servers.legroom]" not in cleaned
         assert "[mcp_servers.serena]" not in cleaned
-        assert "[mcp_servers.headroom_memory]" not in cleaned
+        assert "[mcp_servers.legroom_memory]" not in cleaned
         assert 'model = "gpt-4o"' in cleaned
 
     def test_preserves_named_mcp_blocks_when_remove_named_mcp_false(self) -> None:
         content = (
-            "# --- Headroom MCP server: serena ---\n"
+            "# --- Legroom MCP server: serena ---\n"
             "[mcp_servers.serena]\n"
             'command = "uvx"\n'
-            "# --- end Headroom MCP server: serena ---\n\n"
+            "# --- end Legroom MCP server: serena ---\n\n"
             f"{wrap_mod._MEMORY_MCP_MARKER}\n"
-            "[mcp_servers.headroom_memory]\n"
+            "[mcp_servers.legroom_memory]\n"
             'command = "python"\n'
             f"{wrap_mod._MEMORY_MCP_END}\n"
         )
 
-        cleaned = wrap_mod._strip_codex_headroom_blocks(
+        cleaned = wrap_mod._strip_codex_legroom_blocks(
             content, remove_mcp=True, remove_named_mcp=False
         )
 
         assert "[mcp_servers.serena]" in cleaned
-        assert "[mcp_servers.headroom_memory]" not in cleaned
+        assert "[mcp_servers.legroom_memory]" not in cleaned
 
 
 class TestSnapshotCodexConfig:
@@ -144,7 +144,7 @@ class TestSnapshotCodexConfig:
 
     def test_creates_backup_on_first_call(self, tmp_path: Path) -> None:
         config_file = tmp_path / "config.toml"
-        backup_file = tmp_path / "config.toml.headroom-backup"
+        backup_file = tmp_path / "config.toml.legroom-backup"
         config_file.write_text('model = "gpt-4o"\n', encoding="utf-8")
 
         wrap_mod._snapshot_codex_config_if_unwrapped(config_file, backup_file)
@@ -154,7 +154,7 @@ class TestSnapshotCodexConfig:
 
     def test_does_not_overwrite_existing_backup(self, tmp_path: Path) -> None:
         config_file = tmp_path / "config.toml"
-        backup_file = tmp_path / "config.toml.headroom-backup"
+        backup_file = tmp_path / "config.toml.legroom-backup"
         config_file.write_text("second-wrap content\n", encoding="utf-8")
         backup_file.write_text("original-pre-wrap content\n", encoding="utf-8")
 
@@ -165,7 +165,7 @@ class TestSnapshotCodexConfig:
 
     def test_no_backup_when_config_missing(self, tmp_path: Path) -> None:
         config_file = tmp_path / "config.toml"
-        backup_file = tmp_path / "config.toml.headroom-backup"
+        backup_file = tmp_path / "config.toml.legroom-backup"
 
         wrap_mod._snapshot_codex_config_if_unwrapped(config_file, backup_file)
 
@@ -173,10 +173,10 @@ class TestSnapshotCodexConfig:
 
     def test_no_backup_when_config_already_wrapped(self, tmp_path: Path) -> None:
         config_file = tmp_path / "config.toml"
-        backup_file = tmp_path / "config.toml.headroom-backup"
+        backup_file = tmp_path / "config.toml.legroom-backup"
         config_file.write_text(
             f"{wrap_mod._CODEX_TOP_LEVEL_MARKER}\n"
-            'model_provider = "headroom"\n'
+            'model_provider = "legroom"\n'
             f"{wrap_mod._CODEX_END_MARKER}\n",
             encoding="utf-8",
         )
@@ -188,12 +188,12 @@ class TestSnapshotCodexConfig:
 
     def test_no_backup_when_config_already_contains_memory_mcp_block(self, tmp_path: Path) -> None:
         config_file = tmp_path / "config.toml"
-        backup_file = tmp_path / "config.toml.headroom-backup"
+        backup_file = tmp_path / "config.toml.legroom-backup"
         config_file.write_text(
             f"{wrap_mod._MEMORY_MCP_MARKER}\n"
-            "[mcp_servers.headroom_memory]\n"
+            "[mcp_servers.legroom_memory]\n"
             'command = "python"\n'
-            'args = ["-m", "headroom.memory.mcp_server", "--user", "codex-user"]\n'
+            'args = ["-m", "legroom.memory.mcp_server", "--user", "codex-user"]\n'
             f"{wrap_mod._MEMORY_MCP_END}\n"
         )
 
@@ -203,12 +203,12 @@ class TestSnapshotCodexConfig:
 
     def test_backup_when_config_contains_named_mcp_marker(self, tmp_path: Path) -> None:
         config_file = tmp_path / "config.toml"
-        backup_file = tmp_path / "config.toml.headroom-backup"
+        backup_file = tmp_path / "config.toml.legroom-backup"
         original = (
-            "# --- Headroom MCP server: headroom ---\n"
-            "[mcp_servers.headroom]\n"
-            'command = "headroom"\n'
-            "# --- end Headroom MCP server: headroom ---\n"
+            "# --- Legroom MCP server: legroom ---\n"
+            "[mcp_servers.legroom]\n"
+            'command = "legroom"\n'
+            "# --- end Legroom MCP server: legroom ---\n"
         )
         config_file.write_text(original)
 
@@ -230,9 +230,9 @@ class TestCodexMemoryMcpConfig:
         config_file.write_text(
             '[profiles.default]\nmodel = "gpt-4o"\n\n'
             f"{wrap_mod._MEMORY_MCP_MARKER}\n"
-            "[mcp_servers.headroom_memory]\n"
+            "[mcp_servers.legroom_memory]\n"
             'command = "python"\n'
-            'args = ["-m", "headroom.memory.mcp_server", "--db", "/tmp/project-a/.headroom/memory.db", "--user", "old-user"]\n'
+            'args = ["-m", "legroom.memory.mcp_server", "--db", "/tmp/project-a/.legroom/memory.db", "--user", "old-user"]\n'
             f"{wrap_mod._MEMORY_MCP_END}\n"
         )
 
@@ -240,7 +240,7 @@ class TestCodexMemoryMcpConfig:
 
         content = config_file.read_text()
         assert content.count(wrap_mod._MEMORY_MCP_MARKER) == 1
-        assert "[mcp_servers.headroom_memory]" in content
+        assert "[mcp_servers.legroom_memory]" in content
         assert '"--user", "codex-user"' in content
         assert "--db" not in content
         assert 'model = "gpt-4o"' in content
@@ -257,13 +257,13 @@ class TestInjectAndRestoreRoundTrip:
 
         wrap_mod._inject_codex_provider_config(8787)
         assert config_file.exists()
-        assert 'model_provider = "headroom"' in config_file.read_text(encoding="utf-8")
+        assert 'model_provider = "legroom"' in config_file.read_text(encoding="utf-8")
 
         status, _ = wrap_mod._restore_codex_provider_config()
         # No prior config existed → the injected file is fully removed.
         assert status == "removed"
         assert not config_file.exists()
-        assert not (tmp_path / ".codex" / "config.toml.headroom-backup").exists()
+        assert not (tmp_path / ".codex" / "config.toml.legroom-backup").exists()
 
     def test_wrap_unwrap_respects_codex_home(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
@@ -275,7 +275,7 @@ class TestInjectAndRestoreRoundTrip:
 
         wrap_mod._inject_codex_provider_config(8787)
         assert config_file.exists()
-        assert 'model_provider = "headroom"' in config_file.read_text(encoding="utf-8")
+        assert 'model_provider = "legroom"' in config_file.read_text(encoding="utf-8")
         assert not (tmp_path / ".codex" / "config.toml").exists()
 
         status, _ = wrap_mod._restore_codex_provider_config()
@@ -300,13 +300,13 @@ class TestInjectAndRestoreRoundTrip:
 
         wrap_mod._inject_codex_provider_config(8787)
         wrapped = config_file.read_text(encoding="utf-8")
-        assert 'model_provider = "headroom"' in wrapped
-        assert "[model_providers.headroom]" in wrapped
+        assert 'model_provider = "legroom"' in wrapped
+        assert "[model_providers.legroom]" in wrapped
 
         status, _ = wrap_mod._restore_codex_provider_config()
         assert status == "restored"
         assert config_file.read_text(encoding="utf-8") == original
-        assert not (config_dir / "config.toml.headroom-backup").exists()
+        assert not (config_dir / "config.toml.legroom-backup").exists()
 
     def test_wrap_is_idempotent(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         _set_test_home(monkeypatch, tmp_path)
@@ -321,7 +321,7 @@ class TestInjectAndRestoreRoundTrip:
         wrap_mod._inject_codex_provider_config(9999)  # port change
 
         content = config_file.read_text(encoding="utf-8")
-        # Exactly two Headroom blocks — a top-level-key block and the
+        # Exactly two Legroom blocks — a top-level-key block and the
         # provider-table block.  Re-wrapping must not duplicate them.
         assert content.count(wrap_mod._CODEX_TOP_LEVEL_MARKER) == 2
         assert content.count(wrap_mod._CODEX_END_MARKER) == 2
@@ -356,8 +356,8 @@ class TestInjectAndRestoreRoundTrip:
         user_content = '[profiles.default]\nmodel = "gpt-4o"\n'
         config_file.write_text(
             user_content + f"{wrap_mod._CODEX_TOP_LEVEL_MARKER}\n"
-            'model_provider = "headroom"\n\n'
-            "[model_providers.headroom]\n"
+            'model_provider = "legroom"\n\n'
+            "[model_providers.legroom]\n"
             'base_url = "http://127.0.0.1:8787/v1"\n'
             f"{wrap_mod._CODEX_END_MARKER}\n",
             encoding="utf-8",
@@ -368,7 +368,7 @@ class TestInjectAndRestoreRoundTrip:
         cleaned = config_file.read_text(encoding="utf-8")
         assert wrap_mod._CODEX_TOP_LEVEL_MARKER not in cleaned
         assert wrap_mod._CODEX_END_MARKER not in cleaned
-        assert 'model_provider = "headroom"' not in cleaned
+        assert 'model_provider = "legroom"' not in cleaned
         assert 'model = "gpt-4o"' in cleaned
 
     def test_unwrap_without_backup_removes_provider_and_mcp_blocks(
@@ -381,14 +381,14 @@ class TestInjectAndRestoreRoundTrip:
         config_file.write_text(
             '[profiles.default]\nmodel = "gpt-4o"\n\n'
             f"{wrap_mod._CODEX_TOP_LEVEL_MARKER}\n"
-            'model_provider = "headroom"\n'
+            'model_provider = "legroom"\n'
             f"{wrap_mod._CODEX_END_MARKER}\n\n"
             f"{wrap_mod._CODEX_MCP_MARKER}\n"
-            "[mcp_servers.headroom]\n"
-            'command = "headroom"\n'
+            "[mcp_servers.legroom]\n"
+            'command = "legroom"\n'
             f"{wrap_mod._CODEX_MCP_END}\n\n"
             f"{wrap_mod._MEMORY_MCP_MARKER}\n"
-            "[mcp_servers.headroom_memory]\n"
+            "[mcp_servers.legroom_memory]\n"
             'command = "python"\n'
             f"{wrap_mod._MEMORY_MCP_END}\n",
             encoding="utf-8",
@@ -399,7 +399,7 @@ class TestInjectAndRestoreRoundTrip:
         assert status == "cleaned"
         cleaned = config_file.read_text(encoding="utf-8")
         assert 'model = "gpt-4o"' in cleaned
-        assert "headroom" not in cleaned
+        assert "legroom" not in cleaned
 
     def test_memory_only_wrap_restores_preexisting_named_mcp_block(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
@@ -409,10 +409,10 @@ class TestInjectAndRestoreRoundTrip:
         config_dir.mkdir()
         config_file = config_dir / "config.toml"
         original = (
-            "# --- Headroom MCP server: headroom ---\n"
-            "[mcp_servers.headroom]\n"
-            'command = "headroom"\n'
-            "# --- end Headroom MCP server: headroom ---\n"
+            "# --- Legroom MCP server: legroom ---\n"
+            "[mcp_servers.legroom]\n"
+            'command = "legroom"\n'
+            "# --- end Legroom MCP server: legroom ---\n"
         )
         config_file.write_text(original)
 
@@ -430,12 +430,12 @@ class TestInjectAndRestoreRoundTrip:
         config_dir = tmp_path / ".codex"
         config_dir.mkdir()
         config_file = config_dir / "config.toml"
-        backup_file = config_dir / "config.toml.headroom-backup"
+        backup_file = config_dir / "config.toml.legroom-backup"
         original = (
-            "# --- Headroom MCP server: headroom ---\n"
-            "[mcp_servers.headroom]\n"
-            'command = "headroom"\n'
-            "# --- end Headroom MCP server: headroom ---\n"
+            "# --- Legroom MCP server: legroom ---\n"
+            "[mcp_servers.legroom]\n"
+            'command = "legroom"\n'
+            "# --- end Legroom MCP server: legroom ---\n"
         )
         config_file.write_text(original)
 
@@ -470,7 +470,7 @@ class TestInjectAndRestoreRoundTrip:
         """`wrap codex` injects the rtk block into the Codex global AGENTS.md;
         `unwrap codex` must take it back out (regression for #1421)."""
         _set_test_home(monkeypatch, tmp_path)
-        monkeypatch.setenv("HEADROOM_RTK", "1")
+        monkeypatch.setenv("LEGROOM_RTK", "1")
         codex_home = tmp_path / ".codex"
         codex_home.mkdir()
         agents = codex_home / "AGENTS.md"
@@ -488,7 +488,7 @@ class TestInjectAndRestoreRoundTrip:
         """Only the marker-fenced rtk block is removed; the user's own AGENTS.md
         prose survives the unwrap."""
         _set_test_home(monkeypatch, tmp_path)
-        monkeypatch.setenv("HEADROOM_RTK", "1")
+        monkeypatch.setenv("LEGROOM_RTK", "1")
         codex_home = tmp_path / ".codex"
         codex_home.mkdir()
         agents = codex_home / "AGENTS.md"
@@ -515,13 +515,13 @@ class TestInjectAndRestoreRoundTrip:
 
 
 # ---------------------------------------------------------------------------
-# Thread retag: wrap pulls native threads into the headroom menu, unwrap hands
+# Thread retag: wrap pulls native threads into the legroom menu, unwrap hands
 # them back, so the Codex history list stays whole across the proxy boundary.
 # ---------------------------------------------------------------------------
 
 
 class TestWrapRetagsThreadProviders:
-    """``wrap codex`` retags ``openai`` threads to ``headroom`` and back."""
+    """``wrap codex`` retags ``openai`` threads to ``legroom`` and back."""
 
     @staticmethod
     def _seed_threads(db: Path, rows: list[tuple[str, str]]) -> None:
@@ -551,25 +551,25 @@ class TestWrapRetagsThreadProviders:
         _set_test_home(monkeypatch, tmp_path)
         gui_db = tmp_path / ".codex" / "sqlite" / "state_5.sqlite"
         cli_db = tmp_path / ".codex" / "state_5.sqlite"
-        self._seed_threads(gui_db, [("a", "openai"), ("b", "headroom"), ("c", "anthropic")])
+        self._seed_threads(gui_db, [("a", "openai"), ("b", "legroom"), ("c", "anthropic")])
         self._seed_threads(cli_db, [("d", "openai")])
 
-        with patch("headroom.cli.wrap._ensure_rtk_binary", return_value=None):
+        with patch("legroom.cli.wrap._ensure_rtk_binary", return_value=None):
             wrap_result = runner.invoke(main, ["wrap", "codex", "--prepare-only", "--port", "8787"])
         assert wrap_result.exit_code == 0, wrap_result.output
-        # Native threads are now visible under the headroom provider menu;
+        # Native threads are now visible under the legroom provider menu;
         # third-party providers are left untouched.
-        assert self._count(gui_db, "headroom") == 2
+        assert self._count(gui_db, "legroom") == 2
         assert self._count(gui_db, "openai") == 0
         assert self._count(gui_db, "anthropic") == 1
-        assert self._count(cli_db, "headroom") == 1
+        assert self._count(cli_db, "legroom") == 1
 
-        with patch("headroom.cli.wrap._stop_local_proxy_for_unwrap", return_value="stopped"):
+        with patch("legroom.cli.wrap._stop_local_proxy_for_unwrap", return_value="stopped"):
             unwrap_result = runner.invoke(main, ["unwrap", "codex", "--port", "8787"])
         assert unwrap_result.exit_code == 0, unwrap_result.output
         # Back to native so the unproxied Codex menu is whole again.
         assert self._count(gui_db, "openai") == 2
-        assert self._count(gui_db, "headroom") == 0
+        assert self._count(gui_db, "legroom") == 0
         assert self._count(gui_db, "anthropic") == 1
         assert self._count(cli_db, "openai") == 1
 
@@ -658,7 +658,7 @@ class TestSubscriptionRouting:
         content = (
             '[profiles.default]\nmodel = "gpt-4o"\nopenai_base_url = "http://127.0.0.1:8787/v1"\n'
         )
-        cleaned = wrap_mod._strip_codex_headroom_blocks(content)
+        cleaned = wrap_mod._strip_codex_legroom_blocks(content)
         assert "openai_base_url" not in cleaned
         assert 'model = "gpt-4o"' in cleaned
 
@@ -724,9 +724,9 @@ class TestDetectCustomCodexUpstreamBaseUrl:
         )
 
     def test_was_comment_recovers_selection_on_rewrap(self) -> None:
-        """After a prior wrap, model_provider reads 'headroom  # was: freemodel'."""
+        """After a prior wrap, model_provider reads 'legroom  # was: freemodel'."""
         content = (
-            'model_provider = "headroom"  # was: freemodel\n\n'
+            'model_provider = "legroom"  # was: freemodel\n\n'
             "[model_providers.freemodel]\n"
             'base_url = "https://api.freemodel.dev"\n'
         )
@@ -753,10 +753,10 @@ class TestDetectCustomCodexUpstreamBaseUrl:
         )
         assert wrap_mod._detect_custom_codex_upstream_base_url(content) is None
 
-    def test_own_headroom_table_excluded(self) -> None:
+    def test_own_legroom_table_excluded(self) -> None:
         content = (
-            'model_provider = "headroom"\n\n'
-            "[model_providers.headroom]\n"
+            'model_provider = "legroom"\n\n'
+            "[model_providers.legroom]\n"
             'base_url = "http://127.0.0.1:8787/v1"\n'
         )
         assert wrap_mod._detect_custom_codex_upstream_base_url(content) is None
@@ -785,11 +785,11 @@ class TestInjectPreservesCustomUpstreamBaseUrl:
         assert result == "https://api.freemodel.dev"
         content = config_file.read_text(encoding="utf-8")
         parsed = tomllib.loads(content)
-        headers = parsed["model_providers"]["headroom"]["env_http_headers"]
+        headers = parsed["model_providers"]["legroom"]["env_http_headers"]
         assert (
             headers[wrap_mod._UPSTREAM_BASE_URL_HEADER_NAME] == wrap_mod._UPSTREAM_BASE_URL_ENV_VAR
         )
-        # The user's own table is left untouched — only headroom's own is managed.
+        # The user's own table is left untouched — only legroom's own is managed.
         assert parsed["model_providers"]["freemodel"]["base_url"] == "https://api.freemodel.dev"
 
     def test_inject_without_custom_provider_returns_none(
@@ -824,8 +824,8 @@ class TestInjectPreservesCustomUpstreamBaseUrl:
         assert second == "https://api.freemodel.dev"
         content = config_file.read_text(encoding="utf-8")
         parsed = tomllib.loads(content)
-        assert parsed["model_providers"]["headroom"]["base_url"] == "http://127.0.0.1:9999/v1"
-        headers = parsed["model_providers"]["headroom"]["env_http_headers"]
+        assert parsed["model_providers"]["legroom"]["base_url"] == "http://127.0.0.1:9999/v1"
+        headers = parsed["model_providers"]["legroom"]["env_http_headers"]
         assert (
             headers[wrap_mod._UPSTREAM_BASE_URL_HEADER_NAME] == wrap_mod._UPSTREAM_BASE_URL_ENV_VAR
         )
@@ -870,8 +870,8 @@ class TestInjectAvoidsDuplicateTopLevelKeys:
         # No duplicate top-level key for either redirectable key.
         assert content.count("model_provider =") == 1
         assert content.count("openai_base_url =") == 1
-        # And the rewritten values are the headroom ones.
-        assert 'model_provider = "headroom"' in content
+        # And the rewritten values are the legroom ones.
+        assert 'model_provider = "legroom"' in content
         assert 'openai_base_url = "http://127.0.0.1:8787/v1"' in content
 
     @pytest.mark.parametrize("blank", ["", "   ", "\n\t\n"])
@@ -918,7 +918,7 @@ class TestInjectAvoidsDuplicateTopLevelKeys:
         content = config_file.read_text(encoding="utf-8")
         tomllib.loads(content)
         assert content.count("model_provider =") == 1
-        assert 'model_provider = "headroom"' in content
+        assert 'model_provider = "legroom"' in content
         # Port updated in the openai_base_url we injected.
         assert 'openai_base_url = "http://127.0.0.1:9999/v1"' in content
         assert 'openai_base_url = "http://127.0.0.1:8787/v1"' not in content
@@ -932,24 +932,24 @@ class TestInjectAvoidsDuplicateTopLevelKeys:
 
         content = (tmp_path / ".codex" / "config.toml").read_text(encoding="utf-8")
         assert wrap_mod._CODEX_TOP_LEVEL_MARKER in content
-        assert 'model_provider = "headroom"' in content
+        assert 'model_provider = "legroom"' in content
         assert 'openai_base_url = "http://127.0.0.1:8787/v1"' in content
-        assert "[model_providers.headroom]" in content
+        assert "[model_providers.legroom]" in content
 
-    def test_inject_replaces_existing_headroom_provider_table(
+    def test_inject_replaces_existing_legroom_provider_table(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        """Existing headroom provider table must not create duplicate TOML keys."""
+        """Existing legroom provider table must not create duplicate TOML keys."""
         _set_test_home(monkeypatch, tmp_path)
         config_dir = tmp_path / ".codex"
         config_dir.mkdir()
         config_file = config_dir / "config.toml"
         config_file.write_text(
-            "[model_providers.headroom]\n"
-            'name = "Existing custom headroom"\n'
+            "[model_providers.legroom]\n"
+            'name = "Existing custom legroom"\n'
             'base_url = "http://example.invalid/v1"\n'
             "supports_websockets = true\n"
-            'env_http_headers = { "X-Headroom-Project" = "HEADROOM_PROJECT" }\n'
+            'env_http_headers = { "X-Legroom-Project" = "LEGROOM_PROJECT" }\n'
             "\n"
             "[profiles.default]\n"
             'model = "gpt-5"\n'
@@ -959,27 +959,27 @@ class TestInjectAvoidsDuplicateTopLevelKeys:
         content = config_file.read_text()
 
         tomllib.loads(content)
-        assert content.count("[model_providers.headroom]") == 1
+        assert content.count("[model_providers.legroom]") == 1
         assert content.count("env_http_headers") == 1
         assert 'base_url = "http://127.0.0.1:8787/v1"' in content
-        assert 'env_http_headers = { "X-Headroom-Project" = "HEADROOM_PROJECT" }' in content
+        assert 'env_http_headers = { "X-Legroom-Project" = "LEGROOM_PROJECT" }' in content
         assert "[profiles.default]" in content
         assert 'model = "gpt-5"' in content
 
-    def test_unwrap_restores_prior_headroom_provider_table(
+    def test_unwrap_restores_prior_legroom_provider_table(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        """Pre-wrap headroom provider table is restored from snapshot."""
+        """Pre-wrap legroom provider table is restored from snapshot."""
         _set_test_home(monkeypatch, tmp_path)
         config_dir = tmp_path / ".codex"
         config_dir.mkdir()
         config_file = config_dir / "config.toml"
         original = (
-            "[model_providers.headroom]\n"
-            'name = "Existing custom headroom"\n'
+            "[model_providers.legroom]\n"
+            'name = "Existing custom legroom"\n'
             'base_url = "http://example.invalid/v1"\n'
             "supports_websockets = true\n"
-            'env_http_headers = { "X-Headroom-Project" = "HEADROOM_PROJECT" }\n'
+            'env_http_headers = { "X-Legroom-Project" = "LEGROOM_PROJECT" }\n'
         )
         config_file.write_text(original)
 
@@ -1008,7 +1008,7 @@ class TestInjectAvoidsDuplicateTopLevelKeys:
 
 
 # ---------------------------------------------------------------------------
-# Integration tests: full `headroom wrap codex` / `headroom unwrap codex`
+# Integration tests: full `legroom wrap codex` / `legroom unwrap codex`
 # ---------------------------------------------------------------------------
 
 
@@ -1021,12 +1021,12 @@ def test_wrap_codex_prepare_only_creates_backup_and_config(
     original = 'model_provider = "openai"\n'
     config_file.write_text(original, encoding="utf-8")
 
-    with patch("headroom.cli.wrap._ensure_rtk_binary", return_value=None):
+    with patch("legroom.cli.wrap._ensure_rtk_binary", return_value=None):
         result = runner.invoke(main, ["wrap", "codex", "--prepare-only", "--port", "8787"])
 
     assert result.exit_code == 0, result.output
-    assert 'model_provider = "headroom"' in config_file.read_text(encoding="utf-8")
-    backup = tmp_path / ".codex" / "config.toml.headroom-backup"
+    assert 'model_provider = "legroom"' in config_file.read_text(encoding="utf-8")
+    backup = tmp_path / ".codex" / "config.toml.legroom-backup"
     assert backup.exists()
     assert backup.read_text(encoding="utf-8") == original
 
@@ -1039,7 +1039,7 @@ def test_wrap_codex_prepare_only_respects_codex_home(
     codex_home.mkdir()
     monkeypatch.setenv("CODEX_HOME", str(codex_home))
 
-    with patch("headroom.cli.wrap._ensure_rtk_binary", return_value=None):
+    with patch("legroom.cli.wrap._ensure_rtk_binary", return_value=None):
         result = runner.invoke(
             main,
             ["wrap", "codex", "--prepare-only", "--no-serena", "--port", "8787"],
@@ -1049,8 +1049,8 @@ def test_wrap_codex_prepare_only_respects_codex_home(
     config_file = codex_home / "config.toml"
     assert config_file.exists()
     content = config_file.read_text(encoding="utf-8")
-    assert 'model_provider = "headroom"' in content
-    assert "[mcp_servers.headroom]" in content
+    assert 'model_provider = "legroom"' in content
+    assert "[mcp_servers.legroom]" in content
     assert not (tmp_path / ".codex" / "config.toml").exists()
 
 
@@ -1090,12 +1090,12 @@ def test_wrap_codex_launch_uses_durable_codex_home(
         rollout.parent.mkdir(parents=True)
         rollout.write_text('{"type":"session_meta"}\n', encoding="utf-8")
 
-    with patch("headroom.cli.wrap._ensure_rtk_binary", return_value=None):
+    with patch("legroom.cli.wrap._ensure_rtk_binary", return_value=None):
         with patch(
-            "headroom.cli.wrap.shutil.which",
+            "legroom.cli.wrap.shutil.which",
             side_effect=lambda cmd: "/fake/codex" if cmd == "codex" else None,
         ):
-            with patch("headroom.cli.wrap._launch_tool", side_effect=fake_launch):
+            with patch("legroom.cli.wrap._launch_tool", side_effect=fake_launch):
                 result = runner.invoke(
                     main,
                     [
@@ -1113,9 +1113,9 @@ def test_wrap_codex_launch_uses_durable_codex_home(
     assert launch_env["OPENAI_BASE_URL"] == "http://127.0.0.1:8787/v1"
     persisted_config = config_file.read_text(encoding="utf-8")
     assert original_config in persisted_config
-    assert "[mcp_servers.headroom]" in persisted_config
-    assert 'model_provider = "headroom"' not in persisted_config
-    assert "[model_providers.headroom]" not in persisted_config
+    assert "[mcp_servers.legroom]" in persisted_config
+    assert 'model_provider = "legroom"' not in persisted_config
+    assert "[model_providers.legroom]" not in persisted_config
     assert auth_file.read_text(encoding="utf-8") == original_auth
     assert rollout.read_text(encoding="utf-8") == '{"type":"session_meta"}\n'
 
@@ -1171,7 +1171,7 @@ def test_codex_session_launch_settings_preserve_custom_provider_identity(
         environ={"CODEX_HOME": str(codex_home)},
     )
 
-    assert "model_provider=headroom" not in " ".join(args)
+    assert "model_provider=legroom" not in " ".join(args)
     assert '"model_providers"."company"."base_url"="http://127.0.0.1:9898/v1"' in args
     assert env[wrap_mod._UPSTREAM_BASE_URL_ENV_VAR] == "https://api.example.test/v1"
     assert config_file.read_text(encoding="utf-8") == original_config
@@ -1199,12 +1199,12 @@ def test_wrap_codex_rejects_custom_provider_without_upstream_base_url(
             kwargs["env_vars_display"],
         )
 
-    with patch("headroom.cli.wrap._ensure_rtk_binary", return_value=None):
+    with patch("legroom.cli.wrap._ensure_rtk_binary", return_value=None):
         with patch(
-            "headroom.cli.wrap.shutil.which",
+            "legroom.cli.wrap.shutil.which",
             side_effect=lambda cmd: "/fake/codex" if cmd == "codex" else None,
         ):
-            with patch("headroom.cli.wrap._launch_tool", side_effect=fake_launch):
+            with patch("legroom.cli.wrap._launch_tool", side_effect=fake_launch):
                 result = runner.invoke(
                     main,
                     [
@@ -1248,12 +1248,12 @@ def test_wrap_codex_routes_model_provider_selected_by_config_argument(
         )
         configured_env.update(env)
 
-    with patch("headroom.cli.wrap._ensure_rtk_binary", return_value=None):
+    with patch("legroom.cli.wrap._ensure_rtk_binary", return_value=None):
         with patch(
-            "headroom.cli.wrap.shutil.which",
+            "legroom.cli.wrap.shutil.which",
             side_effect=lambda cmd: "/fake/codex" if cmd == "codex" else None,
         ):
-            with patch("headroom.cli.wrap._launch_tool", side_effect=fake_launch):
+            with patch("legroom.cli.wrap._launch_tool", side_effect=fake_launch):
                 result = runner.invoke(
                     main,
                     [
@@ -1277,7 +1277,7 @@ def test_wrap_codex_injects_rtk_globally_without_changing_project_agents(
     runner: CliRunner, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     _set_test_home(monkeypatch, tmp_path)
-    monkeypatch.setenv("HEADROOM_RTK", "1")
+    monkeypatch.setenv("LEGROOM_RTK", "1")
     project_dir = tmp_path / "project"
     project_dir.mkdir()
     project_agents = project_dir / "AGENTS.md"
@@ -1287,7 +1287,7 @@ def test_wrap_codex_injects_rtk_globally_without_changing_project_agents(
     monkeypatch.chdir(project_dir)
 
     with patch(
-        "headroom.cli.wrap._ensure_rtk_binary",
+        "legroom.cli.wrap._ensure_rtk_binary",
         return_value=tmp_path / "rtk",
     ):
         result = runner.invoke(
@@ -1311,7 +1311,7 @@ def test_wrap_codex_launch_injects_rtk_globally_without_changing_project_agents(
     runner: CliRunner, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     _set_test_home(monkeypatch, tmp_path)
-    monkeypatch.setenv("HEADROOM_RTK", "1")
+    monkeypatch.setenv("LEGROOM_RTK", "1")
     project_dir = tmp_path / "project"
     project_dir.mkdir()
     project_agents = project_dir / "AGENTS.md"
@@ -1320,12 +1320,12 @@ def test_wrap_codex_launch_injects_rtk_globally_without_changing_project_agents(
     original_bytes = project_agents.read_bytes()
     monkeypatch.chdir(project_dir)
 
-    with patch("headroom.cli.wrap._ensure_rtk_binary", return_value=tmp_path / "rtk"):
+    with patch("legroom.cli.wrap._ensure_rtk_binary", return_value=tmp_path / "rtk"):
         with patch(
-            "headroom.cli.wrap.shutil.which",
+            "legroom.cli.wrap.shutil.which",
             side_effect=lambda cmd: "/fake/codex" if cmd == "codex" else None,
         ):
-            with patch("headroom.cli.wrap._launch_tool"):
+            with patch("legroom.cli.wrap._launch_tool"):
                 result = runner.invoke(
                     main,
                     [
@@ -1351,7 +1351,7 @@ def test_unwrap_codex_without_codex_home_warns_on_ambiguous_noop(
     codex_home.mkdir()
     monkeypatch.setenv("CODEX_HOME", str(codex_home))
 
-    with patch("headroom.cli.wrap._ensure_rtk_binary", return_value=None):
+    with patch("legroom.cli.wrap._ensure_rtk_binary", return_value=None):
         wrap_result = runner.invoke(
             main,
             [
@@ -1373,11 +1373,11 @@ def test_unwrap_codex_without_codex_home_warns_on_ambiguous_noop(
     unwrap_result = runner.invoke(main, ["unwrap", "codex", "--no-stop-proxy"])
 
     assert unwrap_result.exit_code == 0, unwrap_result.output
-    assert "Warning: found no Headroom wrap markers in the default Codex config" in (
+    assert "Warning: found no Legroom wrap markers in the default Codex config" in (
         unwrap_result.output
     )
     assert "If you wrapped Codex with CODEX_HOME" in unwrap_result.output
-    assert "CODEX_HOME=/path/to/codex-home headroom unwrap codex" in unwrap_result.output
+    assert "CODEX_HOME=/path/to/codex-home legroom unwrap codex" in unwrap_result.output
     assert "Nothing to undo" in unwrap_result.output
     assert 'openai_base_url = "http://127.0.0.1:8787/v1"' in config_file.read_text(encoding="utf-8")
 
@@ -1418,10 +1418,10 @@ def test_start_proxy_does_not_apply_agent_90_defaults(
     # the shard can leave behind in ``os.environ``. This test is about what the
     # WRAPPER adds, so start from an unset env rather than inheriting pollution.
     for _var in (
-        "HEADROOM_SAVINGS_PROFILE",
-        "HEADROOM_TARGET_RATIO",
-        "HEADROOM_MAX_ITEMS",
-        "HEADROOM_SMART_CRUSHER_COMPACTION",
+        "LEGROOM_SAVINGS_PROFILE",
+        "LEGROOM_TARGET_RATIO",
+        "LEGROOM_MAX_ITEMS",
+        "LEGROOM_SMART_CRUSHER_COMPACTION",
     ):
         monkeypatch.delenv(_var, raising=False)
     popen_kwargs: dict[str, object] = {}
@@ -1444,10 +1444,10 @@ def test_start_proxy_does_not_apply_agent_90_defaults(
 
     env = popen_kwargs["env"]
     assert isinstance(env, dict)
-    assert "HEADROOM_SAVINGS_PROFILE" not in env
-    assert "HEADROOM_TARGET_RATIO" not in env
-    assert "HEADROOM_MAX_ITEMS" not in env
-    assert "HEADROOM_SMART_CRUSHER_COMPACTION" not in env
+    assert "LEGROOM_SAVINGS_PROFILE" not in env
+    assert "LEGROOM_TARGET_RATIO" not in env
+    assert "LEGROOM_MAX_ITEMS" not in env
+    assert "LEGROOM_SMART_CRUSHER_COMPACTION" not in env
 
 
 def test_start_proxy_preserves_explicit_savings_overrides(
@@ -1466,8 +1466,8 @@ def test_start_proxy_preserves_explicit_savings_overrides(
         popen_kwargs.update(kwargs)
         return FakeProc()
 
-    monkeypatch.setenv("HEADROOM_TARGET_RATIO", "0.20")
-    monkeypatch.setenv("HEADROOM_MAX_ITEMS", "12")
+    monkeypatch.setenv("LEGROOM_TARGET_RATIO", "0.20")
+    monkeypatch.setenv("LEGROOM_MAX_ITEMS", "12")
     monkeypatch.setattr(wrap_mod, "_get_log_path", lambda: tmp_path / "proxy.log")
     monkeypatch.setattr(wrap_mod, "_check_proxy", lambda port: True)
     monkeypatch.setattr(wrap_mod.subprocess, "Popen", fake_popen)
@@ -1476,8 +1476,8 @@ def test_start_proxy_preserves_explicit_savings_overrides(
 
     env = popen_kwargs["env"]
     assert isinstance(env, dict)
-    assert env["HEADROOM_TARGET_RATIO"] == "0.20"
-    assert env["HEADROOM_MAX_ITEMS"] == "12"
+    assert env["LEGROOM_TARGET_RATIO"] == "0.20"
+    assert env["LEGROOM_MAX_ITEMS"] == "12"
 
 
 def test_launch_tool_ignores_sigint_in_wrapper(
@@ -1517,29 +1517,29 @@ def test_wrap_codex_prepare_only_updates_stale_mcp_proxy_url(
     config_file = tmp_path / ".codex" / "config.toml"
     config_file.parent.mkdir(parents=True)
     config_file.write_text(
-        "# --- Headroom MCP server ---\n"
-        "[mcp_servers.headroom]\n"
-        'command = "headroom"\n'
+        "# --- Legroom MCP server ---\n"
+        "[mcp_servers.legroom]\n"
+        'command = "legroom"\n'
         'args = ["mcp", "serve"]\n'
         "\n"
-        "[mcp_servers.headroom.env]\n"
-        'HEADROOM_PROXY_URL = "http://127.0.0.1:9000"\n'
-        "# --- end Headroom MCP server ---\n",
+        "[mcp_servers.legroom.env]\n"
+        'LEGROOM_PROXY_URL = "http://127.0.0.1:9000"\n'
+        "# --- end Legroom MCP server ---\n",
         encoding="utf-8",
     )
 
-    with patch("headroom.cli.wrap._ensure_rtk_binary", return_value=None):
+    with patch("legroom.cli.wrap._ensure_rtk_binary", return_value=None):
         result = runner.invoke(main, ["wrap", "codex", "--prepare-only", "--port", "8787"])
 
     assert result.exit_code == 0, result.output
     content = config_file.read_text(encoding="utf-8")
     parsed = tomllib.loads(content)
-    expected = build_headroom_spec()
-    headroom_mcp = parsed["mcp_servers"]["headroom"]
-    assert "[mcp_servers.headroom]" in content
-    assert headroom_mcp["command"] == expected.command
-    assert headroom_mcp["args"] == list(expected.args)
-    assert "env" not in headroom_mcp or "HEADROOM_PROXY_URL" not in headroom_mcp["env"]
+    expected = build_legroom_spec()
+    legroom_mcp = parsed["mcp_servers"]["legroom"]
+    assert "[mcp_servers.legroom]" in content
+    assert legroom_mcp["command"] == expected.command
+    assert legroom_mcp["args"] == list(expected.args)
+    assert "env" not in legroom_mcp or "LEGROOM_PROXY_URL" not in legroom_mcp["env"]
     assert "http://127.0.0.1:9000" not in content
 
 
@@ -1575,15 +1575,15 @@ def test_wrap_codex_memory_prepare_only_uses_local_db_without_persisting_it(
         imported_users.append(user_id)
         return 0
 
-    with patch("headroom.cli.wrap._ensure_rtk_binary", return_value=None):
-        with patch("headroom.memory.sync._build_sync_backend", side_effect=fake_build_sync_backend):
-            with patch("headroom.memory.sync.sync_import", side_effect=fake_sync_import):
+    with patch("legroom.cli.wrap._ensure_rtk_binary", return_value=None):
+        with patch("legroom.memory.sync._build_sync_backend", side_effect=fake_build_sync_backend):
+            with patch("legroom.memory.sync.sync_import", side_effect=fake_sync_import):
                 with patch(
-                    "headroom.memory.sync_adapters.claude_code.ClaudeCodeAdapter",
+                    "legroom.memory.sync_adapters.claude_code.ClaudeCodeAdapter",
                     FakeClaudeCodeAdapter,
                 ):
                     with patch(
-                        "headroom.memory.sync_adapters.claude_code.get_claude_memory_dir",
+                        "legroom.memory.sync_adapters.claude_code.get_claude_memory_dir",
                         return_value=tmp_path / "claude-memory",
                     ):
                         result = runner.invoke(
@@ -1599,11 +1599,11 @@ def test_wrap_codex_memory_prepare_only_uses_local_db_without_persisting_it(
                         )
 
     assert result.exit_code == 0, result.output
-    assert backend_paths == [str(project_dir / ".headroom" / "memory.db")]
+    assert backend_paths == [str(project_dir / ".legroom" / "memory.db")]
     assert imported_users == ["codex-user"]
 
     content = (tmp_path / ".codex" / "config.toml").read_text()
-    assert "[mcp_servers.headroom_memory]" in content
+    assert "[mcp_servers.legroom_memory]" in content
     assert '"--user", "codex-user"' in content
     assert "--db" not in content
 
@@ -1620,14 +1620,14 @@ def test_wrap_codex_prepare_only_registers_serena_when_uvx_exists(
             return "/usr/local/bin/uvx"
         return None
 
-    with patch("headroom.cli.wrap._ensure_rtk_binary", return_value=None):
-        with patch("headroom.cli.wrap.shutil.which", side_effect=fake_which):
+    with patch("legroom.cli.wrap._ensure_rtk_binary", return_value=None):
+        with patch("legroom.cli.wrap.shutil.which", side_effect=fake_which):
             # tokensave is the primary code-graph compressor; Serena is only
             # the backup, registered when tokensave is unavailable. Force it
             # unavailable so this test deterministically exercises the Serena
             # path regardless of whether a real tokensave binary was installed
             # in the shared bin dir by an earlier test in the suite.
-            with patch("headroom.cli.wrap._ensure_tokensave_binary", return_value=None):
+            with patch("legroom.cli.wrap._ensure_tokensave_binary", return_value=None):
                 result = runner.invoke(main, ["wrap", "codex", "--prepare-only"])
 
     assert result.exit_code == 0, result.output
@@ -1644,7 +1644,7 @@ def test_wrap_codex_prepare_only_no_serena_skips_serena(
     config_file = tmp_path / ".codex" / "config.toml"
     config_file.parent.mkdir(parents=True)
 
-    with patch("headroom.cli.wrap._ensure_rtk_binary", return_value=None):
+    with patch("legroom.cli.wrap._ensure_rtk_binary", return_value=None):
         result = runner.invoke(main, ["wrap", "codex", "--prepare-only", "--no-serena"])
 
     assert result.exit_code == 0, result.output
@@ -1667,15 +1667,15 @@ def test_unwrap_codex_restores_prior_config_end_to_end(
     )
     config_file.write_text(original, encoding="utf-8")
 
-    with patch("headroom.cli.wrap._ensure_rtk_binary", return_value=None):
+    with patch("legroom.cli.wrap._ensure_rtk_binary", return_value=None):
         wrap_result = runner.invoke(main, ["wrap", "codex", "--prepare-only", "--port", "8787"])
     assert wrap_result.exit_code == 0, wrap_result.output
-    assert 'model_provider = "headroom"' in config_file.read_text(encoding="utf-8")
+    assert 'model_provider = "legroom"' in config_file.read_text(encoding="utf-8")
 
     stopped: list[int] = []
 
     with patch(
-        "headroom.cli.wrap._stop_local_proxy_for_unwrap",
+        "legroom.cli.wrap._stop_local_proxy_for_unwrap",
         side_effect=lambda port: stopped.append(port) or "stopped",
     ):
         unwrap_result = runner.invoke(main, ["unwrap", "codex", "--port", "9999"])
@@ -1685,10 +1685,10 @@ def test_unwrap_codex_restores_prior_config_end_to_end(
     # injected block must be gone — no more "Missing OPENAI_API_KEY" when the
     # proxy is stopped.
     assert config_file.read_text(encoding="utf-8") == original
-    assert 'model_provider = "headroom"' not in config_file.read_text(encoding="utf-8")
-    assert not (tmp_path / ".codex" / "config.toml.headroom-backup").exists()
+    assert 'model_provider = "legroom"' not in config_file.read_text(encoding="utf-8")
+    assert not (tmp_path / ".codex" / "config.toml.legroom-backup").exists()
     assert stopped == [9999]
-    assert "Stopped local Headroom proxy on port 9999" in unwrap_result.output
+    assert "Stopped local Legroom proxy on port 9999" in unwrap_result.output
 
 
 def test_unwrap_codex_no_stop_proxy_leaves_proxy_alone(
@@ -1697,7 +1697,7 @@ def test_unwrap_codex_no_stop_proxy_leaves_proxy_alone(
     _set_test_home(monkeypatch, tmp_path)
     monkeypatch.setenv("CODEX_HOME", str(tmp_path / "explicit-codex-home"))
 
-    with patch("headroom.cli.wrap._stop_local_proxy_for_unwrap") as stop_proxy:
+    with patch("legroom.cli.wrap._stop_local_proxy_for_unwrap") as stop_proxy:
         result = runner.invoke(main, ["unwrap", "codex", "--no-stop-proxy"])
 
     assert result.exit_code == 0, result.output
@@ -1723,15 +1723,15 @@ def test_wrap_codex_memory_prepare_only_unwrap_removes_memory_mcp_without_prior_
     async def fake_sync_import(backend: FakeBackend, adapter: object, user_id: str) -> int:
         return 0
 
-    with patch("headroom.cli.wrap._ensure_rtk_binary", return_value=None):
-        with patch("headroom.memory.sync._build_sync_backend", return_value=FakeBackend()):
-            with patch("headroom.memory.sync.sync_import", side_effect=fake_sync_import):
+    with patch("legroom.cli.wrap._ensure_rtk_binary", return_value=None):
+        with patch("legroom.memory.sync._build_sync_backend", return_value=FakeBackend()):
+            with patch("legroom.memory.sync.sync_import", side_effect=fake_sync_import):
                 with patch(
-                    "headroom.memory.sync_adapters.claude_code.ClaudeCodeAdapter",
+                    "legroom.memory.sync_adapters.claude_code.ClaudeCodeAdapter",
                     autospec=True,
                 ):
                     with patch(
-                        "headroom.memory.sync_adapters.claude_code.get_claude_memory_dir",
+                        "legroom.memory.sync_adapters.claude_code.get_claude_memory_dir",
                         return_value=tmp_path / "claude-memory",
                     ):
                         wrap_result = runner.invoke(
@@ -1749,15 +1749,15 @@ def test_wrap_codex_memory_prepare_only_unwrap_removes_memory_mcp_without_prior_
     assert wrap_result.exit_code == 0, wrap_result.output
     config_file = tmp_path / ".codex" / "config.toml"
     content = config_file.read_text()
-    assert "[mcp_servers.headroom_memory]" in content
+    assert "[mcp_servers.legroom_memory]" in content
     assert '"--user", "codex-user"' in content
 
-    with patch("headroom.cli.wrap._stop_local_proxy_for_unwrap") as stop_proxy:
+    with patch("legroom.cli.wrap._stop_local_proxy_for_unwrap") as stop_proxy:
         unwrap_result = runner.invoke(main, ["unwrap", "codex", "--no-stop-proxy"])
 
     assert unwrap_result.exit_code == 0, unwrap_result.output
     assert not config_file.exists()
-    assert not (tmp_path / ".codex" / "config.toml.headroom-backup").exists()
+    assert not (tmp_path / ".codex" / "config.toml.legroom-backup").exists()
     stop_proxy.assert_not_called()
 
 
@@ -1783,16 +1783,16 @@ def test_wrap_codex_memory_launch_failure_unwrap_cleans_memory_only_config(
     def fake_which(cmd: str) -> str | None:
         return None if cmd == "codex" else shutil.which(cmd)
 
-    with patch("headroom.cli.wrap._ensure_rtk_binary", return_value=None):
-        with patch("headroom.cli.wrap.shutil.which", side_effect=fake_which):
-            with patch("headroom.memory.sync._build_sync_backend", return_value=FakeBackend()):
-                with patch("headroom.memory.sync.sync_import", side_effect=fake_sync_import):
+    with patch("legroom.cli.wrap._ensure_rtk_binary", return_value=None):
+        with patch("legroom.cli.wrap.shutil.which", side_effect=fake_which):
+            with patch("legroom.memory.sync._build_sync_backend", return_value=FakeBackend()):
+                with patch("legroom.memory.sync.sync_import", side_effect=fake_sync_import):
                     with patch(
-                        "headroom.memory.sync_adapters.claude_code.ClaudeCodeAdapter",
+                        "legroom.memory.sync_adapters.claude_code.ClaudeCodeAdapter",
                         autospec=True,
                     ):
                         with patch(
-                            "headroom.memory.sync_adapters.claude_code.get_claude_memory_dir",
+                            "legroom.memory.sync_adapters.claude_code.get_claude_memory_dir",
                             return_value=tmp_path / "claude-memory",
                         ):
                             wrap_result = runner.invoke(
@@ -1803,9 +1803,9 @@ def test_wrap_codex_memory_launch_failure_unwrap_cleans_memory_only_config(
     assert wrap_result.exit_code == 1
     config_file = tmp_path / ".codex" / "config.toml"
     assert not config_file.exists()
-    assert not (tmp_path / ".codex" / "config.toml.headroom-backup").exists()
+    assert not (tmp_path / ".codex" / "config.toml.legroom-backup").exists()
 
-    with patch("headroom.cli.wrap._stop_local_proxy_for_unwrap") as stop_proxy:
+    with patch("legroom.cli.wrap._stop_local_proxy_for_unwrap") as stop_proxy:
         unwrap_result = runner.invoke(main, ["unwrap", "codex", "--no-stop-proxy"])
 
     assert unwrap_result.exit_code == 0, unwrap_result.output
@@ -1813,7 +1813,7 @@ def test_wrap_codex_memory_launch_failure_unwrap_cleans_memory_only_config(
     stop_proxy.assert_not_called()
 
 
-def test_stop_local_proxy_for_unwrap_kills_identified_headroom_proxy(
+def test_stop_local_proxy_for_unwrap_kills_identified_legroom_proxy(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     killed: list[tuple[int, int]] = []
@@ -1836,7 +1836,7 @@ def test_stop_local_proxy_for_unwrap_refuses_unidentified_listener(
     monkeypatch.setattr(wrap_mod, "_check_proxy", lambda port: True)
     monkeypatch.setattr(wrap_mod, "_query_proxy_config", lambda port: None)
 
-    with patch("headroom.cli.wrap._kill_proxy_by_pid") as kill_proxy:
+    with patch("legroom.cli.wrap._kill_proxy_by_pid") as kill_proxy:
         assert wrap_mod._stop_local_proxy_for_unwrap(8787) == "unidentified"
 
     kill_proxy.assert_not_called()
@@ -1855,12 +1855,12 @@ def test_unwrap_codex_is_safe_noop_with_explicit_codex_home(
     assert not (tmp_path / ".codex" / "config.toml").exists()
 
 
-def test_unwrap_codex_removes_headroom_only_config_file(
+def test_unwrap_codex_removes_legroom_only_config_file(
     runner: CliRunner, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     _set_test_home(monkeypatch, tmp_path)
 
-    with patch("headroom.cli.wrap._ensure_rtk_binary", return_value=None):
+    with patch("legroom.cli.wrap._ensure_rtk_binary", return_value=None):
         wrap_result = runner.invoke(main, ["wrap", "codex", "--prepare-only", "--port", "8787"])
     assert wrap_result.exit_code == 0, wrap_result.output
 
@@ -1882,7 +1882,7 @@ def test_unwrap_codex_preserves_unrelated_sections(
     original = '[mcp_servers.local_thing]\ncommand = "/usr/local/bin/thing"\nargs = ["--serve"]\n'
     config_file.write_text(original, encoding="utf-8")
 
-    with patch("headroom.cli.wrap._ensure_rtk_binary", return_value=None):
+    with patch("legroom.cli.wrap._ensure_rtk_binary", return_value=None):
         runner.invoke(main, ["wrap", "codex", "--prepare-only", "--port", "8787"])
 
     result = runner.invoke(main, ["unwrap", "codex"])
@@ -1897,11 +1897,11 @@ def test_unwrap_codex_preserves_unrelated_sections(
 
 
 class TestCodexProjectHeaderConfig:
-    """The injected provider maps X-Headroom-Project to HEADROOM_PROJECT.
+    """The injected provider maps X-Legroom-Project to LEGROOM_PROJECT.
 
     Codex's ``env_http_headers`` sends a header only when the mapped env var
-    is set at Codex runtime, so `headroom wrap codex` exports
-    ``HEADROOM_PROJECT`` and the proxy attributes savings per project.
+    is set at Codex runtime, so `legroom wrap codex` exports
+    ``LEGROOM_PROJECT`` and the proxy attributes savings per project.
     """
 
     def test_inject_writes_env_http_headers_mapping(
@@ -1912,19 +1912,19 @@ class TestCodexProjectHeaderConfig:
         wrap_mod._inject_codex_provider_config(8787)
 
         content = (tmp_path / ".codex" / "config.toml").read_text(encoding="utf-8")
-        assert 'env_http_headers = { "X-Headroom-Project" = "HEADROOM_PROJECT" }' in content
+        assert 'env_http_headers = { "X-Legroom-Project" = "LEGROOM_PROJECT" }' in content
 
     def test_env_http_headers_inside_provider_section(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        """The mapping must live inside [model_providers.headroom], before
-        the closing marker, so it applies to the Headroom provider."""
+        """The mapping must live inside [model_providers.legroom], before
+        the closing marker, so it applies to the Legroom provider."""
         _set_test_home(monkeypatch, tmp_path)
 
         wrap_mod._inject_codex_provider_config(8787)
 
         content = (tmp_path / ".codex" / "config.toml").read_text(encoding="utf-8")
-        section_start = content.index("[model_providers.headroom]")
+        section_start = content.index("[model_providers.legroom]")
         mapping_pos = content.index("env_http_headers")
         end_marker_pos = content.index(wrap_mod._CODEX_END_MARKER, section_start)
         assert section_start < mapping_pos < end_marker_pos
@@ -1932,7 +1932,7 @@ class TestCodexProjectHeaderConfig:
     def test_strip_removes_block_with_env_http_headers(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        """_strip_codex_headroom_blocks removes the whole injected block,
+        """_strip_codex_legroom_blocks removes the whole injected block,
         including the new env_http_headers line, leaving user content."""
         _set_test_home(monkeypatch, tmp_path)
         config_dir = tmp_path / ".codex"
@@ -1945,10 +1945,10 @@ class TestCodexProjectHeaderConfig:
         wrapped = config_file.read_text(encoding="utf-8")
         assert "env_http_headers" in wrapped
 
-        cleaned = wrap_mod._strip_codex_headroom_blocks(wrapped)
+        cleaned = wrap_mod._strip_codex_legroom_blocks(wrapped)
         assert "env_http_headers" not in cleaned
-        assert "X-Headroom-Project" not in cleaned
-        assert "[model_providers.headroom]" not in cleaned
+        assert "X-Legroom-Project" not in cleaned
+        assert "[model_providers.legroom]" not in cleaned
         assert 'model = "gpt-4o"' in cleaned
 
 
@@ -1960,7 +1960,7 @@ class TestCodexProjectHeaderConfig:
 class TestCodexPortResolution:
     """codex() hands the requested port to the session-scoped wrap runner.
 
-    Regression for headroom#1406 round 2 review: the codex command must keep
+    Regression for legroom#1406 round 2 review: the codex command must keep
     the selected-port contract intact after the session-home refactor instead
     of silently dropping or rewriting the requested port before the shared
     launch path handles proxy reuse and fallback.
@@ -1968,7 +1968,7 @@ class TestCodexPortResolution:
 
     def test_delegates_to_session_runner(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """codex() passes the requested port through to _run_codex_wrap."""
-        _set_test_home(monkeypatch, Path("/tmp/test_headroom_codex"))
+        _set_test_home(monkeypatch, Path("/tmp/test_legroom_codex"))
 
         call_kw: dict = {}
 
@@ -1991,7 +1991,7 @@ class TestCodexPortResolution:
 
 class TestCodexLaunchExportsCustomUpstream:
     """`_run_codex_wrap` must export the detected custom upstream base URL into
-    the launch env so Codex emits the ``X-Headroom-Base-Url`` header. Otherwise
+    the launch env so Codex emits the ``X-Legroom-Base-Url`` header. Otherwise
     the proxy falls back to api.openai.com and the user's gateway key is sent to
     the wrong host (regression of #1614)."""
 

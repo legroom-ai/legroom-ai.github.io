@@ -20,8 +20,8 @@ pytest.importorskip("httpx")
 import httpx
 from fastapi.testclient import TestClient
 
-from headroom.proxy.loopback_guard import require_loopback
-from headroom.proxy.server import ProxyConfig, create_app
+from legroom.proxy.loopback_guard import require_loopback
+from legroom.proxy.server import ProxyConfig, create_app
 
 
 def _make_client(optimize: bool = False):

@@ -10,7 +10,7 @@ use crate::proxy::AppState;
 
 /// Own health: 200 if the proxy process is up.
 pub async fn healthz() -> impl IntoResponse {
-    Json(json!({ "ok": true, "service": "headroom-proxy" }))
+    Json(json!({ "ok": true, "service": "legroom-proxy" }))
 }
 
 /// Upstream health: GETs upstream `/healthz`. Returns 200 when reachable +

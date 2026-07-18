@@ -13,7 +13,7 @@ Real-world data shows 75% of Read output bytes fall into these two categories:
 - Only 20% are fresh (untouched)
 
 NOTE: a first-sight repeat-Read dedup mechanism (DEDUP_REPEAT) was
-prototyped here and removed — `headroom audit-reads` measured
+prototyped here and removed — `legroom audit-reads` measured
 byte-identical repeats at 0.1% of Read bytes on real traffic. If a
 deployment's audit shows otherwise, the implementation is in git history
 on the feat/compression-extraction branch.

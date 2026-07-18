@@ -12,8 +12,8 @@ from tests import _mcp_stub as mcp_stub
 def test_build_mcp_sdk_stub_exposes_minimum_sdk_contract() -> None:
     modules = mcp_stub._build_mcp_sdk_stub()
 
-    server = modules["mcp.server"].Server("headroom")
-    assert server.name == "headroom"
+    server = modules["mcp.server"].Server("legroom")
+    assert server.name == "legroom"
 
     sentinel = object()
     assert server.list_tools()(sentinel) is sentinel

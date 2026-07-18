@@ -1,7 +1,7 @@
 //! Character-density estimator. Used as a fallback for any tokenizer family
 //! we haven't wired in yet (Anthropic Claude, Google Gemini, Cohere, …).
 //!
-//! Mirrors `headroom.tokenizers.estimator.EstimatingTokenCounter`. The formula
+//! Mirrors `legroom.tokenizers.estimator.EstimatingTokenCounter`. The formula
 //! is `ceil(chars / chars_per_token)`. `chars` is *Unicode scalar count*, not
 //! byte length, to match Python's `len(text)` semantics on str.
 

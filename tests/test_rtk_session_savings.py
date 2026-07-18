@@ -9,12 +9,12 @@ plumbing rather than asserting the arithmetic in the abstract.
 
 from __future__ import annotations
 
-import headroom.proxy.helpers as helpers
+import legroom.proxy.helpers as helpers
 
 
 def _reset(monkeypatch):
     monkeypatch.delenv(helpers._RTK_GAIN_SCOPE_ENV, raising=False)
-    monkeypatch.setenv("HEADROOM_CONTEXT_TOOL", "rtk")
+    monkeypatch.setenv("LEGROOM_CONTEXT_TOOL", "rtk")
     helpers._context_tool_stats_cache.update(
         {"expires_at": 0.0, "has_value": False, "tool": None, "value": None}
     )
@@ -80,7 +80,7 @@ def _fake_run_raises(*args, **kwargs):
 
 
 def test_rtk_reader_returns_none_on_timeout(monkeypatch):
-    import headroom.rtk as rtk_mod
+    import legroom.rtk as rtk_mod
 
     monkeypatch.setattr(rtk_mod, "get_rtk_path", lambda: "/fake/rtk")
     monkeypatch.setattr(helpers, "run", _fake_run_raises)
@@ -91,7 +91,7 @@ def test_rtk_reader_returns_none_on_nonzero_exit(monkeypatch, caplog):
     import logging
     from types import SimpleNamespace
 
-    import headroom.rtk as rtk_mod
+    import legroom.rtk as rtk_mod
 
     monkeypatch.setattr(rtk_mod, "get_rtk_path", lambda: "/fake/rtk")
     monkeypatch.setattr(
@@ -107,7 +107,7 @@ def test_rtk_reader_returns_none_on_nonzero_exit(monkeypatch, caplog):
 def test_rtk_reader_returns_none_on_bad_json(monkeypatch):
     from types import SimpleNamespace
 
-    import headroom.rtk as rtk_mod
+    import legroom.rtk as rtk_mod
 
     monkeypatch.setattr(rtk_mod, "get_rtk_path", lambda: "/fake/rtk")
     monkeypatch.setattr(
@@ -119,7 +119,7 @@ def test_rtk_reader_returns_none_on_bad_json(monkeypatch):
 
 
 def test_rtk_reader_not_installed_keeps_zero_payload(monkeypatch):
-    import headroom.rtk as rtk_mod
+    import legroom.rtk as rtk_mod
 
     monkeypatch.setattr(rtk_mod, "get_rtk_path", lambda: None)
     payload = helpers._read_rtk_lifetime_stats()
@@ -131,7 +131,7 @@ def test_rtk_reader_not_installed_keeps_zero_payload(monkeypatch):
 def test_lean_ctx_reader_returns_none_on_failure_and_logs(monkeypatch, caplog):
     import logging
 
-    import headroom.lean_ctx as lean_mod
+    import legroom.lean_ctx as lean_mod
 
     monkeypatch.setattr(lean_mod, "get_lean_ctx_path", lambda: "/fake/lean-ctx")
     monkeypatch.setattr(helpers, "run", _fake_run_raises)
@@ -176,7 +176,7 @@ def test_transient_failure_does_not_repin_baseline_or_inflate_session(monkeypatc
     import json as json_mod
     from types import SimpleNamespace
 
-    import headroom.rtk as rtk_mod
+    import legroom.rtk as rtk_mod
 
     _reset(monkeypatch)
     monkeypatch.setattr(rtk_mod, "get_rtk_path", lambda: "/fake/rtk")
@@ -291,7 +291,7 @@ def test_tool_switch_with_failing_first_read_does_not_zero_pin(monkeypatch):
     _stub_reads(monkeypatch, [_payload(600), None])
 
     helpers._get_context_tool_stats()
-    monkeypatch.setenv("HEADROOM_CONTEXT_TOOL", "lean-ctx")
+    monkeypatch.setenv("LEGROOM_CONTEXT_TOOL", "lean-ctx")
     _bust_cache()
     assert helpers._get_context_tool_stats() is None
     # Switching tools with a failing first read must not pin a zero baseline

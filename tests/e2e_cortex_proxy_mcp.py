@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Proxy + MCP mode e2e test: Cortex Code + Headroom
+Proxy + MCP mode e2e test: Cortex Code + Legroom
 
 Tests the FULL Proxy + MCP path simultaneously:
-  1. Start headroom FastAPI proxy → intercepts traffic, routes to Cortex
-  2. Start headroom MCP server → exposes headroom_compress/retrieve/stats tools
+  1. Start legroom FastAPI proxy → intercepts traffic, routes to Cortex
+  2. Start legroom MCP server → exposes legroom_compress/retrieve/stats tools
   3. Route calls THROUGH the proxy to Cortex (automatic compression path)
-  4. Use MCP headroom_compress for explicit agent-controlled compression
+  4. Use MCP legroom_compress for explicit agent-controlled compression
   5. Verify both paths work together in the same session
 
 This mirrors the real Cortex Code experience:
@@ -32,7 +32,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 _VENV_SITE = REPO_ROOT / ".venv" / "lib"
 try:
-    from headroom import compress as _hc  # noqa: F401
+    from legroom import compress as _hc  # noqa: F401
 except ImportError:
     sys.path.insert(0, str(REPO_ROOT))
     for _d in _VENV_SITE.glob("python*/site-packages"):
@@ -42,7 +42,7 @@ _SF_CONN = os.environ.get("SF_CONN", "")
 _SF_HOST = os.environ.get("SF_HOST", "")
 _SF_MODEL = os.environ.get("SF_MODEL", "claude-sonnet-4-6")
 _PROXY_PORT = int(os.environ.get("PROXY_PORT", "8797"))
-MCP_SERVER_SCRIPT = REPO_ROOT / "headroom" / "ccr" / "mcp_server.py"
+MCP_SERVER_SCRIPT = REPO_ROOT / "legroom" / "ccr" / "mcp_server.py"
 
 
 # ── Snowflake auth ─────────────────────────────────────────────────────────────
@@ -82,7 +82,7 @@ def _call(url: str, messages: list[dict], token: str) -> dict:
         headers={
             "Authorization": f'Snowflake Token="{token}"',
             "Content-Type": "application/json",
-            "User-Agent": "headroom-proxy-mcp-test/1.0",
+            "User-Agent": "legroom-proxy-mcp-test/1.0",
         },
         method="POST",
     )
@@ -159,19 +159,19 @@ async def run_test(token: str, host: str) -> int:
 
     print()
     print("╔═══════════════════════════════════════════════════════════════╗")
-    print("║  Cortex Code × Headroom  —  Proxy + MCP Mode E2E Test        ║")
+    print("║  Cortex Code × Legroom  —  Proxy + MCP Mode E2E Test        ║")
     print("║  FastAPI Proxy + MCP SDK Client  │  Snowflake Cortex          ║")
     print("╚═══════════════════════════════════════════════════════════════╝")
     print(f"\n  Model : {_SF_MODEL}  │  Host : {host}")
 
     # ── Start proxy ───────────────────────────────────────────────────────────
-    print("\n  [1/7] Starting headroom proxy ...", end=" ", flush=True)
-    proxy_log = open("/tmp/headroom_proxy_mcp.log", "w")
+    print("\n  [1/7] Starting legroom proxy ...", end=" ", flush=True)
+    proxy_log = open("/tmp/legroom_proxy_mcp.log", "w")
     proxy_proc = subprocess.Popen(
         [
             sys.executable,
             "-m",
-            "headroom.proxy.server",
+            "legroom.proxy.server",
             "--port",
             str(_PROXY_PORT),
             "--openai-api-url",
@@ -199,7 +199,7 @@ async def run_test(token: str, host: str) -> int:
 
     try:
         # ── MCP + Proxy session ───────────────────────────────────────────────
-        print("  [2/7] Connecting to headroom MCP server ...", end=" ", flush=True)
+        print("  [2/7] Connecting to legroom MCP server ...", end=" ", flush=True)
         async with stdio_client(server_params) as (read, write):
             async with ClientSession(read, write) as session:
                 await session.initialize()
@@ -237,8 +237,8 @@ async def run_test(token: str, host: str) -> int:
                 results.append(("Proxy-only (tables)", d2_pt - p2_pt, d2_pt, "proxy"))
 
                 # ── Path B: MCP compress → proxy call ─────────────────────────
-                print("\n  [5/7] Path B — MCP headroom_compress → proxy call")
-                r1 = await session.call_tool("headroom_compress", {"content": dbt})
+                print("\n  [5/7] Path B — MCP legroom_compress → proxy call")
+                r1 = await session.call_tool("legroom_compress", {"content": dbt})
                 t1 = r1.content[0].text if r1.content else "{}"
                 d1 = json.loads(t1) if t1.startswith("{") else {}
                 c1 = d1.get("compressed", dbt)
@@ -247,7 +247,7 @@ async def run_test(token: str, host: str) -> int:
                 mcp_p1 = d1.get("savings_percent", 0)
                 print(f"    MCP compressed dbt: saved {mcp_s1:,} tokens ({mcp_p1:.1f}%)")
 
-                r2 = await session.call_tool("headroom_compress", {"content": tables})
+                r2 = await session.call_tool("legroom_compress", {"content": tables})
                 t2 = r2.content[0].text if r2.content else "{}"
                 d2 = json.loads(t2) if t2.startswith("{") else {}
                 c2 = d2.get("compressed", tables)
@@ -293,20 +293,20 @@ async def run_test(token: str, host: str) -> int:
 
                 # ── CCR round-trip ────────────────────────────────────────────
                 if hash1:
-                    print(f"\n  [6/7] CCR round-trip — headroom_retrieve({hash1[:8]}...)")
-                    r3 = await session.call_tool("headroom_retrieve", {"hash": hash1})
+                    print(f"\n  [6/7] CCR round-trip — legroom_retrieve({hash1[:8]}...)")
+                    r3 = await session.call_tool("legroom_retrieve", {"hash": hash1})
                     t3 = r3.content[0].text if r3.content else "{}"
                     d3 = json.loads(t3) if t3.startswith("{") else {}
                     if "original_content" in d3 or "results" in d3:
-                        print("    ✓  original content retrieved via headroom_retrieve")
+                        print("    ✓  original content retrieved via legroom_retrieve")
                     elif "error" in d3:
                         print(f"    ⚠  {d3.get('error', '')[:80]}")
                     else:
                         print(f"    ✓  retrieved (keys: {list(d3.keys())})")
 
                 # ── MCP stats ─────────────────────────────────────────────────
-                print("\n  [7/7] headroom_stats (MCP session)")
-                r4 = await session.call_tool("headroom_stats", {})
+                print("\n  [7/7] legroom_stats (MCP session)")
+                r4 = await session.call_tool("legroom_stats", {})
                 stats_text = r4.content[0].text if r4.content else ""
                 for line in stats_text.split("\n")[:6]:
                     if line.strip():
@@ -333,9 +333,9 @@ async def run_test(token: str, host: str) -> int:
     print("  Components verified:")
     print("    ✓  Proxy starts (FastAPI + uvicorn) and routes to Cortex")
     print("    ✓  MCP server connects (MCP Python SDK client)")
-    print("    ✓  headroom_compress works via MCP")
-    print("    ✓  headroom_retrieve (CCR) works via MCP")
-    print("    ✓  headroom_stats records session data")
+    print("    ✓  legroom_compress works via MCP")
+    print("    ✓  legroom_retrieve (CCR) works via MCP")
+    print("    ✓  legroom_stats records session data")
     print("    ✓  Proxy + MCP run simultaneously in same session")
     print("╚═══════════════════════════════════════════════════════════════╝")
     return 0

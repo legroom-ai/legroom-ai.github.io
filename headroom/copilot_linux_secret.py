@@ -9,7 +9,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from headroom._subprocess import run
+from legroom._subprocess import run
 
 logger = logging.getLogger(__name__)
 

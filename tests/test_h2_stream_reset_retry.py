@@ -15,11 +15,11 @@ from unittest.mock import AsyncMock, MagicMock
 import httpx
 import pytest
 
-from headroom.proxy.server import HeadroomProxy
+from legroom.proxy.server import LegroomProxy
 
 
 def _mock_proxy():
-    proxy = object.__new__(HeadroomProxy)
+    proxy = object.__new__(LegroomProxy)
     proxy.http_client = MagicMock(spec=httpx.AsyncClient)
     proxy._config = MagicMock()
     proxy._config.memory_enabled = False

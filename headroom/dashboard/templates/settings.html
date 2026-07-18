@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Headroom Settings</title>
+    <title>Legroom Settings</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
     <script>
         (function () {
-            const saved = localStorage.getItem('headroom-theme');
+            const saved = localStorage.getItem('legroom-theme');
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             if (saved === 'light' || (!saved && !prefersDark)) {
                 document.documentElement.classList.remove('dark');
@@ -33,7 +33,7 @@
         <div class="flex items-center justify-between mb-6">
             <div>
                 <h1 class="text-2xl font-semibold">Settings</h1>
-                <p class="text-sm field-help">Configure Headroom runtime knobs. Changes need a restart to apply.</p>
+                <p class="text-sm field-help">Configure Legroom runtime knobs. Changes need a restart to apply.</p>
             </div>
             <a href="/dashboard" class="text-sm text-accent hover:underline">&larr; Dashboard</a>
         </div>
@@ -121,7 +121,7 @@
                                 <p class="text-xs field-help mt-1" x-text="field.help"></p>
                                 <template x-if="field.manifest_managed && manifestManaged">
                                     <p class="text-xs text-amber-500/80 mt-1">
-                                        Managed by the install manifest — change via <code>headroom install</code>.
+                                        Managed by the install manifest — change via <code>legroom install</code>.
                                     </p>
                                 </template>
                                 <template x-if="field.env_override && !(field.manifest_managed && manifestManaged)">

@@ -1,4 +1,4 @@
-"""Tests for `headroom doctor`."""
+"""Tests for `legroom doctor`."""
 
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ from dataclasses import dataclass
 import pytest
 from click.testing import CliRunner
 
-import headroom.cli.doctor as doctor_mod
-from headroom.cli.doctor import (
+import legroom.cli.doctor as doctor_mod
+from legroom.cli.doctor import (
     FAIL,
     PASS,
     SKIP,
@@ -24,11 +24,11 @@ from headroom.cli.doctor import (
     check_shell_env,
     check_version_drift,
 )
-from headroom.cli.main import main
-from headroom.providers.claude.runtime import remote_control_gate_message
+from legroom.cli.main import main
+from legroom.providers.claude.runtime import remote_control_gate_message
 
 LIVEZ_OK = {
-    "service": "headroom-proxy",
+    "service": "legroom-proxy",
     "status": "healthy",
     "alive": True,
     "version": "0.26.0",
@@ -48,7 +48,7 @@ class TestProxyLiveness:
     def test_down_is_fail_with_hint(self):
         result = check_proxy_liveness(None, "http://127.0.0.1:8787")
         assert result.status == FAIL
-        assert "headroom proxy" in (result.hint or "")
+        assert "legroom proxy" in (result.hint or "")
 
     def test_up_mentions_version_and_uptime(self):
         result = check_proxy_liveness(LIVEZ_OK, "http://127.0.0.1:8787")
@@ -131,7 +131,7 @@ class TestClaudeRouting:
         assert result.status == WARN
         assert "8788" in result.summary
 
-    def test_non_headroom_url_warns(self, tmp_path):
+    def test_non_legroom_url_warns(self, tmp_path):
         path = tmp_path / "settings.json"
         path.write_text(
             json.dumps({"env": {"ANTHROPIC_BASE_URL": "https://gateway.corp.example/v1"}}),
@@ -321,8 +321,8 @@ class TestCodexRouting:
     def test_marker_block_right_port_passes(self, tmp_path):
         path = tmp_path / "config.toml"
         path.write_text(
-            'model_provider = "headroom"\n'
-            "[model_providers.headroom]\n"
+            'model_provider = "legroom"\n'
+            "[model_providers.legroom]\n"
             'base_url = "http://127.0.0.1:8787/v1"\n',
             encoding="utf-8",
         )
@@ -331,7 +331,7 @@ class TestCodexRouting:
     def test_port_mismatch_warns(self, tmp_path):
         path = tmp_path / "config.toml"
         path.write_text(
-            '[model_providers.headroom]\nbase_url = "http://127.0.0.1:9999/v1"\n',
+            '[model_providers.legroom]\nbase_url = "http://127.0.0.1:9999/v1"\n',
             encoding="utf-8",
         )
         result = check_codex_routing(path, 8787)
@@ -456,7 +456,7 @@ class TestDoctorCommand:
         monkeypatch.setattr(doctor_mod, "codex_config_path", lambda: tmp_path / "config.toml")
         monkeypatch.setattr(doctor_mod, "savings_path", lambda: tmp_path / "savings.json")
         monkeypatch.setattr(doctor_mod, "list_manifests", lambda: [])
-        for var in ("ANTHROPIC_BASE_URL", "OPENAI_BASE_URL", "HEADROOM_PORT"):
+        for var in ("ANTHROPIC_BASE_URL", "OPENAI_BASE_URL", "LEGROOM_PORT"):
             monkeypatch.delenv(var, raising=False)
         return tmp_path
 
@@ -491,7 +491,7 @@ class TestDoctorCommand:
             encoding="utf-8",
         )
         (isolated / "config.toml").write_text(
-            '[model_providers.headroom]\nbase_url = "http://127.0.0.1:8787/v1"\n',
+            '[model_providers.legroom]\nbase_url = "http://127.0.0.1:8787/v1"\n',
             encoding="utf-8",
         )
         result = runner.invoke(
@@ -527,19 +527,19 @@ class TestDoctorCommand:
             return None
 
         monkeypatch.setattr(doctor_mod, "probe_json", recording_probe)
-        runner.invoke(main, ["doctor"], env={"HEADROOM_PORT": "9999"})
+        runner.invoke(main, ["doctor"], env={"LEGROOM_PORT": "9999"})
         assert "http://127.0.0.1:9999/livez" in seen
 
 
 class TestCostTrackerBudgetKeys:
     def test_stats_exposes_budget_config(self):
-        from headroom.proxy.cost import CostTracker
+        from legroom.proxy.cost import CostTracker
 
         stats = CostTracker(budget_limit_usd=5.0, budget_period="monthly").stats()
         assert stats["budget_limit_usd"] == 5.0
         assert stats["budget_period"] == "monthly"
 
     def test_stats_budget_none_when_unset(self):
-        from headroom.proxy.cost import CostTracker
+        from legroom.proxy.cost import CostTracker
 
         assert CostTracker().stats()["budget_limit_usd"] is None

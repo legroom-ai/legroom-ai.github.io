@@ -44,7 +44,7 @@ class LocalToolPattern:
     """Learned patterns for a specific tool type (local feedback).
 
     MEDIUM FIX #18: Renamed from ToolPattern to avoid confusion with
-    headroom.telemetry.toin.ToolPattern which serves a different purpose:
+    legroom.telemetry.toin.ToolPattern which serves a different purpose:
     - LocalToolPattern: Local feedback patterns keyed by tool_name
     - toin.ToolPattern: Cross-user TOIN patterns keyed by tool_signature_hash
     """

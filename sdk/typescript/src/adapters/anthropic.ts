@@ -163,10 +163,10 @@ function openAIToAnthropic(messages: OpenAIMessage[]): any[] {
  *
  * @example
  * ```typescript
- * import { withHeadroom } from 'headroom-ai/anthropic';
+ * import { withLegroom } from 'legroom-ai/anthropic';
  * import Anthropic from '@anthropic-ai/sdk';
  *
- * const client = withHeadroom(new Anthropic());
+ * const client = withLegroom(new Anthropic());
  * const response = await client.messages.create({
  *   model: 'claude-sonnet-4-5-20250929',
  *   messages: longConversation,
@@ -174,7 +174,7 @@ function openAIToAnthropic(messages: OpenAIMessage[]): any[] {
  * });
  * ```
  */
-export function withHeadroom<T extends AnthropicLike>(
+export function withLegroom<T extends AnthropicLike>(
   client: T,
   options: CompressOptions = {},
 ): T {

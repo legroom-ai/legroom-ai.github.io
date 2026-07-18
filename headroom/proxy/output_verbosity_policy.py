@@ -4,8 +4,8 @@ from __future__ import annotations
 
 # Sentinel prefix marks the steering block so application is idempotent and
 # the block is recognizable in logs/diffs.
-STEERING_SENTINEL = "<headroom_output_shaping>"
-STEERING_SUFFIX = "</headroom_output_shaping>"
+STEERING_SENTINEL = "<legroom_output_shaping>"
+STEERING_SUFFIX = "</legroom_output_shaping>"
 
 # Levels are cumulative: each includes everything above it. Text must stay
 # byte-stable across releases for prefix-cache friendliness; edits to these

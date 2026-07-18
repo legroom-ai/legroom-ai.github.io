@@ -2,7 +2,7 @@
 
 Segments tool output into coherent records, scores each against the request's
 *information need* (user prompt + the triggering tool call's args) using the
-existing :class:`~headroom.relevance.RelevanceScorer` (BM25 / bge-small
+existing :class:`~legroom.relevance.RelevanceScorer` (BM25 / bge-small
 embeddings / hybrid), and partitions the content into ordered KEEP/DROP runs.
 
 The split is **mode-agnostic**: this module decides *what* is worth keeping
@@ -24,7 +24,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from headroom.relevance import RelevanceScorer
+    from legroom.relevance import RelevanceScorer
 
 __all__ = ["adaptive_threshold", "build_relevance_query", "plan_relevance_split", "segment"]
 

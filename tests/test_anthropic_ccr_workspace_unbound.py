@@ -23,7 +23,7 @@ from __future__ import annotations
 import httpx
 from fastapi.testclient import TestClient
 
-from headroom.proxy.server import ProxyConfig, create_app
+from legroom.proxy.server import ProxyConfig, create_app
 
 
 def _client() -> TestClient:

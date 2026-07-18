@@ -1,11 +1,11 @@
-//! PyO3 bindings for headroom-core. Exposed to Python as `headroom._core`.
+//! PyO3 bindings for legroom-core. Exposed to Python as `legroom._core`.
 //!
 //! # Stage 3b — diff_compressor bridge
 //!
 //! The `DiffCompressor` family is exported here so the Python
 //! `ContentRouter` can route to the Rust implementation in-process via
 //! PyO3 instead of running the Python port. Backend selection happens in
-//! `headroom.transforms._rust_diff_compressor.RustBackedDiffCompressor`,
+//! `legroom.transforms._rust_diff_compressor.RustBackedDiffCompressor`,
 //! which mirrors the Python `DiffCompressor` API one-for-one (so callers
 //! don't notice the swap).
 //!
@@ -15,21 +15,21 @@
 
 use std::collections::BTreeMap;
 
-use headroom_core::signals::{
+use legroom_core::signals::{
     ImportanceCategory, ImportanceContext, KeywordDetector, KeywordRegistry, LineImportanceDetector,
 };
-use headroom_core::transforms::smart_crusher::compaction::{
+use legroom_core::transforms::smart_crusher::compaction::{
     ClassifyConfig, CompactConfig, DocumentCompactor,
 };
-use headroom_core::transforms::smart_crusher::{
+use legroom_core::transforms::smart_crusher::{
     CrushResult as RustCrushResult, SmartCrusher as RustSmartCrusher,
     SmartCrusherConfig as RustSmartCrusherConfig,
 };
-use headroom_core::transforms::tag_protector::{
+use legroom_core::transforms::tag_protector::{
     is_known_html_tag as rust_is_known_html_tag, known_html_tag_names as rust_known_html_tag_names,
     protect_tags as rust_protect_tags, restore_tags as rust_restore_tags,
 };
-use headroom_core::transforms::{
+use legroom_core::transforms::{
     compress_openai_responses_live_zone as rust_compress_openai_responses_live_zone,
     detect as rust_detect_chain, is_json_array_of_dicts as rust_is_json_array_of_dicts,
     summarize_openai_responses_no_change_reason as rust_summarize_openai_responses_no_change_reason,
@@ -42,7 +42,7 @@ use headroom_core::transforms::{
     SearchCompressionResult as RustSearchResult, SearchCompressor as RustSearchCompressor,
     SearchCompressorConfig as RustSearchConfig, SearchCompressorStats as RustSearchStats,
 };
-use headroom_core::transforms::{
+use legroom_core::transforms::{
     TextCrusher as RustTextCrusher, TextCrusherConfig as RustTextCrusherConfig,
     TextCrusherResult as RustTextCrusherResult,
 };
@@ -52,7 +52,7 @@ use pyo3::types::{PyBytes, PyDict};
 /// Identity stub used by the Python smoke test to verify linkage.
 #[pyfunction]
 fn hello() -> &'static str {
-    headroom_core::hello()
+    legroom_core::hello()
 }
 
 fn type_name(v: &serde_json::Value) -> &'static str {
@@ -93,13 +93,13 @@ fn build_crush_array_dict<'py>(
 
 // ─── DiffCompressorConfig ──────────────────────────────────────────────────
 
-/// Mirror of `headroom.transforms.diff_compressor.DiffCompressorConfig`.
+/// Mirror of `legroom.transforms.diff_compressor.DiffCompressorConfig`.
 /// Defaults match Python; constructor accepts every field as a kwarg with
 /// the same name and type as the Python dataclass for drop-in
 /// compatibility.
 #[pyclass(
     name = "DiffCompressorConfig",
-    module = "headroom._core",
+    module = "legroom._core",
     from_py_object
 )]
 #[derive(Clone)]
@@ -198,13 +198,13 @@ impl PyDiffCompressorConfig {
 
 // ─── DiffCompressionResult ─────────────────────────────────────────────────
 
-/// Mirror of `headroom.transforms.diff_compressor.DiffCompressionResult`.
+/// Mirror of `legroom.transforms.diff_compressor.DiffCompressionResult`.
 /// Read-only on the Python side: ContentRouter consumes fields, doesn't
 /// mutate. `compression_ratio` and `tokens_saved_estimate` are exposed as
 /// methods (not `@property`) — Python callers reach them via `.method()`.
 /// The Python adapter wraps and re-exposes them as properties for full
 /// dataclass compatibility.
-#[pyclass(name = "DiffCompressionResult", module = "headroom._core")]
+#[pyclass(name = "DiffCompressionResult", module = "legroom._core")]
 struct PyDiffCompressionResult {
     inner: DiffCompressionResult,
 }
@@ -293,7 +293,7 @@ impl PyDiffCompressionResult {
 /// present in the Python dataclass. Returned only from `compress_with_stats`,
 /// which the Python adapter exposes as a method on the wrapper. `Vec`s are
 /// returned as Python lists; the `BTreeMap` becomes a `dict`.
-#[pyclass(name = "DiffCompressorStats", module = "headroom._core")]
+#[pyclass(name = "DiffCompressorStats", module = "legroom._core")]
 struct PyDiffCompressorStats {
     inner: DiffCompressorStats,
 }
@@ -388,10 +388,10 @@ impl PyDiffCompressorStats {
 
 // ─── DiffCompressor ────────────────────────────────────────────────────────
 
-/// Mirror of `headroom.transforms.diff_compressor.DiffCompressor`. The
+/// Mirror of `legroom.transforms.diff_compressor.DiffCompressor`. The
 /// Python adapter wraps this in `RustBackedDiffCompressor` so
 /// `ContentRouter` can swap backends transparently.
-#[pyclass(name = "DiffCompressor", module = "headroom._core")]
+#[pyclass(name = "DiffCompressor", module = "legroom._core")]
 struct PyDiffCompressor {
     inner: DiffCompressor,
 }
@@ -448,11 +448,11 @@ impl PyDiffCompressor {
 
 // ─── SmartCrusherConfig ────────────────────────────────────────────────────
 
-/// Mirror of `headroom.transforms.smart_crusher.SmartCrusherConfig`.
+/// Mirror of `legroom.transforms.smart_crusher.SmartCrusherConfig`.
 /// Defaults match Python's dataclass byte-for-byte. The constructor
 /// accepts every field as a kwarg with the same name and type so the
 /// Python shim can pass `SmartCrusherConfig(**asdict(py_cfg))`.
-#[pyclass(name = "SmartCrusherConfig", module = "headroom._core", from_py_object)]
+#[pyclass(name = "SmartCrusherConfig", module = "legroom._core", from_py_object)]
 #[derive(Clone)]
 struct PySmartCrusherConfig {
     inner: RustSmartCrusherConfig,
@@ -657,10 +657,10 @@ impl PySmartCrusherConfig {
 
 // ─── CrushResult ───────────────────────────────────────────────────────────
 
-/// Mirror of `headroom.transforms.smart_crusher.CrushResult`. Read-only;
+/// Mirror of `legroom.transforms.smart_crusher.CrushResult`. Read-only;
 /// the Python shim builds its own dataclass instance from these
 /// attributes so callers that destructure with `asdict()` keep working.
-#[pyclass(name = "CrushResult", module = "headroom._core")]
+#[pyclass(name = "CrushResult", module = "legroom._core")]
 struct PyCrushResult {
     inner: RustCrushResult,
 }
@@ -696,13 +696,13 @@ impl PyCrushResult {
 
 // ─── SmartCrusher ──────────────────────────────────────────────────────────
 
-/// Mirror of `headroom.transforms.smart_crusher.SmartCrusher`.
+/// Mirror of `legroom.transforms.smart_crusher.SmartCrusher`.
 ///
 /// Constructor accepts only `config` — Python's `relevance_config`,
 /// `scorer`, and `ccr_config` parameters are handled in the Python
 /// shim (Stage 3c.1 keeps the optional subsystems disabled in Rust;
 /// the shim drops those args to preserve call-site compatibility).
-#[pyclass(name = "SmartCrusher", module = "headroom._core")]
+#[pyclass(name = "SmartCrusher", module = "legroom._core")]
 struct PySmartCrusher {
     inner: RustSmartCrusher,
 }
@@ -747,7 +747,7 @@ impl PySmartCrusher {
             Some(inner) => Ok(Self { inner }),
             None => Err(pyo3::exceptions::PyValueError::new_err(format!(
                 "unknown compaction format {format_name:?}; expected one of: {}",
-                headroom_core::transforms::smart_crusher::compaction::CompactionStage::SUPPORTED_FORMAT_NAMES.join(", ")
+                legroom_core::transforms::smart_crusher::compaction::CompactionStage::SUPPORTED_FORMAT_NAMES.join(", ")
             ))),
         }
     }
@@ -906,7 +906,7 @@ impl PySmartCrusher {
 
 // ─── ContentDetector ───────────────────────────────────────────────────────
 
-/// Mirror of `headroom.transforms.content_detector.DetectionResult`.
+/// Mirror of `legroom.transforms.content_detector.DetectionResult`.
 ///
 /// Field names + types match the Python dataclass exactly so the existing
 /// Python `ContentRouter` (which `import`s `DetectionResult` directly) can
@@ -916,7 +916,7 @@ impl PySmartCrusher {
 /// `content_type` is exposed as the lowercase string tag (e.g.
 /// `"json_array"`). The Python wrapper translates it back into the
 /// `ContentType` enum so the call-site looks identical.
-#[pyclass(name = "DetectionResult", module = "headroom._core", from_py_object)]
+#[pyclass(name = "DetectionResult", module = "legroom._core", from_py_object)]
 #[derive(Clone)]
 struct PyDetectionResult {
     inner: RustDetectionResult,
@@ -989,7 +989,7 @@ impl PyDetectionResult {
 /// `confidence = 1.0` (the chain doesn't surface a probabilistic
 /// score) and an empty metadata bag (no production caller reads
 /// metadata from this binding today — see audit notes in
-/// `headroom/transforms/content_router.py`).
+/// `legroom/transforms/content_router.py`).
 ///
 /// Releases the GIL while detecting — magika inference and unidiff
 /// parsing can be substantial on large bodies, and freeing the GIL
@@ -1060,7 +1060,7 @@ fn category_to_str(cat: ImportanceCategory) -> &'static str {
     }
 }
 
-/// Score a line against the default Headroom keyword detector.
+/// Score a line against the default Legroom keyword detector.
 ///
 /// Returns `Some((category | None, priority, confidence))` for known
 /// contexts (`text|search|diff|log`) and `None` for an unknown context
@@ -1108,7 +1108,7 @@ fn keyword_registry_snapshot(py: Python<'_>) -> Py<PyDict> {
 
 // ─── search_compressor bridge (Phase 3e.2) ────────────────────────────
 //
-// Mirrors `headroom.transforms.search_compressor.SearchCompressor` so the
+// Mirrors `legroom.transforms.search_compressor.SearchCompressor` so the
 // Python shim can swap in via PyO3. The Rust implementation consumes the
 // `signals::LineImportanceDetector` trait for priority scoring (instead of
 // the regex registry the Python original used) and fixes the Windows-path
@@ -1123,7 +1123,7 @@ fn keyword_registry_snapshot(py: Python<'_>) -> Py<PyDict> {
 
 #[pyclass(
     name = "SearchCompressorConfig",
-    module = "headroom._core",
+    module = "legroom._core",
     from_py_object
 )]
 #[derive(Clone)]
@@ -1179,7 +1179,7 @@ impl PySearchCompressorConfig {
     }
 }
 
-#[pyclass(name = "SearchCompressionResult", module = "headroom._core")]
+#[pyclass(name = "SearchCompressionResult", module = "legroom._core")]
 struct PySearchCompressionResult {
     inner: RustSearchResult,
     stats: RustSearchStats,
@@ -1242,7 +1242,7 @@ impl PySearchCompressionResult {
     }
 }
 
-#[pyclass(name = "SearchCompressor", module = "headroom._core")]
+#[pyclass(name = "SearchCompressor", module = "legroom._core")]
 struct PySearchCompressor {
     inner: RustSearchCompressor,
 }
@@ -1282,7 +1282,7 @@ impl PySearchCompressor {
         let owned = content.to_string();
         let owned_ctx = context.to_string();
         let (result, stats) = py.detach(move || {
-            let store = headroom_core::ccr::InMemoryCcrStore::new();
+            let store = legroom_core::ccr::InMemoryCcrStore::new();
             let (r, s) = self
                 .inner
                 .compress_with_store(&owned, &owned_ctx, bias, Some(&store));
@@ -1315,13 +1315,13 @@ fn parse_search_lines(content: &str) -> Vec<(String, u64, String)> {
 
 // ─── log_compressor bridge (Phase 3e.5) ───────────────────────────────
 //
-// Mirrors `headroom.transforms.log_compressor.LogCompressor`. Same CCR
+// Mirrors `legroom.transforms.log_compressor.LogCompressor`. Same CCR
 // pattern as search_compressor: Rust emits a `cache_key`, Python shim
 // writes the original to the production `CompressionStore`.
 
 #[pyclass(
     name = "LogCompressorConfig",
-    module = "headroom._core",
+    module = "legroom._core",
     from_py_object
 )]
 #[derive(Clone)]
@@ -1392,7 +1392,7 @@ impl PyLogCompressorConfig {
     }
 }
 
-#[pyclass(name = "LogCompressionResult", module = "headroom._core")]
+#[pyclass(name = "LogCompressionResult", module = "legroom._core")]
 struct PyLogCompressionResult {
     inner: RustLogResult,
     stats: RustLogStats,
@@ -1459,7 +1459,7 @@ impl PyLogCompressionResult {
     }
 }
 
-#[pyclass(name = "LogCompressor", module = "headroom._core")]
+#[pyclass(name = "LogCompressor", module = "legroom._core")]
 struct PyLogCompressor {
     inner: RustLogCompressor,
 }
@@ -1482,7 +1482,7 @@ impl PyLogCompressor {
     fn compress(&self, py: Python<'_>, content: &str, bias: f64) -> PyLogCompressionResult {
         let owned = content.to_string();
         let (result, stats) = py.detach(move || {
-            let store = headroom_core::ccr::InMemoryCcrStore::new();
+            let store = legroom_core::ccr::InMemoryCcrStore::new();
             let (r, s) = self.inner.compress_with_store(&owned, bias, Some(&store));
             (r, s)
         });
@@ -1511,7 +1511,7 @@ const _: fn() = || {
 
 // ─── tag_protector bridge (Phase 3e.4) ───────────────────────────────────
 //
-// Mirrors `headroom.transforms.tag_protector.{protect_tags,restore_tags,
+// Mirrors `legroom.transforms.tag_protector.{protect_tags,restore_tags,
 // is_html_tag,KNOWN_HTML_TAGS}`. The Rust walker is single-pass and
 // fixes five real bugs the Python original carried (see crate-level
 // docs in `tag_protector.rs`). The GIL is released during the walk
@@ -1567,9 +1567,9 @@ fn known_html_tag_names() -> Vec<&'static str> {
 /// Hot-fix entry point added 2026-05-06: re-enables `/v1/responses`
 /// compression on the Python proxy after PR-C5 retired the Python
 /// pipeline. PR-C5's "Rust handles it" claim assumed the standalone
-/// `crates/headroom-proxy` binary would sit in front of Python; that
-/// binary is not deployed by the CLI (`headroom proxy`,
-/// `headroom wrap codex`). This binding lets the Python proxy call
+/// `crates/legroom-proxy` binary would sit in front of Python; that
+/// binary is not deployed by the CLI (`legroom proxy`,
+/// `legroom wrap codex`). This binding lets the Python proxy call
 /// the live-zone dispatcher inline so Codex `/v1/responses` traffic
 /// is compressed end-to-end.
 ///
@@ -1579,7 +1579,7 @@ fn known_html_tag_names() -> Vec<&'static str> {
 ///   `"unknown"`. Currently unused by the dispatcher (the policy
 ///   gating is upstream); accepted for forward-compat.
 /// * `model` — model name from the request body. Empty string defaults
-///   to `headroom_core::transforms::live_zone::DEFAULT_MODEL`.
+///   to `legroom_core::transforms::live_zone::DEFAULT_MODEL`.
 ///
 /// # Returns
 /// `(body, modified)`:
@@ -1607,7 +1607,7 @@ fn compress_openai_responses_live_zone(
         _ => RustLiveZoneAuthMode::Unknown,
     };
     let model_str = if model.is_empty() {
-        headroom_core::transforms::live_zone::DEFAULT_MODEL
+        legroom_core::transforms::live_zone::DEFAULT_MODEL
     } else {
         model
     };
@@ -1663,7 +1663,7 @@ fn compress_openai_responses_live_zone(
 
 // --- TextCrusher (Phase 2, #1171): fast extractive prose compressor ---
 
-#[pyclass(name = "TextCrusherConfig", module = "headroom._core", from_py_object)]
+#[pyclass(name = "TextCrusherConfig", module = "legroom._core", from_py_object)]
 #[derive(Clone)]
 struct PyTextCrusherConfig {
     inner: RustTextCrusherConfig,
@@ -1734,7 +1734,7 @@ impl PyTextCrusherConfig {
     }
 }
 
-#[pyclass(name = "TextCrusherResult", module = "headroom._core")]
+#[pyclass(name = "TextCrusherResult", module = "legroom._core")]
 struct PyTextCrusherResult {
     inner: RustTextCrusherResult,
 }
@@ -1767,7 +1767,7 @@ impl PyTextCrusherResult {
     }
 }
 
-#[pyclass(name = "TextCrusher", module = "headroom._core")]
+#[pyclass(name = "TextCrusher", module = "legroom._core")]
 struct PyTextCrusher {
     inner: RustTextCrusher,
 }
@@ -1802,13 +1802,13 @@ impl PyTextCrusher {
 
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    // Bridge Rust diagnostics into Python's `logging`. headroom-core emits
+    // Bridge Rust diagnostics into Python's `logging`. legroom-core emits
     // `tracing` events (e.g. magika init timeout warnings), but a cdylib has
     // no tracing subscriber, so they were silently dropped. The workspace
     // `tracing` dep now enables the `log` compat feature — events become
     // `log` records when no subscriber is active — and pyo3-log forwards
     // those to Python loggers (named like
-    // `headroom_core.transforms.magika_detector`), which is what lands in
+    // `legroom_core.transforms.magika_detector`), which is what lands in
     // the proxy's log file. `try_init` because the global logger may
     // legitimately already be set (re-import, embedders).
     let _ = pyo3_log::try_init();

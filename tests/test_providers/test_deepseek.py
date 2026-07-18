@@ -2,11 +2,11 @@
 
 import pytest
 
-from headroom.pricing.deepseek_prices import (
+from legroom.pricing.deepseek_prices import (
     DEEPSEEK_PRICES,
     get_deepseek_registry,
 )
-from headroom.pricing.registry import PricingRegistry
+from legroom.pricing.registry import PricingRegistry
 
 
 class TestDeepSeekPricingModule:
@@ -68,7 +68,7 @@ class TestDeepSeekLiteLLMInjection:
     """Tests for DeepSeek V4 pricing injection into litellm."""
 
     def test_deepseek_v4_models_in_litellm_model_cost(self):
-        from headroom.pricing.litellm_pricing import LITELLM_AVAILABLE, litellm
+        from legroom.pricing.litellm_pricing import LITELLM_AVAILABLE, litellm
 
         if not LITELLM_AVAILABLE:
             pytest.skip("litellm not available")
@@ -76,7 +76,7 @@ class TestDeepSeekLiteLLMInjection:
         assert "deepseek-v4-pro" in litellm.model_cost
 
     def test_deepseek_v4_prefixed_models_in_litellm_model_cost(self):
-        from headroom.pricing.litellm_pricing import LITELLM_AVAILABLE, litellm
+        from legroom.pricing.litellm_pricing import LITELLM_AVAILABLE, litellm
 
         if not LITELLM_AVAILABLE:
             pytest.skip("litellm not available")
@@ -84,7 +84,7 @@ class TestDeepSeekLiteLLMInjection:
         assert "deepseek/deepseek-v4-pro" in litellm.model_cost
 
     def test_deepseek_v4_flash_litellm_pricing(self):
-        from headroom.pricing.litellm_pricing import LITELLM_AVAILABLE, litellm
+        from legroom.pricing.litellm_pricing import LITELLM_AVAILABLE, litellm
 
         if not LITELLM_AVAILABLE:
             pytest.skip("litellm not available")
@@ -95,7 +95,7 @@ class TestDeepSeekLiteLLMInjection:
         assert flash["litellm_provider"] == "deepseek"
 
     def test_deepseek_v4_pro_litellm_pricing(self):
-        from headroom.pricing.litellm_pricing import LITELLM_AVAILABLE, litellm
+        from legroom.pricing.litellm_pricing import LITELLM_AVAILABLE, litellm
 
         if not LITELLM_AVAILABLE:
             pytest.skip("litellm not available")
@@ -106,7 +106,7 @@ class TestDeepSeekLiteLLMInjection:
         assert pro["litellm_provider"] == "deepseek"
 
     def test_cost_per_token_resolves_deepseek_v4_flash(self):
-        from headroom.pricing.litellm_pricing import (
+        from legroom.pricing.litellm_pricing import (
             LITELLM_AVAILABLE,
             litellm,
             resolve_litellm_model,
@@ -128,14 +128,14 @@ class TestDeepSeekLiteLLMInjection:
         assert output_cost == pytest.approx(0.28, rel=0.01)
 
     def test_resolve_litellm_model_prefixes_deepseek(self):
-        from headroom.pricing.litellm_pricing import resolve_litellm_model
+        from legroom.pricing.litellm_pricing import resolve_litellm_model
 
         resolved = resolve_litellm_model("deepseek-v4-flash")
         assert resolved == "deepseek/deepseek-v4-flash"
 
     def test_injection_does_not_overwrite_existing_upstream_entries(self):
         """If litellm upstream already has these, our injection is a no-op."""
-        from headroom.pricing.litellm_pricing import LITELLM_AVAILABLE, litellm
+        from legroom.pricing.litellm_pricing import LITELLM_AVAILABLE, litellm
 
         if not LITELLM_AVAILABLE:
             pytest.skip("litellm not available")
@@ -144,7 +144,7 @@ class TestDeepSeekLiteLLMInjection:
         # Reimport to trigger _inject_deepseek_pricing — but it should NOT overwrite
         import importlib
 
-        import headroom.pricing.litellm_pricing as lp
+        import legroom.pricing.litellm_pricing as lp
 
         importlib.reload(lp)
         assert litellm.model_cost["deepseek-v4-flash"]["input_cost_per_token"] == 999
@@ -163,7 +163,7 @@ class TestDeepSeekAnthropicProviderFallback:
     """Tests that Anthropic provider's _get_pricing handles DeepSeek models."""
 
     def test_deepseek_v4_flash_fallback(self):
-        from headroom.providers.anthropic import AnthropicProvider
+        from legroom.providers.anthropic import AnthropicProvider
 
         provider = AnthropicProvider()
         pricing = provider._get_pricing("deepseek-v4-flash")
@@ -173,7 +173,7 @@ class TestDeepSeekAnthropicProviderFallback:
         assert pricing["cached_input"] == 0.0028
 
     def test_deepseek_v4_pro_fallback(self):
-        from headroom.providers.anthropic import AnthropicProvider
+        from legroom.providers.anthropic import AnthropicProvider
 
         provider = AnthropicProvider()
         pricing = provider._get_pricing("deepseek-v4-pro")
@@ -183,14 +183,14 @@ class TestDeepSeekAnthropicProviderFallback:
         assert pricing["cached_input"] == 0.003625
 
     def test_deepseek_unknown_model_returns_none(self):
-        from headroom.providers.anthropic import AnthropicProvider
+        from legroom.providers.anthropic import AnthropicProvider
 
         provider = AnthropicProvider()
         pricing = provider._get_pricing("deepseek-unknown-model")
         assert pricing is None
 
     def test_deepseek_partial_match_v4_flash_alias(self):
-        from headroom.providers.anthropic import AnthropicProvider
+        from legroom.providers.anthropic import AnthropicProvider
 
         provider = AnthropicProvider()
         # Should match via partial match (flash in v4-flash)
@@ -198,7 +198,7 @@ class TestDeepSeekAnthropicProviderFallback:
         assert pricing is not None
 
     def test_estimate_cost_deepseek_v4_flash(self):
-        from headroom.providers.anthropic import AnthropicProvider
+        from legroom.providers.anthropic import AnthropicProvider
 
         provider = AnthropicProvider()
         cost = provider.estimate_cost(
@@ -210,7 +210,7 @@ class TestDeepSeekAnthropicProviderFallback:
         assert cost == 0.14
 
     def test_estimate_cost_deepseek_v4_flash_with_cache(self):
-        from headroom.providers.anthropic import AnthropicProvider
+        from legroom.providers.anthropic import AnthropicProvider
 
         provider = AnthropicProvider()
         cost = provider.estimate_cost(

@@ -1,4 +1,4 @@
-"""OpenTelemetry-backed operational metrics for Headroom."""
+"""OpenTelemetry-backed operational metrics for Legroom."""
 
 from __future__ import annotations
 
@@ -11,23 +11,23 @@ from typing import Any, Literal
 from opentelemetry import metrics
 from opentelemetry.metrics import CallbackOptions, Observation
 
-from headroom._version import get_version
+from legroom._version import get_version
 
 logger = logging.getLogger(__name__)
 
 MetricExporter = Literal["console", "otlp_http"]
 
-_SCOPE_NAME = "headroom"
+_SCOPE_NAME = "legroom"
 _DEFAULT_EXPORT_INTERVAL_MS = 10000
 _MILLISECONDS_TO_SECONDS = 1000.0
 
 _metrics_lock = Lock()
-_global_metrics: HeadroomOtelMetrics | None = None
+_global_metrics: LegroomOtelMetrics | None = None
 _owned_meter_provider: Any | None = None
 _owned_metrics_config: OTelMetricsConfig | None = None
 
 
-def _headroom_version() -> str:
+def _legroom_version() -> str:
     return get_version()
 
 
@@ -71,10 +71,10 @@ def _parse_key_value_pairs(raw: str | None) -> dict[str, str]:
 
 @dataclass(slots=True)
 class OTelMetricsConfig:
-    """Configuration for Headroom-managed OTEL metric export."""
+    """Configuration for Legroom-managed OTEL metric export."""
 
     enabled: bool = False
-    service_name: str = "headroom"
+    service_name: str = "legroom"
     exporter: MetricExporter = "otlp_http"
     endpoint: str | None = None
     headers: dict[str, str] = field(default_factory=dict)
@@ -82,33 +82,33 @@ class OTelMetricsConfig:
     resource_attributes: dict[str, str] = field(default_factory=dict)
 
     @classmethod
-    def from_env(cls, *, default_service_name: str = "headroom") -> OTelMetricsConfig:
+    def from_env(cls, *, default_service_name: str = "legroom") -> OTelMetricsConfig:
         exporter_raw = (
-            os.environ.get("HEADROOM_OTEL_METRICS_EXPORTER", "otlp_http")
+            os.environ.get("LEGROOM_OTEL_METRICS_EXPORTER", "otlp_http")
             .strip()
             .lower()
             .replace("-", "_")
         )
         if exporter_raw not in {"console", "otlp_http"}:
             logger.warning(
-                "Unknown HEADROOM_OTEL_METRICS_EXPORTER=%s; falling back to otlp_http",
+                "Unknown LEGROOM_OTEL_METRICS_EXPORTER=%s; falling back to otlp_http",
                 exporter_raw,
             )
             exporter_raw = "otlp_http"
 
         return cls(
-            enabled=_parse_bool(os.environ.get("HEADROOM_OTEL_METRICS_ENABLED"), default=False),
-            service_name=os.environ.get("HEADROOM_OTEL_SERVICE_NAME", default_service_name).strip()
+            enabled=_parse_bool(os.environ.get("LEGROOM_OTEL_METRICS_ENABLED"), default=False),
+            service_name=os.environ.get("LEGROOM_OTEL_SERVICE_NAME", default_service_name).strip()
             or default_service_name,
             exporter=exporter_raw,  # type: ignore[arg-type]
-            endpoint=os.environ.get("HEADROOM_OTEL_METRICS_ENDPOINT") or None,
-            headers=_parse_key_value_pairs(os.environ.get("HEADROOM_OTEL_METRICS_HEADERS")),
+            endpoint=os.environ.get("LEGROOM_OTEL_METRICS_ENDPOINT") or None,
+            headers=_parse_key_value_pairs(os.environ.get("LEGROOM_OTEL_METRICS_HEADERS")),
             export_interval_millis=_parse_int(
-                os.environ.get("HEADROOM_OTEL_METRICS_EXPORT_INTERVAL_MS"),
+                os.environ.get("LEGROOM_OTEL_METRICS_EXPORT_INTERVAL_MS"),
                 _DEFAULT_EXPORT_INTERVAL_MS,
             ),
             resource_attributes=_parse_key_value_pairs(
-                os.environ.get("HEADROOM_OTEL_RESOURCE_ATTRIBUTES")
+                os.environ.get("LEGROOM_OTEL_RESOURCE_ATTRIBUTES")
             ),
         )
 
@@ -123,137 +123,137 @@ class OTelMetricsConfig:
         }
 
 
-class HeadroomOtelMetrics:
-    """Shared OTEL metrics facade for Headroom operations."""
+class LegroomOtelMetrics:
+    """Shared OTEL metrics facade for Legroom operations."""
 
     def __init__(self, meter_provider: Any | None = None):
         if meter_provider is None:
-            self._meter = metrics.get_meter(_SCOPE_NAME, _headroom_version())
+            self._meter = metrics.get_meter(_SCOPE_NAME, _legroom_version())
         else:
-            self._meter = meter_provider.get_meter(_SCOPE_NAME, _headroom_version())
+            self._meter = meter_provider.get_meter(_SCOPE_NAME, _legroom_version())
 
         self._proxy_requests = self._meter.create_counter(
-            "headroom.proxy.requests",
-            description="Proxy requests handled by Headroom.",
+            "legroom.proxy.requests",
+            description="Proxy requests handled by Legroom.",
             unit="1",
         )
         self._proxy_cached_requests = self._meter.create_counter(
-            "headroom.proxy.requests.cached",
+            "legroom.proxy.requests.cached",
             description="Proxy requests served with provider cache participation.",
             unit="1",
         )
         self._proxy_failed_requests = self._meter.create_counter(
-            "headroom.proxy.requests.failed",
+            "legroom.proxy.requests.failed",
             description="Proxy requests that failed.",
             unit="1",
         )
         self._proxy_rate_limited_requests = self._meter.create_counter(
-            "headroom.proxy.requests.rate_limited",
+            "legroom.proxy.requests.rate_limited",
             description="Proxy requests rejected by rate limiting.",
             unit="1",
         )
         self._proxy_input_tokens = self._meter.create_counter(
-            "headroom.proxy.tokens.input",
+            "legroom.proxy.tokens.input",
             description="Input tokens received by the proxy.",
             unit="1",
         )
         self._proxy_output_tokens = self._meter.create_counter(
-            "headroom.proxy.tokens.output",
+            "legroom.proxy.tokens.output",
             description="Output tokens returned by upstream providers.",
             unit="1",
         )
         self._proxy_saved_tokens = self._meter.create_counter(
-            "headroom.proxy.tokens.saved",
-            description="Input tokens saved by Headroom compression.",
+            "legroom.proxy.tokens.saved",
+            description="Input tokens saved by Legroom compression.",
             unit="1",
         )
         self._proxy_cache_read_tokens = self._meter.create_counter(
-            "headroom.proxy.cache.read_tokens",
+            "legroom.proxy.cache.read_tokens",
             description="Provider cache read tokens observed by the proxy.",
             unit="1",
         )
         self._proxy_cache_write_tokens = self._meter.create_counter(
-            "headroom.proxy.cache.write_tokens",
+            "legroom.proxy.cache.write_tokens",
             description="Provider cache write tokens observed by the proxy.",
             unit="1",
         )
         self._proxy_cache_write_ttl_tokens = self._meter.create_counter(
-            "headroom.proxy.cache.write_ttl_tokens",
+            "legroom.proxy.cache.write_ttl_tokens",
             description="Provider cache write tokens by observed TTL bucket.",
             unit="1",
         )
         self._proxy_uncached_input_tokens = self._meter.create_counter(
-            "headroom.proxy.cache.uncached_input_tokens",
+            "legroom.proxy.cache.uncached_input_tokens",
             description="Proxy input tokens not served from provider cache.",
             unit="1",
         )
         self._proxy_cache_busts = self._meter.create_counter(
-            "headroom.proxy.cache.busts",
+            "legroom.proxy.cache.busts",
             description="Requests that lost provider cache efficiency.",
             unit="1",
         )
         self._proxy_cache_bust_tokens_lost = self._meter.create_counter(
-            "headroom.proxy.cache.bust_tokens_lost",
+            "legroom.proxy.cache.bust_tokens_lost",
             description="Tokens that lost provider cache discount because of compression.",
             unit="1",
         )
         self._proxy_latency = self._meter.create_histogram(
-            "headroom.proxy.request.duration",
+            "legroom.proxy.request.duration",
             description="End-to-end proxy request duration.",
             unit="s",
         )
         self._proxy_overhead = self._meter.create_histogram(
-            "headroom.proxy.overhead.duration",
-            description="Time spent inside Headroom optimization logic.",
+            "legroom.proxy.overhead.duration",
+            description="Time spent inside Legroom optimization logic.",
             unit="s",
         )
         self._proxy_ttfb = self._meter.create_histogram(
-            "headroom.proxy.ttfb.duration",
-            description="Upstream time to first byte observed by Headroom.",
+            "legroom.proxy.ttfb.duration",
+            description="Upstream time to first byte observed by Legroom.",
             unit="s",
         )
         self._compression_runs = self._meter.create_counter(
-            "headroom.compression.runs",
-            description="Compression pipeline runs executed by Headroom.",
+            "legroom.compression.runs",
+            description="Compression pipeline runs executed by Legroom.",
             unit="1",
         )
         self._compression_failures = self._meter.create_counter(
-            "headroom.compression.failures",
+            "legroom.compression.failures",
             description="Compression operations that failed before producing a result.",
             unit="1",
         )
         self._compression_input_tokens = self._meter.create_counter(
-            "headroom.compression.tokens.input",
-            description="Input tokens analyzed by Headroom compression.",
+            "legroom.compression.tokens.input",
+            description="Input tokens analyzed by Legroom compression.",
             unit="1",
         )
         self._compression_output_tokens = self._meter.create_counter(
-            "headroom.compression.tokens.output",
-            description="Output tokens produced by Headroom compression.",
+            "legroom.compression.tokens.output",
+            description="Output tokens produced by Legroom compression.",
             unit="1",
         )
         self._compression_saved_tokens = self._meter.create_counter(
-            "headroom.compression.tokens.saved",
-            description="Tokens removed by Headroom compression.",
+            "legroom.compression.tokens.saved",
+            description="Tokens removed by Legroom compression.",
             unit="1",
         )
         self._compression_duration = self._meter.create_histogram(
-            "headroom.compression.pipeline.duration",
+            "legroom.compression.pipeline.duration",
             description="Compression pipeline execution duration.",
             unit="s",
         )
         self._compression_stage_duration = self._meter.create_histogram(
-            "headroom.compression.stage.duration",
+            "legroom.compression.stage.duration",
             description="Per-stage compression timing emitted by the pipeline.",
             unit="s",
         )
         self._compression_transforms = self._meter.create_counter(
-            "headroom.compression.transforms",
+            "legroom.compression.transforms",
             description="Transforms applied during compression.",
             unit="1",
         )
         self._waste_signal_tokens = self._meter.create_counter(
-            "headroom.compression.waste.tokens",
+            "legroom.compression.waste.tokens",
             description="Waste tokens detected in compressed inputs.",
             unit="1",
         )
@@ -282,31 +282,31 @@ class HeadroomOtelMetrics:
             return [Observation(self._sub_overage_val)]
 
         self._meter.create_observable_gauge(
-            "headroom.subscription.5h_utilization_pct",
+            "legroom.subscription.5h_utilization_pct",
             description="Anthropic 5-hour rate-limit window utilisation (0–100%).",
             unit="1",
             callbacks=[_cb_5h_util],
         )
         self._meter.create_observable_gauge(
-            "headroom.subscription.7d_utilization_pct",
+            "legroom.subscription.7d_utilization_pct",
             description="Anthropic 7-day rate-limit window utilisation (0–100%).",
             unit="1",
             callbacks=[_cb_7d_util],
         )
         self._meter.create_observable_gauge(
-            "headroom.subscription.5h_seconds_to_reset",
+            "legroom.subscription.5h_seconds_to_reset",
             description="Seconds until the Anthropic 5-hour window resets.",
             unit="s",
             callbacks=[_cb_5h_reset],
         )
         self._meter.create_observable_gauge(
-            "headroom.subscription.7d_seconds_to_reset",
+            "legroom.subscription.7d_seconds_to_reset",
             description="Seconds until the Anthropic 7-day window resets.",
             unit="s",
             callbacks=[_cb_7d_reset],
         )
         self._meter.create_observable_gauge(
-            "headroom.subscription.overage_usd",
+            "legroom.subscription.overage_usd",
             description="Anthropic extra-usage (overage) credits consumed in USD.",
             unit="USD",
             callbacks=[_cb_overage],
@@ -461,25 +461,25 @@ class HeadroomOtelMetrics:
             self._sub_overage_val = float(extra.get("used_credits_usd") or 0.0)
 
 
-def get_otel_metrics() -> HeadroomOtelMetrics:
+def get_otel_metrics() -> LegroomOtelMetrics:
     global _global_metrics
 
     if _global_metrics is None:
         with _metrics_lock:
             if _global_metrics is None:
-                _global_metrics = HeadroomOtelMetrics()
+                _global_metrics = LegroomOtelMetrics()
 
     return _global_metrics
 
 
-def set_otel_metrics(otel_metrics: HeadroomOtelMetrics) -> HeadroomOtelMetrics:
+def set_otel_metrics(otel_metrics: LegroomOtelMetrics) -> LegroomOtelMetrics:
     global _global_metrics
     with _metrics_lock:
         _global_metrics = otel_metrics
     return otel_metrics
 
 
-def configure_otel_metrics(config: OTelMetricsConfig | None = None) -> HeadroomOtelMetrics:
+def configure_otel_metrics(config: OTelMetricsConfig | None = None) -> LegroomOtelMetrics:
     global _global_metrics
     global _owned_meter_provider
     global _owned_metrics_config
@@ -499,7 +499,7 @@ def configure_otel_metrics(config: OTelMetricsConfig | None = None) -> HeadroomO
     except ImportError:
         logger.warning(
             "OpenTelemetry SDK/exporter packages are not installed. "
-            "Install headroom-ai[otel] to enable managed OTEL metric export."
+            "Install legroom-ai[otel] to enable managed OTEL metric export."
         )
         return get_otel_metrics()
 
@@ -521,12 +521,12 @@ def configure_otel_metrics(config: OTelMetricsConfig | None = None) -> HeadroomO
     resource = Resource.create(
         {
             SERVICE_NAME: resolved.service_name,
-            SERVICE_VERSION: _headroom_version(),
+            SERVICE_VERSION: _legroom_version(),
             **resolved.resource_attributes,
         }
     )
     meter_provider = MeterProvider(resource=resource, metric_readers=[reader])
-    otel_metrics = HeadroomOtelMetrics(meter_provider=meter_provider)
+    otel_metrics = LegroomOtelMetrics(meter_provider=meter_provider)
 
     previous_provider = None
     with _metrics_lock:
@@ -548,7 +548,7 @@ def get_otel_metrics_status() -> dict[str, Any]:
     with _metrics_lock:
         if _owned_metrics_config is not None:
             return _owned_metrics_config.status()
-    return OTelMetricsConfig.from_env(default_service_name="headroom-proxy").status()
+    return OTelMetricsConfig.from_env(default_service_name="legroom-proxy").status()
 
 
 def shutdown_otel_metrics() -> None:

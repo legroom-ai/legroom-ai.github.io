@@ -8,7 +8,7 @@ PR's Real Behavior Proof, not here, to keep the test offline (mirrors the other
 dataset loaders).
 """
 
-from headroom.evals.datasets import DATASET_REGISTRY, load_multi_wiki_qa
+from legroom.evals.datasets import DATASET_REGISTRY, load_multi_wiki_qa
 
 
 def test_multi_wiki_qa_registered():

@@ -10,8 +10,8 @@ pytest.importorskip("fastapi")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from headroom.proxy.loopback_guard import require_loopback  # noqa: E402
-from headroom.proxy.server import ProxyConfig, create_app  # noqa: E402
+from legroom.proxy.loopback_guard import require_loopback  # noqa: E402
+from legroom.proxy.server import ProxyConfig, create_app  # noqa: E402
 
 
 class _MemoryHandler:
@@ -101,8 +101,8 @@ def test_responses_bypass_skips_memory_and_compression_mutation() -> None:
             "/v1/responses",
             headers={
                 "authorization": "Bearer test-key",
-                "x-headroom-bypass": "true",
-                "x-headroom-user-id": "user-1",
+                "x-legroom-bypass": "true",
+                "x-legroom-user-id": "user-1",
             },
             json={"model": "gpt-4o-mini", "input": original_input},
         )

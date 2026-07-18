@@ -5,7 +5,7 @@ Uses a TRAINED classifier for query intent:
 2. SigLIP: Analyzes image properties
 3. Combined decision based on both signals
 
-The MiniLM model is hosted on HuggingFace: headroom-ai/technique-router
+The MiniLM model is hosted on HuggingFace: legroom-ai/technique-router
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ try:
 except ImportError:
     _IMAGE_ML_AVAILABLE = False
 
-from headroom.models.config import ML_MODEL_DEFAULTS
+from legroom.models.config import ML_MODEL_DEFAULTS
 
 
 def _extract_tensor(output: torch.Tensor | BaseModelOutputWithPooling) -> torch.Tensor:
@@ -96,7 +96,7 @@ class TrainedRouter:
 
     The MiniLM model can be loaded from:
     - Local path (for development)
-    - HuggingFace Hub: headroom-ai/technique-router (for production)
+    - HuggingFace Hub: legroom-ai/technique-router (for production)
     """
 
     # Model identifiers (from centralized config)
@@ -183,7 +183,7 @@ class TrainedRouter:
                     model_id = self.default_hf_model
 
             # Use centralized registry for shared model instances
-            from headroom.models.ml_models import MLModelRegistry
+            from legroom.models.ml_models import MLModelRegistry
 
             self._classifier, self._tokenizer = MLModelRegistry.get_technique_router(
                 model_path=model_id,
@@ -193,7 +193,7 @@ class TrainedRouter:
 
         if self.use_siglip and self._siglip_model is None:
             # Use centralized registry for shared model instances
-            from headroom.models.ml_models import MLModelRegistry
+            from legroom.models.ml_models import MLModelRegistry
 
             self._siglip_model, self._siglip_processor = MLModelRegistry.get_siglip(
                 model_name=self.siglip_model,
@@ -218,7 +218,7 @@ class TrainedRouter:
         self._siglip_key = None
 
         if unload_registry:
-            from headroom.models.ml_models import MLModelRegistry
+            from legroom.models.ml_models import MLModelRegistry
 
             keys = [key for key in (classifier_key, siglip_key) if key]
             MLModelRegistry.unload_many(keys)

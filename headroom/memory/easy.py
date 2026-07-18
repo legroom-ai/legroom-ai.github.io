@@ -1,10 +1,10 @@
 """Simple, zero-config memory API for developers.
 
-This module provides the easiest way to use Headroom's memory system.
+This module provides the easiest way to use Legroom's memory system.
 No Docker required - works out of the box with embedded databases.
 
 Usage:
-    from headroom.memory import Memory
+    from legroom.memory import Memory
 
     # Create memory instance (no setup required)
     memory = Memory()
@@ -38,7 +38,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from headroom.memory.ports import MemorySearchResult
+    from legroom.memory.ports import MemorySearchResult
 
 
 @dataclass
@@ -72,17 +72,17 @@ class Memory:
             - "local" (default): Embedded SQLite + HNSW. No Docker needed.
             - "qdrant-neo4j": External Qdrant + Neo4j. Requires Docker.
         db_path: Path for local database (only for "local" backend).
-            Defaults to ~/.headroom/memory.db
+            Defaults to ~/.legroom/memory.db
         qdrant_url: Full Qdrant URL (only for "qdrant-neo4j" backend). When set,
             takes precedence over ``qdrant_host``/``qdrant_port``. Useful for
             hosted Qdrant (Qdrant Cloud) and non-default container stacks.
-            Defaults to the ``HEADROOM_QDRANT_URL`` env var if unset.
+            Defaults to the ``LEGROOM_QDRANT_URL`` env var if unset.
         qdrant_host: Qdrant host (only for "qdrant-neo4j" backend). Defaults
-            to the ``HEADROOM_QDRANT_HOST`` env var or ``localhost``.
+            to the ``LEGROOM_QDRANT_HOST`` env var or ``localhost``.
         qdrant_port: Qdrant port (only for "qdrant-neo4j" backend). Defaults
-            to the ``HEADROOM_QDRANT_PORT`` env var or ``6333``.
+            to the ``LEGROOM_QDRANT_PORT`` env var or ``6333``.
         qdrant_api_key: API key for hosted Qdrant. Defaults to
-            ``HEADROOM_QDRANT_API_KEY`` if unset.
+            ``LEGROOM_QDRANT_API_KEY`` if unset.
         neo4j_uri: Neo4j URI (only for "qdrant-neo4j" backend).
 
     Examples:
@@ -96,8 +96,8 @@ class Memory:
         # Production mode with local Docker services
         memory = Memory(backend="qdrant-neo4j")
 
-        # Hosted Qdrant via URL + API key (or set HEADROOM_QDRANT_URL /
-        # HEADROOM_QDRANT_API_KEY in the environment)
+        # Hosted Qdrant via URL + API key (or set LEGROOM_QDRANT_URL /
+        # LEGROOM_QDRANT_API_KEY in the environment)
         memory = Memory(
             backend="qdrant-neo4j",
             qdrant_url="https://xyz.cloud.qdrant.io:6333",
@@ -117,7 +117,7 @@ class Memory:
         neo4j_user: str = "neo4j",
         neo4j_password: str = "password",
     ) -> None:
-        from headroom.memory import qdrant_env
+        from legroom.memory import qdrant_env
 
         self._backend_type = backend
         self._backend: Any = None
@@ -125,8 +125,8 @@ class Memory:
 
         # Config for local backend
         if db_path is None:
-            # Default: workspace memory.db (respects HEADROOM_WORKSPACE_DIR)
-            from headroom import paths as _paths
+            # Default: workspace memory.db (respects LEGROOM_WORKSPACE_DIR)
+            from legroom import paths as _paths
 
             default_db = _paths.memory_db_path()
             default_db.parent.mkdir(parents=True, exist_ok=True)
@@ -134,7 +134,7 @@ class Memory:
         self._db_path = Path(db_path)
 
         # Config for qdrant-neo4j backend.
-        # ``None`` sentinels fall back to HEADROOM_QDRANT_* env vars so that
+        # ``None`` sentinels fall back to LEGROOM_QDRANT_* env vars so that
         # ``Memory(backend="qdrant-neo4j")`` picks up hosted/custom Qdrant
         # deployments without any code changes. Explicit values always win.
         self._qdrant_url = qdrant_url if qdrant_url is not None else qdrant_env.qdrant_env_url()
@@ -153,14 +153,14 @@ class Memory:
             return
 
         if self._backend_type == "local":
-            from headroom.memory.backends.local import LocalBackend, LocalBackendConfig
+            from legroom.memory.backends.local import LocalBackend, LocalBackendConfig
 
             config = LocalBackendConfig(db_path=str(self._db_path))
             self._backend = LocalBackend(config)
 
         elif self._backend_type == "qdrant-neo4j":
             try:
-                from headroom.memory.backends.direct_mem0 import (
+                from legroom.memory.backends.direct_mem0 import (
                     DirectMem0Adapter,
                     Mem0Config,
                 )
@@ -179,7 +179,7 @@ class Memory:
             except ImportError as e:
                 raise ImportError(
                     "qdrant-neo4j backend requires additional packages. "
-                    "Install with: pip install 'headroom-ai[memory-stack]'\n"
+                    "Install with: pip install 'legroom-ai[memory-stack]'\n"
                     "And start Docker services: docker compose up -d qdrant neo4j"
                 ) from e
         else:

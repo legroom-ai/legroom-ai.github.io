@@ -1,7 +1,7 @@
-"""Headroom Memory - Simple, zero-config memory for AI applications.
+"""Legroom Memory - Simple, zero-config memory for AI applications.
 
 Quick Start (No Docker Required):
-    from headroom.memory import Memory
+    from legroom.memory import Memory
 
     # Create memory instance - works out of the box!
     memory = Memory()
@@ -27,7 +27,7 @@ Backends:
 
 Advanced Usage - LLM Wrapper:
     from openai import OpenAI
-    from headroom.memory import with_memory
+    from legroom.memory import with_memory
 
     client = with_memory(OpenAI(), user_id="alice")
     response = client.chat.completions.create(
@@ -38,7 +38,7 @@ Advanced Usage - LLM Wrapper:
 
 Advanced Usage - Tool-based:
     from openai import OpenAI
-    from headroom.memory import with_memory_tools, LocalBackend
+    from legroom.memory import with_memory_tools, LocalBackend
 
     client = with_memory_tools(
         OpenAI(),
@@ -54,20 +54,20 @@ Advanced Usage - Tool-based:
 # =============================================================================
 # Graph adapters
 # =============================================================================
-from headroom.memory.adapters.graph import InMemoryGraphStore
+from legroom.memory.adapters.graph import InMemoryGraphStore
 
 # =============================================================================
 # Backend implementations (lazy imports for optional dependencies)
 # =============================================================================
 # LocalBackend is always available (no optional dependencies)
-from headroom.memory.backends.local import LocalBackend, LocalBackendConfig
+from legroom.memory.backends.local import LocalBackend, LocalBackendConfig
 
 # =============================================================================
-# Memory Bridge (markdown <-> Headroom bidirectional sync)
+# Memory Bridge (markdown <-> Legroom bidirectional sync)
 # =============================================================================
-from headroom.memory.bridge import ImportStats, MemoryBridge, SyncStats
-from headroom.memory.bridge_config import BridgeConfig, MarkdownFormat
-from headroom.memory.config import (
+from legroom.memory.bridge import ImportStats, MemoryBridge, SyncStats
+from legroom.memory.bridge_config import BridgeConfig, MarkdownFormat
+from legroom.memory.config import (
     EmbedderBackend,
     MemoryConfig,
     StoreBackend,
@@ -78,28 +78,28 @@ from headroom.memory.config import (
 # =============================================================================
 # Core orchestrator
 # =============================================================================
-from headroom.memory.core import HierarchicalMemory
+from legroom.memory.core import HierarchicalMemory
 
 # =============================================================================
 # Simple API (recommended for most users)
 # =============================================================================
-from headroom.memory.easy import Memory, MemoryResult
+from legroom.memory.easy import Memory, MemoryResult
 
 # =============================================================================
 # Factory
 # =============================================================================
-from headroom.memory.factory import create_memory_system
+from legroom.memory.factory import create_memory_system
 
 # =============================================================================
 # Data models (internal)
 # =============================================================================
-from headroom.memory.models import Memory as MemoryModel
-from headroom.memory.models import ScopeLevel
+from legroom.memory.models import Memory as MemoryModel
+from legroom.memory.models import ScopeLevel
 
 # =============================================================================
 # Protocol interfaces (ports)
 # =============================================================================
-from headroom.memory.ports import (
+from legroom.memory.ports import (
     # Core protocols
     Embedder,
     # Graph dataclasses
@@ -126,12 +126,12 @@ from headroom.memory.ports import (
 # =============================================================================
 # Memory system orchestrator
 # =============================================================================
-from headroom.memory.system import MemoryBackend, MemorySystem
+from legroom.memory.system import MemoryBackend, MemorySystem
 
 # =============================================================================
 # Memory tools for LLM function calling
 # =============================================================================
-from headroom.memory.tools import (
+from legroom.memory.tools import (
     MEMORY_TOOLS,
     MEMORY_TOOLS_OPTIMIZED,
     get_memory_tools,
@@ -141,12 +141,12 @@ from headroom.memory.tools import (
 # =============================================================================
 # Wrapper for LLM clients (main user-facing API)
 # =============================================================================
-from headroom.memory.wrapper import MemoryWrapper, with_memory
+from legroom.memory.wrapper import MemoryWrapper, with_memory
 
 # =============================================================================
 # Tool-based wrapper for LLM clients
 # =============================================================================
-from headroom.memory.wrapper_tools import MemoryToolsWrapper, with_memory_tools
+from legroom.memory.wrapper_tools import MemoryToolsWrapper, with_memory_tools
 
 # Lazy imports for optional backends to avoid ImportError if dependencies not installed
 _Mem0Backend = None
@@ -161,28 +161,28 @@ def __getattr__(name: str) -> type:
 
     if name == "Mem0Backend":
         if _Mem0Backend is None:
-            from headroom.memory.backends.mem0 import Mem0Backend
+            from legroom.memory.backends.mem0 import Mem0Backend
 
             _Mem0Backend = Mem0Backend
         return _Mem0Backend
 
     if name == "Mem0Config":
         if _Mem0Config is None:
-            from headroom.memory.backends.mem0 import Mem0Config
+            from legroom.memory.backends.mem0 import Mem0Config
 
             _Mem0Config = Mem0Config
         return _Mem0Config
 
     if name == "DirectMem0Adapter":
         if _DirectMem0Adapter is None:
-            from headroom.memory.backends.direct_mem0 import DirectMem0Adapter
+            from legroom.memory.backends.direct_mem0 import DirectMem0Adapter
 
             _DirectMem0Adapter = DirectMem0Adapter
         return _DirectMem0Adapter
 
     if name == "DirectMem0Config":
         if _DirectMem0Config is None:
-            from headroom.memory.backends.direct_mem0 import Mem0Config as DirectMem0Config
+            from legroom.memory.backends.direct_mem0 import Mem0Config as DirectMem0Config
 
             _DirectMem0Config = DirectMem0Config
         return _DirectMem0Config
@@ -282,7 +282,7 @@ __all__ = [
     "DirectMem0Adapter",
     "DirectMem0Config",
     # =========================================================================
-    # Memory Bridge (markdown <-> Headroom bidirectional sync)
+    # Memory Bridge (markdown <-> Legroom bidirectional sync)
     # =========================================================================
     "MemoryBridge",
     "BridgeConfig",

@@ -32,8 +32,8 @@ from unittest.mock import patch
 
 import pytest
 
-from headroom.telemetry.toin import TOINConfig, get_toin, reset_toin
-from headroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
+from legroom.telemetry.toin import TOINConfig, get_toin, reset_toin
+from legroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
 
 
 @pytest.fixture
@@ -178,7 +178,7 @@ def test_ccr_inject_marker_false_suppresses_markers_in_output(fresh_toin):
     skips both the `<<ccr:HASH>>` marker text and the CCR store write.
     Compression itself still happens — rows still drop — just without
     a retrieval pointer in the prompt."""
-    from headroom.config import CCRConfig
+    from legroom.config import CCRConfig
 
     crusher = SmartCrusher(
         SmartCrusherConfig(),
@@ -206,7 +206,7 @@ def test_ccr_inject_marker_false_suppresses_opaque_blob_markers(fresh_toin):
     with no marker."""
     import json
 
-    from headroom.config import CCRConfig
+    from legroom.config import CCRConfig
 
     # Distinct >256-byte string cells trigger the opaque-blob path.
     payload = json.dumps(
@@ -233,7 +233,7 @@ def test_ccr_inject_marker_true_emits_markers_when_lossy(fresh_toin):
     """The opt-in case keeps marker emission on. If the lossy path
     runs (which it should for a sufficiently big crushable payload),
     the `<<ccr:HASH>>` marker appears in the compressed output."""
-    from headroom.config import CCRConfig
+    from legroom.config import CCRConfig
 
     crusher = SmartCrusher(
         SmartCrusherConfig(),
@@ -258,7 +258,7 @@ def test_ccr_enabled_false_suppresses_markers_in_output(fresh_toin):
     Rust-side `enable_ccr_marker=False` gate; storing a payload under
     `enabled=False` would be a surprise side effect the user
     explicitly opted out of."""
-    from headroom.config import CCRConfig
+    from legroom.config import CCRConfig
 
     crusher = SmartCrusher(
         SmartCrusherConfig(),

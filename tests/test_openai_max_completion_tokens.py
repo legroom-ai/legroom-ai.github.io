@@ -9,7 +9,7 @@ already owns the outbound request body — translates it.
 
 from __future__ import annotations
 
-from headroom.proxy.handlers.openai import _normalize_openai_max_tokens
+from legroom.proxy.handlers.openai import _normalize_openai_max_tokens
 
 
 def test_renames_legacy_max_tokens():

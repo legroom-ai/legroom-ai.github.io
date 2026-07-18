@@ -1,10 +1,10 @@
 """Conversation scanners — backwards-compatible re-exports.
 
-Concrete scanner implementations have moved to headroom.learn.plugins.*.
+Concrete scanner implementations have moved to legroom.learn.plugins.*.
 This module re-exports them so existing imports continue to work:
 
-    from headroom.learn.scanner import ClaudeCodeScanner  # still works
-    from headroom.learn.scanner import is_error_content    # still works
+    from legroom.learn.scanner import ClaudeCodeScanner  # still works
+    from legroom.learn.scanner import is_error_content    # still works
 """
 
 from __future__ import annotations

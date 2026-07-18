@@ -2,7 +2,7 @@
 
 Offline scoring of what compression removed from real proxied sessions — no
 LLM, no API key. For each event recorded by
-``headroom.proxy.probe_recorder``, probe targets are extracted from the
+``legroom.proxy.probe_recorder``, probe targets are extracted from the
 ORIGINAL tool-result content and each is classified against the compressed
 messages as:
 
@@ -34,12 +34,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from headroom.learn.scanner import is_error_content
+from legroom.learn.scanner import is_error_content
 
 DIMENSIONS = ("numerics", "artifacts", "errors")
 
 # Mirrors the marker shapes matched by
-# headroom.transforms.compression_units._CCR_MARKER_RE (kept local so the
+# legroom.transforms.compression_units._CCR_MARKER_RE (kept local so the
 # evals layer does not depend on a private transforms symbol).
 _CCR_MARKER_RE = re.compile(r"Retrieve more: hash=|Retrieve original: hash=|<<ccr:[^>]+>>")
 

@@ -11,7 +11,7 @@ instance via ``object.__new__``.
 
 from __future__ import annotations
 
-from headroom.proxy.memory_handler import MemoryHandler
+from legroom.proxy.memory_handler import MemoryHandler
 
 _handler = object.__new__(MemoryHandler)
 

@@ -1,7 +1,7 @@
 """Tracking of OpenAI Codex rate-limit window data.
 
 Historically Codex embedded rate-limit data in API *response headers*
-(``x-codex-primary-used-percent`` etc.) and headroom captured those headers
+(``x-codex-primary-used-percent`` etc.) and legroom captured those headers
 from proxied responses (:meth:`CodexRateLimitState.update_from_headers`).
 Current Codex (codex_exec / TUI on the ChatGPT WebSocket transport) no longer
 emits those headers on the ``/responses`` handshake or stream -- the window is
@@ -50,14 +50,14 @@ from threading import Lock
 
 import httpx
 
-from headroom.subscription.base import QuotaTracker
+from legroom.subscription.base import QuotaTracker
 
 logger = logging.getLogger(__name__)
 
 # Dedicated Codex usage endpoint for ChatGPT OAuth/session auth. Overridable
 # for tests / self-hosted gateways via env.
 CODEX_USAGE_URL = (
-    os.environ.get("HEADROOM_CODEX_USAGE_URL", "https://chatgpt.com/backend-api/wham/usage").strip()
+    os.environ.get("LEGROOM_CODEX_USAGE_URL", "https://chatgpt.com/backend-api/wham/usage").strip()
     or "https://chatgpt.com/backend-api/wham/usage"
 )
 
@@ -328,11 +328,11 @@ def parse_codex_usage_payload(payload: object) -> CodexRateLimitSnapshot | None:
 class CodexRateLimitState(QuotaTracker):
     """Thread-safe store for the latest Codex rate-limit snapshot.
 
-    Implements :class:`~headroom.subscription.base.QuotaTracker` so it can
-    be registered with the :class:`~headroom.subscription.base.QuotaTrackerRegistry`.
+    Implements :class:`~legroom.subscription.base.QuotaTracker` so it can
+    be registered with the :class:`~legroom.subscription.base.QuotaTrackerRegistry`.
     This tracker is *passive* — it is updated by the OpenAI proxy handler
     each time a response containing ``x-codex-*`` headers passes through
-    headroom, so :meth:`start` and :meth:`stop` are no-ops.
+    legroom, so :meth:`start` and :meth:`stop` are no-ops.
     """
 
     # QuotaTracker identity

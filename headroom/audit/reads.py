@@ -4,8 +4,8 @@ Measures, from REAL session data, the addressable bytes for each Read
 compression mechanism — so defaults are set from traffic, not theory.
 Run it on a deployment's transcripts before tuning anything:
 
-    headroom audit-reads
-    headroom audit-reads --path /path/to/projects --format json
+    legroom audit-reads
+    legroom audit-reads --path /path/to/projects --format json
 
 Read-only: streams ``<path>/**/*.jsonl`` (Claude Code session transcripts)
 and never modifies anything.

@@ -215,7 +215,7 @@ fn anthropic_message() -> SimulatedResponse {
             "id": "msg_sim_0001",
             "type": "message",
             "role": "assistant",
-            "model": "headroom-simulator-anthropic",
+            "model": "legroom-simulator-anthropic",
             "content": [{"type": "text", "text": "simulated anthropic response"}],
             "stop_reason": "end_turn",
             "stop_sequence": null,
@@ -227,7 +227,7 @@ fn anthropic_message() -> SimulatedResponse {
 fn anthropic_sse() -> SimulatedResponse {
     let body = concat!(
         "event: message_start\n",
-        "data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_sim_stream\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"headroom-simulator-anthropic\",\"content\":[],\"stop_reason\":null,\"usage\":{\"input_tokens\":12,\"output_tokens\":0}}}\n\n",
+        "data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_sim_stream\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"legroom-simulator-anthropic\",\"content\":[],\"stop_reason\":null,\"usage\":{\"input_tokens\":12,\"output_tokens\":0}}}\n\n",
         "event: content_block_start\n",
         "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n",
         "event: content_block_delta\n",
@@ -249,7 +249,7 @@ fn openai_chat() -> SimulatedResponse {
             "id": "chatcmpl-sim-0001",
             "object": "chat.completion",
             "created": 1,
-            "model": "headroom-simulator-openai-chat",
+            "model": "legroom-simulator-openai-chat",
             "choices": [{
                 "index": 0,
                 "message": {"role": "assistant", "content": "simulated openai chat response"},
@@ -262,9 +262,9 @@ fn openai_chat() -> SimulatedResponse {
 
 fn openai_chat_sse() -> SimulatedResponse {
     let body = concat!(
-        "data: {\"id\":\"chatcmpl-sim-stream\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"headroom-simulator-openai-chat\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\"},\"finish_reason\":null}]}\n\n",
-        "data: {\"id\":\"chatcmpl-sim-stream\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"headroom-simulator-openai-chat\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"simulated openai chat stream\"},\"finish_reason\":null}]}\n\n",
-        "data: {\"id\":\"chatcmpl-sim-stream\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"headroom-simulator-openai-chat\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n",
+        "data: {\"id\":\"chatcmpl-sim-stream\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"legroom-simulator-openai-chat\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\"},\"finish_reason\":null}]}\n\n",
+        "data: {\"id\":\"chatcmpl-sim-stream\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"legroom-simulator-openai-chat\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"simulated openai chat stream\"},\"finish_reason\":null}]}\n\n",
+        "data: {\"id\":\"chatcmpl-sim-stream\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"legroom-simulator-openai-chat\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n",
         "data: [DONE]\n\n"
     );
     SimulatedResponse::text(200, "text/event-stream", body)
@@ -277,7 +277,7 @@ fn openai_responses() -> SimulatedResponse {
             "id": "resp_sim_0001",
             "object": "response",
             "created_at": 1,
-            "model": "headroom-simulator-openai-responses",
+            "model": "legroom-simulator-openai-responses",
             "status": "completed",
             "output": [{
                 "id": "msg_sim_0001",
@@ -293,7 +293,7 @@ fn openai_responses() -> SimulatedResponse {
 fn openai_responses_sse() -> SimulatedResponse {
     let body = concat!(
         "event: response.created\n",
-        "data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_sim_stream\",\"status\":\"in_progress\",\"model\":\"headroom-simulator-openai-responses\"}}\n\n",
+        "data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_sim_stream\",\"status\":\"in_progress\",\"model\":\"legroom-simulator-openai-responses\"}}\n\n",
         "event: output_item.added\n",
         "data: {\"type\":\"output_item.added\",\"item\":{\"id\":\"msg_sim_stream\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[]}}\n\n",
         "event: output_text.delta\n",
@@ -380,7 +380,7 @@ fn vertex_predict() -> SimulatedResponse {
             "id": "msg_vertex_sim_0001",
             "type": "message",
             "role": "assistant",
-            "model": "headroom-simulator-vertex-anthropic",
+            "model": "legroom-simulator-vertex-anthropic",
             "content": [{"type": "text", "text": "simulated vertex anthropic response"}],
             "stop_reason": "end_turn",
             "usage": {"input_tokens": 12, "output_tokens": 5}
@@ -393,7 +393,7 @@ fn generic(path: &str) -> SimulatedResponse {
         200,
         json!({
             "id": "sim_generic_0001",
-            "object": "headroom.simulator.response",
+            "object": "legroom.simulator.response",
             "path": path,
             "message": "generic simulated response"
         }),
@@ -401,7 +401,7 @@ fn generic(path: &str) -> SimulatedResponse {
 }
 
 fn bedrock_eventstream() -> SimulatedResponse {
-    let payload = br#"{"type":"message_start","message":{"id":"msg_bedrock_stream","type":"message","role":"assistant","model":"headroom-simulator-bedrock","content":[],"stop_reason":null,"usage":{"input_tokens":12,"output_tokens":0}}}"#;
+    let payload = br#"{"type":"message_start","message":{"id":"msg_bedrock_stream","type":"message","role":"assistant","model":"legroom-simulator-bedrock","content":[],"stop_reason":null,"usage":{"input_tokens":12,"output_tokens":0}}}"#;
     let frame = encode_eventstream_message("chunk", payload);
     SimulatedResponse::text(200, "application/vnd.amazon.eventstream", frame)
 }

@@ -1,7 +1,7 @@
-"""Memory wrapper - the main API for Headroom Memory.
+"""Memory wrapper - the main API for Legroom Memory.
 
 One-line integration with zero-latency inline extraction:
-    from headroom import with_memory
+    from legroom import with_memory
     client = with_memory(OpenAI(), user_id="alice")
 
 This uses the Letta/MemGPT approach - memories are extracted inline
@@ -16,13 +16,13 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from headroom.memory.config import EmbedderBackend, MemoryConfig
-from headroom.memory.core import HierarchicalMemory
-from headroom.memory.inline_extractor import (
+from legroom.memory.config import EmbedderBackend, MemoryConfig
+from legroom.memory.core import HierarchicalMemory
+from legroom.memory.inline_extractor import (
     inject_memory_instruction,
     parse_response_with_memory,
 )
-from headroom.memory.models import Memory
+from legroom.memory.models import Memory
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ class MemoryWrapper:
         self,
         client: Any,
         user_id: str,
-        db_path: str | Path = "headroom_memory.db",
+        db_path: str | Path = "legroom_memory.db",
         top_k: int = 5,
         session_id: str | None = None,
         agent_id: str | None = None,
@@ -328,7 +328,7 @@ class _MemoryAPI:
 
     def get_all(self) -> list[Memory]:
         """Get all memories for this user."""
-        from headroom.memory.ports import MemoryFilter
+        from legroom.memory.ports import MemoryFilter
 
         filter = MemoryFilter(user_id=self._user_id)
         memories: list[Memory] = self._run_async(self._memory.query(filter))
@@ -351,7 +351,7 @@ class _MemoryAPI:
 def with_memory(
     client: Any,
     user_id: str,
-    db_path: str | Path = "headroom_memory.db",
+    db_path: str | Path = "legroom_memory.db",
     top_k: int = 5,
     session_id: str | None = None,
     agent_id: str | None = None,
@@ -367,7 +367,7 @@ def with_memory(
     Args:
         client: LLM client (OpenAI, Anthropic, Mistral, Groq, etc.)
         user_id: User identifier for memory isolation
-        db_path: Path to SQLite database (default: headroom_memory.db)
+        db_path: Path to SQLite database (default: legroom_memory.db)
         top_k: Number of memories to inject per request (default: 5)
         session_id: Optional session ID for session-scoped memories
         agent_id: Optional agent ID for agent-scoped memories
@@ -380,7 +380,7 @@ def with_memory(
 
     Example:
         from openai import OpenAI
-        from headroom import with_memory
+        from legroom import with_memory
 
         client = with_memory(OpenAI(), user_id="alice")
 

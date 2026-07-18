@@ -1,4 +1,4 @@
-"""Transactional recovery of Codex state left in a temporary Headroom home."""
+"""Transactional recovery of Codex state left in a temporary Legroom home."""
 
 from __future__ import annotations
 
@@ -17,8 +17,8 @@ from typing import Any
 
 import tomlkit
 
-_TEMP_HOME_PREFIX = "headroom-codex-home-"
-_RECOVERY_DIR = ".headroom-codex-recovery"
+_TEMP_HOME_PREFIX = "legroom-codex-home-"
+_RECOVERY_DIR = ".legroom-codex-recovery"
 _SQLITE_SUFFIXES = {".sqlite", ".db"}
 _RUNTIME_NAMES = {".DS_Store"}
 _RUNTIME_SUFFIXES = {".lock", ".sock", ".socket", "-shm", "-wal", "-journal"}
@@ -50,7 +50,7 @@ class CodexHistoryAudit:
 
 
 def discover_dangling_homes(temp_root: Path | None = None) -> list[Path]:
-    """Find non-empty Headroom temporary Codex homes, newest first."""
+    """Find non-empty Legroom temporary Codex homes, newest first."""
     if temp_root is not None:
         roots = [temp_root]
     else:
@@ -278,28 +278,28 @@ def _new_backup_dir(target: Path) -> Path:
     raise RuntimeError("could not allocate a Codex recovery backup directory")
 
 
-def _uses_legacy_headroom_routing(document: Any) -> bool:
+def _uses_legacy_legroom_routing(document: Any) -> bool:
     providers = document.get("model_providers")
-    headroom_provider = providers.get("headroom") if providers is not None else None
-    local_provider = headroom_provider is not None and str(
-        headroom_provider.get("base_url", "")
+    legroom_provider = providers.get("legroom") if providers is not None else None
+    local_provider = legroom_provider is not None and str(
+        legroom_provider.get("base_url", "")
     ).startswith("http://127.0.0.1:")
     local_openai_url = str(document.get("openai_base_url", "")).startswith("http://127.0.0.1:")
-    return document.get("model_provider") == "headroom" and (local_provider or local_openai_url)
+    return document.get("model_provider") == "legroom" and (local_provider or local_openai_url)
 
 
 def _clean_managed_codex_config(document: Any) -> None:
     providers = document.get("model_providers")
-    headroom_provider = providers.get("headroom") if providers is not None else None
-    local_provider = headroom_provider is not None and str(
-        headroom_provider.get("base_url", "")
+    legroom_provider = providers.get("legroom") if providers is not None else None
+    local_provider = legroom_provider is not None and str(
+        legroom_provider.get("base_url", "")
     ).startswith("http://127.0.0.1:")
     local_openai_url = str(document.get("openai_base_url", "")).startswith("http://127.0.0.1:")
     managed_routing = local_provider or local_openai_url
-    if managed_routing and document.get("model_provider") == "headroom":
+    if managed_routing and document.get("model_provider") == "legroom":
         del document["model_provider"]
     if providers is not None and local_provider:
-        del providers["headroom"]
+        del providers["legroom"]
         if not providers:
             del document["model_providers"]
     if managed_routing and local_openai_url:
@@ -389,7 +389,7 @@ def _merge_rollout(
             if (
                 record.get("type") == "session_meta"
                 and isinstance(payload, dict)
-                and payload.get("model_provider") == "headroom"
+                and payload.get("model_provider") == "legroom"
             ):
                 payload["model_provider"] = replacement_provider
                 lines[index] = json.dumps(record, separators=(",", ":"))
@@ -492,7 +492,7 @@ def _normalize_recovered_threads(
             "UPDATE threads SET rollout_path = ? WHERE id = ?",
             (str(durable_rollout), thread_id),
         )
-        if replacement_provider is not None and len(row) == 3 and row[2] == "headroom":
+        if replacement_provider is not None and len(row) == 3 and row[2] == "legroom":
             connection.execute(
                 "UPDATE threads SET model_provider = ? WHERE id = ?",
                 (replacement_provider, thread_id),
@@ -616,7 +616,7 @@ def _merge_pinned_home(
 ) -> None:
     quarantine = report.backup_dir / "quarantine"
     source_config = pinned / "config.toml"
-    replace_legacy_provider = source_config.is_file() and _uses_legacy_headroom_routing(
+    replace_legacy_provider = source_config.is_file() and _uses_legacy_legroom_routing(
         tomlkit.parse(source_config.read_text(encoding="utf-8"))
     )
     replacement_provider = (

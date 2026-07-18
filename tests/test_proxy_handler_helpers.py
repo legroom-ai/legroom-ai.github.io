@@ -10,15 +10,15 @@ from unittest.mock import patch
 import httpx
 from fastapi.responses import StreamingResponse
 
-from headroom.proxy.handlers.anthropic import AnthropicHandlerMixin
-from headroom.proxy.handlers.openai import (
+from legroom.proxy.handlers.anthropic import AnthropicHandlerMixin
+from legroom.proxy.handlers.openai import (
     OpenAIHandlerMixin,
     _decode_openai_bearer_payload,
     _passthrough_usage_from_json,
     _prefers_http1_passthrough,
 )
-from headroom.proxy.helpers import _headroom_bypass_enabled
-from headroom.proxy.server import HeadroomProxy
+from legroom.proxy.helpers import _legroom_bypass_enabled
+from legroom.proxy.server import LegroomProxy
 
 
 def _jwt(payload: object) -> str:
@@ -268,15 +268,15 @@ def test_openai_handler_prefix_helpers_cover_edge_cases() -> None:
     assert changed == 1
 
 
-def test_headroom_bypass_helper_is_transport_neutral() -> None:
-    assert _headroom_bypass_enabled({"x-headroom-bypass": "true"}) is True
-    assert _headroom_bypass_enabled({"x-headroom-bypass": " TRUE "}) is True
-    assert _headroom_bypass_enabled({"x-headroom-mode": "passthrough"}) is True
-    assert _headroom_bypass_enabled({"x-headroom-mode": " PASSTHROUGH "}) is True
-    assert _headroom_bypass_enabled({"x-headroom-bypass": "false"}) is False
-    assert _headroom_bypass_enabled({}) is False
-    assert _headroom_bypass_enabled(None) is False
-    assert OpenAIHandlerMixin._headroom_bypass_enabled({"x-headroom-bypass": "true"}) is True
+def test_legroom_bypass_helper_is_transport_neutral() -> None:
+    assert _legroom_bypass_enabled({"x-legroom-bypass": "true"}) is True
+    assert _legroom_bypass_enabled({"x-legroom-bypass": " TRUE "}) is True
+    assert _legroom_bypass_enabled({"x-legroom-mode": "passthrough"}) is True
+    assert _legroom_bypass_enabled({"x-legroom-mode": " PASSTHROUGH "}) is True
+    assert _legroom_bypass_enabled({"x-legroom-bypass": "false"}) is False
+    assert _legroom_bypass_enabled({}) is False
+    assert _legroom_bypass_enabled(None) is False
+    assert OpenAIHandlerMixin._legroom_bypass_enabled({"x-legroom-bypass": "true"}) is True
 
 
 def test_openai_passthrough_without_config_preserves_generic_request() -> None:
@@ -382,7 +382,7 @@ def test_passthrough_usage_normalizes_vertex_usage_metadata() -> None:
 
 
 def test_vertex_passthrough_records_usage_metadata_for_dashboard() -> None:
-    handler = object.__new__(HeadroomProxy)
+    handler = object.__new__(LegroomProxy)
     handler.http_client = _VertexUsageClient()
     outcomes = []
 
@@ -415,7 +415,7 @@ def test_vertex_passthrough_records_usage_metadata_for_dashboard() -> None:
 
 
 def test_vertex_stream_passthrough_preserves_chunks_and_records_usage() -> None:
-    handler = object.__new__(HeadroomProxy)
+    handler = object.__new__(LegroomProxy)
     handler.http_client = _VertexStreamClient()
     outcomes = []
 
@@ -457,7 +457,7 @@ def test_vertex_stream_passthrough_preserves_chunks_and_records_usage() -> None:
 
 
 def test_stream_finalizer_records_vertex_provider_for_dashboard() -> None:
-    handler = object.__new__(HeadroomProxy)
+    handler = object.__new__(LegroomProxy)
     handler.config = SimpleNamespace(log_full_messages=False)
     outcomes = []
 
@@ -505,7 +505,7 @@ def test_stream_finalizer_records_vertex_provider_for_dashboard() -> None:
 
 
 def test_vertex_gemini_non_text_generate_records_dashboard_outcome() -> None:
-    handler = object.__new__(HeadroomProxy)
+    handler = object.__new__(LegroomProxy)
     handler.memory_handler = None
     handler.rate_limiter = None
     outcomes = []
@@ -550,9 +550,9 @@ def test_vertex_gemini_non_text_generate_records_dashboard_outcome() -> None:
     assert upstream_urls == [
         "https://vertex.test/v1/projects/p/locations/us-central1/publishers/google/models/gemini-2.0-flash:generateContent"
     ]
-    assert response.headers["x-headroom-tokens-before"] == "31"
-    assert response.headers["x-headroom-tokens-after"] == "31"
-    assert response.headers["x-headroom-tokens-saved"] == "0"
+    assert response.headers["x-legroom-tokens-before"] == "31"
+    assert response.headers["x-legroom-tokens-after"] == "31"
+    assert response.headers["x-legroom-tokens-saved"] == "0"
     assert len(outcomes) == 1
     outcome = outcomes[0]
     assert outcome.provider == "vertex:google"
@@ -565,7 +565,7 @@ def test_vertex_gemini_non_text_generate_records_dashboard_outcome() -> None:
 
 
 def test_retry_request_retries_connect_timeout() -> None:
-    proxy = object.__new__(HeadroomProxy)
+    proxy = object.__new__(LegroomProxy)
     proxy.http_client = _RetryThenSuccessClient()
     proxy.config = SimpleNamespace(
         retry_enabled=True,
@@ -601,7 +601,7 @@ def test_retry_request_returns_503_when_shutdown_interrupts_retry_sleep() -> Non
                 headers={"retry-after": "30"},
             )
 
-    proxy = object.__new__(HeadroomProxy)
+    proxy = object.__new__(LegroomProxy)
     proxy.http_client = _Always429Client()
     proxy.config = SimpleNamespace(
         retry_enabled=True,
@@ -722,12 +722,12 @@ def test_anthropic_image_compression_helper_only_rewrites_latest_eligible_turn()
 
 
 def test_proxy_helper_creates_fresh_image_compressors(monkeypatch) -> None:
-    from headroom.proxy import helpers
+    from legroom.proxy import helpers
 
     monkeypatch.setattr(helpers, "_image_compressor_available", None)
     _FreshCompressor.instances = 0
 
-    with patch("headroom.image.ImageCompressor", _FreshCompressor):
+    with patch("legroom.image.ImageCompressor", _FreshCompressor):
         first = helpers._get_image_compressor()
         second = helpers._get_image_compressor()
 
@@ -738,14 +738,14 @@ def test_proxy_helper_creates_fresh_image_compressors(monkeypatch) -> None:
 
 
 def test_proxy_helper_caches_image_stack_import_failure(monkeypatch) -> None:
-    from headroom.proxy import helpers
+    from legroom.proxy import helpers
 
     real_import = builtins.__import__
     calls = 0
 
     def fake_import(name, *args, **kwargs):  # noqa: ANN001, ANN202
         nonlocal calls
-        if name == "headroom.image":
+        if name == "legroom.image":
             calls += 1
             raise ImportError("image extras unavailable")
         return real_import(name, *args, **kwargs)
@@ -831,7 +831,7 @@ def test_anthropic_assistant_message_helper_requires_assistant_role() -> None:
 # These tests pin the `_resolve_ccr_workspace` static helper that the
 # anthropic handler uses to scope the proactive-expansion cache by
 # project identity. The resolver shares its tier order with the memory
-# subsystem's ProjectResolver: x-headroom-project-id → x-headroom-cwd →
+# subsystem's ProjectResolver: x-legroom-project-id → x-legroom-cwd →
 # system-prompt `cwd:` line. Returns `("", None)` on no signal — the
 # fail-closed signal that callers gate on.
 # ============================================================================
@@ -843,8 +843,8 @@ def _fake_request(headers: dict[str, str]) -> SimpleNamespace:
 
 
 def test_resolve_ccr_workspace_explicit_project_id_wins() -> None:
-    """x-headroom-project-id is the highest-priority signal."""
-    request = _fake_request({"x-headroom-project-id": "my-cool-project"})
+    """x-legroom-project-id is the highest-priority signal."""
+    request = _fake_request({"x-legroom-project-id": "my-cool-project"})
     body = {}
     key, label = AnthropicHandlerMixin._resolve_ccr_workspace(request, body)
     assert key == "my-cool-project"
@@ -852,8 +852,8 @@ def test_resolve_ccr_workspace_explicit_project_id_wins() -> None:
 
 
 def test_resolve_ccr_workspace_cwd_header() -> None:
-    """x-headroom-cwd produces a stable per-cwd key + basename label."""
-    request = _fake_request({"x-headroom-cwd": "/home/user/code/daphni-rails"})
+    """x-legroom-cwd produces a stable per-cwd key + basename label."""
+    request = _fake_request({"x-legroom-cwd": "/home/user/code/daphni-rails"})
     body = {}
     key, label = AnthropicHandlerMixin._resolve_ccr_workspace(request, body)
     # Key format: "{basename}-{sha256[:16]}" — stable per absolute cwd.
@@ -865,10 +865,10 @@ def test_resolve_ccr_workspace_cwd_header() -> None:
 def test_resolve_ccr_workspace_two_cwds_get_distinct_keys() -> None:
     """Two different cwds produce different workspace keys (cross-leak prevention)."""
     key_a, _ = AnthropicHandlerMixin._resolve_ccr_workspace(
-        _fake_request({"x-headroom-cwd": "/home/user/code/daphni-rails"}), {}
+        _fake_request({"x-legroom-cwd": "/home/user/code/daphni-rails"}), {}
     )
     key_b, _ = AnthropicHandlerMixin._resolve_ccr_workspace(
-        _fake_request({"x-headroom-cwd": "/home/user/code/tamag0"}), {}
+        _fake_request({"x-legroom-cwd": "/home/user/code/tamag0"}), {}
     )
     assert key_a != key_b, "different cwds must yield different workspace keys"
 
@@ -923,7 +923,7 @@ class TestHasNewCcrMarkers:
 
     @staticmethod
     def _hashes(*contents: str) -> list[str]:
-        from headroom.ccr.tool_injection import CCRToolInjector
+        from legroom.ccr.tool_injection import CCRToolInjector
 
         inj = CCRToolInjector(
             provider="anthropic", inject_tool=False, inject_system_instructions=False
@@ -932,7 +932,7 @@ class TestHasNewCcrMarkers:
         return inj.detected_hashes
 
     def test_replayed_markers_are_not_new(self):
-        from headroom.proxy.helpers import has_new_ccr_markers
+        from legroom.proxy.helpers import has_new_ccr_markers
 
         marker = "[100 items compressed to 10. Retrieve more: hash=abc123def456abc123def456]"
         current = self._hashes(marker)
@@ -948,7 +948,7 @@ class TestHasNewCcrMarkers:
         )
 
     def test_genuinely_new_marker_is_detected(self):
-        from headroom.proxy.helpers import has_new_ccr_markers
+        from legroom.proxy.helpers import has_new_ccr_markers
 
         old = "[100 items compressed to 10. Retrieve more: hash=abc123def456abc123def456]"
         new = "[50 items compressed to 5. Retrieve more: hash=deadbeefdeadbeefdeadbeef]"
@@ -964,7 +964,7 @@ class TestHasNewCcrMarkers:
         )
 
     def test_no_previous_forward_means_all_new(self):
-        from headroom.proxy.helpers import has_new_ccr_markers
+        from legroom.proxy.helpers import has_new_ccr_markers
 
         marker = "[100 items compressed to 10. Retrieve more: hash=abc123def456abc123def456]"
         assert (
@@ -977,7 +977,7 @@ class TestHasNewCcrMarkers:
         )
 
     def test_no_markers_means_nothing_new(self):
-        from headroom.proxy.helpers import has_new_ccr_markers
+        from legroom.proxy.helpers import has_new_ccr_markers
 
         assert (
             has_new_ccr_markers(
@@ -995,7 +995,7 @@ def test_strict_frozen_count_tool_and_function_tail_are_mutable():
     # Gating the mutable tail on role=="user" froze the whole conversation on
     # every such turn => zero compression. Tool/function observations must be
     # treated as the mutable delta (freeze all-but-last), like a user obs.
-    from headroom.proxy.handlers.openai import OpenAIHandlerMixin as M
+    from legroom.proxy.handlers.openai import OpenAIHandlerMixin as M
 
     # role:tool tail -> only the last message is mutable (frozen = final_idx)
     assert (

@@ -8,7 +8,7 @@ from .config import (
     inject_opencode_provider_config,
     opencode_config_paths,
     snapshot_opencode_config_if_unwrapped,
-    strip_opencode_headroom_blocks,
+    strip_opencode_legroom_blocks,
 )
 from .install import apply_provider_scope, build_install_env, revert_provider_scope
 from .runtime import build_launch_env, build_opencode_config_content, proxy_base_url
@@ -27,5 +27,5 @@ __all__ = [
     "proxy_base_url",
     "revert_provider_scope",
     "snapshot_opencode_config_if_unwrapped",
-    "strip_opencode_headroom_blocks",
+    "strip_opencode_legroom_blocks",
 ]

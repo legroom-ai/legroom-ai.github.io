@@ -11,19 +11,19 @@
 <p align="center"><strong>60–95% fewer tokens (for JSON data), 15-20% fewer tokens (for coding agents) · library · proxy · MCP · content-aware compressors · local-first · reversible</strong></p>
 
 <p align="center">
-  <a href="https://github.com/ghaliba3/headroom/actions/workflows/ci.yml"><img src="https://github.com/ghaliba3/headroom/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://app.codecov.io/gh/ghaliba3/headroom"><img src="https://codecov.io/gh/ghaliba3/headroom/graph/badge.svg" alt="codecov"></a>
-  <a href="https://pypi.org/project/headroom-ai/"><img src="https://img.shields.io/pypi/v/headroom-ai.svg" alt="PyPI"></a>
-  <a href="https://www.npmjs.com/package/headroom-ai"><img src="https://img.shields.io/npm/v/headroom-ai.svg" alt="npm"></a>
+  <a href="https://github.com/legroom-ai/legroom-ai.github.io/actions/workflows/ci.yml"><img src="https://github.com/legroom-ai/legroom-ai.github.io/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://app.codecov.io/gh/ghaliba3/legroom"><img src="https://codecov.io/gh/ghaliba3/legroom/graph/badge.svg" alt="codecov"></a>
+  <a href="https://pypi.org/project/legroom-ai/"><img src="https://img.shields.io/pypi/v/legroom-ai.svg" alt="PyPI"></a>
+  <a href="https://www.npmjs.com/package/legroom-ai"><img src="https://img.shields.io/npm/v/legroom-ai.svg" alt="npm"></a>
   <a href="https://huggingface.co/ghaliba3/kompress-v2-base"><img src="https://img.shields.io/badge/model-Kompress--v2--base-yellow.svg" alt="Model: Kompress-v2-base"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License: Apache 2.0"></a>
-  <a href="https://headroom-docs.vercel.app/docs"><img src="https://img.shields.io/badge/docs-online-blue.svg" alt="Docs"></a>
+  <a href="https://legroom-docs.vercel.app/docs"><img src="https://img.shields.io/badge/docs-online-blue.svg" alt="Docs"></a>
 </p>
 
-<!-- mcp-name: io.github.headroomlabs-ai/headroom -->
+<!-- mcp-name: io.github.legroom-ai/legroom -->
 
 <p align="center">
-  <a href="https://headroom-docs.vercel.app/docs">Docs</a> ·
+  <a href="https://legroom-docs.vercel.app/docs">Docs</a> ·
   <a href="#get-started-60-seconds">Install</a> ·
   <a href="#proof">Proof</a> ·
   <a href="#agent-compatibility-matrix">Agents</a> ·
@@ -32,27 +32,27 @@
 </p>
 
 <p align="center"><sub>
-  <b>AI agents / LLMs:</b> read <a href="llms.txt"><code>/llms.txt</code></a> here, or fetch <a href="https://headroom-docs.vercel.app/llms.txt">the live index</a> / <a href="https://headroom-docs.vercel.app/llms-full.txt">full docs blob</a>.
+  <b>AI agents / LLMs:</b> read <a href="llms.txt"><code>/llms.txt</code></a> here, or fetch <a href="https://legroom-docs.vercel.app/llms.txt">the live index</a> / <a href="https://legroom-docs.vercel.app/llms-full.txt">full docs blob</a>.
 </sub></p>
 
 ---
-<p align="center"><a href="https://trendshift.io/repositories/20881" target="_blank"><img src="https://trendshift.io/api/badge/repositories/20881" alt="ghaliba3%2Fheadroom | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a></p>
+<p align="center"><a href="https://trendshift.io/repositories/20881" target="_blank"><img src="https://trendshift.io/api/badge/repositories/20881" alt="ghaliba3%2Flegroom | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a></p>
 
-Headroom compresses everything your AI agent reads — tool outputs, logs, RAG chunks, files, and conversation history — before it reaches the LLM. Same answers, fraction of the tokens.
+Legroom compresses everything your AI agent reads — tool outputs, logs, RAG chunks, files, and conversation history — before it reaches the LLM. Same answers, fraction of the tokens.
 
 <p align="center">
-  <img src="HeadroomDemo-Fast.gif" alt="Headroom in action" width="820">
+  <img src="LegroomDemo-Fast.gif" alt="Legroom in action" width="820">
   <br/><sub>Live: 10,144 → 1,260 tokens — same FATAL found.</sub>
 </p>
 
 ## What it does
 
 - **Library** — `compress(messages)` in Python or TypeScript, inline in any app
-- **Proxy** — `headroom proxy --port 8787`, zero code changes, any language
-- **Agent wrap** — `headroom wrap claude|codex|grok|copilot|cursor|aider|opencode|cline|continue|goose|openhands|openclaw|vibe|omp|zcode` in one command; undo with `headroom unwrap <tool>`
-- **MCP server** — `headroom_compress`, `headroom_retrieve`, `headroom_stats` for any MCP client
+- **Proxy** — `legroom proxy --port 8787`, zero code changes, any language
+- **Agent wrap** — `legroom wrap claude|codex|grok|copilot|cursor|aider|opencode|cline|continue|goose|openhands|openclaw|vibe|omp|zcode` in one command; undo with `legroom unwrap <tool>`
+- **MCP server** — `legroom_compress`, `legroom_retrieve`, `legroom_stats` for any MCP client
 - **Cross-agent memory** — shared store across Claude, Codex, Gemini, Grok, auto-dedup
-- **`headroom learn`** — mines failed sessions, writes corrections to `CLAUDE.local.md` (default, gitignored) or `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` / `GROK.md`
+- **`legroom learn`** — mines failed sessions, writes corrections to `CLAUDE.local.md` (default, gitignored) or `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` / `GROK.md`
 - **Output token reduction** — trims what the model *writes back* (not just what you send): drops ceremony/restated code and skips deep "thinking" on routine steps. See [Output token reduction](#output-token-reduction-cut-what-the-model-writes-back).
 - **Reversible (CCR)** — originals are cached for retrieval on demand
 
@@ -64,14 +64,14 @@ Headroom compresses everything your AI agent reads — tool outputs, logs, RAG c
         │   prompts · tool outputs · logs · RAG results · files
         ▼
     ┌────────────────────────────────────────────────────┐
-    │  Headroom   (runs locally — your data stays here)  │
+    │  Legroom   (runs locally — your data stays here)  │
     │  ────────────────────────────────────────────────  │
     │  CacheAligner  →  ContentRouter  →  CCR            │
     │                    ├─ SmartCrusher   (JSON)        │
     │                    ├─ CodeCompressor (AST)         │
     │                    └─ Kompress-v2-base (text, HF)  │
     │                                                    │
-    │  Cross-agent memory  ·  headroom learn  ·  MCP     │
+    │  Cross-agent memory  ·  legroom learn  ·  MCP     │
     └────────────────────────────────────────────────────┘
         │   compressed prompt  +  retrieval tool
         ▼
@@ -81,54 +81,54 @@ Headroom compresses everything your AI agent reads — tool outputs, logs, RAG c
 - **ContentRouter** — detects content type, selects the right compressor
 - **SmartCrusher / CodeCompressor / Kompress-v2-base** — compress JSON, AST, or prose
 - **CacheAligner** — stabilizes prefixes so provider KV caches actually hit
-- **CCR** — stores originals locally; LLM calls `headroom_retrieve` if it needs them
+- **CCR** — stores originals locally; LLM calls `legroom_retrieve` if it needs them
 
-→ [Architecture](https://headroom-docs.vercel.app/docs/architecture) · [CCR reversible compression](https://headroom-docs.vercel.app/docs/ccr) · [Kompress-v2-base model card](https://huggingface.co/ghaliba3/kompress-v2-base)
+→ [Architecture](https://legroom-docs.vercel.app/docs/architecture) · [CCR reversible compression](https://legroom-docs.vercel.app/docs/ccr) · [Kompress-v2-base model card](https://huggingface.co/ghaliba3/kompress-v2-base)
 
 ## Get started (60 seconds)
 
 ```bash
 # 1 — Install
-uv tool install --python 3.13 "headroom-ai[all]"  # CLI as a global tool in a self-contained virtual env
-pip install "headroom-ai[all]"                    # Python — ships the `headroom` CLI
-npm install headroom-ai                           # TypeScript SDK only — no `headroom` CLI
+uv tool install --python 3.13 "legroom-ai[all]"  # CLI as a global tool in a self-contained virtual env
+pip install "legroom-ai[all]"                    # Python — ships the `legroom` CLI
+npm install legroom-ai                           # TypeScript SDK only — no `legroom` CLI
 
-# 2 — Pick your mode  (the `headroom` commands below come from the uv or pip install)
-headroom deploy                         # turnkey local deployment + agent config
-headroom wrap claude                    # wrap a coding agent
-headroom proxy --port 8787              # drop-in proxy, zero code changes
-# or: from headroom import compress      # inline library
+# 2 — Pick your mode  (the `legroom` commands below come from the uv or pip install)
+legroom deploy                         # turnkey local deployment + agent config
+legroom wrap claude                    # wrap a coding agent
+legroom proxy --port 8787              # drop-in proxy, zero code changes
+# or: from legroom import compress      # inline library
 
 # 3 — Verify setup and see the savings
-headroom doctor                         # health check — confirms routing is working
-headroom perf
-headroom dashboard                      # live savings dashboard (proxy must be running)
+legroom doctor                         # health check — confirms routing is working
+legroom perf
+legroom dashboard                      # live savings dashboard (proxy must be running)
 ```
 
-To use headroom, it is recommended you launch a wrapped agent session each time so that all necessary setup is completed. When wrapping a coding agent, headroom starts a local proxy, sets up an MCP server that provides tools such as rtk and tokensave, and launches a coding agent session configured to proxy requests to headroom.
+To use legroom, it is recommended you launch a wrapped agent session each time so that all necessary setup is completed. When wrapping a coding agent, legroom starts a local proxy, sets up an MCP server that provides tools such as rtk and tokensave, and launches a coding agent session configured to proxy requests to legroom.
 
-The `headroom` CLI ships **only** via the PyPI package. The npm `headroom-ai` is the TypeScript SDK — a library you import (`import { compress } from 'headroom-ai'`), not a CLI, so it provides no `headroom` command.
+The `legroom` CLI ships **only** via the PyPI package. The npm `legroom-ai` is the TypeScript SDK — a library you import (`import { compress } from 'legroom-ai'`), not a CLI, so it provides no `legroom` command.
 
-Granular extras: `[proxy]`, `[mcp]`, `[ml]`, `[code]`, `[memory]`, `[vector]` (optional HNSW backend — needs a C++ toolchain, not in `[all]`), `[relevance]`, `[image]`, `[agno]`, `[langchain]`, `[evals]`, `[pytorch-mps]` (Apple-GPU memory-embedder offload — set `HEADROOM_EMBEDDER_RUNTIME=pytorch_mps`). Requires **Python 3.10+**.
+Granular extras: `[proxy]`, `[mcp]`, `[ml]`, `[code]`, `[memory]`, `[vector]` (optional HNSW backend — needs a C++ toolchain, not in `[all]`), `[relevance]`, `[image]`, `[agno]`, `[langchain]`, `[evals]`, `[pytorch-mps]` (Apple-GPU memory-embedder offload — set `LEGROOM_EMBEDDER_RUNTIME=pytorch_mps`). Requires **Python 3.10+**.
 
 ### Codex / global install
 
-If Codex or another MCP client cannot inherit a shell `PATH` reliably, install Headroom as a persistent uv tool and point the client at the absolute binary path:
+If Codex or another MCP client cannot inherit a shell `PATH` reliably, install Legroom as a persistent uv tool and point the client at the absolute binary path:
 
 ```bash
-uv tool install "headroom-ai[all]"
-command -v headroom
+uv tool install "legroom-ai[all]"
+command -v legroom
 ```
 
 Then use the returned path in MCP config:
 
 ```toml
-[mcp_servers.headroom]
-command = "/absolute/path/from/command-v/headroom"
+[mcp_servers.legroom]
+command = "/absolute/path/from/command-v/legroom"
 args = ["mcp", "serve"]
 ```
 
-`command = "headroom"` only works when the client starts with a `PATH` that already includes the uv tool directory.
+`command = "legroom"` only works when the client starts with a `PATH` that already includes the uv tool directory.
 
 ## Proof
 
@@ -143,14 +143,14 @@ args = ["mcp", "serve"]
 
 **Accuracy preserved on standard benchmarks:**
 
-| Benchmark  | Category | N   | Baseline | Headroom | Delta      |
+| Benchmark  | Category | N   | Baseline | Legroom | Delta      |
 |------------|----------|----:|---------:|---------:|------------|
 | GSM8K      | Math     | 100 |    0.870 |    0.870 | **±0.000** |
 | TruthfulQA | Factual  | 100 |    0.530 |    0.560 | **+0.030** |
 | SQuAD v2   | QA       | 100 |        — |  **97%** | 19% compression |
 | BFCL       | Tools    | 100 |        — |  **97%** | 32% compression |
 
-Reproduce: `python -m headroom.evals suite --tier 1` · [Full benchmarks & methodology](https://headroom-docs.vercel.app/docs/benchmarks)
+Reproduce: `python -m legroom.evals suite --tier 1` · [Full benchmarks & methodology](https://legroom-docs.vercel.app/docs/benchmarks)
 
 ## Output token reduction (cut what the model writes back)
 
@@ -159,7 +159,7 @@ token the model **writes back** — and on Opus-class models output costs 5× in
 A lot of that output is waste: "Great, let me…" preambles, re-printing code you
 just showed it, and deep "thinking" on routine steps like reading a file.
 
-Headroom can trim that too, from the proxy, without you changing any code:
+Legroom can trim that too, from the proxy, without you changing any code:
 
 - **Verbosity steering** — appends a short "be terse, don't restate context"
   note to the end of the system prompt (so your prompt cache still hits).
@@ -176,14 +176,14 @@ paths, same `output_shaper:*` label vocabulary.
 Turn it on:
 
 ```bash
-export HEADROOM_OUTPUT_SHAPER=1     # off by default
-headroom proxy --port 8787
+export LEGROOM_OUTPUT_SHAPER=1     # off by default
+legroom proxy --port 8787
 ```
 
 > **Already running a proxy?** These switches are read *live* on every request,
-> so a proxy that `headroom wrap` **reused** (rather than started) would not see
+> so a proxy that `legroom wrap` **reused** (rather than started) would not see
 > a value you export afterwards — its environment was snapshotted at launch.
-> `headroom wrap` now hot-syncs your current settings to the running proxy via a
+> `legroom wrap` now hot-syncs your current settings to the running proxy via a
 > loopback `POST /admin/runtime-env`, so they take effect immediately with **no
 > restart** (no cold start, no dropped requests, no lost caches). Set them before
 > you `wrap`. On a shared proxy these overrides are global — the last explicit
@@ -191,39 +191,39 @@ headroom proxy --port 8787
 
 **Learn the right terseness for you.** People don't *say* how terse they want
 answers — they *show* it (they interrupt long replies, or move on before they
-could have read them). `headroom learn --verbosity` reads your past sessions and
+could have read them). `legroom learn --verbosity` reads your past sessions and
 picks the level automatically:
 
 ```bash
-headroom learn --verbosity            # preview what it found (dry run)
-headroom learn --verbosity --apply    # save it; the proxy uses it from now on
+legroom learn --verbosity            # preview what it found (dry run)
+legroom learn --verbosity --apply    # save it; the proxy uses it from now on
 ```
 
 **See how many output tokens you saved.** Output savings are *counterfactual* —
-we never see what the model *would* have written — so Headroom reports an honest
+we never see what the model *would* have written — so Legroom reports an honest
 **estimate with a confidence range**, never a made-up number:
 
 ```bash
-headroom output-savings
+legroom output-savings
 # Reduction: 31.7%  (95% CI 27.7% … 35.7%)   [estimated]
 ```
 
 Want a *measured* number instead of an estimate? Leave 10% of conversations
-unshaped as a control group: `export HEADROOM_OUTPUT_HOLDOUT=0.1`. The dashboard
+unshaped as a control group: `export LEGROOM_OUTPUT_HOLDOUT=0.1`. The dashboard
 shows an **Output Tokens Saved** card next to input compression, labelled
 `measured` or `estimated` with the confidence band.
 
-→ Full write-up incl. the measurement methodology: [Output token reduction](https://headroom-docs.vercel.app/docs/savings)
+→ Full write-up incl. the measurement methodology: [Output token reduction](https://legroom-docs.vercel.app/docs/savings)
 
-<a href="https://www.star-history.com/?repos=ghaliba3%2Fheadroom&type=date&legend=top-left">
+<a href="https://www.star-history.com/?repos=ghaliba3%2Flegroom&type=date&legend=top-left">
  <picture>
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=ghaliba3/headroom&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=ghaliba3/legroom&type=date&legend=top-left" />
  </picture>
 </a>
 
 ## Agent compatibility matrix
 
-| Agent        | `headroom wrap` | Notes                            |
+| Agent        | `legroom wrap` | Notes                            |
 |--------------|:---------------:|----------------------------------|
 | Claude Code  | ✅              | `--memory` · `--code-graph` · `--1m` · `--tool-search` |
 | Codex        | ✅              | shares memory with Claude        |
@@ -243,22 +243,22 @@ shows an **Output Tokens Saved** card next to input compression, labelled
 | Kimi CLI     | ✅              | OAuth bearer forwarded — log in once |
 | ZCode        | ✅              | starts proxy and prints base URLs for ZCode settings |
 
-Any OpenAI-compatible client works via `headroom proxy`. MCP-native: `headroom mcp install`.
-Undo durable wrapping with `headroom unwrap <tool>` (supports: `claude`, `copilot`, `codex`, `grok`, `kimi`, `omp`, `opencode`, `openclaw`, `zcode`).
-Registry authors can use the canonical [`server.json`](server.json) in the repo root instead of reconstructing the `headroom mcp serve` contract from prose.
+Any OpenAI-compatible client works via `legroom proxy`. MCP-native: `legroom mcp install`.
+Undo durable wrapping with `legroom unwrap <tool>` (supports: `claude`, `copilot`, `codex`, `grok`, `kimi`, `omp`, `opencode`, `openclaw`, `zcode`).
+Registry authors can use the canonical [`server.json`](server.json) in the repo root instead of reconstructing the `legroom mcp serve` contract from prose.
 
 ### GitHub Copilot CLI subscription mode
 
-Headroom can route GitHub Copilot CLI subscription traffic through the local proxy:
+Legroom can route GitHub Copilot CLI subscription traffic through the local proxy:
 
 ```bash
-headroom copilot-auth login
-headroom wrap copilot --subscription -- --model gpt-4o
+legroom copilot-auth login
+legroom wrap copilot --subscription -- --model gpt-4o
 ```
 
-This lets Headroom intercept OpenAI-compatible Copilot CLI requests and apply the same proxy compression pipeline before forwarding to GitHub Copilot's hosted API. The wrapper exchanges Headroom's reusable GitHub OAuth token for Copilot's short-lived API token and prints the upstream endpoint as `COPILOT_PROVIDER_API_URL=...` during launch.
+This lets Legroom intercept OpenAI-compatible Copilot CLI requests and apply the same proxy compression pipeline before forwarding to GitHub Copilot's hosted API. The wrapper exchanges Legroom's reusable GitHub OAuth token for Copilot's short-lived API token and prints the upstream endpoint as `COPILOT_PROVIDER_API_URL=...` during launch.
 
-`headroom copilot-auth login` stores a Headroom-specific Copilot OAuth token.
+`legroom copilot-auth login` stores a Legroom-specific Copilot OAuth token.
 This avoids relying on generic GitHub or Copilot CLI tokens that can read
 Copilot account metadata but may still be rejected by Copilot's token-exchange
 endpoint.
@@ -277,7 +277,7 @@ Both variables are supported. If both are set,
 
 For GitHub.com Enterprise Cloud URLs such as
 `github.com/enterprises/your-enterprise`, do not set an enterprise-domain
-override. Headroom uses GitHub's normal token-exchange endpoint and the Copilot
+override. Legroom uses GitHub's normal token-exchange endpoint and the Copilot
 API endpoint advertised for the signed-in account.
 
 Platform support note: macOS auth reuse via Copilot CLI Keychain storage has been smoke-tested. Windows Credential Manager, Linux Secret Service / `secret-tool`, and Docker/CI token-injection paths are implemented or planned as auth-discovery paths, but still need real OS validation before they should be considered fully vetted. For Docker and CI, prefer passing an explicit `GITHUB_COPILOT_TOKEN` or `GITHUB_COPILOT_GITHUB_TOKEN` rather than relying on host keychain access.
@@ -294,21 +294,21 @@ Platform support note: macOS auth reuse via Copilot CLI Keychain storage has bee
 - work in a sandboxed environment where local processes can't run
 
 <details>
-<summary><b>Integrations — drop Headroom into any stack</b></summary>
+<summary><b>Integrations — drop Legroom into any stack</b></summary>
 
 | Your setup             | Hook in with                                                     |
 |------------------------|------------------------------------------------------------------|
 | Any Python app         | `compress(messages, model=…)`                                    |
 | Any TypeScript app     | `await compress(messages, { model })`                            |
-| Anthropic / OpenAI SDK | `withHeadroom(new Anthropic())` · `withHeadroom(new OpenAI())`   |
-| Vercel AI SDK          | `wrapLanguageModel({ model, middleware: headroomMiddleware() })` |
-| LiteLLM                | `litellm.callbacks = [HeadroomCallback()]`                       |
-| LangChain              | `HeadroomChatModel(your_llm)`                                    |
-| Agno                   | `HeadroomAgnoModel(your_model)`                                  |
-| Strands                | [Strands guide](https://headroom-docs.vercel.app/docs/strands)  |
+| Anthropic / OpenAI SDK | `withLegroom(new Anthropic())` · `withLegroom(new OpenAI())`   |
+| Vercel AI SDK          | `wrapLanguageModel({ model, middleware: legroomMiddleware() })` |
+| LiteLLM                | `litellm.callbacks = [LegroomCallback()]`                       |
+| LangChain              | `LegroomChatModel(your_llm)`                                    |
+| Agno                   | `LegroomAgnoModel(your_model)`                                  |
+| Strands                | [Strands guide](https://legroom-docs.vercel.app/docs/strands)  |
 | ASGI apps              | `app.add_middleware(CompressionMiddleware)`                      |
 | Multi-agent            | `SharedContext().put / .get`                                     |
-| MCP clients            | `headroom mcp install`                                           |
+| MCP clients            | `legroom mcp install`                                           |
 
 </details>
 
@@ -324,14 +324,14 @@ Platform support note: macOS auth reuse via Copilot CLI Keychain storage has bee
 - **CCR** — reversible compression; LLM retrieves originals on demand.
 - **Cross-agent memory** — shared store, agent provenance, auto-dedup.
 - **SharedContext** — compressed context passing across multi-agent workflows.
-- **`headroom learn`** — plugin-based failure mining for Claude, Codex, Gemini.
+- **`legroom learn`** — plugin-based failure mining for Claude, Codex, Gemini.
 
 </details>
 
 <details>
 <summary><b>Pipeline internals</b></summary>
 
-Headroom exposes one stable request lifecycle across `compress()`, the SDK, and the proxy:
+Legroom exposes one stable request lifecycle across `compress()`, the SDK, and the proxy:
 
 `Setup` → `Pre-Start` → `Post-Start` → `Input Received` → `Input Cached` → `Input Routed` → `Input Compressed` → `Input Remembered` → `Pre-Send` → `Post-Send` → `Response Received`
 
@@ -340,53 +340,53 @@ Headroom exposes one stable request lifecycle across `compress()`, the SDK, and 
 - **Compression hooks** sit alongside the canonical lifecycle as an additional extension seam.
 - **Proxy extensions** remain the server/app integration seam for ASGI middleware, routes, and startup policy.
 
-Provider and tool-specific behavior lives under `headroom/providers/` so core orchestration stays focused on lifecycle, sequencing, and policy.
+Provider and tool-specific behavior lives under `legroom/providers/` so core orchestration stays focused on lifecycle, sequencing, and policy.
 
-- **CLI/tool slices**: `headroom/providers/claude`, `copilot`, `codex`, `grok`, `openclaw`
-- **Provider runtime slices**: `headroom/providers/claude`, `gemini`, plus shared backend/runtime dispatch in `headroom/providers/registry.py`
+- **CLI/tool slices**: `legroom/providers/claude`, `copilot`, `codex`, `grok`, `openclaw`
+- **Provider runtime slices**: `legroom/providers/claude`, `gemini`, plus shared backend/runtime dispatch in `legroom/providers/registry.py`
 - **Core files stay orchestration-first**: `wrap.py`, `client.py`, `cli/proxy.py`, and `proxy/server.py` delegate provider-specific env shaping, API target normalization, backend selection, and transport dispatch.
 
 </details>
 
-## Headroom for teams
+## Legroom for teams
 
-Headroom OSS is built for **individual developers**: run `headroom proxy` or `headroom wrap` on your laptop and start cutting tokens in minutes — free, local-first, your data never leaves your machine.
+Legroom OSS is built for **individual developers**: run `legroom proxy` or `legroom wrap` on your laptop and start cutting tokens in minutes — free, local-first, your data never leaves your machine.
 
 Running it across a **whole engineering org** is a different job: a shared, always-on deployment; centralized config and version rollout; org-wide savings dashboards; SSO and access controls; air-gapped / VPC installs; and someone to call when it matters. That's what we help companies with — self-hosted with support, or fully managed.
 
 **If your team is spending real money on LLM tokens** — Claude Code, Codex, Cursor, or agents running in CI — **and you want those savings across everyone, not just one laptop:**
 
-→ Email **[hello@headroomlabs.ai](mailto:hello@headroomlabs.ai)** with your stack and rough monthly LLM spend, and we'll help you roll Headroom out across your organization.
+→ Email **[hello@legroom.ai](mailto:hello@legroom.ai)** with your stack and rough monthly LLM spend, and we'll help you roll Legroom out across your organization.
 
 Everything in this repo stays open source (Apache 2.0). The managed offering is simply for teams that would rather have it deployed, supported, and scaled for them.
 
 ## Install
 
 ```bash
-uv tool install --python 3.13 "headroom-ai[all]"  # CLI, isolated app env
-pip install "headroom-ai[all]"                    # Python, everything — includes the `headroom` CLI
-npm install headroom-ai                           # TypeScript SDK (library only — no `headroom` CLI)
-docker pull ghcr.io/ghaliba3/headroom:latest
+uv tool install --python 3.13 "legroom-ai[all]"  # CLI, isolated app env
+pip install "legroom-ai[all]"                    # Python, everything — includes the `legroom` CLI
+npm install legroom-ai                           # TypeScript SDK (library only — no `legroom` CLI)
+docker pull ghcr.io/ghaliba3/legroom:latest
 ```
 
-Granular extras: `[proxy]`, `[mcp]`, `[ml]` (Kompress-v2-base), `[code]`, `[memory]`, `[vector]` (optional HNSW backend — needs a C++ toolchain, not in `[all]`), `[relevance]`, `[image]`, `[agno]`, `[langchain]`, `[evals]`, `[pytorch-mps]` (Apple-GPU memory-embedder offload — set `HEADROOM_EMBEDDER_RUNTIME=pytorch_mps`). Requires **Python 3.10+**.
+Granular extras: `[proxy]`, `[mcp]`, `[ml]` (Kompress-v2-base), `[code]`, `[memory]`, `[vector]` (optional HNSW backend — needs a C++ toolchain, not in `[all]`), `[relevance]`, `[image]`, `[agno]`, `[langchain]`, `[evals]`, `[pytorch-mps]` (Apple-GPU memory-embedder offload — set `LEGROOM_EMBEDDER_RUNTIME=pytorch_mps`). Requires **Python 3.10+**.
 
-> **Note**: `[all]` covers the core stack but excludes framework adapters. Install them separately: `pip install "headroom-ai[langchain]"` (also `[agno]`, `[strands]`, `[anyllm]`, `[bedrock]`).
+> **Note**: `[all]` covers the core stack but excludes framework adapters. Install them separately: `pip install "legroom-ai[langchain]"` (also `[agno]`, `[strands]`, `[anyllm]`, `[bedrock]`).
 
-Using `uv` for the `headroom` CLI? Prefer `uv tool install` so the command lives in an isolated app environment. On macOS, pass `--python 3.13` if your default `python3` is newer than the current wheel set:
+Using `uv` for the `legroom` CLI? Prefer `uv tool install` so the command lives in an isolated app environment. On macOS, pass `--python 3.13` if your default `python3` is newer than the current wheel set:
 
 ```bash
 brew install python@3.13  # if Python 3.13 is not already available
-uv tool install --python 3.13 "headroom-ai[all]"
+uv tool install --python 3.13 "legroom-ai[all]"
 uv tool update-shell      # if ~/.local/bin is not already on PATH
-headroom --version
+legroom --version
 ```
 
-For MCP clients such as Codex that do not inherit your interactive shell `PATH`, configure the absolute executable path returned by `command -v headroom`:
+For MCP clients such as Codex that do not inherit your interactive shell `PATH`, configure the absolute executable path returned by `command -v legroom`:
 
 ```toml
-[mcp_servers.headroom]
-command = "/Users/you/.local/bin/headroom"
+[mcp_servers.legroom]
+command = "/Users/you/.local/bin/legroom"
 args = ["mcp", "serve"]
 ```
 
@@ -395,39 +395,39 @@ Current native wheels cover macOS Apple Silicon and Linux. On Intel macOS, use D
 Using `pipx`? Choose a supported interpreter explicitly:
 
 ```bash
-pipx install --python python3.13 "headroom-ai[all]"
+pipx install --python python3.13 "legroom-ai[all]"
 ```
 
-> **Pick 3.13 if you want dollar savings.** The dashboard's *Proxy $ Saved* tile prices compression with [LiteLLM](https://github.com/BerriAI/litellm), and LiteLLM can't be installed on Python 3.14+. On 3.14 token savings still track, but the dollar figure stays `$0.00`. If you already installed on 3.14, switch with `pipx reinstall headroom-ai --python python3.13` and restart the proxy.
+> **Pick 3.13 if you want dollar savings.** The dashboard's *Proxy $ Saved* tile prices compression with [LiteLLM](https://github.com/BerriAI/litellm), and LiteLLM can't be installed on Python 3.14+. On 3.14 token savings still track, but the dollar figure stays `$0.00`. If you already installed on 3.14, switch with `pipx reinstall legroom-ai --python python3.13` and restart the proxy.
 
-→ [Installation guide](https://headroom-docs.vercel.app/docs/installation) — Docker tags, persistent service, PowerShell, devcontainers.
+→ [Installation guide](https://legroom-docs.vercel.app/docs/installation) — Docker tags, persistent service, PowerShell, devcontainers.
 
 > **CPU requirement (x86/x86_64):** the ONNX-backed features — Magika content
 > detection and embedding relevance — use a precompiled ONNX Runtime that needs
 > **AVX2**. On x86 hosts without AVX2 (some Docker/QEMU setups and older cloud
-> VMs) Headroom automatically falls back to its non-ONNX paths (BM25 relevance,
+> VMs) Legroom automatically falls back to its non-ONNX paths (BM25 relevance,
 > heuristic detection) rather than crashing. `arm64`/Apple Silicon needs no AVX2.
 
 ### Updating
 
 ```bash
-headroom update          # detects pip / pipx / uv tool and upgrades in place
-headroom update --check  # report the latest release without upgrading
-headroom update --pre    # include pre-releases
+legroom update          # detects pip / pipx / uv tool and upgrades in place
+legroom update --check  # report the latest release without upgrading
+legroom update --pre    # include pre-releases
 ```
 
-`headroom update` figures out how Headroom was installed (pip/venv, `pip --user`,
+`legroom update` figures out how Legroom was installed (pip/venv, `pip --user`,
 pipx, uv tool) and runs the matching upgrade across macOS, Linux, and Windows.
 For git checkouts, editable installs, Docker images, and externally-managed
 system Pythons (PEP 668) it prints the correct manual step instead of guessing.
 
 The proxy also shows a one-line "update available" notice on startup. It checks
 PyPI at most once a day, in the background, and never blocks. Opt out with
-`HEADROOM_UPDATE_CHECK=off` (also skipped in `--stateless` mode and CI).
+`LEGROOM_UPDATE_CHECK=off` (also skipped in `--stateless` mode and CI).
 
 ### Corporate / SSL-inspection environments
 
-If `pip install "headroom-ai[all]"` fails with `CERTIFICATE_VERIFY_FAILED`
+If `pip install "legroom-ai[all]"` fails with `CERTIFICATE_VERIFY_FAILED`
 (`unable to get local issuer certificate`), your network uses **SSL inspection** — a MITM
 proxy presenting a company-issued CA. The build backend (`maturin`) downloads `rustup` over a
 connection your TLS stack doesn't trust. **Install Rust first** so the build doesn't fetch it:
@@ -439,8 +439,8 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh && rustup default
 winget install Rustlang.Rustup && rustup default stable
 ```
 
-Restart your shell, then `pip install "headroom-ai[all]"`. A prebuilt wheel avoids the Rust
-build entirely where available: `pip install --only-binary headroom-ai headroom-ai`. Prebuilt
+Restart your shell, then `pip install "legroom-ai[all]"`. A prebuilt wheel avoids the Rust
+build entirely where available: `pip install --only-binary legroom-ai legroom-ai`. Prebuilt
 wheels are published for Windows (`win_amd64`), Linux (`x86_64` / `aarch64`), and macOS
 (Apple Silicon and Intel), so installs on those platforms never need a local Rust toolchain — the
 Rust-first dance above is only for the platform-independent sdist fallback when no wheel matches.
@@ -467,7 +467,7 @@ brew install onnxruntime
 ORT_STRATEGY=system \
 ORT_LIB_LOCATION="$(brew --prefix onnxruntime)/lib" \
 ORT_PREFER_DYNAMIC_LINK=1 \
-  pip install "headroom-ai[all]"
+  pip install "legroom-ai[all]"
 
 # ORT is dlopen'd at runtime too:
 export ORT_DYLIB_PATH="$(brew --prefix onnxruntime)/lib/libonnxruntime.dylib"
@@ -491,59 +491,59 @@ Python 3.13 + OpenSSL 3.x enable `VERIFY_X509_STRICT` by default, which enforces
 §4.2.1.9: a CA cert's `basicConstraints` must be marked *critical*. Inspection roots like
 Zscaler set `CA:TRUE` without the critical bit, so the chain is rejected.
 
-Set **`HEADROOM_TLS_STRICT=0`** to clear *only* the strict flag from every TLS context
-Headroom controls — the proxy's httpx upstream client **and** the urllib3/`huggingface_hub`
+Set **`LEGROOM_TLS_STRICT=0`** to clear *only* the strict flag from every TLS context
+Legroom controls — the proxy's httpx upstream client **and** the urllib3/`huggingface_hub`
 path used for model downloads. Chain validation, signature, expiry, and hostname checks all
 stay on; this is strictly narrower than disabling verification.
 
 ```bash
-HEADROOM_TLS_STRICT=0 headroom proxy --port 8787
+LEGROOM_TLS_STRICT=0 legroom proxy --port 8787
 ```
 
 The Rust core's ONNX download (`cdn.pyke.io`) uses a separate TLS stack (rustls / OS trust
-store), unaffected by `HEADROOM_TLS_STRICT`. On Windows the corporate root must be in the
+store), unaffected by `LEGROOM_TLS_STRICT`. On Windows the corporate root must be in the
 **machine** certificate store (browsers already trust it there); or pre-provision ONNX
 Runtime with `ORT_STRATEGY=system` + `ORT_LIB_LOCATION=/path/to/onnxruntime` to skip the
 download entirely.
 
-## headroom learn
+## legroom learn
 
 <p align="center">
-  <img src="headroom_learn.gif" alt="headroom learn in action" width="720">
+  <img src="legroom_learn.gif" alt="legroom learn in action" width="720">
 </p>
 
-`headroom learn` — mines failed sessions, writes corrections to `CLAUDE.local.md` (default, gitignored; use `--target CLAUDE.md` for the shared team file) / `AGENTS.md` / `GEMINI.md`.
+`legroom learn` — mines failed sessions, writes corrections to `CLAUDE.local.md` (default, gitignored; use `--target CLAUDE.md` for the shared team file) / `AGENTS.md` / `GEMINI.md`.
 
 ## Documentation
 
 | Start here                                                                    | Go deeper                                                                          |
 |-------------------------------------------------------------------------------|------------------------------------------------------------------------------------|
-| [Quickstart](https://headroom-docs.vercel.app/docs/quickstart)                | [Architecture](https://headroom-docs.vercel.app/docs/architecture)                 |
-| [Proxy](https://headroom-docs.vercel.app/docs/proxy)                          | [How compression works](https://headroom-docs.vercel.app/docs/how-compression-works) |
-| [MCP tools](https://headroom-docs.vercel.app/docs/mcp)                        | [CCR — reversible compression](https://headroom-docs.vercel.app/docs/ccr)          |
-| [Memory](https://headroom-docs.vercel.app/docs/memory)                        | [Cache optimization](https://headroom-docs.vercel.app/docs/cache-optimization)     |
-| [Failure learning](https://headroom-docs.vercel.app/docs/failure-learning)    | [Benchmarks](https://headroom-docs.vercel.app/docs/benchmarks)                    |
-| [Configuration](https://headroom-docs.vercel.app/docs/configuration)          | [Limitations](https://headroom-docs.vercel.app/docs/limitations)                  |
-| [Persistent installs](https://headroom-docs.vercel.app/docs/persistent-installs) (`headroom init` / `headroom install apply`) | [Savings analytics](https://headroom-docs.vercel.app/docs/savings) (`headroom savings` / `headroom perf` / `headroom doctor`) |
+| [Quickstart](https://legroom-docs.vercel.app/docs/quickstart)                | [Architecture](https://legroom-docs.vercel.app/docs/architecture)                 |
+| [Proxy](https://legroom-docs.vercel.app/docs/proxy)                          | [How compression works](https://legroom-docs.vercel.app/docs/how-compression-works) |
+| [MCP tools](https://legroom-docs.vercel.app/docs/mcp)                        | [CCR — reversible compression](https://legroom-docs.vercel.app/docs/ccr)          |
+| [Memory](https://legroom-docs.vercel.app/docs/memory)                        | [Cache optimization](https://legroom-docs.vercel.app/docs/cache-optimization)     |
+| [Failure learning](https://legroom-docs.vercel.app/docs/failure-learning)    | [Benchmarks](https://legroom-docs.vercel.app/docs/benchmarks)                    |
+| [Configuration](https://legroom-docs.vercel.app/docs/configuration)          | [Limitations](https://legroom-docs.vercel.app/docs/limitations)                  |
+| [Persistent installs](https://legroom-docs.vercel.app/docs/persistent-installs) (`legroom init` / `legroom install apply`) | [Savings analytics](https://legroom-docs.vercel.app/docs/savings) (`legroom savings` / `legroom perf` / `legroom doctor`) |
 
 ## Compared to
 
-Headroom runs **locally**, covers **every** content type, works with every major framework, and is **reversible**.
+Legroom runs **locally**, covers **every** content type, works with every major framework, and is **reversible**.
 
 |                                                                              | Scope                                          | Deploy                             | Local | Reversible |
 |------------------------------------------------------------------------------|------------------------------------------------|------------------------------------|:-----:|:----------:|
-| **Headroom**                                                                 | All context — tools, RAG, logs, files, history | Proxy · library · middleware · MCP | Yes   | Yes        |
+| **Legroom**                                                                 | All context — tools, RAG, logs, files, history | Proxy · library · middleware · MCP | Yes   | Yes        |
 | [RTK](https://github.com/rtk-ai/rtk)                                        | CLI command outputs                            | CLI wrapper                        | Yes   | No         |
 | [lean-ctx](https://github.com/yvgude/lean-ctx)                               | Tool output, files, shell, history             | Proxy · library · middleware · MCP · CLI | Yes | Yes    |
 | [Compresr](https://compresr.ai), [Token Co.](https://thetokencompany.ai)    | Text sent to their API                         | Hosted API call                    | No    | No         |
 | OpenAI Compaction                                                            | Conversation history                           | Provider-native                    | No    | No         |
 
-> **Attribution.** Headroom ships with the excellent [RTK](https://github.com/rtk-ai/rtk) binary for shell-output rewriting — `git show --short`, scoped `ls`, summarized installers. Huge thanks to the RTK team; their tool is a first-class part of our stack, and Headroom compresses everything downstream of it. Headroom can also use [lean-ctx](https://github.com/yvgude/lean-ctx) as the selected CLI context tool; set `HEADROOM_CONTEXT_TOOL=lean-ctx` before running `headroom wrap ...`.
+> **Attribution.** Legroom ships with the excellent [RTK](https://github.com/rtk-ai/rtk) binary for shell-output rewriting — `git show --short`, scoped `ls`, summarized installers. Huge thanks to the RTK team; their tool is a first-class part of our stack, and Legroom compresses everything downstream of it. Legroom can also use [lean-ctx](https://github.com/yvgude/lean-ctx) as the selected CLI context tool; set `LEGROOM_CONTEXT_TOOL=lean-ctx` before running `legroom wrap ...`.
 
 ## Contributing
 
 ```bash
-git clone https://github.com/ghaliba3/headroom.git && cd headroom
+git clone https://github.com/legroom-ai/legroom-ai.github.io.git && cd legroom
 uv sync --extra dev && uv run pytest
 ```
 
@@ -556,7 +556,7 @@ Devcontainers in `.devcontainer/` (default + `memory-stack` with Qdrant & Neo4j)
 
 ### Community projects
 
-- **[Claude Code status-line indicator](https://github.com/Ship-Wright/headroom-plugin)** — a Claude Code plugin that shows live Headroom usage in your status line: idle until `headroom_compress` fires, then the running total of tokens saved.
+- **[Claude Code status-line indicator](https://github.com/Ship-Wright/legroom-plugin)** — a Claude Code plugin that shows live Legroom usage in your status line: idle until `legroom_compress` fires, then the running total of tokens saved.
 
 ## License
 

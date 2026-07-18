@@ -5,7 +5,7 @@ Proves the two seams added to ``handle_openai_chat`` for the direct
 
 * ``on_request`` fires before the upstream send — a hook can shrink the
   outbound ``tools``, and the net tool-schema token delta is recorded as a
-  saving (surfaced via the ``x-headroom-transforms`` header / tags).
+  saving (surfaced via the ``x-legroom-transforms`` header / tags).
 * ``on_response`` fires after the send with a working ``call_model`` — a hook
   can detect a tool the model asked to load, re-drive the model, and have the
   proxy return the *final* response transparently.
@@ -24,8 +24,8 @@ httpx = pytest.importorskip("httpx")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from headroom.proxy.server import ProxyConfig, create_app  # noqa: E402
-from headroom.proxy.turn_hooks import clear_turn_hooks, register_turn_hook  # noqa: E402
+from legroom.proxy.server import ProxyConfig, create_app  # noqa: E402
+from legroom.proxy.turn_hooks import clear_turn_hooks, register_turn_hook  # noqa: E402
 
 _SEARCH_TOOL = "search_tools"
 
@@ -173,7 +173,7 @@ def test_direct_path_shrinks_then_reloads_and_returns_final():
     first_tools = seen_bodies[0].get("tools")
     assert first_tools is not None and len(first_tools) == 2
     # the saving is surfaced as a transform
-    transforms = resp.headers.get("x-headroom-transforms", "")
+    transforms = resp.headers.get("x-legroom-transforms", "")
     assert "turn_hook" in transforms, transforms
 
 
@@ -261,7 +261,7 @@ def test_in_place_shrink_hook_is_counted():
         # outbound request was shrunk in place (13 -> 2), same list object
         assert len(seen[0]["tools"]) == 2
         # ...and the saving is recorded despite the in-place mutation
-        assert "turn_hook" in resp.headers.get("x-headroom-transforms", "")
+        assert "turn_hook" in resp.headers.get("x-legroom-transforms", "")
         ts = client.get("/stats").json()["savings"]["by_layer"]["tool_search"]
         assert ts["tokens"] > 0 and ts["requests"] >= 1, ts
 
@@ -292,4 +292,4 @@ def test_direct_path_noop_when_no_hook_registered():
     assert resp.status_code == 200, resp.text
     assert calls["n"] == 1  # no reload
     assert resp.json()["choices"][0]["message"]["content"] == "all done"
-    assert "turn_hook" not in resp.headers.get("x-headroom-transforms", "")
+    assert "turn_hook" not in resp.headers.get("x-legroom-transforms", "")

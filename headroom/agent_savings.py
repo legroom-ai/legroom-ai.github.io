@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 AGENT_90_PROFILE = "agent-90"
 FALLBACK_PROFILE = "balanced"
-# Out-of-the-box default profile when none is requested. Headroom's primary
+# Out-of-the-box default profile when none is requested. Legroom's primary
 # workload is coding agents, and the "coding" profile encodes the cache-mode
 # delta posture (see below).
 DEFAULT_PROFILE = "coding"
@@ -34,7 +34,7 @@ class AgentSavingsProfile:
     name: str
     target_savings: float
     # None = don't pin a keep-ratio; let Kompress decide adaptively (and any
-    # ambient HEADROOM_TARGET_RATIO / proxy default still applies). Workload
+    # ambient LEGROOM_TARGET_RATIO / proxy default still applies). Workload
     # personas leave this unset so savings emerge from lossless + relevance.
     target_ratio: float | None
     compress_user_messages: bool
@@ -48,7 +48,7 @@ class AgentSavingsProfile:
     proxy_mode: str
     accuracy_guard: str
     # Standalone router/handler toggles carried through the profile so a single
-    # named profile seeds Headroom's full posture. Defaults below preserve the
+    # named profile seeds Legroom's full posture. Defaults below preserve the
     # current global behavior, so only a profile that opts in changes anything.
     tool_search: bool = False
     cross_turn_dedup: bool = False
@@ -64,39 +64,39 @@ class AgentSavingsProfile:
         return round(self.target_savings * 100)
 
     def proxy_env(self) -> dict[str, str]:
-        """Return env vars for Headroom proxy/wrapper entry points."""
+        """Return env vars for Legroom proxy/wrapper entry points."""
 
         env = {
-            "HEADROOM_MODE": self.proxy_mode,
-            "HEADROOM_SAVINGS_PROFILE": self.name,
-            "HEADROOM_SAVINGS_TARGET": f"{self.target_savings:.2f}",
-            "HEADROOM_COMPRESS_USER_MESSAGES": ("1" if self.compress_user_messages else "0"),
-            "HEADROOM_COMPRESS_SYSTEM_MESSAGES": ("1" if self.compress_system_messages else "0"),
-            "HEADROOM_PROTECT_RECENT": str(self.protect_recent),
-            "HEADROOM_PROTECT_ANALYSIS_CONTEXT": ("1" if self.protect_analysis_context else "0"),
-            "HEADROOM_MIN_TOKENS": str(self.min_tokens_to_compress),
-            "HEADROOM_MAX_ITEMS": str(self.max_items_after_crush),
-            "HEADROOM_SMART_CRUSHER_COMPACTION": (
+            "LEGROOM_MODE": self.proxy_mode,
+            "LEGROOM_SAVINGS_PROFILE": self.name,
+            "LEGROOM_SAVINGS_TARGET": f"{self.target_savings:.2f}",
+            "LEGROOM_COMPRESS_USER_MESSAGES": ("1" if self.compress_user_messages else "0"),
+            "LEGROOM_COMPRESS_SYSTEM_MESSAGES": ("1" if self.compress_system_messages else "0"),
+            "LEGROOM_PROTECT_RECENT": str(self.protect_recent),
+            "LEGROOM_PROTECT_ANALYSIS_CONTEXT": ("1" if self.protect_analysis_context else "0"),
+            "LEGROOM_MIN_TOKENS": str(self.min_tokens_to_compress),
+            "LEGROOM_MAX_ITEMS": str(self.max_items_after_crush),
+            "LEGROOM_SMART_CRUSHER_COMPACTION": (
                 "1" if self.smart_crusher_with_compaction else "0"
             ),
-            "HEADROOM_FORCE_KOMPRESS": "1" if self.force_kompress else "0",
-            "HEADROOM_ACCURACY_GUARD": self.accuracy_guard,
+            "LEGROOM_FORCE_KOMPRESS": "1" if self.force_kompress else "0",
+            "LEGROOM_ACCURACY_GUARD": self.accuracy_guard,
             # Standalone router/handler toggles.
-            "HEADROOM_TOOL_SEARCH": "1" if self.tool_search else "0",
-            "HEADROOM_DEDUPE": "1" if self.cross_turn_dedup else "0",
-            "HEADROOM_LOSSLESS_THEN_LOSSY": "1" if self.lossless_then_lossy else "0",
-            "HEADROOM_PROTECT_READS": "1" if self.protect_reads else "0",
-            "HEADROOM_CODE_AWARE_ENABLED": "1" if self.code_aware else "0",
-            "HEADROOM_EFFORT_ROUTER": "1" if self.effort_router else "0",
-            "HEADROOM_LOSSLESS": "1" if self.lossless else "0",
+            "LEGROOM_TOOL_SEARCH": "1" if self.tool_search else "0",
+            "LEGROOM_DEDUPE": "1" if self.cross_turn_dedup else "0",
+            "LEGROOM_LOSSLESS_THEN_LOSSY": "1" if self.lossless_then_lossy else "0",
+            "LEGROOM_PROTECT_READS": "1" if self.protect_reads else "0",
+            "LEGROOM_CODE_AWARE_ENABLED": "1" if self.code_aware else "0",
+            "LEGROOM_EFFORT_ROUTER": "1" if self.effort_router else "0",
+            "LEGROOM_LOSSLESS": "1" if self.lossless else "0",
         }
         # Only pin a keep-ratio when the profile sets one; workload personas
         # leave it unset so Kompress decides and the ambient default applies.
         if self.target_ratio is not None:
-            env["HEADROOM_TARGET_RATIO"] = f"{self.target_ratio:.2f}"
+            env["LEGROOM_TARGET_RATIO"] = f"{self.target_ratio:.2f}"
         # Block-compression char floor: only emit when the profile pins one.
         if self.min_chars_for_block is not None:
-            env["HEADROOM_MIN_CHARS_FOR_BLOCK"] = str(self.min_chars_for_block)
+            env["LEGROOM_MIN_CHARS_FOR_BLOCK"] = str(self.min_chars_for_block)
         return env
 
     def apply_proxy_env_defaults(self, env: MutableMapping[str, str]) -> MutableMapping[str, str]:
@@ -143,7 +143,7 @@ _PROFILES: dict[str, AgentSavingsProfile] = {
     # They rely on the defaults that already deliver this (relevance split on,
     # user/system messages protected, read-maturation off, lossless structural
     # compaction) and only set the workload-specific + visibility knobs. The
-    # MCP-vs-airgapped axis is the separate HEADROOM_LOSSLESS toggle: markers
+    # MCP-vs-airgapped axis is the separate LEGROOM_LOSSLESS toggle: markers
     # when a retrieve tool exists, marker-free lossless-first when air-gapped.
     # target_ratio is unset — savings emerge from lossless + relevance, and
     # Kompress decides its own keep. min_tokens is low so compression is
@@ -236,13 +236,13 @@ def apply_agent_savings_env_defaults(
 ) -> MutableMapping[str, str]:
     """Apply agent savings env defaults to a proxy subprocess environment.
 
-    When ``profile`` is not given, an explicit ``HEADROOM_SAVINGS_PROFILE`` already
+    When ``profile`` is not given, an explicit ``LEGROOM_SAVINGS_PROFILE`` already
     in ``env`` is honored; only when that too is absent do we fall back to the
     out-of-box default (:data:`DEFAULT_PROFILE`, i.e. ``coding``).
     """
 
     if profile is None:
-        profile = env.get("HEADROOM_SAVINGS_PROFILE")
+        profile = env.get("LEGROOM_SAVINGS_PROFILE")
     resolved = (
         get_agent_savings_profile(profile)
         if isinstance(profile, str) or profile is None
@@ -342,7 +342,7 @@ def proxy_pipeline_kwargs(config: object) -> dict[str, object]:
     # a 500-char floor buckets most of them as "small" (skipped). Env-gated so it
     # only changes behavior when explicitly set; lossless folding has no floor and
     # is unaffected.
-    _min_chars_block = os.environ.get("HEADROOM_MIN_CHARS_FOR_BLOCK")
+    _min_chars_block = os.environ.get("LEGROOM_MIN_CHARS_FOR_BLOCK")
     if _min_chars_block:
         try:
             kwargs["min_chars_for_block_compression"] = int(_min_chars_block)
@@ -355,7 +355,7 @@ def proxy_pipeline_kwargs(config: object) -> dict[str, object]:
 def seed_proxy_env_defaults(env: MutableMapping[str, str] | None = None) -> None:
     """Seed the process env with the savings-profile defaults (default: coding).
 
-    Call at proxy EXECUTABLE entry points (the ``headroom proxy`` command and the
+    Call at proxy EXECUTABLE entry points (the ``legroom proxy`` command and the
     uvicorn ``create_app_from_env`` factory) BEFORE building config from env. Uses
     ``setdefault`` semantics via :func:`apply_agent_savings_env_defaults`, so any
     explicit user setting wins and the call is idempotent.
@@ -365,7 +365,7 @@ def seed_proxy_env_defaults(env: MutableMapping[str, str] | None = None) -> None
     keep clean (unseeded) defaults and test isolation is preserved.
     """
     target = os.environ if env is None else env
-    # apply_agent_savings_env_defaults honors an explicit HEADROOM_SAVINGS_PROFILE
+    # apply_agent_savings_env_defaults honors an explicit LEGROOM_SAVINGS_PROFILE
     # already in the env and otherwise falls back to DEFAULT_PROFILE (coding).
     apply_agent_savings_env_defaults(target)
 

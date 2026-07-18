@@ -7,8 +7,8 @@ from pathlib import Path
 
 import click
 
-from headroom.cli.main import main
-from headroom.providers.codex.recovery import (
+from legroom.cli.main import main
+from legroom.providers.codex.recovery import (
     audit_codex_history,
     discover_dangling_homes,
     discover_referenced_temp_homes,
@@ -19,7 +19,7 @@ from headroom.providers.codex.recovery import (
 
 @main.group()
 def recover() -> None:
-    """Recover agent state left in a temporary Headroom home."""
+    """Recover agent state left in a temporary Legroom home."""
 
 
 @recover.command("codex")
@@ -74,7 +74,7 @@ def recover_codex(sources: tuple[Path, ...], target: Path | None, yes: bool) -> 
                 click.echo("Their full transcripts cannot be restored without a retained rollout.")
             if audit.indexed:
                 click.echo("Run `codex resume --all` to show chats from every working directory.")
-        click.echo("No recoverable Headroom Codex homes were found.")
+        click.echo("No recoverable Legroom Codex homes were found.")
         return
 
     click.echo(f"Target Codex home: {target}")

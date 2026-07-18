@@ -28,7 +28,7 @@ def perf(hours: float, raw: bool, output_format: str) -> None:
     """Analyze proxy performance from logs.
 
     \b
-    Reads logs from ~/.headroom/logs/proxy.log and shows:
+    Reads logs from ~/.legroom/logs/proxy.log and shows:
     - Token savings and compression effectiveness
     - Cache hit rates and prefix stability
     - Transform and routing breakdown
@@ -37,14 +37,14 @@ def perf(hours: float, raw: bool, output_format: str) -> None:
 
     \b
     Examples:
-        headroom perf                      Analyze last 7 days
-        headroom perf --hours 24           Analyze last 24 hours
-        headroom perf --raw                Show raw parsed records
-        headroom perf --format json        Aggregated report as JSON
-        headroom perf --format csv --hours 24 > last-24h.csv
-        headroom perf --format json --raw  Raw records as a JSON array
+        legroom perf                      Analyze last 7 days
+        legroom perf --hours 24           Analyze last 24 hours
+        legroom perf --raw                Show raw parsed records
+        legroom perf --format json        Aggregated report as JSON
+        legroom perf --format csv --hours 24 > last-24h.csv
+        legroom perf --format json --raw  Raw records as a JSON array
     """
-    from headroom.perf.analyzer import (
+    from legroom.perf.analyzer import (
         PERF_RECORD_FIELDS,
         build_perf_summary,
         format_report,
@@ -99,6 +99,6 @@ def perf(hours: float, raw: bool, output_format: str) -> None:
                 f"cache_hit={r.cache_hit_pct}% opt={r.optimization_ms:.0f}ms"
             )
         if not report.perf_records:
-            click.echo("No PERF records found. Run the proxy first: headroom proxy")
+            click.echo("No PERF records found. Run the proxy first: legroom proxy")
     else:
         click.echo(format_report(report))

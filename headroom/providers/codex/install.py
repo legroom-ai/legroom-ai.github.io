@@ -6,14 +6,14 @@ import json
 import re
 from pathlib import Path
 
-from headroom.install.models import ConfigScope, DeploymentManifest, ManagedMutation, ToolTarget
-from headroom.install.paths import codex_config_path
+from legroom.install.models import ConfigScope, DeploymentManifest, ManagedMutation, ToolTarget
+from legroom.install.paths import codex_config_path
 
 from .runtime import proxy_base_url
-from .threads import retag_to_headroom, retag_to_native
+from .threads import retag_to_legroom, retag_to_native
 
-_CODEX_MARKER_START = "# --- Headroom persistent provider ---"
-_CODEX_MARKER_END = "# --- end Headroom persistent provider ---"
+_CODEX_MARKER_START = "# --- Legroom persistent provider ---"
+_CODEX_MARKER_END = "# --- end Legroom persistent provider ---"
 _CODEX_PATTERN = re.compile(
     re.escape(_CODEX_MARKER_START) + r".*?" + re.escape(_CODEX_MARKER_END),
     re.DOTALL,
@@ -21,12 +21,12 @@ _CODEX_PATTERN = re.compile(
 
 # Orphan-key patterns: strip any top-level keys that a crashed or partial write
 # may have left outside the marker block.
-_ORPHAN_MODEL_PROVIDER = re.compile(r'(?m)^[ \t]*model_provider[ \t]*=[ \t]*"headroom"[ \t]*\r?\n')
+_ORPHAN_MODEL_PROVIDER = re.compile(r'(?m)^[ \t]*model_provider[ \t]*=[ \t]*"legroom"[ \t]*\r?\n')
 _ORPHAN_OPENAI_BASE_URL = re.compile(
     r'(?m)^[ \t]*openai_base_url[ \t]*=[ \t]*"http://127\.0\.0\.1:\d+/v1"[ \t]*\r?\n'
 )
-_ORPHAN_HEADROOM_TABLE = re.compile(
-    r"(?ms)^\[model_providers\.headroom\][^\[]*?"
+_ORPHAN_LEGROOM_TABLE = re.compile(
+    r"(?ms)^\[model_providers\.legroom\][^\[]*?"
     r'base_url[ \t]*=[ \t]*"http://127\.0\.0\.1:\d+/v1"[^\[]*?'
     r"(?=^\[|\Z)"
 )
@@ -78,7 +78,7 @@ def build_provider_section(
     pass the result of :func:`codex_uses_chatgpt_auth`; it defaults to ``False``.
     """
     body = (
-        "[model_providers.headroom]\n"
+        "[model_providers.legroom]\n"
         f'name = "{name}"\n'
         f'base_url = "{proxy_base_url(port)}"\n'
         "supports_websockets = true\n"
@@ -140,11 +140,11 @@ def apply_provider_scope(manifest: DeploymentManifest) -> ManagedMutation | None
     path.parent.mkdir(parents=True, exist_ok=True)
     section = (
         f"{_CODEX_MARKER_START}\n"
-        'model_provider = "headroom"\n'
+        'model_provider = "legroom"\n'
         f'openai_base_url = "{proxy_base_url(manifest.port)}"\n\n'
         + build_provider_section(
             port=manifest.port,
-            name="Headroom persistent proxy",
+            name="Legroom persistent proxy",
             include_markers=False,
             requires_openai_auth=codex_uses_chatgpt_auth(path.parent / "auth.json"),
         )
@@ -157,9 +157,9 @@ def apply_provider_scope(manifest: DeploymentManifest) -> ManagedMutation | None
     existing = _strip_root_provider_assignments(existing)
     merged = _insert_block_at_root(existing, section)
     path.write_text(merged, encoding="utf-8")
-    # Pull existing native threads into the headroom-provider menu so Codex's
-    # history list stays whole once it routes through Headroom. Best-effort.
-    retag_to_headroom(path.parent)
+    # Pull existing native threads into the legroom-provider menu so Codex's
+    # history list stays whole once it routes through Legroom. Best-effort.
+    retag_to_legroom(path.parent)
     return ManagedMutation(target=ToolTarget.CODEX.value, kind="toml-block", path=str(path))
 
 
@@ -176,11 +176,11 @@ def revert_provider_scope(mutation: ManagedMutation, manifest: DeploymentManifes
     if _CODEX_MARKER_START in content:
         content = _CODEX_PATTERN.sub("", content)
     # Strip any orphan top-level keys that a crashed or partial write may have
-    # left outside the marker block (mirrors wrap.py _strip_codex_headroom_blocks).
+    # left outside the marker block (mirrors wrap.py _strip_codex_legroom_blocks).
     content = _ORPHAN_MODEL_PROVIDER.sub("", content)
     content = _ORPHAN_OPENAI_BASE_URL.sub("", content)
-    content = _ORPHAN_HEADROOM_TABLE.sub("", content)
+    content = _ORPHAN_LEGROOM_TABLE.sub("", content)
     path.write_text(content.strip() + "\n", encoding="utf-8")
     # Hand the threads back to the native-provider menu so the full history stays
-    # visible once Codex no longer routes through Headroom. Best-effort.
+    # visible once Codex no longer routes through Legroom. Best-effort.
     retag_to_native(path.parent)

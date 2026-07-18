@@ -3,14 +3,14 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "headroom-oauth2"
+name = "legroom-oauth2"
 version = "0.1.0"
-description = "Generic OAuth2 client-credentials upstream-auth extension for the Headroom proxy"
+description = "Generic OAuth2 client-credentials upstream-auth extension for the Legroom proxy"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Khalid Shaikh", email = "43288811+mkhalid-s@users.noreply.github.com" }]
-keywords = ["headroom", "oauth2", "client-credentials", "proxy", "llm-gateway"]
+keywords = ["legroom", "oauth2", "client-credentials", "proxy", "llm-gateway"]
 dependencies = []
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -25,21 +25,21 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-# Only needed if you set HEADROOM_OAUTH2_HEADERS (static upstream headers via litellm.headers).
+# Only needed if you set LEGROOM_OAUTH2_HEADERS (static upstream headers via litellm.headers).
 # The token-minting + injection path is standard-library only and needs none of this.
 litellm = ["litellm>=1.40"]
 dev = ["pytest>=7", "ruff"]
 test = ["pytest>=7"]
 
 [project.urls]
-Homepage = "https://github.com/ghaliba3/headroom"
-Repository = "https://github.com/ghaliba3/headroom"
-Issues = "https://github.com/ghaliba3/headroom/issues"
+Homepage = "https://github.com/legroom-ai/legroom-ai.github.io"
+Repository = "https://github.com/legroom-ai/legroom-ai.github.io"
+Issues = "https://github.com/legroom-ai/legroom-ai.github.io/issues"
 
-# Registers with Headroom's opt-in proxy-extension seam (headroom/proxy/extensions.py).
-# Enable at runtime with `--proxy-extension oauth2` or HEADROOM_PROXY_EXTENSIONS=oauth2.
-[project.entry-points."headroom.proxy_extension"]
-oauth2 = "headroom_oauth2:install"
+# Registers with Legroom's opt-in proxy-extension seam (legroom/proxy/extensions.py).
+# Enable at runtime with `--proxy-extension oauth2` or LEGROOM_PROXY_EXTENSIONS=oauth2.
+[project.entry-points."legroom.proxy_extension"]
+oauth2 = "legroom_oauth2:install"
 
 [tool.setuptools.packages.find]
 where = ["src"]

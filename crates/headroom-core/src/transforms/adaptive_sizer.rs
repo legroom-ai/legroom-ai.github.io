@@ -1,6 +1,6 @@
 //! Adaptive compression sizing via information saturation detection.
 //!
-//! Direct port of `headroom/transforms/adaptive_sizer.py`. Used by
+//! Direct port of `legroom/transforms/adaptive_sizer.py`. Used by
 //! `smart_crusher`'s array crushers to decide *how many* items to keep —
 //! statistically, by detecting the "knee point" of an information
 //! saturation curve.

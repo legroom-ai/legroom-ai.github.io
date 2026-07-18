@@ -1,4 +1,4 @@
-//! Relevance scoring — Rust port of `headroom/relevance/`.
+//! Relevance scoring — Rust port of `legroom/relevance/`.
 //!
 //! Used by SmartCrusher's planning layer to decide which items in a tool
 //! output match the user's query (the user's recent prompts plus the

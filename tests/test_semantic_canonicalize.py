@@ -14,7 +14,7 @@ pin: (1) each noise field is ignored, across Anthropic/OpenAI/Bedrock shapes;
 containing keys like `state`/`index` is never corrupted.
 """
 
-from headroom.cache.prefix_tracker import _canonicalize_for_prefix_compare as C
+from legroom.cache.prefix_tracker import _canonicalize_for_prefix_compare as C
 
 
 def eq(a, b):

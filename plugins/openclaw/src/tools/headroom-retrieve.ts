@@ -2,7 +2,7 @@
  * CCR (Compress-Cache-Retrieve) tool for OpenClaw.
  *
  * Allows the agent to retrieve original uncompressed content
- * from the Headroom proxy's compression store.
+ * from the Legroom proxy's compression store.
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -12,13 +12,13 @@ export interface RetrieveToolConfig {
   proxyUrl: string;
 }
 
-export function createHeadroomRetrieveTool(config: RetrieveToolConfig) {
+export function createLegroomRetrieveTool(config: RetrieveToolConfig) {
   const proxyOrigin = normalizeAndValidateProxyUrl(config.proxyUrl);
 
   return {
-    name: "headroom_retrieve",
+    name: "legroom_retrieve",
     description:
-      "Retrieve original uncompressed content from Headroom's compression store. " +
+      "Retrieve original uncompressed content from Legroom's compression store. " +
       "Use when compressed context mentions a hash and you need the full details. " +
       "Pass the hash from the compression marker (24 hex characters). " +
       "Retrieval is by hash and always returns the full original content.",

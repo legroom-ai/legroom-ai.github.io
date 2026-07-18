@@ -1,7 +1,7 @@
 """Conversation generators for benchmark scenarios.
 
 This module provides generators for realistic conversation patterns that
-exercise Headroom transforms:
+exercise Legroom transforms:
 
 - Agentic conversations: Multi-turn with tool calls (SmartCrusher)
 - RAG conversations: Large context injection (CacheAligner)

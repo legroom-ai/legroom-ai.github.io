@@ -77,7 +77,7 @@ def _direct_turn(text: str) -> str:
 
 
 def _issue_2059_artifact_path() -> Path:
-    return Path(__file__).resolve().parent / "fixtures" / "issues" / "headroom_issue_2059.json"
+    return Path(__file__).resolve().parent / "fixtures" / "issues" / "legroom_issue_2059.json"
 
 
 def _issue_2059_turns() -> tuple[str, str]:
@@ -219,7 +219,7 @@ async def test_memory_lookup_skips_bypassed_frames():
     first, later = _issue_2059_turns()
     client_ws = _FakeWebSocket(
         frames=[first, later],
-        headers={"authorization": "Bearer test", "x-headroom-bypass": "true"},
+        headers={"authorization": "Bearer test", "x-legroom-bypass": "true"},
     )
     handler = _DummyOpenAIHandler()
     memory = _MemoryHandler()
@@ -260,7 +260,7 @@ async def test_memory_lookup_keeps_legacy_direct_first_frame():
 
 @pytest.mark.asyncio
 async def test_memory_lookup_skips_disabled_memory(monkeypatch):
-    monkeypatch.setenv("HEADROOM_MEMORY_INJECTION_MODE", "disabled")
+    monkeypatch.setenv("LEGROOM_MEMORY_INJECTION_MODE", "disabled")
     upstream = _FakeUpstream(
         [
             json.dumps({"type": "response.created", "response": {"id": "r_1"}}),

@@ -1,17 +1,17 @@
-# Claude Code + AWS Bedrock, with Headroom compression
+# Claude Code + AWS Bedrock, with Legroom compression
 
-*Validated end-to-end on 2026-06-26 (Claude Code 2.1, Headroom 0.27.0, ap-southeast-2).*
+*Validated end-to-end on 2026-06-26 (Claude Code 2.1, Legroom 0.27.0, ap-southeast-2).*
 
 This is the **working, tested** way to run **Claude Code** against **Claude models on
-AWS Bedrock** with **Headroom compressing the context** in the middle.
+AWS Bedrock** with **Legroom compressing the context** in the middle.
 
 ## TL;DR
 
 Run Claude Code in **normal Anthropic mode** (NOT Bedrock mode) pointed at a local
-Headroom proxy, and let **Headroom** be the thing that talks to Bedrock:
+Legroom proxy, and let **Legroom** be the thing that talks to Bedrock:
 
 ```
-Claude Code  ──ANTHROPIC_BASE_URL──▶  Headroom proxy  ──LiteLLM (bedrock)──▶  AWS Bedrock
+Claude Code  ──ANTHROPIC_BASE_URL──▶  Legroom proxy  ──LiteLLM (bedrock)──▶  AWS Bedrock
  (normal mode)     (plain http)        (compresses)         (your AWS creds)      (Claude)
 ```
 
@@ -24,7 +24,7 @@ the proxy":
 
 ## Why not "just set CLAUDE_CODE_USE_BEDROCK=1"?
 
-That approach **does not work** with Headroom. When `CLAUDE_CODE_USE_BEDROCK=1` is set,
+That approach **does not work** with Legroom. When `CLAUDE_CODE_USE_BEDROCK=1` is set,
 Claude Code calls Bedrock directly using the AWS SDK — `ANTHROPIC_BASE_URL` is ignored
 entirely and the proxy never receives a byte. Use the Anthropic-mode path below.
 
@@ -32,7 +32,7 @@ entirely and the proxy never receives a byte. Use the Anthropic-mode path below.
 
 - **AWS credentials** configured for your environment (env vars, `~/.aws/credentials`,
   instance profile, or SSO via `aws sso login`). Confirm direct access works before
-  involving Headroom:
+  involving Legroom:
   ```bash
   aws bedrock-runtime invoke-model \
     --region us-east-1 \
@@ -55,10 +55,10 @@ entirely and the proxy never receives a byte. Use the Anthropic-mode path below.
   }
   ```
 
-## Terminal 1 — start the Headroom proxy (Bedrock backend)
+## Terminal 1 — start the Legroom proxy (Bedrock backend)
 
 ```bash
-headroom proxy --port 8787 \
+legroom proxy --port 8787 \
   --backend bedrock \
   --region us-east-1
 ```
@@ -66,7 +66,7 @@ headroom proxy --port 8787 \
 With a named AWS SSO profile:
 
 ```bash
-headroom proxy --port 8787 \
+legroom proxy --port 8787 \
   --backend bedrock \
   --region us-east-1 \
   --bedrock-profile my-sso-profile
@@ -84,7 +84,7 @@ LiteLLM completion() model= converse/arn:aws:... provider = bedrock
 ```bash
 export CLAUDE_CODE_USE_BEDROCK=0               # REQUIRED — prevents Claude Code bypassing the proxy
 export ANTHROPIC_BASE_URL=http://127.0.0.1:8787
-export ANTHROPIC_API_KEY=headroom              # Claude Code needs *a* key to start; value is ignored
+export ANTHROPIC_API_KEY=legroom              # Claude Code needs *a* key to start; value is ignored
 export ANTHROPIC_MODEL=claude-opus-4-6
 export ANTHROPIC_DEFAULT_SONNET_MODEL=claude-sonnet-4-6
 export ANTHROPIC_DEFAULT_OPUS_MODEL=claude-opus-4-6
@@ -100,7 +100,7 @@ Or via `~/.claude/settings.json`:
   "env": {
     "CLAUDE_CODE_USE_BEDROCK": "0",
     "ANTHROPIC_BASE_URL": "http://127.0.0.1:8787",
-    "ANTHROPIC_API_KEY": "headroom",
+    "ANTHROPIC_API_KEY": "legroom",
     "ANTHROPIC_MODEL": "claude-opus-4-6",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-6",
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-4-6",
@@ -109,7 +109,7 @@ Or via `~/.claude/settings.json`:
 }
 ```
 
-Claude Code now talks plain Anthropic `/v1/messages` to Headroom; Headroom compresses
+Claude Code now talks plain Anthropic `/v1/messages` to Legroom; Legroom compresses
 and forwards to Bedrock via LiteLLM, then translates the answer back.
 
 ## Application inference profiles (account-specific ARNs)
@@ -143,5 +143,5 @@ The proxy uses the correct prefix automatically when constructing fallback model
 | Proxy receives no requests | Claude Code is in Bedrock mode, bypassing proxy | Set `CLAUDE_CODE_USE_BEDROCK=0` |
 | `400 The provided model identifier is invalid` | Bedrock rejected the model name format | Use standard cross-region profile names (`claude-sonnet-4-6`) or a valid application inference profile ARN |
 | `403 AccessDeniedException` on system-defined profiles | IAM policy only permits application profiles | Use `--bedrock-profile` with an authorized profile and pass application inference profile ARNs as model values |
-| `400 … Try calling via converse route` | Old proxy version routing ARNs to invoke path | Upgrade to headroom ≥ 0.27.1 |
+| `400 … Try calling via converse route` | Old proxy version routing ARNs to invoke path | Upgrade to legroom ≥ 0.27.1 |
 | Model map empty at startup | boto3 not installed or wrong AWS profile | `pip install boto3`; check `--bedrock-profile` / `AWS_PROFILE` |

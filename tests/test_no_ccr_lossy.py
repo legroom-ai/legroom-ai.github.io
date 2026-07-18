@@ -9,7 +9,7 @@ ModernBERT model (self.compress is mocked to a lossy result).
 
 from types import SimpleNamespace
 
-from headroom.transforms.content_router import (
+from legroom.transforms.content_router import (
     CompressionStrategy,
     ContentRouter,
     ContentRouterConfig,

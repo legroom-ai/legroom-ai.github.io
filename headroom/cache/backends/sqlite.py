@@ -7,12 +7,12 @@ cannot provide, both load-bearing for the no-accuracy-loss guarantee:
   retrievable original mid-session. With the session-scale 30-minute
   TTL, entries are expected to outlive any single process.
 - **Multi-worker sharing.** The database file (WAL mode) is shared
-  across worker processes, so a `headroom_retrieve` call served by a
+  across worker processes, so a `legroom_retrieve` call served by a
   different worker than the one that compressed still finds the entry.
   This closes the largest of the documented multi-worker gaps.
 
-Set ``HEADROOM_CCR_BACKEND=memory`` to opt back into the in-memory
-backend, or ``HEADROOM_CCR_SQLITE_PATH`` to relocate the database file
+Set ``LEGROOM_CCR_BACKEND=memory`` to opt back into the in-memory
+backend, or ``LEGROOM_CCR_SQLITE_PATH`` to relocate the database file
 (default ``workspace_dir()/ccr_store.db``).
 """
 
@@ -50,7 +50,7 @@ _PURGE_INTERVAL = 60.0
 
 def default_db_path() -> Path:
     """Resolve the database path (env override, else workspace root)."""
-    env = os.environ.get("HEADROOM_CCR_SQLITE_PATH", "").strip()
+    env = os.environ.get("LEGROOM_CCR_SQLITE_PATH", "").strip()
     if env:
         return Path(env).expanduser()
     from ...paths import workspace_dir

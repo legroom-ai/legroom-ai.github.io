@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from headroom.providers.registry import DEFAULT_VERTEX_API_URL
-from headroom.providers.vertex import (
+from legroom.providers.registry import DEFAULT_VERTEX_API_URL
+from legroom.providers.vertex import (
     VERTEX_ANTHROPIC_PROVIDER_NAME,
     VERTEX_COUNT_TOKENS,
     VERTEX_GENERATE_CONTENT,

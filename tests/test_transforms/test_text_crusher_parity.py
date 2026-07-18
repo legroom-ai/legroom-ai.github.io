@@ -12,7 +12,7 @@ import os
 
 import pytest
 
-from headroom.transforms.text_crusher import TextCrusher
+from legroom.transforms.text_crusher import TextCrusher
 
 _FIXTURE_GLOB = os.path.join(
     os.path.dirname(__file__), "..", "parity", "fixtures", "text_crusher", "*.json"

@@ -1,4 +1,4 @@
-"""Tests for the Memory Bridge (markdown <-> Headroom bidirectional sync).
+"""Tests for the Memory Bridge (markdown <-> Legroom bidirectional sync).
 
 Parser tests are pure functions (no backend needed).
 Bridge tests use a temp LocalBackend with a temporary database.
@@ -15,8 +15,8 @@ import uuid
 
 import pytest
 
-from headroom.memory.bridge_config import BridgeConfig, MarkdownFormat
-from headroom.memory.bridge_parsers import (
+from legroom.memory.bridge_config import BridgeConfig, MarkdownFormat
+from legroom.memory.bridge_parsers import (
     ParsedSection,
     detect_format,
     extract_entities_from_text,
@@ -33,8 +33,8 @@ CLAUDE_CODE_MEMORY = """\
 # Project Memory
 
 ## Project Overview
-- **Headroom**: Context optimization layer for LLM applications
-- **Repos**: OSS at ~/claude-projects/headroom
+- **Legroom**: Context optimization layer for LLM applications
+- **Repos**: OSS at ~/claude-projects/legroom
 
 ## Key Architecture
 - 186 Python files, 34 packages, 100K+ lines
@@ -123,13 +123,13 @@ class TestClaudeCodeParser:
         parsed = parse_claude_code_memory(CLAUDE_CODE_MEMORY)
         overview = next(s for s in parsed.sections if s.heading == "Project Overview")
         assert len(overview.facts) == 2
-        assert any("Headroom" in f for f in overview.facts)
+        assert any("Legroom" in f for f in overview.facts)
         assert any("Repos" in f for f in overview.facts)
 
     def test_bold_text_extracted_as_entities(self):
         parsed = parse_claude_code_memory(CLAUDE_CODE_MEMORY)
         overview = next(s for s in parsed.sections if s.heading == "Project Overview")
-        assert "Headroom" in overview.entities
+        assert "Legroom" in overview.entities
         assert "Repos" in overview.entities
 
     def test_content_hash_computed(self):
@@ -243,20 +243,20 @@ class TestRelationshipExtraction:
         section = ParsedSection(
             heading="Test",
             heading_level=2,
-            content="- **Headroom**: Context optimization layer",
-            facts=["**Headroom**: Context optimization layer"],
+            content="- **Legroom**: Context optimization layer",
+            facts=["**Legroom**: Context optimization layer"],
         )
         rels = extract_relationships_from_section(section)
         assert len(rels) >= 1
-        assert rels[0]["source"] == "Headroom"
+        assert rels[0]["source"] == "Legroom"
         assert rels[0]["relationship"] == "is"
 
     def test_verb_patterns(self):
         section = ParsedSection(
             heading="Test",
             heading_level=2,
-            content="Headroom uses SQLite for storage",
-            facts=["Headroom uses SQLite for storage"],
+            content="Legroom uses SQLite for storage",
+            facts=["Legroom uses SQLite for storage"],
         )
         rels = extract_relationships_from_section(section)
         uses_rels = [r for r in rels if r["relationship"] == "uses"]
@@ -293,7 +293,7 @@ def bridge_config(tmp_dir):
 @pytest.fixture
 async def backend(tmp_dir):
     """Create a LocalBackend with temp database."""
-    from headroom.memory.backends.local import LocalBackend, LocalBackendConfig
+    from legroom.memory.backends.local import LocalBackend, LocalBackendConfig
 
     config = LocalBackendConfig(db_path=str(tmp_dir / "test_memory.db"))
     backend = LocalBackend(config)
@@ -305,7 +305,7 @@ async def backend(tmp_dir):
 @pytest.fixture
 def bridge(bridge_config, backend):
     """Create a MemoryBridge."""
-    from headroom.memory.bridge import MemoryBridge
+    from legroom.memory.bridge import MemoryBridge
 
     return MemoryBridge(bridge_config, backend)
 
@@ -415,7 +415,7 @@ class TestMemoryBridgeExport:
         """Export memories as Claude Code style markdown."""
         # Add some memories
         await backend.save_memory(
-            content="Headroom is a context optimization layer",
+            content="Legroom is a context optimization layer",
             user_id="test_user",
             importance=0.8,
             metadata={"section_heading": "Overview"},
@@ -437,7 +437,7 @@ class TestMemoryBridgeExport:
         assert "# Memory" in markdown
         assert "## Overview" in markdown
         assert "## Architecture" in markdown
-        assert "Headroom" in markdown
+        assert "Legroom" in markdown
         assert export_path.exists()
 
     @pytest.mark.asyncio
@@ -515,7 +515,7 @@ class TestSyncStatePersistence:
     @pytest.mark.asyncio
     async def test_state_saved_and_loaded(self, tmp_dir, backend):
         """Sync state should persist across bridge instances."""
-        from headroom.memory.bridge import MemoryBridge
+        from legroom.memory.bridge import MemoryBridge
 
         state_path = tmp_dir / "state.json"
         config = BridgeConfig(
@@ -562,6 +562,6 @@ class TestRoundTrip:
         )
 
         # Key facts should survive the round trip
-        assert "Headroom" in markdown
+        assert "Legroom" in markdown
         assert "compression" in markdown.lower() or "SmartCrusher" in markdown
         assert "Compresr" in markdown or "Portkey" in markdown

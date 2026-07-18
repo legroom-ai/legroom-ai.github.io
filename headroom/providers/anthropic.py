@@ -1,4 +1,4 @@
-"""Anthropic provider implementation for Headroom SDK.
+"""Anthropic provider implementation for Legroom SDK.
 
 Token counting uses Anthropic's official Token Count API when a client
 is provided. This gives accurate counts for all content types including
@@ -6,7 +6,7 @@ JSON, non-English text, and tool definitions.
 
 Usage:
     from anthropic import Anthropic
-    from headroom import AnthropicProvider
+    from legroom import AnthropicProvider
 
     client = Anthropic()  # Uses ANTHROPIC_API_KEY env var
     provider = AnthropicProvider(client=client)  # Accurate counting via API
@@ -23,7 +23,7 @@ import re
 import warnings
 from typing import Any, cast
 
-from headroom import paths as _paths
+from legroom import paths as _paths
 
 from .base import Provider, TokenCounter
 
@@ -201,8 +201,8 @@ def _load_custom_model_config() -> dict[str, Any]:
     """Load custom model configuration from environment or config file.
 
     Checks (in order):
-    1. HEADROOM_MODEL_LIMITS environment variable (JSON string or file path)
-    2. ~/.headroom/models.json config file
+    1. LEGROOM_MODEL_LIMITS environment variable (JSON string or file path)
+    2. ~/.legroom/models.json config file
 
     Returns:
         Dict with 'context_limits' and 'pricing' keys.
@@ -210,7 +210,7 @@ def _load_custom_model_config() -> dict[str, Any]:
     config: dict[str, Any] = {"context_limits": {}, "pricing": {}}
 
     # Check environment variable
-    env_config = os.environ.get("HEADROOM_MODEL_LIMITS", "")
+    env_config = os.environ.get("LEGROOM_MODEL_LIMITS", "")
     if env_config:
         try:
             # Check if it's a file path
@@ -228,9 +228,9 @@ def _load_custom_model_config() -> dict[str, Any]:
             if "pricing" in anthropic_config:
                 config["pricing"].update(anthropic_config["pricing"])
 
-            logger.debug(f"Loaded custom model config from HEADROOM_MODEL_LIMITS: {loaded}")
+            logger.debug(f"Loaded custom model config from LEGROOM_MODEL_LIMITS: {loaded}")
         except (json.JSONDecodeError, OSError) as e:
-            logger.warning(f"Failed to load HEADROOM_MODEL_LIMITS: {e}")
+            logger.warning(f"Failed to load LEGROOM_MODEL_LIMITS: {e}")
 
     # Check config file. Prefer the canonical config-dir location, then fall
     # back to the legacy workspace-root location for backward compatibility.
@@ -324,7 +324,7 @@ class AnthropicTokenCounter(TokenCounter):
         # hang token counting inside a request (tiktoken's downloader has no
         # network timeout); on timeout we estimate by characters instead (GH #956).
         try:
-            from headroom.tokenizers.tiktoken_counter import (
+            from legroom.tokenizers.tiktoken_counter import (
                 TiktokenLoadError,
                 load_encoding,
             )
@@ -507,12 +507,12 @@ class AnthropicProvider(Provider):
         You can configure custom models via environment variable or config file:
 
         1. Environment variable (JSON string):
-           export HEADROOM_MODEL_LIMITS='{"context_limits": {"my-model": 200000}}'
+           export LEGROOM_MODEL_LIMITS='{"context_limits": {"my-model": 200000}}'
 
         2. Environment variable (file path):
-           export HEADROOM_MODEL_LIMITS=/path/to/models.json
+           export LEGROOM_MODEL_LIMITS=/path/to/models.json
 
-        3. Config file (~/.headroom/models.json):
+        3. Config file (~/.legroom/models.json):
            {
              "anthropic": {
                "context_limits": {"my-model": 200000},
@@ -582,8 +582,8 @@ class AnthropicProvider(Provider):
 
         Resolution order:
         1. Explicit context_limits passed to constructor
-        2. HEADROOM_MODEL_LIMITS environment variable
-        3. ~/.headroom/models.json config file
+        2. LEGROOM_MODEL_LIMITS environment variable
+        3. ~/.legroom/models.json config file
         4. LiteLLM model info (if available)
         5. Built-in ANTHROPIC_CONTEXT_LIMITS
         6. Pattern-based inference (opus/sonnet/haiku)
@@ -647,8 +647,8 @@ class AnthropicProvider(Provider):
             _UNKNOWN_MODEL_WARNINGS.add(model)
             logger.warning(
                 f"Unknown Anthropic model '{model}': {reason} ({limit:,} tokens). "
-                f"To configure explicitly, set HEADROOM_MODEL_LIMITS env var or "
-                f"add to ~/.headroom/models.json"
+                f"To configure explicitly, set LEGROOM_MODEL_LIMITS env var or "
+                f"add to ~/.legroom/models.json"
             )
 
     def supports_model(self, model: str) -> bool:

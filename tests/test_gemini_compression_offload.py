@@ -14,10 +14,10 @@ import inspect
 import threading
 import time
 
-from headroom.proxy.server import ProxyConfig, create_app
+from legroom.proxy.server import ProxyConfig, create_app
 
 
-def _make_proxy():  # noqa: ANN202 — returns the internal HeadroomProxy
+def _make_proxy():  # noqa: ANN202 — returns the internal LegroomProxy
     app = create_app(
         ProxyConfig(
             optimize=True,
@@ -32,7 +32,7 @@ def _make_proxy():  # noqa: ANN202 — returns the internal HeadroomProxy
 def test_gemini_handlers_are_async_and_import_the_timeout() -> None:
     """Wiring sanity: the offload uses `await`, so the handlers must be coroutines, and the
     timeout constant must be importable in the module (a missing import would NameError)."""
-    from headroom.proxy.handlers import gemini
+    from legroom.proxy.handlers import gemini
 
     for name in (
         "handle_gemini_generate_content",
@@ -46,7 +46,7 @@ def test_gemini_handlers_are_async_and_import_the_timeout() -> None:
 
 
 async def test_compression_offload_runs_on_worker_thread() -> None:
-    """apply() runs on a 'headroom-compress' executor thread, not the event-loop thread."""
+    """apply() runs on a 'legroom-compress' executor thread, not the event-loop thread."""
     proxy = _make_proxy()
     loop_thread_name = threading.current_thread().name
     seen: dict[str, str] = {}
@@ -59,7 +59,7 @@ async def test_compression_offload_runs_on_worker_thread() -> None:
     result = await proxy._run_compression_in_executor(_slow_apply, timeout=10)
 
     assert result == "compressed"
-    assert seen["thread"].startswith("headroom-compress")
+    assert seen["thread"].startswith("legroom-compress")
     assert seen["thread"] != loop_thread_name
 
 

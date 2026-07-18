@@ -1,4 +1,4 @@
-"""RTK is opt-in (off by default): enabled only via --rtk / HEADROOM_RTK=1.
+"""RTK is opt-in (off by default): enabled only via --rtk / LEGROOM_RTK=1.
 
 Regression for the RTK-default flip: the three RTK entry points must no-op
 unless explicitly opted in, and every wrap subcommand must expose --rtk.
@@ -11,12 +11,12 @@ from unittest.mock import patch
 
 from click.testing import CliRunner
 
-from headroom.cli import wrap
+from legroom.cli import wrap
 
 
 def _no_rtk_env() -> dict[str, str]:
     env = dict(os.environ)
-    env.pop("HEADROOM_RTK", None)
+    env.pop("LEGROOM_RTK", None)
     return env
 
 
@@ -27,7 +27,7 @@ def test_rtk_opt_in_off_by_default() -> None:
 
 def test_rtk_opt_in_on_via_env() -> None:
     for val in ("1", "true", "yes", "on"):
-        with patch.dict(os.environ, {"HEADROOM_RTK": val}):
+        with patch.dict(os.environ, {"LEGROOM_RTK": val}):
             assert wrap._rtk_opt_in() is True
 
 

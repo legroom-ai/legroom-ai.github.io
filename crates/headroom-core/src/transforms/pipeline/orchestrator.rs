@@ -145,7 +145,7 @@ impl CompressionPipeline {
                 reformat_ratio > self.config.pipeline.offload_fallback_ratio && *score > 0.0;
             if !(above_threshold || reformat_underwhelmed) {
                 tracing::trace!(
-                    target: "headroom::pipeline",
+                    target: "legroom::pipeline",
                     offload = offload.name(),
                     score,
                     reformat_ratio,
@@ -157,7 +157,7 @@ impl CompressionPipeline {
                 Ok(out) => {
                     if out.bytes_saved == 0 {
                         tracing::trace!(
-                            target: "headroom::pipeline",
+                            target: "legroom::pipeline",
                             offload = offload.name(),
                             "offload accepted but saved zero bytes — discarding"
                         );
@@ -170,7 +170,7 @@ impl CompressionPipeline {
                 }
                 Err(TransformError::Internal { message, .. }) => {
                     tracing::warn!(
-                        target: "headroom::pipeline",
+                        target: "legroom::pipeline",
                         offload = offload.name(),
                         error = %message,
                         "offload internal error"
@@ -178,7 +178,7 @@ impl CompressionPipeline {
                 }
                 Err(e) => {
                     tracing::trace!(
-                        target: "headroom::pipeline",
+                        target: "legroom::pipeline",
                         offload = offload.name(),
                         error = %e,
                         "offload skipped"
@@ -212,7 +212,7 @@ impl CompressionPipeline {
             let ratio = current.len() as f64 / original_len.max(1) as f64;
             if ratio <= self.config.pipeline.reformat_target_ratio {
                 tracing::trace!(
-                    target: "headroom::pipeline",
+                    target: "legroom::pipeline",
                     transform = transform.name(),
                     ratio,
                     "reformat target reached, skipping remaining reformats"
@@ -230,7 +230,7 @@ impl CompressionPipeline {
                 }
                 Err(TransformError::Internal { message, .. }) => {
                     tracing::warn!(
-                        target: "headroom::pipeline",
+                        target: "legroom::pipeline",
                         transform = transform.name(),
                         error = %message,
                         "reformat internal error"
@@ -238,7 +238,7 @@ impl CompressionPipeline {
                 }
                 Err(e) => {
                     tracing::trace!(
-                        target: "headroom::pipeline",
+                        target: "legroom::pipeline",
                         transform = transform.name(),
                         error = %e,
                         "reformat skipped"

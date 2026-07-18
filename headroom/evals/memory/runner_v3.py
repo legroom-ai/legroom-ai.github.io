@@ -30,16 +30,16 @@ from typing import Any
 
 import litellm
 
-from headroom.evals.memory.locomo import (
+from legroom.evals.memory.locomo import (
     LOCOMO_CATEGORIES,
     LoCoMoCase,
     LoCoMoConversation,
     load_locomo,
 )
-from headroom.memory.backends.local import LocalBackend, LocalBackendConfig
-from headroom.memory.backends.mem0 import Mem0Backend, Mem0Config
-from headroom.memory.models import Memory
-from headroom.memory.ports import MemorySearchResult, VectorSearchResult
+from legroom.memory.backends.local import LocalBackend, LocalBackendConfig
+from legroom.memory.backends.mem0 import Mem0Backend, Mem0Config
+from legroom.memory.models import Memory
+from legroom.memory.ports import MemorySearchResult, VectorSearchResult
 
 logger = logging.getLogger(__name__)
 

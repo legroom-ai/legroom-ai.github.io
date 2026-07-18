@@ -1,7 +1,7 @@
 """``CompressionDecision``: the canonical value type for "should this
 request be compressed?"
 
-This is the input-side analog of :class:`headroom.proxy.outcome.RequestOutcome`.
+This is the input-side analog of :class:`legroom.proxy.outcome.RequestOutcome`.
 Pre-this-PR, four handler files computed the same conjunction inline at
 five different sites with subtle drift:
 
@@ -15,7 +15,7 @@ five different sites with subtle drift:
   **missing** ``not _bypass`` AND ``_license_ok``
 
 The Gemini divergence was a real bug — explicit
-``x-headroom-bypass: true`` requests were silently ignored on every
+``x-legroom-bypass: true`` requests were silently ignored on every
 Gemini path. Consolidating the decision into one factory makes that
 divergence structurally impossible.
 
@@ -31,7 +31,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from headroom.proxy.helpers import _headroom_bypass_enabled
+from legroom.proxy.helpers import _legroom_bypass_enabled
 
 
 @dataclass(frozen=True)
@@ -50,8 +50,8 @@ class CompressionDecision:
     # When ``should_compress`` is False, this is the canonical reason
     # surfaced in logs and (later) in the RequestOutcome tags so the
     # dashboard can slice passthrough traffic by cause. One of:
-    #   * ``"bypass_header"``      — user set x-headroom-bypass or
-    #                                x-headroom-mode=passthrough
+    #   * ``"bypass_header"``      — user set x-legroom-bypass or
+    #                                x-legroom-mode=passthrough
     #   * ``"compression_disabled"`` — operator set config.optimize=False
     #   * ``"no_messages"``         — empty / missing messages on body
     #   * ``"license_denied"``      — usage reporter said no
@@ -100,11 +100,11 @@ class CompressionDecision:
         headers
             Inbound request headers. Accepts any object with a
             ``.get(key)`` method (dict, starlette Headers, MutableMapping).
-            Both ``x-headroom-bypass: true`` and
-            ``x-headroom-mode: passthrough`` trigger bypass — semantics
-            mirrored from :func:`headroom.proxy.helpers._headroom_bypass_enabled`.
+            Both ``x-legroom-bypass: true`` and
+            ``x-legroom-mode: passthrough`` trigger bypass — semantics
+            mirrored from :func:`legroom.proxy.helpers._legroom_bypass_enabled`.
         config
-            ``HeadroomConfig``-shaped object; only ``optimize: bool``
+            ``LegroomConfig``-shaped object; only ``optimize: bool``
             is read.
         usage_reporter
             Commercial gate. May be ``None`` (no licensing system
@@ -115,7 +115,7 @@ class CompressionDecision:
             Messages list from the request body. ``None`` and ``[]`` are
             both "no messages" — equivalent in the decision.
         """
-        bypass = _headroom_bypass_enabled(headers)
+        bypass = _legroom_bypass_enabled(headers)
         config_ok = bool(getattr(config, "optimize", False))
         license_ok = usage_reporter.should_compress if usage_reporter is not None else True
         has_msgs = bool(messages)

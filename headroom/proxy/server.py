@@ -1,4 +1,4 @@
-"""Headroom Proxy Server - Production Ready.
+"""Legroom Proxy Server - Production Ready.
 
 A full-featured LLM proxy with optimization, caching, rate limiting,
 and observability.
@@ -15,7 +15,7 @@ Features:
 - Full request/response logging
 
 Usage:
-    python -m headroom.proxy.server --port 8787
+    python -m legroom.proxy.server --port 8787
 
     # With Claude Code:
     ANTHROPIC_BASE_URL=http://localhost:8787 claude
@@ -65,11 +65,11 @@ except ImportError:
 # Add parent to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from headroom._version import __version__
-from headroom.agent_savings import proxy_pipeline_kwargs
-from headroom.cache.compression_feedback import get_compression_feedback
-from headroom.cache.compression_store import format_retrieval_miss_detail, get_compression_store
-from headroom.ccr import (
+from legroom._version import __version__
+from legroom.agent_savings import proxy_pipeline_kwargs
+from legroom.cache.compression_feedback import get_compression_feedback
+from legroom.cache.compression_store import format_retrieval_miss_detail, get_compression_store
+from legroom.ccr import (
     CCR_TOOL_NAME,
     # Batch processing
     CCRResponseHandler,
@@ -79,26 +79,26 @@ from headroom.ccr import (
     ResponseHandlerConfig,
     parse_tool_call,
 )
-from headroom.config import (
+from legroom.config import (
     DEFAULT_EXCLUDE_TOOLS,
     CacheAlignerConfig,
     ReadLifecycleConfig,
 )
-from headroom.dashboard import get_dashboard_html
-from headroom.observability import (
+from legroom.dashboard import get_dashboard_html
+from legroom.observability import (
     LangfuseTracingConfig,
     OTelMetricsConfig,
     configure_langfuse_tracing,
     configure_otel_metrics,
     get_langfuse_tracing_status,
     get_otel_metrics_status,
-    shutdown_headroom_tracing,
+    shutdown_legroom_tracing,
     shutdown_otel_metrics,
 )
-from headroom.offline import apply_offline_env, is_offline
-from headroom.pipeline import PipelineExtensionManager, PipelineStage
-from headroom.providers.proxy_routes import register_provider_routes
-from headroom.providers.registry import (
+from legroom.offline import apply_offline_env, is_offline
+from legroom.pipeline import PipelineExtensionManager, PipelineStage
+from legroom.providers.proxy_routes import register_provider_routes
+from legroom.providers.registry import (
     DEFAULT_ANTHROPIC_API_URL,
     DEFAULT_CLOUDCODE_API_URL,
     DEFAULT_GEMINI_API_URL,
@@ -109,15 +109,15 @@ from headroom.providers.registry import (
     format_backend_status,
     resolve_api_targets,
 )
-from headroom.proxy import runtime_env
-from headroom.proxy.audit import is_auditable_path, record_admin_action
-from headroom.proxy.auth_mode import should_stamp_codex_client
-from headroom.proxy.background_compression import BackgroundCompressor
+from legroom.proxy import runtime_env
+from legroom.proxy.audit import is_auditable_path, record_admin_action
+from legroom.proxy.auth_mode import should_stamp_codex_client
+from legroom.proxy.background_compression import BackgroundCompressor
 
 # =============================================================================
 # Extracted modules (re-exported for backward compatibility)
 # =============================================================================
-from headroom.proxy.cost import (
+from legroom.proxy.cost import (
     _CACHE_ECONOMICS,  # noqa: F401
     CostTracker,  # noqa: F401
     _summarize_transforms,  # noqa: F401
@@ -125,7 +125,7 @@ from headroom.proxy.cost import (
     build_session_summary,  # noqa: F401
     merge_cost_stats,  # noqa: F401
 )
-from headroom.proxy.helpers import (
+from legroom.proxy.helpers import (
     COMPRESSION_TIMEOUT_SECONDS,  # noqa: F401
     EAGER_PRELOAD_TIMEOUT_SECONDS,
     MAX_COMPRESSION_CACHE_SESSIONS,  # noqa: F401
@@ -144,45 +144,45 @@ from headroom.proxy.helpers import (
     resolve_display_provider,
     retry_after_ms,
 )
-from headroom.proxy.loop_callback_failure_policy import is_known_websocket_callback_failure
-from headroom.proxy.loopback_guard import is_loopback_host
-from headroom.proxy.memory_handler import MemoryConfig, MemoryHandler
+from legroom.proxy.loop_callback_failure_policy import is_known_websocket_callback_failure
+from legroom.proxy.loopback_guard import is_loopback_host
+from legroom.proxy.memory_handler import MemoryConfig, MemoryHandler
 
-# Data models (extracted to headroom/proxy/models.py for maintainability)
-from headroom.proxy.model_router import ModelRouter, ModelRouterConfig
-from headroom.proxy.models import CacheEntry, ProxyConfig, RateLimitState, RequestLog  # noqa: F401
-from headroom.proxy.modes import (
+# Data models (extracted to legroom/proxy/models.py for maintainability)
+from legroom.proxy.model_router import ModelRouter, ModelRouterConfig
+from legroom.proxy.models import CacheEntry, ProxyConfig, RateLimitState, RequestLog  # noqa: F401
+from legroom.proxy.modes import (
     PROXY_MODE_CACHE,
     PROXY_MODE_TOKEN,
     is_token_mode,
     normalize_proxy_mode,
 )
-from headroom.proxy.probe_recorder import probe_recorder_from_env
-from headroom.proxy.project_context import (
+from legroom.proxy.probe_recorder import probe_recorder_from_env
+from legroom.proxy.project_context import (
     classify_project,
     set_current_project,
     strip_project_path_prefix,
 )
-from headroom.proxy.prometheus_metrics import PrometheusMetrics  # noqa: F401
-from headroom.proxy.rate_limiter import TokenBucketRateLimiter  # noqa: F401
-from headroom.proxy.request_logger import RequestLogger  # noqa: F401
-from headroom.proxy.savings_tracker import LITELLM_AVAILABLE
-from headroom.proxy.semantic_cache import SemanticCache  # noqa: F401
-from headroom.proxy.ssl_context import build_httpx_verify
-from headroom.proxy.tool_schema_savings_policy import tool_schema_saved_from_tags
-from headroom.proxy.warmup import WarmupRegistry
-from headroom.proxy.ws_session_registry import WebSocketSessionRegistry
-from headroom.subscription.base import get_quota_registry, reset_quota_registry
-from headroom.subscription.codex_rate_limits import get_codex_rate_limit_state
-from headroom.subscription.copilot_quota import get_copilot_quota_tracker
-from headroom.subscription.tracker import (
+from legroom.proxy.prometheus_metrics import PrometheusMetrics  # noqa: F401
+from legroom.proxy.rate_limiter import TokenBucketRateLimiter  # noqa: F401
+from legroom.proxy.request_logger import RequestLogger  # noqa: F401
+from legroom.proxy.savings_tracker import LITELLM_AVAILABLE
+from legroom.proxy.semantic_cache import SemanticCache  # noqa: F401
+from legroom.proxy.ssl_context import build_httpx_verify
+from legroom.proxy.tool_schema_savings_policy import tool_schema_saved_from_tags
+from legroom.proxy.warmup import WarmupRegistry
+from legroom.proxy.ws_session_registry import WebSocketSessionRegistry
+from legroom.subscription.base import get_quota_registry, reset_quota_registry
+from legroom.subscription.codex_rate_limits import get_codex_rate_limit_state
+from legroom.subscription.copilot_quota import get_copilot_quota_tracker
+from legroom.subscription.tracker import (
     configure_subscription_tracker,
     get_subscription_tracker,
 )
-from headroom.telemetry import get_telemetry_collector
-from headroom.telemetry.beacon import is_telemetry_enabled
-from headroom.telemetry.toin import get_toin
-from headroom.transforms import (
+from legroom.telemetry import get_telemetry_collector
+from legroom.telemetry.beacon import is_telemetry_enabled
+from legroom.telemetry.toin import get_toin
+from legroom.transforms import (
     CacheAligner,
     CodeAwareCompressor,
     CodeCompressorConfig,
@@ -273,7 +273,7 @@ def _classify_agent_from_log(entry: dict[str, Any]) -> tuple[str, str, str]:
     tags = raw_tags if isinstance(raw_tags, dict) else {}
     for source, candidate in (
         ("client", tags.get("client")),
-        ("stack", tags.get("stack") or tags.get("headroom-stack")),
+        ("stack", tags.get("stack") or tags.get("legroom-stack")),
     ):
         key = _normalize_agent_key(candidate)
         if key:
@@ -464,13 +464,13 @@ def _build_agent_usage_summary(
 
 # Suppress "[transformers] PyTorch was not found" warning emitted when
 # transformers is imported for availability checks (e.g. kompress ONNX probe).
-# PyTorch is optional in headroom; the warning is not actionable for operators.
+# PyTorch is optional in legroom; the warning is not actionable for operators.
 os.environ.setdefault("TRANSFORMERS_VERBOSITY", "error")
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
-logger = logging.getLogger("headroom.proxy")
+logger = logging.getLogger("legroom.proxy")
 
 LoopExceptionHandler = Callable[[asyncio.AbstractEventLoop, dict[str, Any]], object]
 
@@ -495,18 +495,18 @@ class CompressionQuarantinedError(asyncio.TimeoutError):
     """
 
 
-_MULTI_WORKER_CONFIG_ENV = "HEADROOM_PROXY_CONFIG_JSON"
+_MULTI_WORKER_CONFIG_ENV = "LEGROOM_PROXY_CONFIG_JSON"
 
 # Env var that opts out of the Rust core deployment smoke test (Hotfix-A0).
-# Default behavior: hard-fail at startup if `headroom._core` is unimportable
-# (Finding #2 in HEADROOM_PROXY_LOG_FINDINGS_2026_05_03.md — production
+# Default behavior: hard-fail at startup if `legroom._core` is unimportable
+# (Finding #2 in LEGROOM_PROXY_LOG_FINDINGS_2026_05_03.md — production
 # deployment was silently running without the Rust extension and degrading
 # every compressed request to a Python-only path or a no-op).
 #
 # Set to the literal string "false" to start the proxy in degraded
 # Python-only mode. Any other value (including unset) keeps the
 # fail-loud behavior.
-_RUST_CORE_REQUIRED_ENV = "HEADROOM_REQUIRE_RUST_CORE"
+_RUST_CORE_REQUIRED_ENV = "LEGROOM_REQUIRE_RUST_CORE"
 
 # sysexits.h(3) — EX_CONFIG. Process supervisors (systemd, k8s, docker)
 # treat this as a deliberate configuration failure rather than a crash, so
@@ -515,10 +515,10 @@ _EXIT_CONFIG = 78
 
 
 def _check_rust_core() -> tuple[str, str | None]:
-    """Verify the Rust extension `headroom._core` is loadable at startup.
+    """Verify the Rust extension `legroom._core` is loadable at startup.
 
     Returns a `(status, error)` tuple:
-      - ``("loaded", None)``     — `headroom._core.hello()` returned the
+      - ``("loaded", None)``     — `legroom._core.hello()` returned the
         expected sentinel.
       - ``("disabled", reason)`` — opt-out env var was set; proxy starts
         in Python-only degraded mode. `reason` carries the underlying
@@ -528,13 +528,13 @@ def _check_rust_core() -> tuple[str, str | None]:
         only as a typed sentinel for callers that want to reason about
         all three states (e.g. health endpoints).
 
-    Behavior is gated by the ``HEADROOM_REQUIRE_RUST_CORE`` env var:
+    Behavior is gated by the ``LEGROOM_REQUIRE_RUST_CORE`` env var:
     any value other than ``"false"`` (case-insensitive) keeps the
     fail-loud default.
     """
     require = os.environ.get(_RUST_CORE_REQUIRED_ENV, "true").strip().lower() != "false"
     try:
-        from headroom._core import hello as _rust_hello
+        from legroom._core import hello as _rust_hello
 
         marker = _rust_hello()
     except Exception as exc:  # ImportError, but also any init-time PyO3 failure
@@ -549,10 +549,10 @@ def _check_rust_core() -> tuple[str, str | None]:
         # Fail loud. Print to stderr in addition to logging so operators
         # see it even if the logging handler is mis-configured.
         msg = (
-            f"FATAL: Rust extension `headroom._core` not loadable.\n"
+            f"FATAL: Rust extension `legroom._core` not loadable.\n"
             f"    error: {reason}\n"
             f"    fix:   `make build-wheel && pip install --force-reinstall "
-            f"target/wheels/headroom_*.whl`\n"
+            f"target/wheels/legroom_*.whl`\n"
             f"    opt-out: set {_RUST_CORE_REQUIRED_ENV}=false to start in "
             f"degraded Python-only mode\n"
         )
@@ -562,7 +562,7 @@ def _check_rust_core() -> tuple[str, str | None]:
 
     # Import succeeded; sanity-check the marker so we catch a stale or
     # mis-linked .so where the symbol name resolves but returns garbage.
-    if marker != "headroom-core":
+    if marker != "legroom-core":
         reason = f"unexpected marker {marker!r}"
         if not require:
             logger.warning(
@@ -572,10 +572,10 @@ def _check_rust_core() -> tuple[str, str | None]:
             )
             return ("disabled", reason)
         msg = (
-            f"FATAL: Rust extension `headroom._core` is loaded but the "
-            f"marker function returned {marker!r}; expected 'headroom-core'.\n"
+            f"FATAL: Rust extension `legroom._core` is loaded but the "
+            f"marker function returned {marker!r}; expected 'legroom-core'.\n"
             f"    fix:   rebuild: `make build-wheel && pip install "
-            f"--force-reinstall target/wheels/headroom_*.whl`\n"
+            f"--force-reinstall target/wheels/legroom_*.whl`\n"
         )
         logger.error("event=rust_core_marker_mismatch marker=%r action=exit_78", marker)
         print(msg, file=sys.stderr, flush=True)
@@ -588,7 +588,7 @@ def _check_rust_core() -> tuple[str, str | None]:
 # Compression pipeline timeout in seconds
 
 
-from headroom.proxy.handlers import (  # noqa: E402
+from legroom.proxy.handlers import (  # noqa: E402
     AnthropicHandlerMixin,
     BatchHandlerMixin,
     BedrockHandlerMixin,
@@ -607,15 +607,15 @@ def _apply_stateless_persistence(config: ProxyConfig) -> None:
     makes the backend ``None``, which no-ops load/save/auto-save. The savings
     subsystem is handled separately via ``PrometheusMetrics(stateless=...)``.
 
-    Note: setting ``HEADROOM_TOIN_BACKEND=none`` is NOT sufficient on its own —
+    Note: setting ``LEGROOM_TOIN_BACKEND=none`` is NOT sufficient on its own —
     ``ToolIntelligenceNetwork`` falls back to ``config.storage_path`` when no
     backend is passed, so we must clear the path explicitly here.
 
-    Concurrency: ``stateless`` is a per-process flag (set once at ``headroom
+    Concurrency: ``stateless`` is a per-process flag (set once at ``legroom
     proxy`` launch), never a per-request/per-session value — every session a
     process serves shares it, and two proxies with different settings run as
     separate OS processes with independent TOIN singletons. In the rare case
-    where two HeadroomProxy instances with different ``stateless`` settings live
+    where two LegroomProxy instances with different ``stateless`` settings live
     in ONE process (e.g. tests), this fails closed: the reset forces the
     process-global TOIN in-memory, so a stateless proxy never persists (the safe
     direction). A co-resident stateful proxy would then also stop persisting
@@ -623,7 +623,7 @@ def _apply_stateless_persistence(config: ProxyConfig) -> None:
     """
     if not getattr(config, "stateless", False):
         return
-    from headroom.telemetry.toin import TOINConfig, get_toin, reset_toin
+    from legroom.telemetry.toin import TOINConfig, get_toin, reset_toin
 
     # Reset first so this wins regardless of whether the singleton was already
     # created with a filesystem backend earlier in the process.
@@ -654,7 +654,7 @@ def _provider_httpx_client_options(
     return config.http2 and not config.http_proxy, client_kwargs
 
 
-class HeadroomProxy(
+class LegroomProxy(
     StreamingMixin,
     AnthropicHandlerMixin,
     OpenAIHandlerMixin,
@@ -662,7 +662,7 @@ class HeadroomProxy(
     BatchHandlerMixin,
     BedrockHandlerMixin,
 ):
-    """Production-ready Headroom optimization proxy."""
+    """Production-ready Legroom optimization proxy."""
 
     ANTHROPIC_API_URL = DEFAULT_ANTHROPIC_API_URL
     OPENAI_API_URL = DEFAULT_OPENAI_API_URL
@@ -675,7 +675,7 @@ class HeadroomProxy(
         self.config.mode = normalize_proxy_mode(self.config.mode)
         # Record process-wide stateless mode so module-level persisters
         # (output-savings recorder, etc.) can skip workspace writes.
-        from headroom import paths as _hr_paths
+        from legroom import paths as _hr_paths
 
         _hr_paths.set_process_stateless(config.stateless)
         # Stateless: keep TOIN learning in-memory; never touch toin.json.
@@ -695,11 +695,11 @@ class HeadroomProxy(
 
         # Preserve the long-standing proxy compatibility surface while keeping
         # provider_runtime as the source of truth for resolved upstream targets.
-        HeadroomProxy.ANTHROPIC_API_URL = api_targets.anthropic
-        HeadroomProxy.OPENAI_API_URL = api_targets.openai
-        HeadroomProxy.GEMINI_API_URL = api_targets.gemini
-        HeadroomProxy.CLOUDCODE_API_URL = api_targets.cloudcode
-        HeadroomProxy.VERTEX_API_URL = api_targets.vertex
+        LegroomProxy.ANTHROPIC_API_URL = api_targets.anthropic
+        LegroomProxy.OPENAI_API_URL = api_targets.openai
+        LegroomProxy.GEMINI_API_URL = api_targets.gemini
+        LegroomProxy.CLOUDCODE_API_URL = api_targets.cloudcode
+        LegroomProxy.VERTEX_API_URL = api_targets.vertex
         self.anthropic_provider = self.provider_runtime.pipeline_provider("anthropic")
         self.openai_provider = self.provider_runtime.pipeline_provider("openai")
 
@@ -738,7 +738,7 @@ class HeadroomProxy(
         profile_kwargs = proxy_pipeline_kwargs(config)
         router_config = ContentRouterConfig(
             enable_code_aware=config.code_aware_enabled,
-            prefer_code_aware_for_code=_get_env_bool("HEADROOM_PREFER_CODE_AWARE_FOR_CODE", True),
+            prefer_code_aware_for_code=_get_env_bool("LEGROOM_PREFER_CODE_AWARE_FOR_CODE", True),
             tool_profiles=config.tool_profiles,
             read_lifecycle=ReadLifecycleConfig(enabled=config.read_lifecycle),
             smart_crusher_max_items_after_crush=cast(
@@ -769,14 +769,14 @@ class HeadroomProxy(
             # to PASSTHROUGH instead of the default KOMPRESS fallback strategy.
             if config.disable_kompress_fallback:
                 router_config.fallback_strategy = CompressionStrategy.PASSTHROUGH
-        # `HEADROOM_LOSSLESS_ONLY=1` routes SmartCrusher through strict
+        # `LEGROOM_LOSSLESS_ONLY=1` routes SmartCrusher through strict
         # marker-free mode: lossless tabular compaction still applies, but
         # any path that would emit a `<<ccr:…>>` marker (row-drop or
         # opaque-blob offload) leaves the content uncompacted instead — so
         # the session needs no CCR retrieval round-trips to stay recoverable.
-        if "HEADROOM_LOSSLESS_ONLY" in os.environ:
+        if "LEGROOM_LOSSLESS_ONLY" in os.environ:
             router_config.smart_crusher_lossless_only = _get_env_bool(
-                "HEADROOM_LOSSLESS_ONLY", False
+                "LEGROOM_LOSSLESS_ONLY", False
             )
         # A non-None exclude_tools replaces DEFAULT_EXCLUDE_TOOLS in
         # ContentRouter, so merge rather than assign.
@@ -846,8 +846,8 @@ class HeadroomProxy(
         self._code_aware_status = "lazy" if config.code_aware_enabled else "disabled"
 
         _intercept_prefix: list = []
-        if os.environ.get("HEADROOM_INTERCEPT_ENABLED"):
-            from headroom.proxy.interceptors import ToolResultInterceptorTransform
+        if os.environ.get("LEGROOM_INTERCEPT_ENABLED"):
+            from legroom.proxy.interceptors import ToolResultInterceptorTransform
 
             _intercept_prefix = [ToolResultInterceptorTransform()]
 
@@ -885,7 +885,7 @@ class HeadroomProxy(
 
         # Prefix cache tracking: freeze already-cached messages to avoid
         # invalidating the provider's prefix cache with our transforms
-        from headroom.cache.prefix_tracker import PrefixFreezeConfig, SessionTrackerStore
+        from legroom.cache.prefix_tracker import PrefixFreezeConfig, SessionTrackerStore
 
         self.session_tracker_store = SessionTrackerStore(
             default_config=PrefixFreezeConfig(
@@ -980,7 +980,7 @@ class HeadroomProxy(
         self.compression_max_workers: int = _compression_max
         self._compression_executor = concurrent.futures.ThreadPoolExecutor(
             max_workers=_compression_max,
-            thread_name_prefix="headroom-compress",
+            thread_name_prefix="legroom-compress",
         )
         # Phase 3 (#1171): off-path background compression. When enabled, a
         # cold-start-large request (frozen=0 + large live zone) forwards
@@ -989,11 +989,11 @@ class HeadroomProxy(
         # non-preemptible worker -> executor saturation -> cascade). Default
         # off (opt-in), fail-open. Per-process, matching _compression_caches.
         self._background_compression_enabled: bool = os.environ.get(
-            "HEADROOM_BACKGROUND_COMPRESSION", ""
+            "LEGROOM_BACKGROUND_COMPRESSION", ""
         ).strip().lower() in ("1", "true", "yes", "on")
         try:
             self._background_compression_min_tokens: int = int(
-                os.environ.get("HEADROOM_BACKGROUND_COMPRESSION_MIN_TOKENS", "50000")
+                os.environ.get("LEGROOM_BACKGROUND_COMPRESSION_MIN_TOKENS", "50000")
             )
         except ValueError:
             self._background_compression_min_tokens = 50000
@@ -1001,7 +1001,7 @@ class HeadroomProxy(
         # the request-path executor (Phase 3, #1171). Lazy -- no thread spawns
         # until the first off-path job is submitted.
         self._background_compression_executor = concurrent.futures.ThreadPoolExecutor(
-            max_workers=1, thread_name_prefix="headroom-bg-compress"
+            max_workers=1, thread_name_prefix="legroom-bg-compress"
         )
         self._background_compressor = BackgroundCompressor(self._run_compression_background)
         # Gauge: currently-running compression tasks. Mutated under
@@ -1104,7 +1104,7 @@ class HeadroomProxy(
             # Resolve memory DB path: empty → project-scoped default
             _mem_db_path = config.memory_db_path
             if not _mem_db_path:
-                _mem_dir = Path.cwd() / ".headroom"
+                _mem_dir = Path.cwd() / ".legroom"
                 _mem_dir.mkdir(parents=True, exist_ok=True)
                 _mem_db_path = str(_mem_dir / "memory.db")
                 logger.info(f"Memory: Project-scoped DB at {_mem_db_path}")
@@ -1112,7 +1112,7 @@ class HeadroomProxy(
             # PR-B6: translate the string-typed ``ProxyConfig.memory_mode``
             # into the typed ``MemoryMode`` enum. Unknown values raise
             # loudly per the no-silent-fallback policy.
-            from headroom.proxy.memory_handler import MemoryMode
+            from legroom.proxy.memory_handler import MemoryMode
 
             try:
                 _memory_mode = MemoryMode(config.memory_mode)
@@ -1122,7 +1122,7 @@ class HeadroomProxy(
                     f"expected one of {[m.value for m in MemoryMode]}"
                 ) from exc
 
-            from headroom.memory.storage_router import MemoryStorageMode
+            from legroom.memory.storage_router import MemoryStorageMode
 
             try:
                 _storage_mode = MemoryStorageMode(config.memory_storage_mode)
@@ -1190,7 +1190,7 @@ class HeadroomProxy(
         # egress, including license phone-home, even when a key is configured.
         self.usage_reporter: UsageReporter | None = None
         if config.license_key and not (config.offline or is_offline()):
-            from headroom.telemetry.reporter import UsageReporter
+            from legroom.telemetry.reporter import UsageReporter
 
             self.usage_reporter = UsageReporter(
                 license_key=config.license_key,
@@ -1203,10 +1203,10 @@ class HeadroomProxy(
         self.traffic_learner: TrafficLearner | None = None
         self.traffic_learning_agent_type: str = config.traffic_learning_agent_type
         if config.traffic_learning_enabled:
-            from headroom.memory.traffic_learner import TrafficLearner
+            from legroom.memory.traffic_learner import TrafficLearner
 
             self.traffic_learner = TrafficLearner(
-                user_id=os.environ.get("HEADROOM_USER_ID", os.environ.get("USER", "default")),
+                user_id=os.environ.get("LEGROOM_USER_ID", os.environ.get("USER", "default")),
                 agent_type=config.traffic_learning_agent_type,
                 min_evidence=config.traffic_learning_min_evidence,
             )
@@ -1214,7 +1214,7 @@ class HeadroomProxy(
         # Code graph file watcher (live reindex on file changes)
         self.code_graph_watcher: CodeGraphWatcher | None = None  # type: ignore[annotation-unchecked]
         if config.code_graph_watcher:
-            from headroom.graph.watcher import CodeGraphWatcher
+            from legroom.graph.watcher import CodeGraphWatcher
 
             self.code_graph_watcher = CodeGraphWatcher(project_dir=Path.cwd())
             if self.code_graph_watcher.start():
@@ -1419,7 +1419,7 @@ class HeadroomProxy(
         """
         with self._compression_caches_lock:
             if session_id not in self._compression_caches:
-                from headroom.cache.compression_cache import CompressionCache
+                from legroom.cache.compression_cache import CompressionCache
 
                 # Evict oldest caches if at capacity
                 if len(self._compression_caches) >= MAX_COMPRESSION_CACHE_SESSIONS:
@@ -1463,7 +1463,7 @@ class HeadroomProxy(
             else:
                 logger.warning(
                     "Code-aware compression requested but tree-sitter not installed. "
-                    "Install with: pip install headroom-ai[code]"
+                    "Install with: pip install legroom-ai[code]"
                 )
                 return "unavailable"
         else:
@@ -1519,7 +1519,7 @@ class HeadroomProxy(
         )
         # Resolve TLS verification: a custom CA bundle (corporate PKI) if one
         # is configured, else a strict-relaxed default context when
-        # HEADROOM_TLS_STRICT=0, else httpx's default strict verification.
+        # LEGROOM_TLS_STRICT=0, else httpx's default strict verification.
         _verify = build_httpx_verify()
         _http2, _client_kwargs = _provider_httpx_client_options(self.config, _verify)
         self.http_client = httpx.AsyncClient(http2=_http2, **_client_kwargs)
@@ -1528,7 +1528,7 @@ class HeadroomProxy(
         self.http_client_h1 = (
             self.http_client if not _http2 else httpx.AsyncClient(http2=False, **_client_kwargs)
         )
-        logger.info("Headroom Proxy started (version %s)", __version__)
+        logger.info("Legroom Proxy started (version %s)", __version__)
         logger.info(f"Optimization: {'ENABLED' if self.config.optimize else 'DISABLED'}")
         self.config.mode = normalize_proxy_mode(self.config.mode)
         logger.info(f"Mode: {self.config.mode}")
@@ -1617,7 +1617,7 @@ class HeadroomProxy(
         if self._kompress_status == "enabled":
             logger.info("Kompress: ENABLED (ModernBERT token compressor)")
         elif self.config.optimize:
-            logger.info("Kompress: not installed (pip install headroom-ai[ml] for ML compression)")
+            logger.info("Kompress: not installed (pip install legroom-ai[ml] for ML compression)")
 
         if self._code_aware_status == "enabled":
             logger.info("Code-Aware: ENABLED (AST-based compression)")
@@ -1628,7 +1628,7 @@ class HeadroomProxy(
         elif self._code_aware_status == "available":
             logger.info("Code-Aware: available but disabled (use --code-aware)")
         elif self._code_aware_status == "unavailable":
-            logger.info("Code-Aware: not installed (pip install headroom-ai[code])")
+            logger.info("Code-Aware: not installed (pip install legroom-ai[code])")
         elif self._code_aware_status == "disabled":
             logger.info("Code-Aware: DISABLED")
 
@@ -1729,16 +1729,16 @@ class HeadroomProxy(
         # Log local telemetry status so operators can see it in the log stream.
         # Nothing is sent externally — telemetry is collected locally only (the
         # anonymous telemetry beacon was removed); operational metrics export
-        # only to your own OTEL collector via HEADROOM_OTEL_METRICS_*.
+        # only to your own OTEL collector via LEGROOM_OTEL_METRICS_*.
         if is_telemetry_enabled():
             logger.info(
                 "Local telemetry: ENABLED (aggregate stats, local only — nothing sent "
-                "externally). Opt out: HEADROOM_TELEMETRY=off or --no-telemetry"
+                "externally). Opt out: LEGROOM_TELEMETRY=off or --no-telemetry"
             )
         else:
             logger.info(
                 "Local telemetry: DISABLED (off by default — opt in: "
-                "HEADROOM_TELEMETRY=on or --telemetry)"
+                "LEGROOM_TELEMETRY=on or --telemetry)"
             )
 
         self.pipeline_extensions.emit(
@@ -1765,7 +1765,7 @@ class HeadroomProxy(
             await self.memory_handler.close()
 
         with contextlib.suppress(Exception):
-            from headroom.models.ml_models import MLModelRegistry
+            from legroom.models.ml_models import MLModelRegistry
 
             released_models = []
             released_models.extend(MLModelRegistry.unload_prefix("technique_router:"))
@@ -1788,7 +1788,7 @@ class HeadroomProxy(
         """Print session summary."""
         m = self.metrics
         logger.info("=" * 70)
-        logger.info("HEADROOM PROXY SESSION SUMMARY")
+        logger.info("LEGROOM PROXY SESSION SUMMARY")
         logger.info("=" * 70)
         logger.info(f"Total requests:        {m.requests_total}")
         logger.info(f"Cached responses:      {m.requests_cached}")
@@ -1824,17 +1824,17 @@ class HeadroomProxy(
     async def _record_request_outcome(self, outcome: RequestOutcome) -> None:
         """Single funnel for per-request bookkeeping.
 
-        Thin wrapper around :func:`headroom.proxy.outcome.emit_request_outcome`
+        Thin wrapper around :func:`legroom.proxy.outcome.emit_request_outcome`
         so call sites can write ``await self._record_request_outcome(outcome)``
         (idiomatic) instead of ``await emit_request_outcome(self, outcome)``.
         The real implementation lives in ``outcome.py`` as a free function so
         test dummies and provider mixins can call it without inheriting from
-        ``HeadroomProxy``.
+        ``LegroomProxy``.
 
         See ``docs/superpowers/specs/P0-proxy-pipeline-audit.md`` for the
         divergence catalog this funnel collapses.
         """
-        from headroom.proxy.outcome import emit_request_outcome
+        from legroom.proxy.outcome import emit_request_outcome
 
         await emit_request_outcome(self, outcome)
 
@@ -1850,7 +1850,7 @@ class HeadroomProxy(
         Handlers call ``extract_tags(headers)`` directly. Kept here for
         any external caller still using ``proxy._extract_tags(headers)``.
         """
-        from headroom.proxy.helpers import extract_tags
+        from legroom.proxy.helpers import extract_tags
 
         return extract_tags(headers)
 
@@ -1905,7 +1905,7 @@ class HeadroomProxy(
             of upstream-received bytes equals client-sent bytes.
           * Otherwise the body dict is canonically re-serialized via
             ``serialize_body_canonical`` (compact separators, ensure_ascii=False).
-          * ``HEADROOM_PROXY_PYTHON_FORWARDER_MODE=legacy_json_kwarg`` is an
+          * ``LEGROOM_PROXY_PYTHON_FORWARDER_MODE=legacy_json_kwarg`` is an
             explicit operator opt-in for emergency rollback to the old
             ``httpx ... json=body`` behavior.
 
@@ -1914,8 +1914,8 @@ class HeadroomProxy(
         construct their body from scratch, so canonical serialization is
         correct and original bytes do not exist).
         """
-        from headroom.proxy.body_forwarding import prepare_outbound_body_bytes
-        from headroom.proxy.helpers import log_outbound_request
+        from legroom.proxy.body_forwarding import prepare_outbound_body_bytes
+        from legroom.proxy.helpers import log_outbound_request
 
         last_error = None
         reasons = list(mutation_reasons or [])
@@ -2070,13 +2070,13 @@ async def _log_toin_stats_periodically(interval_seconds: int = 300) -> None:
             logger.debug("Failed to log TOIN stats: %s", e)
 
 
-def _register_memory_components(proxy: HeadroomProxy, tracker: MemoryTracker) -> None:
+def _register_memory_components(proxy: LegroomProxy, tracker: MemoryTracker) -> None:
     """Register all memory-tracked components with the tracker.
 
     This function is idempotent - it checks if components are already registered.
 
     Args:
-        proxy: The HeadroomProxy instance.
+        proxy: The LegroomProxy instance.
         tracker: The MemoryTracker instance.
     """
     # Register compression store (global singleton)
@@ -2118,7 +2118,7 @@ def _request_is_loopback(request: Request) -> bool:
     only to loopback callers — rather than 404ing network callers that still
     have a legitimate use for the non-sensitive aggregate fields.
     """
-    from headroom.proxy.loopback_guard import is_loopback_host, is_loopback_host_header
+    from legroom.proxy.loopback_guard import is_loopback_host, is_loopback_host_header
 
     client = getattr(request, "client", None)
     client_host = getattr(client, "host", None) if client is not None else None
@@ -2135,15 +2135,15 @@ def _request_is_loopback(request: Request) -> bool:
     if is_loopback_host(client_host):
         return True
 
-    # Containerized dashboards: when Headroom runs in a bridge-network
+    # Containerized dashboards: when Legroom runs in a bridge-network
     # container, a browser on the host reaches it via the container's
     # gateway, so ``request.client.host`` is the gateway IP, not 127.0.0.1
     # — and the per-request logs / upstream URLs get stripped even though
     # the operator is local. Treat a peer inside an operator-configured
     # trusted-gateway CIDR as loopback-equivalent. Opt-in and empty by
-    # default (HEADROOM_PROXY_TRUSTED_GATEWAY_CIDRS), so this is a no-op
+    # default (LEGROOM_PROXY_TRUSTED_GATEWAY_CIDRS), so this is a no-op
     # unless the operator explicitly allow-lists their container gateway.
-    from headroom.proxy.forwarded_headers import (
+    from legroom.proxy.forwarded_headers import (
         load_trusted_gateway_cidrs,
         peer_is_trusted_gateway,
     )
@@ -2159,8 +2159,8 @@ def _request_can_view_dashboard_metadata(
     if _request_is_loopback(request):
         return True
 
-    from headroom.proxy.forwarded_headers import peer_is_trusted_gateway, resolve_client_ip
-    from headroom.proxy.loopback_guard import is_ip_literal_host_header
+    from legroom.proxy.forwarded_headers import peer_is_trusted_gateway, resolve_client_ip
+    from legroom.proxy.loopback_guard import is_ip_literal_host_header
 
     try:
         host_header = request.headers.get("host")
@@ -2188,7 +2188,7 @@ def _request_can_view_dashboard_metadata(
 def _request_has_same_origin_or_no_provenance(request: Request, host_header: str) -> bool:
     """Accept no browser provenance, otherwise require same-origin headers."""
 
-    from headroom.proxy.forwarded_headers import trusted_forwarded_headers
+    from legroom.proxy.forwarded_headers import trusted_forwarded_headers
 
     forwarded_proto = trusted_forwarded_headers(request)["proto"]
     request_scheme = forwarded_proto or request.url.scheme
@@ -2231,15 +2231,15 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
     if not FASTAPI_AVAILABLE:
         raise ImportError("FastAPI required. Install: pip install fastapi uvicorn httpx")
 
-    from headroom.proxy.forwarded_headers import load_trusted_dashboard_client_cidrs
+    from legroom.proxy.forwarded_headers import load_trusted_dashboard_client_cidrs
 
     # Parse once at startup so invalid operator configuration fails loudly.
     trusted_dashboard_client_cidrs = load_trusted_dashboard_client_cidrs()
 
     from contextlib import asynccontextmanager
 
-    # Always-on file logging to ~/.headroom/logs/ for `headroom perf` analysis.
-    # Installed here (not at module import) so importing headroom.proxy.server
+    # Always-on file logging to ~/.legroom/logs/ for `legroom perf` analysis.
+    # Installed here (not at module import) so importing legroom.proxy.server
     # in tests or library contexts does not silently attach a RotatingFileHandler
     # to the user's live proxy.log.
     _setup_file_logging()
@@ -2247,11 +2247,11 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
     config = config or ProxyConfig()
 
     # Defensive re-apply of file-backed settings for embedded/non-CLI callers
-    # that construct the app without going through the `headroom` CLI entrypoint
+    # that construct the app without going through the `legroom` CLI entrypoint
     # (which already applies them before Click parsing). setdefault keeps
     # explicit env exports authoritative; fail-open so it never blocks startup.
     try:
-        from headroom import settings_store
+        from legroom import settings_store
 
         settings_store.apply_to_environ(settings_store.load())
     except Exception:  # noqa: BLE001 — settings load must never break startup
@@ -2262,7 +2262,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
     # it, force HF/transformers offline before any model code loads, and
     # announce that every outbound path is disabled.
     if config.offline:
-        os.environ.setdefault("HEADROOM_OFFLINE", "1")
+        os.environ.setdefault("LEGROOM_OFFLINE", "1")
     if is_offline():
         apply_offline_env()
         logger.warning(
@@ -2270,13 +2270,13 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
             "(telemetry, update check, license reporter, HuggingFace downloads)"
         )
 
-    proxy = HeadroomProxy(config)
+    proxy = LegroomProxy(config)
 
-    # cc-switch reconciler (opt-in: HEADROOM_CC_SWITCH_RECONCILE=1).
-    # Keeps Headroom in the request path while cc-switch overwrites
+    # cc-switch reconciler (opt-in: LEGROOM_CC_SWITCH_RECONCILE=1).
+    # Keeps Legroom in the request path while cc-switch overwrites
     # ~/.claude/settings.json on every provider switch. See
-    # headroom/proxy/cc_switch_reconciler.py for the full rationale.
-    from headroom.proxy.cc_switch_reconciler import (
+    # legroom/proxy/cc_switch_reconciler.py for the full rationale.
+    from legroom.proxy.cc_switch_reconciler import (
         CCSwitchReconciler,
         reconciler_enabled,
     )
@@ -2286,9 +2286,9 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
         _cc_proxy_port = config.port if hasattr(config, "port") else 8787
 
         def _set_anthropic_upstream(url: str) -> None:
-            from headroom.providers.registry import _normalize_api_url
+            from legroom.providers.registry import _normalize_api_url
 
-            HeadroomProxy.ANTHROPIC_API_URL = _normalize_api_url(
+            LegroomProxy.ANTHROPIC_API_URL = _normalize_api_url(
                 url, default=DEFAULT_ANTHROPIC_API_URL
             )
 
@@ -2302,7 +2302,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
     # lifespan independently. A file lock elects ONE owner worker so that
     # single-instance background tasks (currently the cc-switch reconciler) run
     # once across all workers instead of N times.
-    from headroom import paths as _hr_paths
+    from legroom import paths as _hr_paths
 
     _beacon_lock_path = _hr_paths.beacon_lock_path(config.port)
     _beacon_lock_fd: list = [None]  # mutable holder for the lock file descriptor
@@ -2350,8 +2350,8 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
     async def lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
         # Hotfix-A0: Rust core deployment smoke test. Refuse to accept
         # traffic if the Rust extension is missing unless the operator
-        # explicitly opted out with HEADROOM_REQUIRE_RUST_CORE=false. See
-        # Finding #2 in HEADROOM_PROXY_LOG_FINDINGS_2026_05_03.md.
+        # explicitly opted out with LEGROOM_REQUIRE_RUST_CORE=false. See
+        # Finding #2 in LEGROOM_PROXY_LOG_FINDINGS_2026_05_03.md.
         # `_check_rust_core` either returns ("loaded"|"disabled", _) or
         # calls `sys.exit(78)` — execution past this line implies the
         # rust_core_status is recorded.
@@ -2359,9 +2359,9 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
         app.state.rust_core_status = _rust_core_status
         app.state.rust_core_error = _rust_core_error
 
-        configure_otel_metrics(OTelMetricsConfig.from_env(default_service_name="headroom-proxy"))
+        configure_otel_metrics(OTelMetricsConfig.from_env(default_service_name="legroom-proxy"))
         configure_langfuse_tracing(
-            LangfuseTracingConfig.from_env(default_service_name="headroom-proxy")
+            LangfuseTracingConfig.from_env(default_service_name="legroom-proxy")
         )
 
         app.state.started_at = time.time()
@@ -2389,7 +2389,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
                 # Only the owner worker runs the reconciler. With uvicorn
                 # workers > 1 each worker runs this lifespan; without this guard
                 # every worker would watch + rewrite settings.json concurrently
-                # and each process would hold its own HeadroomProxy.ANTHROPIC_API_URL,
+                # and each process would hold its own LegroomProxy.ANTHROPIC_API_URL,
                 # so workers could disagree on the upstream.
                 if _cc_reconciler is not None and _beacon_is_owner[0]:
                     await _cc_reconciler.start()
@@ -2427,11 +2427,11 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
             if proxy.code_graph_watcher:
                 proxy.code_graph_watcher.stop()
             await proxy.shutdown()
-            shutdown_headroom_tracing()
+            shutdown_legroom_tracing()
             shutdown_otel_metrics()
 
     app = FastAPI(
-        title="Headroom Proxy",
+        title="Legroom Proxy",
         description="Production-ready LLM optimization proxy",
         version=__version__,
         lifespan=lifespan,
@@ -2519,7 +2519,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
                 bridge_enabled=bool(memory_status.get("bridge_enabled", False)),
             ),
             "upstream": _component_health(
-                enabled=os.environ.get("HEADROOM_SKIP_UPSTREAM_CHECK", "").strip() != "1",
+                enabled=os.environ.get("LEGROOM_SKIP_UPSTREAM_CHECK", "").strip() != "1",
                 ready=bool(_upstream_check_cache["ok"]),
                 url=_upstream_check_cache["url"],
                 error=_upstream_check_cache["error"],
@@ -2640,7 +2640,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
         # first use, so "not ready" (cold cache) must not degrade overall health.
         ready = all(check["ready"] for name, check in checks.items() if name != "kompress")
         payload: dict[str, Any] = {
-            "service": "headroom-proxy",
+            "service": "legroom-proxy",
             "status": "healthy" if ready else "unhealthy",
             "ready": ready,
             "version": __version__,
@@ -2655,14 +2655,14 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
         rust_core_error = getattr(app.state, "rust_core_error", None)
         if rust_core_error:
             payload["rust_core_error"] = rust_core_error
-        deployment_profile = os.environ.get("HEADROOM_DEPLOYMENT_PROFILE")
+        deployment_profile = os.environ.get("LEGROOM_DEPLOYMENT_PROFILE")
         if deployment_profile:
             payload["deployment"] = {
                 "profile": deployment_profile,
-                "preset": os.environ.get("HEADROOM_DEPLOYMENT_PRESET"),
-                "runtime": os.environ.get("HEADROOM_DEPLOYMENT_RUNTIME"),
-                "supervisor": os.environ.get("HEADROOM_DEPLOYMENT_SUPERVISOR"),
-                "scope": os.environ.get("HEADROOM_DEPLOYMENT_SCOPE"),
+                "preset": os.environ.get("LEGROOM_DEPLOYMENT_PRESET"),
+                "runtime": os.environ.get("LEGROOM_DEPLOYMENT_RUNTIME"),
+                "supervisor": os.environ.get("LEGROOM_DEPLOYMENT_SUPERVISOR"),
+                "scope": os.environ.get("LEGROOM_DEPLOYMENT_SCOPE"),
             }
         if include_config:
             profile_kwargs = proxy_pipeline_kwargs(config)
@@ -2726,7 +2726,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
                 "force_kompress": bool(profile_kwargs.get("force_kompress", False)),
                 "accuracy_guard": config.accuracy_guard,
                 # Live (per-request) env knobs the proxy reads after startup.
-                # Surfaced so `headroom wrap` can see what a reused proxy is
+                # Surfaced so `legroom wrap` can see what a reused proxy is
                 # actually using and hot-sync it via /admin/runtime-env.
                 "runtime_env": runtime_env.effective_runtime_env(),
                 "pid": os.getpid(),
@@ -2735,7 +2735,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
 
     # ---------------------------------------------------------------------------
     # Upstream connectivity check — cached to avoid hammering the upstream on
-    # every /readyz poll.  Set HEADROOM_SKIP_UPSTREAM_CHECK=1 to opt out (e.g.
+    # every /readyz poll.  Set LEGROOM_SKIP_UPSTREAM_CHECK=1 to opt out (e.g.
     # in air-gapped or test environments where the upstream isn't reachable at
     # startup time).
     # ---------------------------------------------------------------------------
@@ -2761,7 +2761,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
         Uses a HEAD request with a 5-second timeout — just enough to verify
         TLS + TCP reachability without triggering an inference call.
         """
-        if os.environ.get("HEADROOM_SKIP_UPSTREAM_CHECK", "").strip() == "1":
+        if os.environ.get("LEGROOM_SKIP_UPSTREAM_CHECK", "").strip() == "1":
             # Opt-out: treat upstream as always reachable.
             _upstream_check_cache["ok"] = True
             _upstream_check_cache["error"] = None
@@ -2805,11 +2805,11 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
     # The default matches any loopback origin on any port via a regex, so it
     # works regardless of the --port the proxy was started on without the app
     # needing to know its own bound port (the port lives in the CLI/uvicorn
-    # layer, not in ProxyConfig). Set HEADROOM_CORS_ORIGINS (comma-separated)
+    # layer, not in ProxyConfig). Set LEGROOM_CORS_ORIGINS (comma-separated)
     # to pin an explicit allowlist for Docker or remote-dashboard deployments;
     # "*" restores the old wildcard behaviour if the operator accepts the risk.
     _default_loopback_origin_regex = r"https?://(localhost|127\.0\.0\.1|\[::1\])(:\d+)?"
-    _cors_origins_env = os.environ.get("HEADROOM_CORS_ORIGINS", "").strip()
+    _cors_origins_env = os.environ.get("LEGROOM_CORS_ORIGINS", "").strip()
     if _cors_origins_env:
         _cors_allow_origins = [o.strip() for o in _cors_origins_env.split(",") if o.strip()]
         _cors_allow_origin_regex: str | None = None
@@ -2825,15 +2825,15 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
         allow_headers=["Content-Type", "Authorization"],
     )
 
-    # X-Headroom-Stack: SDK adapters (TS openai/anthropic/etc.) tag their
+    # X-Legroom-Stack: SDK adapters (TS openai/anthropic/etc.) tag their
     # requests so telemetry can segment by integration surface. Registered
     # before extension middleware so any extension-level auth/guards run
     # outermost and we don't count requests they reject.
     @app.middleware("http")
-    async def _record_headroom_stack(request, call_next):
+    async def _record_legroom_stack(request, call_next):
         started = time.perf_counter()
         inbound_id = f"inbound-{time.time_ns()}"
-        # Project attribution: an explicit X-Headroom-Project header wins
+        # Project attribution: an explicit X-Legroom-Project header wins
         # (claude/codex wraps); otherwise a /p/<name> base-URL prefix (aider,
         # Copilot BYOK, Cursor — clients that cannot send custom headers).
         # The prefix strip mutates the scope, so it must happen before
@@ -2864,7 +2864,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
         except Exception:
             logger.debug("record_inbound_request failed", exc_info=True)
         try:
-            from headroom.proxy.helpers import redact_for_wire_debug
+            from legroom.proxy.helpers import redact_for_wire_debug
 
             safe_headers = redact_for_wire_debug(headers)
         except Exception:
@@ -2881,7 +2881,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
             json.dumps(safe_headers, ensure_ascii=False, default=str),
         )
         if request.url.path.startswith("/v1/"):
-            stack = request.headers.get("x-headroom-stack")
+            stack = request.headers.get("x-legroom-stack")
             if stack:
                 try:
                     proxy.metrics.record_stack(stack)
@@ -2937,7 +2937,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
     # Three concerns, kept together because they all wrap every inbound
     # request: optional inbound auth on the data plane, response security
     # headers, and an audit trail for state-mutating admin endpoints.
-    _proxy_token = config.proxy_token or os.environ.get("HEADROOM_PROXY_TOKEN") or None
+    _proxy_token = config.proxy_token or os.environ.get("LEGROOM_PROXY_TOKEN") or None
     # Pre-encode once for constant-time comparison (compare_digest on str raises
     # TypeError for non-ASCII input, which would turn a 401 into a 500).
     _proxy_token_bytes = _proxy_token.encode("utf-8") if _proxy_token else b""
@@ -2951,8 +2951,8 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
     if not _proxy_token and not is_loopback_host(getattr(config, "host", None)):
         logger.warning(
             "event=proxy_open_bind host=%s — proxy is bound to a non-loopback "
-            "interface with no HEADROOM_PROXY_TOKEN set; the /v1/* data-plane "
-            "routes are reachable WITHOUT authentication. Set HEADROOM_PROXY_TOKEN "
+            "interface with no LEGROOM_PROXY_TOKEN set; the /v1/* data-plane "
+            "routes are reachable WITHOUT authentication. Set LEGROOM_PROXY_TOKEN "
             "to require a bearer token from non-loopback callers.",
             getattr(config, "host", None),
         )
@@ -2970,7 +2970,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
         auth = str(headers.get("authorization") or "")
         if auth.lower().startswith("bearer "):
             return auth[7:].strip() or None
-        raw = headers.get("x-headroom-proxy-token")
+        raw = headers.get("x-legroom-proxy-token")
         return str(raw) if raw else None
 
     @app.middleware("http")
@@ -3014,12 +3014,12 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
         return response
 
     # Third-party proxy extensions (Enterprise, custom plugins). Discovered via
-    # the `headroom.proxy_extension` entry-point group, but **opt-in only**:
+    # the `legroom.proxy_extension` entry-point group, but **opt-in only**:
     # only names listed in config.proxy_extensions (CLI: --proxy-extension,
-    # env: HEADROOM_PROXY_EXTENSIONS) actually get installed. Discovery alone
+    # env: LEGROOM_PROXY_EXTENSIONS) actually get installed. Discovery alone
     # never runs third-party code. An extension that raises from its install()
     # is a deliberate fail-closed signal and aborts startup.
-    from headroom.proxy.extensions import install_all as _install_extensions
+    from legroom.proxy.extensions import install_all as _install_extensions
 
     _install_extensions(app, config, enabled=getattr(config, "proxy_extensions", None))
 
@@ -3031,7 +3031,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
         return JSONResponse(
             status_code=200 if healthy else 503,
             content={
-                "service": "headroom-proxy",
+                "service": "legroom-proxy",
                 "status": "healthy" if healthy else "unhealthy",
                 "alive": healthy,
                 "version": __version__,
@@ -3060,11 +3060,11 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
 
     # Loopback-only debug introspection (Unit 5). A remote IP gets 404 —
     # debug endpoints are invisible to external scanners.
-    from headroom.proxy.debug_introspection import (
+    from legroom.proxy.debug_introspection import (
         collect_tasks as _collect_tasks,
     )
-    from headroom.proxy.loopback_guard import require_loopback as _require_loopback
-    from headroom.proxy.loopback_guard import require_same_origin as _require_same_origin
+    from legroom.proxy.loopback_guard import require_loopback as _require_loopback
+    from legroom.proxy.loopback_guard import require_same_origin as _require_same_origin
 
     @app.get("/admin/upstream", dependencies=[Depends(_require_loopback)])
     async def get_upstream():
@@ -3076,7 +3076,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
         bearing traffic to an arbitrary URL through this surface.
         """
         return {
-            "anthropic": HeadroomProxy.ANTHROPIC_API_URL,
+            "anthropic": LegroomProxy.ANTHROPIC_API_URL,
             "cc_switch_reconcile": _cc_reconciler is not None,
             "captured_upstream": getattr(_cc_reconciler, "current_upstream", None),
         }
@@ -3115,7 +3115,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
         read threshold) without restarting the proxy.
 
         Live knobs are read from the proxy's *process* environment, so a proxy
-        that ``headroom wrap`` reused — rather than started — never sees values
+        that ``legroom wrap`` reused — rather than started — never sees values
         a user exported afterwards. Instead of a disruptive restart (cold ML
         load, dropped requests, lost caches), ``wrap`` POSTs the values here and
         the proxy applies them in memory, effective on the next request.
@@ -3154,27 +3154,27 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
 
     @app.get("/dashboard", response_class=HTMLResponse)
     async def dashboard():
-        """Serve the Headroom dashboard UI."""
+        """Serve the Legroom dashboard UI."""
         return get_dashboard_html()
 
     # --- Dashboard settings API (loopback-gated, registry-validated) ---------
-    # Read/write the curated HEADROOM_* knobs the settings GUI manages. Writes
+    # Read/write the curated LEGROOM_* knobs the settings GUI manages. Writes
     # reuse the same loopback guard as the /admin and /debug endpoints and only
     # ever touch keys in the settings_store registry allowlist. All curated
     # knobs are startup-captured, so a write always requires a restart to apply
     # (Phase 3's /settings/apply drives that).
-    from headroom import settings_store
+    from legroom import settings_store
 
     @app.get("/settings/schema", dependencies=[Depends(_require_loopback)])
     async def settings_schema(_request: Request):
         """Registry + grouped fields + effective values for the settings form."""
         schema = settings_store.to_schema()
         # Tell the UI whether this is a supervised (docker/service) install, where
-        # manifest-baked knobs (HEADROOM_PORT/HEADROOM_HOST) are owned by the
+        # manifest-baked knobs (LEGROOM_PORT/LEGROOM_HOST) are owned by the
         # install manifest and must be rendered read-only. Foreground proxies
         # can edit everything. Fail-open to "not supervised".
         try:
-            from headroom.install import runtime as install_runtime
+            from legroom.install import runtime as install_runtime
 
             _manifest, mode = install_runtime.detect_current_deployment()
             schema["supervised"] = mode != "foreground"
@@ -3241,12 +3241,12 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
         202 BEFORE the detached restarter tears this process down, and the UI
         polls /health to detect the proxy returning. Docker deployments cannot
         self-restart (no docker socket in-container), so we surface the host
-        command instead. Foreground `headroom proxy` returns a manual-restart
+        command instead. Foreground `legroom proxy` returns a manual-restart
         instruction. /health is the single source of truth for "proxy is back".
         """
         from starlette.background import BackgroundTask
 
-        from headroom.install import runtime as install_runtime
+        from legroom.install import runtime as install_runtime
 
         try:
             body = await request.json()
@@ -3298,8 +3298,8 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
         dependencies=[Depends(_require_loopback)],
     )
     async def dashboard_settings():
-        """Serve the Headroom settings GUI."""
-        from headroom.dashboard import get_settings_html
+        """Serve the Legroom settings GUI."""
+        from legroom.dashboard import get_settings_html
 
         return get_settings_html()
 
@@ -3408,7 +3408,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
             if _throughput_cache["expires_at"] < now or _throughput_cache["value"] is None:
 
                 def _compute_throughput():
-                    from headroom.perf.analyzer import build_perf_summary, parse_log_files
+                    from legroom.perf.analyzer import build_perf_summary, parse_log_files
 
                     perf_report = parse_log_files(last_n_hours=1.0)
                     return build_perf_summary(perf_report).get("throughput")
@@ -3432,7 +3432,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
         )
         max_latency_ms = round(m.latency_max_ms, 2) if m.latency_count > 0 else 0
 
-        # Calculate Headroom overhead (optimization time only, excludes pass-through requests)
+        # Calculate Legroom overhead (optimization time only, excludes pass-through requests)
         avg_overhead_ms = (
             round(m.overhead_sum_ms / m.overhead_count, 2) if m.overhead_count > 0 else 0
         )
@@ -3492,7 +3492,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
             cli_filtering_stats and cli_filtering_stats.get("installed", False)
         )
 
-        # Calculate total tokens before Headroom-side reduction. Proxy
+        # Calculate total tokens before Legroom-side reduction. Proxy
         # compression and the configured context tool both remove tokens before
         # they reach model context, so dashboard-facing savings combines them.
         proxy_compression_tokens = m.tokens_saved_total
@@ -3519,7 +3519,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
         # full transcript on every turn — a long session's history is
         # served from prefix cache, not re-billed, so it doesn't belong
         # in a denominator that claims to measure what compression had
-        # any power over. Tokens Headroom removed never reached the
+        # any power over. Tokens Legroom removed never reached the
         # provider at all, so they're added back to form the baseline.
         _pc_totals = prefix_cache_stats.get("totals", {})
         new_input_tokens = int(_pc_totals.get("uncached_input_tokens", 0) or 0) + int(
@@ -3578,7 +3578,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
         # Tool-schema deferral savings: tool-definition tokens kept out of the
         # model's context by deferring heavy schemas until they're needed
         # (native tool-search injection + any registered turn-hook tools
-        # rewrite). Attributed to Headroom only — see _tool_schema_saved_from_tags.
+        # rewrite). Attributed to Legroom only — see _tool_schema_saved_from_tags.
         # Aggregated over the recent request-log window.
         tool_schema_tokens = 0
         tool_schema_requests = 0
@@ -3604,7 +3604,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
         # never mistaken for an exact count. Best-effort — never break /stats.
         output_reduction: dict[str, Any] = {"available": False}
         try:
-            from headroom.proxy.output_savings import get_recorder
+            from legroom.proxy.output_savings import get_recorder
 
             _oest = get_recorder().estimate()
             if _oest.n_requests > 0:
@@ -3666,7 +3666,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
                         "lean_ctx_tokens": lean_ctx_tokens_avoided,
                         "all_layers_tokens": all_layers_tokens_saved,
                         "description": (
-                            "Tokens removed by Headroom proxy compression. "
+                            "Tokens removed by Legroom proxy compression. "
                             "Dashboard token savings also includes CLI context-tool filtering."
                         ),
                     },
@@ -3674,7 +3674,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
                         "discount_usd": round(cache_net_usd, 4),
                         "description": (
                             "Cost discount from provider prefix caching. "
-                            "Headroom's CacheAligner improves hit rates; "
+                            "Legroom's CacheAligner improves hit rates; "
                             "baseline caching is provider-native."
                         ),
                     },
@@ -3695,7 +3695,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
                         "description": (
                             "Tool-definition tokens kept out of the model's context "
                             "by deferring heavy tool schemas until they're searched "
-                            "for. Counted only when Headroom performed the deferral — "
+                            "for. Counted only when Legroom performed the deferral — "
                             "not when the client (e.g. Claude Code / Codex) already "
                             "had tool search enabled. Aggregated over the recent "
                             "request window."
@@ -4084,7 +4084,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
         "not installed" from "installed, no data yet."
         """
         if format == "csv":
-            filename = f"headroom-stats-history-{series}.csv"
+            filename = f"legroom-stats-history-{series}.csv"
             return Response(
                 content=proxy.metrics.savings_tracker.export_csv(series=series),
                 media_type="text/csv; charset=utf-8",
@@ -4166,7 +4166,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
 
     @app.get("/subscription-window")
     async def subscription_window():
-        """Current Anthropic subscription window utilisation and Headroom contribution.
+        """Current Anthropic subscription window utilisation and Legroom contribution.
 
         Issue #281: the Anthropic OAuth usage API is polled every 5 minutes
         (aggressive polling risks 429s / OAuth-token flagging), so the cached
@@ -4600,7 +4600,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
             ),
         )
 
-    # CCR Tool Call Handler - for agent frameworks to call when LLM uses headroom_retrieve
+    # CCR Tool Call Handler - for agent frameworks to call when LLM uses legroom_retrieve
     @app.post("/v1/retrieve/tool_call", dependencies=[Depends(_require_loopback)])
     async def ccr_handle_tool_call(request: Request):
         """Handle a CCR tool call from an LLM response.
@@ -4613,7 +4613,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
             {
                 "tool_call": {
                     "id": "toolu_123",
-                    "name": "headroom_retrieve",
+                    "name": "legroom_retrieve",
                     "input": {"hash": "abc123"}
                 },
                 "provider": "anthropic"
@@ -4624,7 +4624,7 @@ def create_app(config: ProxyConfig | None = None) -> FastAPI:
                 "tool_call": {
                     "id": "call_123",
                     "function": {
-                        "name": "headroom_retrieve",
+                        "name": "legroom_retrieve",
                         "arguments": "{\"hash\": \"abc123\"}"
                     }
                 },
@@ -4749,65 +4749,65 @@ def _proxy_config_from_env() -> ProxyConfig:
             return ProxyConfig(**json.loads(raw_config))
         except (TypeError, ValueError, json.JSONDecodeError):
             logger.warning(
-                "Invalid %s; falling back to HEADROOM_* env vars", _MULTI_WORKER_CONFIG_ENV
+                "Invalid %s; falling back to LEGROOM_* env vars", _MULTI_WORKER_CONFIG_ENV
             )
 
     return ProxyConfig(
-        host=_get_env_str("HEADROOM_HOST", "127.0.0.1"),
-        port=_get_env_int("HEADROOM_PORT", 8787),
+        host=_get_env_str("LEGROOM_HOST", "127.0.0.1"),
+        port=_get_env_int("LEGROOM_PORT", 8787),
         openai_api_url=os.environ.get("OPENAI_TARGET_API_URL"),
         anthropic_api_url=os.environ.get("ANTHROPIC_TARGET_API_URL"),
         anthropic_buffered_request_timeout_seconds=_get_env_int(
-            "HEADROOM_ANTHROPIC_BUFFERED_REQUEST_TIMEOUT_SECONDS",
+            "LEGROOM_ANTHROPIC_BUFFERED_REQUEST_TIMEOUT_SECONDS",
             600,
             min_value=1,
         ),
         vertex_api_url=os.environ.get("VERTEX_TARGET_API_URL"),
-        backend=_get_env_str("HEADROOM_BACKEND", "anthropic"),
-        bedrock_region=_get_env_str("HEADROOM_BEDROCK_REGION", "us-west-2"),
+        backend=_get_env_str("LEGROOM_BACKEND", "anthropic"),
+        bedrock_region=_get_env_str("LEGROOM_BEDROCK_REGION", "us-west-2"),
         bedrock_profile=os.environ.get("AWS_PROFILE"),
         bedrock_api_url=os.environ.get("BEDROCK_TARGET_API_URL"),
-        anyllm_provider=_get_env_str("HEADROOM_ANYLLM_PROVIDER", "openai"),
-        disable_kompress=_get_env_bool("HEADROOM_DISABLE_KOMPRESS", False),
-        disable_kompress_fallback=_get_env_bool("HEADROOM_DISABLE_KOMPRESS_FALLBACK", False),
-        disable_kompress_anthropic=_get_env_optional_bool("HEADROOM_DISABLE_KOMPRESS_ANTHROPIC"),
-        disable_kompress_openai=_get_env_optional_bool("HEADROOM_DISABLE_KOMPRESS_OPENAI"),
-        force_kompress_all=_get_env_bool("HEADROOM_FORCE_KOMPRESS_ALL", False),
-        lossless=_get_env_bool("HEADROOM_LOSSLESS", False),
-        compress_passthrough=_get_env_bool("HEADROOM_COMPRESS_PASSTHROUGH", False),
-        max_connections=_get_env_int("HEADROOM_MAX_CONNECTIONS", 500),
-        max_keepalive_connections=_get_env_int("HEADROOM_MAX_KEEPALIVE", 100),
-        keepalive_expiry=_get_env_float("HEADROOM_KEEPALIVE_EXPIRY", 90.0),
-        http2=_get_env_bool("HEADROOM_HTTP2", True),
-        http_proxy=os.environ.get("HEADROOM_HTTP_PROXY") or None,
-        periodic_toin_stats_enabled=_get_env_bool("HEADROOM_PERIODIC_TOIN_STATS", True),
-        proxy_token=os.environ.get("HEADROOM_PROXY_TOKEN") or None,
-        offline=_get_env_bool("HEADROOM_OFFLINE", False),
-        # Default mode is CACHE (Headroom's coding posture): delta-only compression
-        # at ~0 prefix-cache busts. HEADROOM_MODE overrides.
-        mode=normalize_proxy_mode(_get_env_str("HEADROOM_MODE", PROXY_MODE_CACHE)),
+        anyllm_provider=_get_env_str("LEGROOM_ANYLLM_PROVIDER", "openai"),
+        disable_kompress=_get_env_bool("LEGROOM_DISABLE_KOMPRESS", False),
+        disable_kompress_fallback=_get_env_bool("LEGROOM_DISABLE_KOMPRESS_FALLBACK", False),
+        disable_kompress_anthropic=_get_env_optional_bool("LEGROOM_DISABLE_KOMPRESS_ANTHROPIC"),
+        disable_kompress_openai=_get_env_optional_bool("LEGROOM_DISABLE_KOMPRESS_OPENAI"),
+        force_kompress_all=_get_env_bool("LEGROOM_FORCE_KOMPRESS_ALL", False),
+        lossless=_get_env_bool("LEGROOM_LOSSLESS", False),
+        compress_passthrough=_get_env_bool("LEGROOM_COMPRESS_PASSTHROUGH", False),
+        max_connections=_get_env_int("LEGROOM_MAX_CONNECTIONS", 500),
+        max_keepalive_connections=_get_env_int("LEGROOM_MAX_KEEPALIVE", 100),
+        keepalive_expiry=_get_env_float("LEGROOM_KEEPALIVE_EXPIRY", 90.0),
+        http2=_get_env_bool("LEGROOM_HTTP2", True),
+        http_proxy=os.environ.get("LEGROOM_HTTP_PROXY") or None,
+        periodic_toin_stats_enabled=_get_env_bool("LEGROOM_PERIODIC_TOIN_STATS", True),
+        proxy_token=os.environ.get("LEGROOM_PROXY_TOKEN") or None,
+        offline=_get_env_bool("LEGROOM_OFFLINE", False),
+        # Default mode is CACHE (Legroom's coding posture): delta-only compression
+        # at ~0 prefix-cache busts. LEGROOM_MODE overrides.
+        mode=normalize_proxy_mode(_get_env_str("LEGROOM_MODE", PROXY_MODE_CACHE)),
         # Default savings profile is "coding" so proxy_pipeline_kwargs applies its
-        # posture (compress_user, protect_recent, min_tokens). HEADROOM_SAVINGS_PROFILE
+        # posture (compress_user, protect_recent, min_tokens). LEGROOM_SAVINGS_PROFILE
         # overrides.
-        savings_profile=os.environ.get("HEADROOM_SAVINGS_PROFILE") or "coding",
-        read_maturation=_get_env_bool("HEADROOM_READ_MATURATION", False),
-        read_maturation_quiesce_turns=_get_env_int("HEADROOM_READ_MATURATION_QUIESCE_TURNS", 5),
-        read_maturation_max_hold_turns=_get_env_int("HEADROOM_READ_MATURATION_MAX_HOLD_TURNS", 25),
+        savings_profile=os.environ.get("LEGROOM_SAVINGS_PROFILE") or "coding",
+        read_maturation=_get_env_bool("LEGROOM_READ_MATURATION", False),
+        read_maturation_quiesce_turns=_get_env_int("LEGROOM_READ_MATURATION_QUIESCE_TURNS", 5),
+        read_maturation_max_hold_turns=_get_env_int("LEGROOM_READ_MATURATION_MAX_HOLD_TURNS", 25),
         read_maturation_min_size_bytes=_get_env_int(
-            "HEADROOM_READ_MATURATION_MIN_SIZE_BYTES", 2048
+            "LEGROOM_READ_MATURATION_MIN_SIZE_BYTES", 2048
         ),
         model_router=ModelRouterConfig.from_env(
-            os.environ.get("HEADROOM_MODEL_ROUTER_ENABLED"),
-            os.environ.get("HEADROOM_MODEL_ROUTES"),
+            os.environ.get("LEGROOM_MODEL_ROUTER_ENABLED"),
+            os.environ.get("LEGROOM_MODEL_ROUTES"),
         ),
     )
 
 
 def create_app_from_env() -> FastAPI:
     # Seed the coding-profile defaults into the process env BEFORE reading config,
-    # so the uvicorn factory launch gets Headroom's out-of-box posture (cache mode,
+    # so the uvicorn factory launch gets Legroom's out-of-box posture (cache mode,
     # tool-search, dedupe, read protection, …). setdefault → explicit env wins.
-    from headroom.agent_savings import seed_proxy_env_defaults
+    from legroom.agent_savings import seed_proxy_env_defaults
 
     seed_proxy_env_defaults()
     return create_app(_proxy_config_from_env())
@@ -4819,11 +4819,11 @@ def _get_code_aware_banner_status(config: ProxyConfig) -> str:
         if is_tree_sitter_available():
             return "ENABLED  (AST-based)"
         else:
-            return "NOT INSTALLED (pip install headroom-ai[code])"
+            return "NOT INSTALLED (pip install legroom-ai[code])"
     else:
         if is_tree_sitter_available():
-            return "DISABLED (--code-aware or HEADROOM_CODE_AWARE_ENABLED=1 to enable)"
-        return "DISABLED  (install headroom-ai[code] to enable)"
+            return "DISABLED (--code-aware or LEGROOM_CODE_AWARE_ENABLED=1 to enable)"
+        return "DISABLED  (install legroom-ai[code] to enable)"
 
 
 def _configure_windows_uvicorn_loop(uvicorn_kwargs: dict[str, Any]) -> None:
@@ -4860,9 +4860,9 @@ def run_server(
         workers: Number of worker processes (use N for multi-core scaling)
         limit_concurrency: Max concurrent connections before 503 response
         print_banner: When False, skip the legacy ASCII banner. The
-            Click CLI (`headroom proxy`) prints its own startup banner
+            Click CLI (`legroom proxy`) prints its own startup banner
             before calling this — printing a second banner here is the
-            "dual banner" UX issue. Direct `python -m headroom.proxy.server`
+            "dual banner" UX issue. Direct `python -m legroom.proxy.server`
             still gets the banner since it has no other startup output.
     """
     if not FASTAPI_AVAILABLE:
@@ -4875,7 +4875,7 @@ def run_server(
     # Done here (not in the CLI command) so unit tests that mock run_server never
     # mutate os.environ. setdefault → explicit env still wins. MODE / profile are
     # already resolved into `config` above via their inline defaults.
-    from headroom.agent_savings import seed_proxy_env_defaults
+    from legroom.agent_savings import seed_proxy_env_defaults
 
     seed_proxy_env_defaults()
 
@@ -4898,7 +4898,7 @@ def run_server(
     if print_banner:
         print(f"""
 ╔══════════════════════════════════════════════════════════════════════╗
-║                      HEADROOM PROXY SERVER                           ║
+║                      LEGROOM PROXY SERVER                           ║
 ╠══════════════════════════════════════════════════════════════════════╣
 ║  Version: 1.0.0                                                      ║
 ║  Listening: http://{config.host}:{config.port:<5}                                      ║
@@ -4955,11 +4955,11 @@ def run_server(
         # CompressionCache and PrefixTracker are always per-worker instance vars.
         # Python CompressionStore defaults to InMemoryBackend (per-process), so
         # CCR markers written on worker A are invisible to worker B unless a
-        # cross-worker backend is configured via HEADROOM_CCR_BACKEND.
+        # cross-worker backend is configured via LEGROOM_CCR_BACKEND.
         # See RUST_DEV.md -> "Multi-worker deployment -- CCR fragmentation".
-        if os.environ.get("HEADROOM_CCR_BACKEND", "").strip():
+        if os.environ.get("LEGROOM_CCR_BACKEND", "").strip():
             logger.warning(
-                "Headroom is running with workers=%d. Compression cache, "
+                "Legroom is running with workers=%d. Compression cache, "
                 "prefix tracker, TOIN state, and CostTracker are all per-process; "
                 "multi-worker deployments produce avoidable cache busts and an "
                 "unstable dashboard 'Proxy $ Saved' hero tile (each /stats poll "
@@ -4971,20 +4971,20 @@ def run_server(
             )
         else:
             logger.warning(
-                "Headroom is running with workers=%d. The in-memory CCR store, "
+                "Legroom is running with workers=%d. The in-memory CCR store, "
                 "compression cache (incl. off-path background compression), prefix "
                 "tracker, TOIN state, and CostTracker are all "
                 "per-process; multi-worker deployments produce silent CCR retrieval "
                 "failures, avoidable cache busts, and an unstable dashboard 'Proxy $ Saved' "
                 "hero tile (each /stats poll hits a different worker's partial total) when "
-                "sessions land on different workers. Set HEADROOM_CCR_BACKEND=sqlite for a "
+                "sessions land on different workers. Set LEGROOM_CCR_BACKEND=sqlite for a "
                 "persistent cross-worker CCR store, run --workers 1, or place a "
                 "sticky-session load balancer in front of multiple --workers 1 processes. "
                 "See RUST_DEV.md -> 'Multi-worker deployment -- CCR fragmentation'.",
                 workers,
             )
         os.environ[_MULTI_WORKER_CONFIG_ENV] = json.dumps(_proxy_config_payload(config))
-        app_target = "headroom.proxy.server:create_app_from_env"
+        app_target = "legroom.proxy.server:create_app_from_env"
         uvicorn_kwargs["factory"] = True
     else:
         app_target = create_app(config)
@@ -5062,14 +5062,14 @@ def _get_env_str(name: str, default: str) -> str:
 def _parse_exclude_tools(cli_excludes: str | None) -> set[str]:
     """Parse extra never-compress tool names from CLI args and env var.
 
-    Both --exclude-tools and HEADROOM_EXCLUDE_TOOLS are comma-separated
+    Both --exclude-tools and LEGROOM_EXCLUDE_TOOLS are comma-separated
     (e.g. "WebSearch,WebFetch"). Each name is added in both original and
     lowercase form for case-insensitive matching, mirroring
     DEFAULT_EXCLUDE_TOOLS. Unset/empty -> empty set (DEFAULT_EXCLUDE_TOOLS
     used unchanged). Entries may contain glob patterns (e.g. "mcp__*"); see
     config.is_tool_excluded for the matching semantics.
     """
-    raw = ",".join(s for s in (cli_excludes, os.environ.get("HEADROOM_EXCLUDE_TOOLS")) if s)
+    raw = ",".join(s for s in (cli_excludes, os.environ.get("LEGROOM_EXCLUDE_TOOLS")) if s)
     names: set[str] = set()
     for entry in raw.split(","):
         name = entry.strip()
@@ -5080,7 +5080,7 @@ def _parse_exclude_tools(cli_excludes: str | None) -> set[str]:
 
 
 def _parse_csv_tools(raw: str | None) -> set[str]:
-    """Parse a bare CSV tool-name string without merging HEADROOM_EXCLUDE_TOOLS."""
+    """Parse a bare CSV tool-name string without merging LEGROOM_EXCLUDE_TOOLS."""
     names: set[str] = set()
     if not raw:
         return names
@@ -5093,7 +5093,7 @@ def _parse_csv_tools(raw: str | None) -> set[str]:
 
 
 def _parse_tool_profiles(cli_profiles: list[str]) -> dict[str, Any]:
-    """Parse tool profiles from CLI args and HEADROOM_TOOL_PROFILES env var.
+    """Parse tool profiles from CLI args and LEGROOM_TOOL_PROFILES env var.
 
     Format: ToolName:level (e.g., Grep:conservative, Bash:moderate)
     Env var format: comma-separated (e.g., "Grep:conservative,Bash:moderate")
@@ -5101,13 +5101,13 @@ def _parse_tool_profiles(cli_profiles: list[str]) -> dict[str, Any]:
     Returns:
         Dict mapping tool names to CompressionProfile instances.
     """
-    from headroom.config import PROFILE_PRESETS, CompressionProfile
+    from legroom.config import PROFILE_PRESETS, CompressionProfile
 
     profiles: dict[str, CompressionProfile] = {}
     raw_entries: list[str] = list(cli_profiles)
 
     # Also check env var
-    env_val = os.environ.get("HEADROOM_TOOL_PROFILES", "")
+    env_val = os.environ.get("LEGROOM_TOOL_PROFILES", "")
     if env_val:
         raw_entries.extend(e.strip() for e in env_val.split(",") if e.strip())
 
@@ -5132,7 +5132,7 @@ def _parse_tool_profiles(cli_profiles: list[str]) -> dict[str, Any]:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Headroom Proxy Server")
+    parser = argparse.ArgumentParser(description="Legroom Proxy Server")
 
     # Server
     parser.add_argument("--host", default="127.0.0.1")
@@ -5217,7 +5217,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--http-proxy",
-        help=("HTTP proxy URL for upstream provider requests only (env: HEADROOM_HTTP_PROXY)"),
+        help=("HTTP proxy URL for upstream provider requests only (env: LEGROOM_HTTP_PROXY)"),
     )
     parser.add_argument(
         "--workers",
@@ -5241,7 +5241,7 @@ if __name__ == "__main__":
         action="append",
         default=[],
         help="Per-tool compression profile: ToolName:level (e.g., Grep:conservative, Bash:moderate, WebFetch:aggressive). "
-        "Can be specified multiple times. Also settable via HEADROOM_TOOL_PROFILES env var.",
+        "Can be specified multiple times. Also settable via LEGROOM_TOOL_PROFILES env var.",
     )
     parser.add_argument(
         "--compress-user-messages",
@@ -5252,7 +5252,7 @@ if __name__ == "__main__":
             "the prefix-cache zone. Enable this for OpenAI/Azure chat workloads "
             "where the bulk of input lives in user messages (pasted content, "
             "RAG context, etc.) and you want the router to consider it eligible. "
-            "Also settable via HEADROOM_COMPRESS_USER_MESSAGES=1."
+            "Also settable via LEGROOM_COMPRESS_USER_MESSAGES=1."
         ),
     )
     parser.add_argument(
@@ -5260,7 +5260,7 @@ if __name__ == "__main__":
         action="store_true",
         help=(
             "Disable Kompress ML compression while keeping structural compression enabled. "
-            "Also settable via HEADROOM_DISABLE_KOMPRESS=1."
+            "Also settable via LEGROOM_DISABLE_KOMPRESS=1."
         ),
     )
     parser.add_argument(
@@ -5269,7 +5269,7 @@ if __name__ == "__main__":
         help=(
             "With --disable-kompress, route fall-through content to PASSTHROUGH instead of "
             "the default KOMPRESS fallback (restores legacy --disable-kompress behaviour). "
-            "Also settable via HEADROOM_DISABLE_KOMPRESS_FALLBACK=1."
+            "Also settable via LEGROOM_DISABLE_KOMPRESS_FALLBACK=1."
         ),
     )
     parser.add_argument(
@@ -5280,7 +5280,7 @@ if __name__ == "__main__":
         default=None,
         help=(
             "Disable Kompress for the Anthropic pipeline only, overriding --disable-kompress. "
-            "Also settable via HEADROOM_DISABLE_KOMPRESS_ANTHROPIC=1."
+            "Also settable via LEGROOM_DISABLE_KOMPRESS_ANTHROPIC=1."
         ),
     )
     parser.add_argument(
@@ -5298,7 +5298,7 @@ if __name__ == "__main__":
         default=None,
         help=(
             "Disable Kompress for the OpenAI/Codex pipeline only, overriding --disable-kompress. "
-            "Also settable via HEADROOM_DISABLE_KOMPRESS_OPENAI=1."
+            "Also settable via LEGROOM_DISABLE_KOMPRESS_OPENAI=1."
         ),
     )
     parser.add_argument(
@@ -5315,7 +5315,7 @@ if __name__ == "__main__":
             "Route ALL compressible content through Kompress (kompress-v2-base), "
             "bypassing per-type compressor selection. Tool ground truth "
             "(Read/Glob/... and reversibility-gated output) is still never touched. "
-            "Also settable via HEADROOM_FORCE_KOMPRESS_ALL=1."
+            "Also settable via LEGROOM_FORCE_KOMPRESS_ALL=1."
         ),
     )
     parser.add_argument(
@@ -5325,7 +5325,7 @@ if __name__ == "__main__":
             "No-CCR lossless mode: compress LOG/SEARCH/DIFF tool outputs with "
             "format-native lossless compaction (and marker-free SmartCrusher) "
             "without emitting any CCR retrieval marker, so no MCP retrieve tool "
-            "is needed. Also settable via HEADROOM_LOSSLESS=1."
+            "is needed. Also settable via LEGROOM_LOSSLESS=1."
         ),
     )
     parser.add_argument(
@@ -5337,7 +5337,7 @@ if __name__ == "__main__":
             "API route, e.g. `/api/codex-proxy/<key>/v1/responses` behind "
             "another proxy). Applies to OpenAI Responses-shaped bodies (paths "
             "ending in `/responses`). Off by default; also settable via "
-            "HEADROOM_COMPRESS_PASSTHROUGH=1."
+            "LEGROOM_COMPRESS_PASSTHROUGH=1."
         ),
     )
     parser.add_argument(
@@ -5346,14 +5346,14 @@ if __name__ == "__main__":
         help="Comma-separated tool names whose output is never compressed, "
         "merged with the built-in defaults (e.g., WebSearch,WebFetch). "
         "Entries may use glob patterns, e.g. 'mcp__*' to exclude every MCP tool. "
-        "Also settable via HEADROOM_EXCLUDE_TOOLS env var.",
+        "Also settable via LEGROOM_EXCLUDE_TOOLS env var.",
     )
     parser.add_argument(
         "--protect-tool-results",
         default=None,
         help="Comma-separated tool names whose results are never lossy-compressed, "
         "merged with the built-in defaults (e.g. Bash,WebFetch). "
-        "Also settable via HEADROOM_PROTECT_TOOL_RESULTS env var.",
+        "Also settable via LEGROOM_PROTECT_TOOL_RESULTS env var.",
     )
 
     # Caching
@@ -5377,7 +5377,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--code-aware",
         action="store_true",
-        help="Enable AST-based code compression (requires: pip install headroom-ai[code])",
+        help="Enable AST-based code compression (requires: pip install legroom-ai[code])",
     )
     parser.add_argument(
         "--no-code-aware",
@@ -5387,12 +5387,12 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # Environment variable defaults (HEADROOM_* prefix)
+    # Environment variable defaults (LEGROOM_* prefix)
     # CLI args override env vars, env vars override ProxyConfig defaults
-    env_code_aware = _get_env_bool("HEADROOM_CODE_AWARE_ENABLED", True)
-    env_optimize = _get_env_bool("HEADROOM_OPTIMIZE", True)
-    env_cache = _get_env_bool("HEADROOM_CACHE_ENABLED", True)
-    env_rate_limit = _get_env_bool("HEADROOM_RATE_LIMIT_ENABLED", True)
+    env_code_aware = _get_env_bool("LEGROOM_CODE_AWARE_ENABLED", True)
+    env_optimize = _get_env_bool("LEGROOM_OPTIMIZE", True)
+    env_cache = _get_env_bool("LEGROOM_CACHE_ENABLED", True)
+    env_rate_limit = _get_env_bool("LEGROOM_RATE_LIMIT_ENABLED", True)
 
     # Determine settings: CLI flags override env vars
     # --no-X explicitly disables, --X explicitly enables, neither uses env var
@@ -5404,26 +5404,26 @@ if __name__ == "__main__":
     optimize = env_optimize if not args.no_optimize else False
     cache_enabled = env_cache if not args.no_cache else False
     rate_limit_enabled = env_rate_limit if not args.no_rate_limit else False
-    disable_kompress = args.disable_kompress or _get_env_bool("HEADROOM_DISABLE_KOMPRESS", False)
+    disable_kompress = args.disable_kompress or _get_env_bool("LEGROOM_DISABLE_KOMPRESS", False)
     disable_kompress_fallback = args.disable_kompress_fallback or _get_env_bool(
-        "HEADROOM_DISABLE_KOMPRESS_FALLBACK", False
+        "LEGROOM_DISABLE_KOMPRESS_FALLBACK", False
     )
     disable_kompress_anthropic = (
         args.disable_kompress_anthropic
         if args.disable_kompress_anthropic is not None
-        else _get_env_optional_bool("HEADROOM_DISABLE_KOMPRESS_ANTHROPIC")
+        else _get_env_optional_bool("LEGROOM_DISABLE_KOMPRESS_ANTHROPIC")
     )
     disable_kompress_openai = (
         args.disable_kompress_openai
         if args.disable_kompress_openai is not None
-        else _get_env_optional_bool("HEADROOM_DISABLE_KOMPRESS_OPENAI")
+        else _get_env_optional_bool("LEGROOM_DISABLE_KOMPRESS_OPENAI")
     )
     force_kompress_all = args.force_kompress_all or _get_env_bool(
-        "HEADROOM_FORCE_KOMPRESS_ALL", False
+        "LEGROOM_FORCE_KOMPRESS_ALL", False
     )
-    lossless = getattr(args, "lossless", False) or _get_env_bool("HEADROOM_LOSSLESS", False)
+    lossless = getattr(args, "lossless", False) or _get_env_bool("LEGROOM_LOSSLESS", False)
     compress_passthrough = args.compress_passthrough or _get_env_bool(
-        "HEADROOM_COMPRESS_PASSTHROUGH", False
+        "LEGROOM_COMPRESS_PASSTHROUGH", False
     )
 
     # Set OpenRouter API key from CLI if provided
@@ -5435,45 +5435,45 @@ if __name__ == "__main__":
     # Parse extra never-compress tools from CLI and env var
     exclude_tools = _parse_exclude_tools(args.exclude_tools)
     protect_tool_results = _parse_csv_tools(
-        args.protect_tool_results or os.environ.get("HEADROOM_PROTECT_TOOL_RESULTS")
+        args.protect_tool_results or os.environ.get("LEGROOM_PROTECT_TOOL_RESULTS")
     )
 
     config = ProxyConfig(
-        host=_get_env_str("HEADROOM_HOST", args.host),
-        port=_get_env_int("HEADROOM_PORT", args.port),
+        host=_get_env_str("LEGROOM_HOST", args.host),
+        port=_get_env_int("LEGROOM_PORT", args.port),
         openai_api_url=_get_env_str("OPENAI_TARGET_API_URL", args.openai_api_url),
         anthropic_api_url=_get_env_str("ANTHROPIC_TARGET_API_URL", args.anthropic_api_url),
         anthropic_buffered_request_timeout_seconds=_get_env_int(
-            "HEADROOM_ANTHROPIC_BUFFERED_REQUEST_TIMEOUT_SECONDS",
+            "LEGROOM_ANTHROPIC_BUFFERED_REQUEST_TIMEOUT_SECONDS",
             args.anthropic_buffered_request_timeout_seconds,
             min_value=1,
         ),
         vertex_api_url=_get_env_str("VERTEX_TARGET_API_URL", args.vertex_api_url),
         # Backend settings
-        backend=_get_env_str("HEADROOM_BACKEND", args.backend),  # type: ignore[arg-type]
-        bedrock_region=_get_env_str("HEADROOM_BEDROCK_REGION", args.bedrock_region),
+        backend=_get_env_str("LEGROOM_BACKEND", args.backend),  # type: ignore[arg-type]
+        bedrock_region=_get_env_str("LEGROOM_BEDROCK_REGION", args.bedrock_region),
         bedrock_profile=args.bedrock_profile or os.environ.get("AWS_PROFILE"),
         bedrock_api_url=_get_env_str("BEDROCK_TARGET_API_URL", args.bedrock_api_url),
-        anyllm_provider=_get_env_str("HEADROOM_ANYLLM_PROVIDER", args.anyllm_provider),
+        anyllm_provider=_get_env_str("LEGROOM_ANYLLM_PROVIDER", args.anyllm_provider),
         optimize=optimize,
-        min_tokens_to_crush=_get_env_int("HEADROOM_MIN_TOKENS", args.min_tokens),
-        max_items_after_crush=_get_env_int("HEADROOM_MAX_ITEMS", args.max_items),
+        min_tokens_to_crush=_get_env_int("LEGROOM_MIN_TOKENS", args.min_tokens),
+        max_items_after_crush=_get_env_int("LEGROOM_MAX_ITEMS", args.max_items),
         smart_crusher_with_compaction=(
-            _get_env_bool("HEADROOM_SMART_CRUSHER_COMPACTION", False)
-            if "HEADROOM_SMART_CRUSHER_COMPACTION" in os.environ
+            _get_env_bool("LEGROOM_SMART_CRUSHER_COMPACTION", False)
+            if "LEGROOM_SMART_CRUSHER_COMPACTION" in os.environ
             else None
         ),
         cache_enabled=cache_enabled,
-        cache_ttl_seconds=_get_env_int("HEADROOM_CACHE_TTL", args.cache_ttl),
+        cache_ttl_seconds=_get_env_int("LEGROOM_CACHE_TTL", args.cache_ttl),
         rate_limit_enabled=rate_limit_enabled,
-        rate_limit_requests_per_minute=_get_env_int("HEADROOM_RPM", args.rpm),
-        rate_limit_tokens_per_minute=_get_env_int("HEADROOM_TPM", args.tpm),
+        rate_limit_requests_per_minute=_get_env_int("LEGROOM_RPM", args.rpm),
+        rate_limit_tokens_per_minute=_get_env_int("LEGROOM_TPM", args.tpm),
         budget_limit_usd=args.budget,
         budget_period=args.budget_period,
-        log_file=_get_env_str("HEADROOM_LOG_FILE", args.log_file)
+        log_file=_get_env_str("LEGROOM_LOG_FILE", args.log_file)
         if args.log_file
-        else os.environ.get("HEADROOM_LOG_FILE"),
-        log_full_messages=args.log_messages or _get_env_bool("HEADROOM_LOG_MESSAGES", False),
+        else os.environ.get("LEGROOM_LOG_FILE"),
+        log_full_messages=args.log_messages or _get_env_bool("LEGROOM_LOG_MESSAGES", False),
         code_aware_enabled=code_aware_enabled,
         disable_kompress=disable_kompress,
         disable_kompress_fallback=disable_kompress_fallback,
@@ -5483,53 +5483,53 @@ if __name__ == "__main__":
         lossless=lossless,
         compress_passthrough=compress_passthrough,
         # Connection pool settings
-        max_connections=_get_env_int("HEADROOM_MAX_CONNECTIONS", args.max_connections),
-        max_keepalive_connections=_get_env_int("HEADROOM_MAX_KEEPALIVE", args.max_keepalive),
-        keepalive_expiry=_get_env_float("HEADROOM_KEEPALIVE_EXPIRY", args.keepalive_expiry),
-        http2=not args.no_http2 and _get_env_bool("HEADROOM_HTTP2", True),
-        http_proxy=_get_env_str("HEADROOM_HTTP_PROXY", args.http_proxy or "") or None,
-        read_maturation=_get_env_bool("HEADROOM_READ_MATURATION", False),
-        read_maturation_quiesce_turns=_get_env_int("HEADROOM_READ_MATURATION_QUIESCE_TURNS", 5),
-        read_maturation_max_hold_turns=_get_env_int("HEADROOM_READ_MATURATION_MAX_HOLD_TURNS", 25),
+        max_connections=_get_env_int("LEGROOM_MAX_CONNECTIONS", args.max_connections),
+        max_keepalive_connections=_get_env_int("LEGROOM_MAX_KEEPALIVE", args.max_keepalive),
+        keepalive_expiry=_get_env_float("LEGROOM_KEEPALIVE_EXPIRY", args.keepalive_expiry),
+        http2=not args.no_http2 and _get_env_bool("LEGROOM_HTTP2", True),
+        http_proxy=_get_env_str("LEGROOM_HTTP_PROXY", args.http_proxy or "") or None,
+        read_maturation=_get_env_bool("LEGROOM_READ_MATURATION", False),
+        read_maturation_quiesce_turns=_get_env_int("LEGROOM_READ_MATURATION_QUIESCE_TURNS", 5),
+        read_maturation_max_hold_turns=_get_env_int("LEGROOM_READ_MATURATION_MAX_HOLD_TURNS", 25),
         read_maturation_min_size_bytes=_get_env_int(
-            "HEADROOM_READ_MATURATION_MIN_SIZE_BYTES", 2048
+            "LEGROOM_READ_MATURATION_MIN_SIZE_BYTES", 2048
         ),
         tool_profiles=tool_profiles if tool_profiles else None,
         exclude_tools=exclude_tools if exclude_tools else None,
         protect_tool_results=frozenset(protect_tool_results)
         if protect_tool_results
         else frozenset(),
-        mode=normalize_proxy_mode(_get_env_str("HEADROOM_MODE", PROXY_MODE_CACHE)),
+        mode=normalize_proxy_mode(_get_env_str("LEGROOM_MODE", PROXY_MODE_CACHE)),
         compress_user_messages=args.compress_user_messages
-        or _get_env_bool("HEADROOM_COMPRESS_USER_MESSAGES", False),
-        savings_profile=os.environ.get("HEADROOM_SAVINGS_PROFILE") or "coding",
+        or _get_env_bool("LEGROOM_COMPRESS_USER_MESSAGES", False),
+        savings_profile=os.environ.get("LEGROOM_SAVINGS_PROFILE") or "coding",
         # Default 0.4 keep-ratio so the Kompress text (prose/code) path compresses
-        # meaningfully out of the box; HEADROOM_TARGET_RATIO overrides.
+        # meaningfully out of the box; LEGROOM_TARGET_RATIO overrides.
         target_ratio=(
-            float(os.environ["HEADROOM_TARGET_RATIO"])
-            if os.environ.get("HEADROOM_TARGET_RATIO")
+            float(os.environ["LEGROOM_TARGET_RATIO"])
+            if os.environ.get("LEGROOM_TARGET_RATIO")
             else 0.4
         ),
         compress_system_messages=(
-            _get_env_bool("HEADROOM_COMPRESS_SYSTEM_MESSAGES", False)
-            if "HEADROOM_COMPRESS_SYSTEM_MESSAGES" in os.environ
+            _get_env_bool("LEGROOM_COMPRESS_SYSTEM_MESSAGES", False)
+            if "LEGROOM_COMPRESS_SYSTEM_MESSAGES" in os.environ
             else None
         ),
         protect_recent=(
-            int(os.environ["HEADROOM_PROTECT_RECENT"])
-            if os.environ.get("HEADROOM_PROTECT_RECENT")
+            int(os.environ["LEGROOM_PROTECT_RECENT"])
+            if os.environ.get("LEGROOM_PROTECT_RECENT")
             else None
         ),
         protect_analysis_context=(
-            _get_env_bool("HEADROOM_PROTECT_ANALYSIS_CONTEXT", False)
-            if "HEADROOM_PROTECT_ANALYSIS_CONTEXT" in os.environ
+            _get_env_bool("LEGROOM_PROTECT_ANALYSIS_CONTEXT", False)
+            if "LEGROOM_PROTECT_ANALYSIS_CONTEXT" in os.environ
             else None
         ),
-        accuracy_guard=os.environ.get("HEADROOM_ACCURACY_GUARD") or None,
+        accuracy_guard=os.environ.get("LEGROOM_ACCURACY_GUARD") or None,
     )
 
     # Get worker and concurrency settings
-    workers = _get_env_int("HEADROOM_WORKERS", args.workers)
-    limit_concurrency = _get_env_int("HEADROOM_LIMIT_CONCURRENCY", args.limit_concurrency)
+    workers = _get_env_int("LEGROOM_WORKERS", args.workers)
+    limit_concurrency = _get_env_int("LEGROOM_LIMIT_CONCURRENCY", args.limit_concurrency)
 
     run_server(config, workers=workers, limit_concurrency=limit_concurrency)

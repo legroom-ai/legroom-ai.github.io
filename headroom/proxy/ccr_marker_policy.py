@@ -19,7 +19,7 @@ def has_new_ccr_markers(
     if not previous_forwarded_messages:
         return True
 
-    from headroom.ccr.tool_injection import CCRToolInjector
+    from legroom.ccr.tool_injection import CCRToolInjector
 
     previous = CCRToolInjector(
         provider=provider,

@@ -12,7 +12,7 @@ endpoint moves.
 
 The wrap therefore injects a marker-fenced ``providers.anthropic.baseUrl``
 override into ``models.yml``, snapshotting the pre-wrap file byte-for-byte
-first — the same durable-wrap + backup + ``headroom unwrap`` contract the
+first — the same durable-wrap + backup + ``legroom unwrap`` contract the
 Codex wrap uses for ``config.toml``.
 """
 
@@ -22,16 +22,16 @@ import os
 from collections.abc import Mapping
 from pathlib import Path
 
-from headroom.providers.claude import proxy_base_url as claude_proxy_base_url
-from headroom.proxy.project_context import with_project_prefix
+from legroom.providers.claude import proxy_base_url as claude_proxy_base_url
+from legroom.proxy.project_context import with_project_prefix
 
-MANAGED_MARKER = "# managed by `headroom wrap omp`"
+MANAGED_MARKER = "# managed by `legroom wrap omp`"
 _MANAGED_HEADER = (
     f"{MANAGED_MARKER} — do not hand-edit while wrapped.\n"
-    "# `headroom unwrap omp` restores the pre-wrap file (or removes this one\n"
-    "# if it did not exist). The original is kept at <models.yml.headroom-backup>.\n"
+    "# `legroom unwrap omp` restores the pre-wrap file (or removes this one\n"
+    "# if it did not exist). The original is kept at <models.yml.legroom-backup>.\n"
 )
-BACKUP_SUFFIX = ".headroom-backup"
+BACKUP_SUFFIX = ".legroom-backup"
 
 
 def models_yml_path() -> Path:
@@ -79,7 +79,7 @@ def inject_models_override(port: int, project: str | None = None) -> tuple[Path,
     Returns ``(models_file, base_url)``.
 
     * First injection snapshots the user's pre-wrap file byte-for-byte to
-      ``models.yml.headroom-backup`` so unwrap can restore it exactly.  A file
+      ``models.yml.legroom-backup`` so unwrap can restore it exactly.  A file
       that is already wrap-managed is never re-snapshotted (that would clobber
       the pristine backup — same guard as the Codex config snapshot).
     * The managed file is regenerated from the backup (or from scratch when

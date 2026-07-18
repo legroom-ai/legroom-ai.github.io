@@ -48,8 +48,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_CCR_TTL_SECONDS = 1800  # session-scale; override via HEADROOM_CCR_TTL_SECONDS
-CCR_TTL_SECONDS_ENV = "HEADROOM_CCR_TTL_SECONDS"
+DEFAULT_CCR_TTL_SECONDS = 1800  # session-scale; override via LEGROOM_CCR_TTL_SECONDS
+CCR_TTL_SECONDS_ENV = "LEGROOM_CCR_TTL_SECONDS"
 
 _RETRIEVAL_LOG_PREVIEW_CHARS = 4096
 _SECRET_KEY_VALUE_RE = re.compile(
@@ -129,7 +129,7 @@ CCR_MISS_MESSAGE = (
     "references a file Read, re-read that file (the path is in the "
     "marker; disk is the source of truth). If it was command output, "
     "re-run the command. Entries expire after the store TTL "
-    "(default 30 minutes; configurable via HEADROOM_CCR_TTL_SECONDS)."
+    "(default 30 minutes; configurable via LEGROOM_CCR_TTL_SECONDS)."
 )
 
 
@@ -497,7 +497,7 @@ class CompressionStore:
         entry: CompressionEntry,
     ) -> None:
         event = {
-            "event": "headroom_retrieve",
+            "event": "legroom_retrieve",
             "hash": hash_key,
             "retrieval_type": retrieval_type,
             "query": query,
@@ -514,7 +514,7 @@ class CompressionStore:
             **_payload_for_retrieval_log(payload),
         }
         logger.info(
-            "event=headroom_retrieve %s",
+            "event=legroom_retrieve %s",
             json.dumps(event, ensure_ascii=False, separators=(",", ":")),
         )
 
@@ -924,7 +924,7 @@ class CompressionStore:
 
 # Request-scoped store (for multi-tenant SaaS: one store per request/tenant)
 _request_ccr_store: ContextVar[CompressionStore | None] = ContextVar(
-    "headroom_request_ccr_store", default=None
+    "legroom_request_ccr_store", default=None
 )
 
 # Global store instance (lazy initialization)
@@ -950,16 +950,16 @@ def clear_request_compression_store() -> None:
 
 
 def _create_default_ccr_backend() -> CompressionStoreBackend | None:
-    """Create a CCR backend from env (e.g. HEADROOM_CCR_BACKEND=redis).
+    """Create a CCR backend from env (e.g. LEGROOM_CCR_BACKEND=redis).
 
     Default (env unset or "sqlite"): SQLiteBackend at workspace_dir()/ccr_store.db
     — restart-safe and shared across worker processes, which the
     session-scale 30-minute TTL assumes.
     "memory" opts back into the in-process dict. Other values load
-    adapters via setuptools entry point 'headroom.ccr_backend'.
+    adapters via setuptools entry point 'legroom.ccr_backend'.
     Returns None to use InMemoryBackend.
     """
-    backend_type = (os.environ.get("HEADROOM_CCR_BACKEND") or "").strip().lower()
+    backend_type = (os.environ.get("LEGROOM_CCR_BACKEND") or "").strip().lower()
     if backend_type == "memory":
         return None
     if not backend_type or backend_type == "sqlite":
@@ -978,19 +978,19 @@ def _create_default_ccr_backend() -> CompressionStoreBackend | None:
     try:
         from importlib.metadata import entry_points
 
-        all_eps = entry_points(group="headroom.ccr_backend")
+        all_eps = entry_points(group="legroom.ccr_backend")
         ep = next((e for e in all_eps if e.name == backend_type), None)
         if ep is None:
             logger.warning(
-                "HEADROOM_CCR_BACKEND=%s but no entry point headroom.ccr_backend[%s]",
+                "LEGROOM_CCR_BACKEND=%s but no entry point legroom.ccr_backend[%s]",
                 backend_type,
                 backend_type,
             )
             return None
         fn = ep.load()
         kwargs = {
-            "url": os.environ.get("HEADROOM_REDIS_URL", ""),
-            "tenant_prefix": os.environ.get("HEADROOM_CCR_TENANT_PREFIX", ""),
+            "url": os.environ.get("LEGROOM_REDIS_URL", ""),
+            "tenant_prefix": os.environ.get("LEGROOM_CCR_TENANT_PREFIX", ""),
         }
         backend: CompressionStoreBackend = fn(**kwargs)
         return backend
@@ -1008,12 +1008,12 @@ def get_compression_store(
 
     If a request-scoped store was set (e.g. by SaaS middleware), returns it.
     Otherwise uses lazy-initialized global singleton. Backend can be supplied
-    explicitly or created from env (HEADROOM_CCR_BACKEND) when building the global.
+    explicitly or created from env (LEGROOM_CCR_BACKEND) when building the global.
 
     Args:
         max_entries: Maximum entries (only used on first call for global store).
         default_ttl: Default TTL (only used on first call for global store).
-            When omitted, HEADROOM_CCR_TTL_SECONDS overrides the 1800-second default.
+            When omitted, LEGROOM_CCR_TTL_SECONDS overrides the 1800-second default.
         backend: Custom storage backend (only used on first call for global store).
                  Defaults to InMemoryBackend if not provided; env backend used if backend is None.
 

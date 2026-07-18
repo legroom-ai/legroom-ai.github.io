@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from headroom.providers.cortex_code import build_install_env, proxy_base_url, render_setup_lines
-from headroom.providers.cortex_code.runtime import build_launch_env, default_api_url
+from legroom.providers.cortex_code import build_install_env, proxy_base_url, render_setup_lines
+from legroom.providers.cortex_code.runtime import build_launch_env, default_api_url
 
 
 def test_cortex_code_proxy_base_url_is_openai_compatible() -> None:
@@ -83,14 +83,14 @@ def test_cortex_code_default_api_url_preserves_https_prefix() -> None:
 
 
 def test_cortex_code_install_registry_includes_cortex_code() -> None:
-    from headroom.providers.install_registry import build_install_target_envs
+    from legroom.providers.install_registry import build_install_target_envs
 
     result = build_install_target_envs(port=1234, backend="ignored", targets=["cortex-code"])
     assert result["cortex-code"]["OPENAI_BASE_URL"] == "http://127.0.0.1:1234/v1"
 
 
 def test_cortex_code_install_registry_unknown_target_skipped() -> None:
-    from headroom.providers.install_registry import build_install_target_envs
+    from legroom.providers.install_registry import build_install_target_envs
 
     result = build_install_target_envs(
         port=1234, backend="ignored", targets=["cortex-code", "unknown-tool"]

@@ -1,6 +1,6 @@
 """Regression test for #1006: the proxy must not emit unredeemable CCR markers.
 
-When frozen_message_count > 0, the old code deferred headroom_retrieve tool
+When frozen_message_count > 0, the old code deferred legroom_retrieve tool
 injection unconditionally — even if compression just emitted NEW <<ccr:hash>>
 markers the agent has no tool to redeem.
 
@@ -14,8 +14,8 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from headroom.ccr.tool_injection import CCR_TOOL_NAME, CCRToolInjector
-from headroom.proxy.helpers import (
+from legroom.ccr.tool_injection import CCR_TOOL_NAME, CCRToolInjector
+from legroom.proxy.helpers import (
     apply_session_sticky_ccr_tool,
     should_inject_ccr_tool,
 )
@@ -85,7 +85,7 @@ class TestCCRInjectionEndToEnd:
         )
         assert should_inject
 
-        with patch("headroom.proxy.helpers.get_session_ccr_tracker") as mock_tracker_fn:
+        with patch("legroom.proxy.helpers.get_session_ccr_tracker") as mock_tracker_fn:
             mock_tracker = MagicMock()
             mock_tracker.has_done_ccr.return_value = False  # first CCR ever
             mock_tracker.get_golden_tool_bytes.return_value = None
@@ -101,7 +101,7 @@ class TestCCRInjectionEndToEnd:
 
         tool_names = [t.get("name") for t in tools_out]
         assert CCR_TOOL_NAME in tool_names, (
-            f"headroom_retrieve not injected when markers emitted and prefix frozen (#1006). "
+            f"legroom_retrieve not injected when markers emitted and prefix frozen (#1006). "
             f"tools={tool_names}"
         )
 
@@ -117,7 +117,7 @@ class TestCCRInjectionEndToEnd:
         )
         assert not should_inject, "no markers → no forced injection"
 
-        with patch("headroom.proxy.helpers.get_session_ccr_tracker") as mock_tracker_fn:
+        with patch("legroom.proxy.helpers.get_session_ccr_tracker") as mock_tracker_fn:
             mock_tracker = MagicMock()
             mock_tracker.has_done_ccr.return_value = False
             mock_tracker.get_golden_tool_bytes.return_value = None
@@ -133,5 +133,5 @@ class TestCCRInjectionEndToEnd:
 
         tool_names = [t.get("name") for t in tools_out]
         assert CCR_TOOL_NAME not in tool_names, (
-            "headroom_retrieve should NOT be injected when no markers and frozen prefix"
+            "legroom_retrieve should NOT be injected when no markers and frozen prefix"
         )

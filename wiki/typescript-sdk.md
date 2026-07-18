@@ -1,19 +1,19 @@
 # TypeScript SDK
 
-The Headroom TypeScript SDK lets any JavaScript or TypeScript application compress LLM messages before sending them to a model. It saves tokens, reduces costs, and fits more context into every request.
+The Legroom TypeScript SDK lets any JavaScript or TypeScript application compress LLM messages before sending them to a model. It saves tokens, reduces costs, and fits more context into every request.
 
 ## Install
 
 ```bash
-npm install headroom-ai
+npm install legroom-ai
 ```
 
-Requires a running [Headroom proxy](proxy.md).
+Requires a running [Legroom proxy](proxy.md).
 
 ## Quick Start
 
 ```typescript
-import { compress } from 'headroom-ai';
+import { compress } from 'legroom-ai';
 
 const result = await compress(messages, { model: 'gpt-4o' });
 console.log(`Saved ${result.tokensSaved} tokens`);
@@ -26,18 +26,18 @@ const response = await openai.chat.completions.create({
 
 ## How It Works
 
-The TypeScript SDK is an HTTP client. When you call `compress()`, it sends your messages to the Headroom proxy's `POST /v1/compress` endpoint. The proxy runs the full compression pipeline (SmartCrusher, ContentRouter, CacheAligner, etc.) and returns compressed messages. No compression logic runs in Node.js — all the heavy lifting happens in the proxy.
+The TypeScript SDK is an HTTP client. When you call `compress()`, it sends your messages to the Legroom proxy's `POST /v1/compress` endpoint. The proxy runs the full compression pipeline (SmartCrusher, ContentRouter, CacheAligner, etc.) and returns compressed messages. No compression logic runs in Node.js — all the heavy lifting happens in the proxy.
 
 ```
 Your TypeScript App
     │
     │  compress(messages)
     ▼
-headroom-ai (npm)  ← HTTP client
+legroom-ai (npm)  ← HTTP client
     │
     │  POST /v1/compress
     ▼
-Headroom Proxy / Cloud  ← compression pipeline (Python)
+Legroom Proxy / Cloud  ← compression pipeline (Python)
     │
     │  compressed messages
     ▼
@@ -51,7 +51,7 @@ LLM Provider
 ## Core API: `compress()`
 
 ```typescript
-import { compress } from 'headroom-ai';
+import { compress } from 'legroom-ai';
 
 const result = await compress(messages, {
   model: 'gpt-4o',                      // model name (for token counting)
@@ -77,17 +77,17 @@ Messages use standard OpenAI chat format: `{ role, content, tool_calls?, tool_ca
 
 Instead of passing options, set environment variables:
 
-- `HEADROOM_BASE_URL` — proxy URL (default: `http://localhost:8787`)
-- `HEADROOM_API_KEY` — optional API key for authenticated endpoints
+- `LEGROOM_BASE_URL` — proxy URL (default: `http://localhost:8787`)
+- `LEGROOM_API_KEY` — optional API key for authenticated endpoints
 
 ## Reusable Client
 
 For apps making many calls, create a client once and reuse it:
 
 ```typescript
-import { HeadroomClient } from 'headroom-ai';
+import { LegroomClient } from 'legroom-ai';
 
-const client = new HeadroomClient({
+const client = new LegroomClient({
   baseUrl: 'http://localhost:8787',
   apiKey: 'your-api-key',
 });
@@ -100,16 +100,16 @@ const r2 = await client.compress(messages2, { model: 'gpt-4o' });
 
 ### Vercel AI SDK
 
-The Headroom middleware plugs directly into Vercel AI SDK's `wrapLanguageModel()`:
+The Legroom middleware plugs directly into Vercel AI SDK's `wrapLanguageModel()`:
 
 ```typescript
-import { headroomMiddleware } from 'headroom-ai/vercel-ai';
+import { legroomMiddleware } from 'legroom-ai/vercel-ai';
 import { wrapLanguageModel, generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 
 const model = wrapLanguageModel({
   model: openai('gpt-4o'),
-  middleware: headroomMiddleware(),
+  middleware: legroomMiddleware(),
 });
 
 // All calls through this model are automatically compressed
@@ -121,7 +121,7 @@ The middleware intercepts messages in the `transformParams` hook, converts Verce
 You can also compress Vercel messages directly:
 
 ```typescript
-import { compressVercelMessages } from 'headroom-ai/vercel-ai';
+import { compressVercelMessages } from 'legroom-ai/vercel-ai';
 
 const result = await compressVercelMessages(modelMessages, { model: 'gpt-4o' });
 // result.messages is in Vercel ModelMessage[] format
@@ -132,10 +132,10 @@ const result = await compressVercelMessages(modelMessages, { model: 'gpt-4o' });
 Wrap your OpenAI client to auto-compress messages on every `chat.completions.create()` call:
 
 ```typescript
-import { withHeadroom } from 'headroom-ai/openai';
+import { withLegroom } from 'legroom-ai/openai';
 import OpenAI from 'openai';
 
-const client = withHeadroom(new OpenAI());
+const client = withLegroom(new OpenAI());
 
 // Messages are compressed before sending — transparent to your code
 const response = await client.chat.completions.create({
@@ -151,10 +151,10 @@ Only `chat.completions.create()` is intercepted. All other methods (embeddings, 
 Same pattern for the Anthropic client:
 
 ```typescript
-import { withHeadroom } from 'headroom-ai/anthropic';
+import { withLegroom } from 'legroom-ai/anthropic';
 import Anthropic from '@anthropic-ai/sdk';
 
-const client = withHeadroom(new Anthropic());
+const client = withLegroom(new Anthropic());
 
 const response = await client.messages.create({
   model: 'claude-sonnet-4-5-20250929',
@@ -168,14 +168,14 @@ Only `messages.create()` is intercepted. The adapter converts between Anthropic'
 ## Error Handling
 
 ```typescript
-import { compress, HeadroomConnectionError, HeadroomAuthError } from 'headroom-ai';
+import { compress, LegroomConnectionError, LegroomAuthError } from 'legroom-ai';
 
 try {
   const result = await compress(messages, { model: 'gpt-4o', fallback: false });
 } catch (error) {
-  if (error instanceof HeadroomAuthError) {
+  if (error instanceof LegroomAuthError) {
     // Invalid API key (401)
-  } else if (error instanceof HeadroomConnectionError) {
+  } else if (error instanceof LegroomConnectionError) {
     // Proxy unreachable
   }
 }
@@ -189,18 +189,18 @@ By default, `compress()` never blocks your app. If the proxy is unreachable:
 
 | Scenario | `fallback: true` (default) | `fallback: false` |
 |----------|---------------------------|-------------------|
-| Proxy unreachable | Returns uncompressed, `compressed: false` | Throws `HeadroomConnectionError` |
-| Proxy 503 error | Returns uncompressed after retries | Throws `HeadroomCompressError` |
-| Invalid API key (401) | Throws `HeadroomAuthError` | Throws `HeadroomAuthError` |
-| Bad request (400) | Throws `HeadroomCompressError` | Throws `HeadroomCompressError` |
+| Proxy unreachable | Returns uncompressed, `compressed: false` | Throws `LegroomConnectionError` |
+| Proxy 503 error | Returns uncompressed after retries | Throws `LegroomCompressError` |
+| Invalid API key (401) | Throws `LegroomAuthError` | Throws `LegroomAuthError` |
+| Bad request (400) | Throws `LegroomCompressError` | Throws `LegroomCompressError` |
 
 ## Zero Dependencies
 
-The `headroom-ai` package has no runtime dependencies. Framework SDKs (Vercel AI, OpenAI, Anthropic) are optional peer dependencies — only install what you use.
+The `legroom-ai` package has no runtime dependencies. Framework SDKs (Vercel AI, OpenAI, Anthropic) are optional peer dependencies — only install what you use.
 
 ## OpenClaw Plugin
 
-The TypeScript SDK powers the [`headroom-openclaw`](https://www.npmjs.com/package/headroom-openclaw) plugin for [OpenClaw](https://github.com/openclaw/openclaw) agents. The plugin uses `HeadroomClient` internally to compress context during the `assemble()` lifecycle hook. The preferred install flow is `headroom wrap openclaw`; the direct plugin command is `openclaw plugins install --dangerously-force-unsafe-install headroom-ai/openclaw`. See the [plugin source](https://github.com/ghaliba3/headroom/tree/main/plugins/openclaw) for details.
+The TypeScript SDK powers the [`legroom-openclaw`](https://www.npmjs.com/package/legroom-openclaw) plugin for [OpenClaw](https://github.com/openclaw/openclaw) agents. The plugin uses `LegroomClient` internally to compress context during the `assemble()` lifecycle hook. The preferred install flow is `legroom wrap openclaw`; the direct plugin command is `openclaw plugins install --dangerously-force-unsafe-install legroom-ai/openclaw`. See the [plugin source](https://github.com/legroom-ai/legroom-ai.github.io/tree/main/plugins/openclaw) for details.
 
 ## Comparison with Python SDK
 
@@ -209,9 +209,9 @@ The TypeScript SDK powers the [`headroom-openclaw`](https://www.npmjs.com/packag
 | `compress()` | Native (runs locally) | HTTP client (calls proxy) |
 | Proxy | Built-in server | Connects to proxy |
 | Vercel AI SDK | N/A | Middleware adapter |
-| OpenAI SDK | `HeadroomClient` wrapper | `withHeadroom()` wrapper |
-| Anthropic SDK | `HeadroomClient` wrapper | `withHeadroom()` wrapper |
-| LangChain | `HeadroomChatModel` | Use `compress()` directly |
+| OpenAI SDK | `LegroomClient` wrapper | `withLegroom()` wrapper |
+| Anthropic SDK | `LegroomClient` wrapper | `withLegroom()` wrapper |
+| LangChain | `LegroomChatModel` | Use `compress()` directly |
 | Memory system | Full (SQLite + HNSW) | Not yet (use proxy) |
 | MCP server | Built-in | Not yet |
-| CLI tools | `headroom proxy`, `headroom wrap`, etc. | N/A (use Python CLI) |
+| CLI tools | `legroom proxy`, `legroom wrap`, etc. | N/A (use Python CLI) |

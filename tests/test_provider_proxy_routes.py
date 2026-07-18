@@ -9,8 +9,8 @@ import httpx
 from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 
-from headroom.providers.codex.runtime import CodexRoutingDecision
-from headroom.proxy.server import HeadroomProxy, ProxyConfig, create_app
+from legroom.providers.codex.runtime import CodexRoutingDecision
+from legroom.proxy.server import LegroomProxy, ProxyConfig, create_app
 
 
 def _app() -> Any:
@@ -104,10 +104,10 @@ def test_provider_passthrough_routes_forward_expected_targets(monkeypatch) -> No
             }
         )
 
-    monkeypatch.setattr(HeadroomProxy, "handle_passthrough", fake_passthrough)
-    monkeypatch.setattr(HeadroomProxy, "handle_gemini_generate_content", fake_gemini_generate)
-    monkeypatch.setattr(HeadroomProxy, "handle_gemini_count_tokens", fake_gemini_count)
-    monkeypatch.setattr(HeadroomProxy, "handle_anthropic_messages", fake_anthropic_messages)
+    monkeypatch.setattr(LegroomProxy, "handle_passthrough", fake_passthrough)
+    monkeypatch.setattr(LegroomProxy, "handle_gemini_generate_content", fake_gemini_generate)
+    monkeypatch.setattr(LegroomProxy, "handle_gemini_count_tokens", fake_gemini_count)
+    monkeypatch.setattr(LegroomProxy, "handle_anthropic_messages", fake_anthropic_messages)
 
     with TestClient(_app()) as client:
         assert client.post("/v1/messages/count_tokens").json()["base_url"] == (
@@ -122,7 +122,7 @@ def test_provider_passthrough_routes_forward_expected_targets(monkeypatch) -> No
                 "/azure/models",
                 headers={
                     "api-key": "azure-key",
-                    "x-headroom-base-url": "https://azure.example/openai/",
+                    "x-legroom-base-url": "https://azure.example/openai/",
                 },
             ).json()["base_url"]
             == "https://azure.example/openai"
@@ -198,7 +198,7 @@ def test_provider_passthrough_routes_forward_expected_targets(monkeypatch) -> No
         )
         custom_passthrough = client.get(
             "/unhandled/path",
-            headers={"x-headroom-base-url": "https://custom.example/base/"},
+            headers={"x-legroom-base-url": "https://custom.example/base/"},
         ).json()
         assert custom_passthrough["base_url"] == "https://custom.example/base"
         assert custom_passthrough["sub_path"] == ""
@@ -206,7 +206,7 @@ def test_provider_passthrough_routes_forward_expected_targets(monkeypatch) -> No
 
         opencode_zen_passthrough = client.post(
             "/zen/v1/chat/completions",
-            headers={"x-headroom-base-url": "https://opencode.ai/"},
+            headers={"x-legroom-base-url": "https://opencode.ai/"},
             json={"model": "zen"},
         ).json()
         assert opencode_zen_passthrough["base_url"] == "https://opencode.ai"
@@ -215,7 +215,7 @@ def test_provider_passthrough_routes_forward_expected_targets(monkeypatch) -> No
 
         unrelated_custom_passthrough = client.post(
             "/mcp",
-            headers={"x-headroom-base-url": "https://opencode.ai/"},
+            headers={"x-legroom-base-url": "https://opencode.ai/"},
             json={},
         ).json()
         assert unrelated_custom_passthrough["sub_path"] == ""
@@ -227,20 +227,20 @@ def test_provider_passthrough_routes_forward_expected_targets(monkeypatch) -> No
         ):
             unrelated_custom_passthrough = client.post(
                 unrelated_path,
-                headers={"x-headroom-base-url": "https://opencode.ai/"},
+                headers={"x-legroom-base-url": "https://opencode.ai/"},
                 json={},
             ).json()
             assert unrelated_custom_passthrough["sub_path"] == ""
             assert unrelated_custom_passthrough["provider"] == ""
         get_custom_passthrough = client.get(
             "/zen/v1/chat/completions",
-            headers={"x-headroom-base-url": "https://opencode.ai/"},
+            headers={"x-legroom-base-url": "https://opencode.ai/"},
         ).json()
         assert get_custom_passthrough["sub_path"] == ""
         assert get_custom_passthrough["provider"] == ""
         other_host_custom_passthrough = client.post(
             "/zen/v1/chat/completions",
-            headers={"x-headroom-base-url": "https://custom.example/"},
+            headers={"x-legroom-base-url": "https://custom.example/"},
             json={"model": "zen"},
         ).json()
         assert other_host_custom_passthrough["sub_path"] == ""
@@ -274,7 +274,7 @@ def test_provider_passthrough_routes_forward_expected_targets(monkeypatch) -> No
 
 
 def test_proxy_route_helpers_prefer_legacy_targets_and_gemini_passthrough() -> None:
-    proxy_routes = importlib.import_module("headroom.providers.proxy_routes")
+    proxy_routes = importlib.import_module("legroom.providers.proxy_routes")
     proxy = type(
         "Proxy",
         (),
@@ -301,7 +301,7 @@ def test_proxy_route_helpers_prefer_legacy_targets_and_gemini_passthrough() -> N
     )
     assert (
         proxy_routes._select_passthrough_base_url(
-            proxy, {"api-key": "azure", "x-headroom-base-url": "https://azure.example/base/"}
+            proxy, {"api-key": "azure", "x-legroom-base-url": "https://azure.example/base/"}
         )
         == "https://azure.example/base"
     )
@@ -323,7 +323,7 @@ def test_provider_specific_routes_delegate_to_expected_proxy_handlers(monkeypatc
             delegated.append((name, request.url.path, tuple(str(arg) for arg in args)))
             return JSONResponse({"handler": name, "path": request.url.path, "args": list(args)})
 
-        monkeypatch.setattr(HeadroomProxy, name, fake)
+        monkeypatch.setattr(LegroomProxy, name, fake)
 
     for handler_name in (
         "handle_anthropic_messages",
@@ -461,7 +461,7 @@ def test_openai_response_websocket_aliases_delegate_to_openai_ws_handler(monkeyp
         await websocket.send_json({"path": websocket.url.path})
         await websocket.close()
 
-    monkeypatch.setattr(HeadroomProxy, "handle_openai_responses_ws", fake_ws)
+    monkeypatch.setattr(LegroomProxy, "handle_openai_responses_ws", fake_ws)
 
     with TestClient(_app()) as client:
         for path in (
@@ -491,7 +491,7 @@ def test_openai_response_subpath_passthrough_returns_502_on_http_failure() -> No
 
     with TestClient(_app()) as client:
         client.app.state.proxy.http_client = FailingAsyncClient()
-        with patch("headroom.providers.openai_responses.logger") as logger:
+        with patch("legroom.providers.openai_responses.logger") as logger:
             response = client.post("/v1/responses/compact?trace=1", json={"model": "gpt-4o"})
 
     assert response.status_code == 502
@@ -532,7 +532,7 @@ def test_openai_response_subpath_passthrough_uses_openai_target() -> None:
 
 def test_openai_response_subpath_aliases_and_chatgpt_auth_use_expected_targets(monkeypatch) -> None:
     monkeypatch.setattr(
-        "headroom.providers.codex.responses.resolve_codex_routing",
+        "legroom.providers.codex.responses.resolve_codex_routing",
         lambda headers: CodexRoutingDecision(headers=dict(headers), is_chatgpt_auth=True),
     )
 
@@ -563,7 +563,7 @@ def test_openai_response_subpath_aliases_and_chatgpt_auth_use_expected_targets(m
 
 def test_openai_image_routes_use_codex_backend_under_chatgpt_auth(monkeypatch) -> None:
     monkeypatch.setattr(
-        "headroom.providers.codex.images.resolve_codex_routing",
+        "legroom.providers.codex.images.resolve_codex_routing",
         lambda headers: CodexRoutingDecision(
             headers={**headers, "ChatGPT-Account-ID": "acct_123"},
             is_chatgpt_auth=True,
@@ -598,7 +598,7 @@ def test_openai_image_routes_use_codex_backend_under_chatgpt_auth(monkeypatch) -
             headers={
                 "Authorization": "Bearer oauth-token",
                 "Accept-Encoding": "gzip",
-                "X-Headroom-Bypass": "1",
+                "X-Legroom-Bypass": "1",
             },
             json={"model": "gpt-image-2", "prompt": "a route probe"},
         )
@@ -622,7 +622,7 @@ def test_openai_image_routes_use_codex_backend_under_chatgpt_auth(monkeypatch) -
     assert generate_headers["ChatGPT-Account-ID"] == "acct_123"
     assert "host" not in generate_headers
     assert "accept-encoding" not in generate_headers
-    assert "x-headroom-bypass" not in generate_headers
+    assert "x-legroom-bypass" not in generate_headers
     assert generate_body == b'{"model":"gpt-image-2","prompt":"a route probe"}'
 
     edit_method, edit_url, edit_headers, edit_body = fake.calls[1]
@@ -638,7 +638,7 @@ def test_openai_image_codex_response_strips_stale_compression_headers(monkeypatc
     upstream_body = b'{"ok":true}'
     stale_content_length = "9999"
     monkeypatch.setattr(
-        "headroom.providers.codex.images.resolve_codex_routing",
+        "legroom.providers.codex.images.resolve_codex_routing",
         lambda headers: CodexRoutingDecision(
             headers={**headers, "ChatGPT-Account-ID": "acct_123"},
             is_chatgpt_auth=True,
@@ -714,7 +714,7 @@ def test_openai_image_edits_api_key_auth_falls_through_to_openai_passthrough(
             }
         )
 
-    monkeypatch.setattr(HeadroomProxy, "handle_passthrough", fake_passthrough)
+    monkeypatch.setattr(LegroomProxy, "handle_passthrough", fake_passthrough)
 
     with TestClient(_app()) as client:
         response = client.post(
@@ -742,13 +742,13 @@ def test_openai_image_edits_api_key_auth_falls_through_to_openai_passthrough(
 
 def test_openai_image_edits_preserves_multipart_body_under_chatgpt_auth(monkeypatch) -> None:
     monkeypatch.setattr(
-        "headroom.providers.codex.images.resolve_codex_routing",
+        "legroom.providers.codex.images.resolve_codex_routing",
         lambda headers: CodexRoutingDecision(
             headers={**headers, "ChatGPT-Account-ID": "acct_123"},
             is_chatgpt_auth=True,
         ),
     )
-    boundary = "----headroom-boundary"
+    boundary = "----legroom-boundary"
     body = (
         (
             f"--{boundary}\r\n"
@@ -817,7 +817,7 @@ def test_gemini_batch_embed_contents_passthrough_uses_gemini_target(monkeypatch)
         calls.append((request.url.path, base_url, sub_path))
         return JSONResponse({"base_url": base_url, "sub_path": sub_path, "provider": provider_name})
 
-    monkeypatch.setattr(HeadroomProxy, "handle_passthrough", fake_passthrough)
+    monkeypatch.setattr(LegroomProxy, "handle_passthrough", fake_passthrough)
 
     with TestClient(_app()) as client:
         response = client.post("/v1beta/models/demo:batchEmbedContents")
@@ -834,7 +834,7 @@ def test_gemini_batch_embed_contents_passthrough_uses_gemini_target(monkeypatch)
 
 
 def test_v1_models_fetches_codex_registry_under_chatgpt_auth(monkeypatch) -> None:
-    model_metadata = importlib.import_module("headroom.providers.codex.model_metadata")
+    model_metadata = importlib.import_module("legroom.providers.codex.model_metadata")
     debug_messages: list[tuple[str, tuple[object, ...]]] = []
     monkeypatch.setattr(
         model_metadata.logger,
@@ -1022,7 +1022,7 @@ def test_v1_models_still_forwards_under_non_chatgpt_auth() -> None:
         calls.append((request.url.path, base_url, provider_name))
         return JSONResponse({"base_url": base_url, "provider": provider_name})
 
-    with patch.object(HeadroomProxy, "handle_passthrough", fake_passthrough):
+    with patch.object(LegroomProxy, "handle_passthrough", fake_passthrough):
         with TestClient(_app()) as client:
             response = client.get(
                 "/v1/models",
@@ -1044,7 +1044,7 @@ def test_v1_models_routes_claude_code_gateway_discovery_to_anthropic() -> None:
         calls.append((request.url.path, base_url, provider_name))
         return JSONResponse({"base_url": base_url, "provider": provider_name})
 
-    with patch.object(HeadroomProxy, "handle_passthrough", fake_passthrough):
+    with patch.object(LegroomProxy, "handle_passthrough", fake_passthrough):
         with TestClient(_app()) as client:
             list_response = client.get(
                 "/v1/models",

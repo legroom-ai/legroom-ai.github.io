@@ -1,8 +1,8 @@
 """Opt-in JSONL recorder for compression events (probe-based replay evals).
 
 Records (original, compressed) message pairs at ``INPUT_COMPRESSED`` so that
-``headroom evals probes`` can measure what compression removed from real
-proxied sessions. Activated only when ``HEADROOM_PROBE_RECORD_DIR`` is set;
+``legroom evals probes`` can measure what compression removed from real
+proxied sessions. Activated only when ``LEGROOM_PROBE_RECORD_DIR`` is set;
 recordings contain full conversation content in plaintext, are written with
 directory mode 0700, and never leave the machine.
 
@@ -19,11 +19,11 @@ import threading
 import time
 from pathlib import Path
 
-from headroom.pipeline import PipelineEvent, PipelineStage
+from legroom.pipeline import PipelineEvent, PipelineStage
 
 logger = logging.getLogger(__name__)
 
-RECORD_DIR_ENV = "HEADROOM_PROBE_RECORD_DIR"
+RECORD_DIR_ENV = "LEGROOM_PROBE_RECORD_DIR"
 
 
 class CompressionEventRecorder:
@@ -78,7 +78,7 @@ class CompressionEventRecorder:
 
 
 def probe_recorder_from_env() -> CompressionEventRecorder | None:
-    """Build a recorder when ``HEADROOM_PROBE_RECORD_DIR`` is set, else None.
+    """Build a recorder when ``LEGROOM_PROBE_RECORD_DIR`` is set, else None.
 
     Fail-open: any error constructing the recorder (unwritable path, etc.)
     disables recording with a warning instead of breaking proxy startup.

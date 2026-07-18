@@ -17,9 +17,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import headroom.proxy.handlers.openai as openai_module
-from headroom.proxy.handlers.openai import OpenAIHandlerMixin
-from headroom.proxy.ws_session_registry import WebSocketSessionRegistry
+import legroom.proxy.handlers.openai as openai_module
+from legroom.proxy.handlers.openai import OpenAIHandlerMixin
+from legroom.proxy.ws_session_registry import WebSocketSessionRegistry
 
 # ---------------------------------------------------------------------------
 # Test doubles
@@ -106,10 +106,10 @@ class _DummyOpenAIHandler(OpenAIHandlerMixin):
         return fn()
 
     async def _record_request_outcome(self, outcome) -> None:
-        # Mirror of ``HeadroomProxy._record_request_outcome`` for the
+        # Mirror of ``LegroomProxy._record_request_outcome`` for the
         # mixin tests. Delegates to the free funnel function so the
         # wire shape is identical to production.
-        from headroom.proxy.outcome import emit_request_outcome
+        from legroom.proxy.outcome import emit_request_outcome
 
         await emit_request_outcome(self, outcome)
 
@@ -330,9 +330,9 @@ def _codex_lite_headers(*, chatgpt: bool) -> dict[str, str]:
 
 @pytest.mark.asyncio
 async def test_ws_first_frame_output_shaper_rewrites_without_compression(monkeypatch):
-    monkeypatch.setenv("HEADROOM_OUTPUT_SHAPER", "1")
-    monkeypatch.setenv("HEADROOM_VERBOSITY_LEVEL", "2")
-    monkeypatch.delenv("HEADROOM_OUTPUT_HOLDOUT", raising=False)
+    monkeypatch.setenv("LEGROOM_OUTPUT_SHAPER", "1")
+    monkeypatch.setenv("LEGROOM_VERBOSITY_LEVEL", "2")
+    monkeypatch.delenv("LEGROOM_OUTPUT_HOLDOUT", raising=False)
     upstream_events = [
         json.dumps({"type": "response.created", "response": {"id": "r_1"}}),
         json.dumps(
@@ -362,15 +362,15 @@ async def test_ws_first_frame_output_shaper_rewrites_without_compression(monkeyp
 
     sent = json.loads(upstream.sent[0])
     payload = sent["response"]
-    assert "<headroom_output_shaping>" in payload["instructions"]
+    assert "<legroom_output_shaping>" in payload["instructions"]
     assert payload["text"]["verbosity"] == "low"
     assert any(t == "output_shaper:verbosity:L2" for t in outcomes[-1].transforms_applied)
 
 
 @pytest.mark.asyncio
 async def test_ws_output_shaper_stratum_uses_frame_input_tokens(monkeypatch):
-    monkeypatch.setenv("HEADROOM_OUTPUT_SHAPER", "1")
-    monkeypatch.setenv("HEADROOM_VERBOSITY_LEVEL", "2")
+    monkeypatch.setenv("LEGROOM_OUTPUT_SHAPER", "1")
+    monkeypatch.setenv("LEGROOM_VERBOSITY_LEVEL", "2")
     long_input = " ".join(f"word{i}" for i in range(2500))
     first_frame = json.dumps(
         {
@@ -411,7 +411,7 @@ async def test_ws_output_shaper_stratum_uses_frame_input_tokens(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_ws_output_shaper_respects_bypass(monkeypatch):
-    monkeypatch.setenv("HEADROOM_OUTPUT_SHAPER", "1")
+    monkeypatch.setenv("LEGROOM_OUTPUT_SHAPER", "1")
     upstream_events = [
         json.dumps({"type": "response.created", "response": {"id": "r_1"}}),
         json.dumps({"type": "response.completed", "response": {"id": "r_1"}}),
@@ -422,7 +422,7 @@ async def test_ws_output_shaper_respects_bypass(monkeypatch):
     client_ws = _FakeWebSocket(frames=[first])
     client_ws.headers = {
         "authorization": "Bearer test",
-        "x-headroom-bypass": "true",
+        "x-legroom-bypass": "true",
     }
     handler = _DummyOpenAIHandler()
 
@@ -434,8 +434,8 @@ async def test_ws_output_shaper_respects_bypass(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_ws_output_shaper_holdout_labels_without_rewrite(monkeypatch):
-    monkeypatch.setenv("HEADROOM_OUTPUT_SHAPER", "1")
-    monkeypatch.setenv("HEADROOM_OUTPUT_HOLDOUT", "1")
+    monkeypatch.setenv("LEGROOM_OUTPUT_SHAPER", "1")
+    monkeypatch.setenv("LEGROOM_OUTPUT_HOLDOUT", "1")
     upstream_events = [
         json.dumps({"type": "response.created", "response": {"id": "r_1"}}),
         json.dumps(
@@ -540,7 +540,7 @@ async def test_ws_first_frame_timeout_uses_timeout_reason(caplog, monkeypatch):
         raise asyncio.TimeoutError("simulated timeout")
 
     handler._run_compression_in_executor = _timeout_run  # type: ignore[method-assign]
-    caplog.set_level(logging.INFO, logger="headroom.proxy")
+    caplog.set_level(logging.INFO, logger="legroom.proxy")
 
     with patch.dict(sys.modules, {"websockets": fake_ws_mod}):
         await handler.handle_openai_responses_ws(client_ws)
@@ -579,7 +579,7 @@ async def test_ws_first_frame_non_timeout_exception_keeps_generic_reason(
         raise RuntimeError("simulated failure")
 
     handler._run_compression_in_executor = _error_run  # type: ignore[method-assign]
-    caplog.set_level(logging.INFO, logger="headroom.proxy")
+    caplog.set_level(logging.INFO, logger="legroom.proxy")
 
     with patch.dict(sys.modules, {"websockets": fake_ws_mod}):
         await handler.handle_openai_responses_ws(client_ws)
@@ -629,7 +629,7 @@ async def test_ws_later_frame_timeout_records_failed_frame(caplog, monkeypatch):
 
     handler._compress_openai_responses_payload = _noop_compress  # type: ignore[method-assign]
     handler._run_compression_in_executor = _run  # type: ignore[method-assign]
-    caplog.set_level(logging.INFO, logger="headroom.proxy")
+    caplog.set_level(logging.INFO, logger="legroom.proxy")
 
     with patch.dict(sys.modules, {"websockets": fake_ws_mod}):
         trigger_task = asyncio.create_task(_trigger())
@@ -773,7 +773,7 @@ async def test_ws_session_metrics_include_dashboard_performance_timings():
 async def test_ws_opt_in_flattens_response_create_for_openai_compatible_upstream(monkeypatch):
     """Some OpenAI-compatible WS gateways expect top-level response.create payloads."""
 
-    monkeypatch.setenv("HEADROOM_OPENAI_WS_FLATTEN_RESPONSE_CREATE", "1")
+    monkeypatch.setenv("LEGROOM_OPENAI_WS_FLATTEN_RESPONSE_CREATE", "1")
     upstream_events = [
         json.dumps({"type": "response.created", "response": {"id": "r_1"}}),
         json.dumps({"type": "response.completed", "response": {"id": "r_1"}}),
@@ -815,7 +815,7 @@ async def test_ws_opt_in_flattens_response_create_for_openai_compatible_upstream
 async def test_ws_opt_in_propagates_upstream_close_code_and_reason(monkeypatch):
     """Expose upstream close details to Codex instead of swallowing them in debug logs."""
 
-    monkeypatch.setenv("HEADROOM_OPENAI_WS_PROPAGATE_UPSTREAM_CLOSE", "1")
+    monkeypatch.setenv("LEGROOM_OPENAI_WS_PROPAGATE_UPSTREAM_CLOSE", "1")
     upstream = _FakeUpstream(
         [],
         raise_mid_stream=_FakeUpstreamClose(4001, "bad request shape"),
@@ -1326,7 +1326,7 @@ async def test_ws_forwards_codex_headers_to_client_accept():
     with (
         patch.dict(sys.modules, {"websockets": fake_ws_mod}),
         patch(
-            "headroom.subscription.codex_rate_limits.get_codex_rate_limit_state",
+            "legroom.subscription.codex_rate_limits.get_codex_rate_limit_state",
             _fake_state,
         ),
     ):
@@ -1363,7 +1363,7 @@ async def test_ws_first_frame_timeout_after_connect_closes_upstream():
     with (
         patch.dict(sys.modules, {"websockets": fake_ws_mod}),
         patch(
-            "headroom.proxy.handlers.openai.WS_FIRST_FRAME_TIMEOUT_SECONDS",
+            "legroom.proxy.handlers.openai.WS_FIRST_FRAME_TIMEOUT_SECONDS",
             0.05,
         ),
     ):

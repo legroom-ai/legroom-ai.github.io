@@ -1,4 +1,4 @@
-"""Shared utilities for Headroom SDK."""
+"""Shared utilities for Legroom SDK."""
 
 from __future__ import annotations
 
@@ -10,8 +10,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-# Marker format for Headroom modifications
-MARKER_PREFIX = "<headroom:"
+# Marker format for Legroom modifications
+MARKER_PREFIX = "<legroom:"
 MARKER_SUFFIX = ">"
 
 
@@ -115,7 +115,7 @@ def parse_timestamp(ts: str) -> datetime:
 
 def create_marker(marker_type: str, **kwargs: Any) -> str:
     """
-    Create a Headroom marker string.
+    Create a Legroom marker string.
 
     Args:
         marker_type: Type of marker (e.g., "tool_digest", "dropped_context").
@@ -153,12 +153,12 @@ def create_truncated_marker(original_length: int, truncated_to: int) -> str:
 
 def extract_markers(text: str) -> list[dict[str, Any]]:
     """
-    Extract Headroom markers from text.
+    Extract Legroom markers from text.
 
     Returns:
         List of dicts with marker_type and attributes.
     """
-    pattern = re.compile(r"<headroom:(\w+)([^>]*)>")
+    pattern = re.compile(r"<legroom:(\w+)([^>]*)>")
     markers = []
 
     for match in pattern.finditer(text):

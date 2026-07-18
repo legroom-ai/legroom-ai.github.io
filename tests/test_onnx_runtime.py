@@ -1,6 +1,6 @@
 import sys
 
-from headroom.onnx_runtime import (
+from legroom.onnx_runtime import (
     ONNX_CPU_ARENA_ENV,
     cpu_arena_enabled,
     create_cpu_session_options,

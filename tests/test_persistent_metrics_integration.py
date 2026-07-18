@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import asyncio
 
-from headroom.proxy.prometheus_metrics import PrometheusMetrics
-from headroom.proxy.savings_tracker import SavingsTracker
+from legroom.proxy.prometheus_metrics import PrometheusMetrics
+from legroom.proxy.savings_tracker import SavingsTracker
 
 
 def test_runtime_metric_events_feed_lifetime_without_resetting_runtime_counters(tmp_path) -> None:

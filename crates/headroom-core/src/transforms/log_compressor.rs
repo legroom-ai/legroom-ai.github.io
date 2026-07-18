@@ -1,5 +1,5 @@
 //! Log/build-output compressor — Rust port of
-//! `headroom.transforms.log_compressor`.
+//! `legroom.transforms.log_compressor`.
 //!
 //! Compresses build and test output (pytest, npm, cargo, jest, make,
 //! generic). Typical input: 10,000+ lines with 5-10 actual errors.

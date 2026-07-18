@@ -23,7 +23,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from headroom.proxy.handlers.streaming import StreamingMixin
+from legroom.proxy.handlers.streaming import StreamingMixin
 
 
 class _Parser(StreamingMixin):
@@ -94,7 +94,7 @@ def test_non_standard_block_fields_preserved() -> None:
                 "type": "server_tool_use",
                 "id": "srvtoolu_1",
                 "name": "web_search",
-                "input": {"query": "headroom proxy"},
+                "input": {"query": "legroom proxy"},
             },
         },
         {"type": "content_block_stop", "index": 0},
@@ -106,7 +106,7 @@ def test_non_standard_block_fields_preserved() -> None:
     assert block["type"] == "server_tool_use"
     assert block["id"] == "srvtoolu_1"
     assert block["name"] == "web_search"
-    assert block["input"] == {"query": "headroom proxy"}
+    assert block["input"] == {"query": "legroom proxy"}
 
 
 def test_signature_delta_preserved() -> None:
@@ -234,7 +234,7 @@ def test_response_to_sse_preserves_server_tool_use_blocks() -> None:
                 "type": "server_tool_use",
                 "id": "srv_1",
                 "name": "web_search",
-                "input": {"query": "headroom"},
+                "input": {"query": "legroom"},
             }
         ],
         "stop_reason": "end_turn",
@@ -330,7 +330,7 @@ def test_response_to_sse_emits_server_tool_use_without_delta() -> None:
         "type": "server_tool_use",
         "id": "srvtoolu_123",
         "name": "web_search",
-        "input": {"query": "headroom server_tool_use SSE crash"},
+        "input": {"query": "legroom server_tool_use SSE crash"},
     }
     response = {
         "id": "msg_3",

@@ -1,4 +1,4 @@
-"""Semantic cache for the Headroom proxy.
+"""Semantic cache for the Legroom proxy.
 
 Simple semantic cache based on message content hash with LRU eviction.
 
@@ -16,8 +16,8 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from ..memory.tracker import ComponentStats
 
-from headroom.proxy.models import CacheEntry
-from headroom.proxy.semantic_cache_key_policy import compute_semantic_cache_key, strip_cache_control
+from legroom.proxy.models import CacheEntry
+from legroom.proxy.semantic_cache_key_policy import compute_semantic_cache_key, strip_cache_control
 
 _strip_cache_control = strip_cache_control
 

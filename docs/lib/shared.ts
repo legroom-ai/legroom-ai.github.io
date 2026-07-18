@@ -3,6 +3,6 @@ export const docsContentRoute = '/llms.mdx/docs';
 
 export const gitConfig = {
   user: 'ghaliba3',
-  repo: 'headroom',
+  repo: 'legroom',
   branch: 'main',
 };

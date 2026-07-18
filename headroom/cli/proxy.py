@@ -8,13 +8,13 @@ from typing import Any, Literal, cast
 
 import click
 
-from headroom import paths as _paths
-from headroom.providers.registry import (
+from legroom import paths as _paths
+from legroom.providers.registry import (
     resolve_api_overrides,
     resolve_api_targets,
     resolve_extra_headers,
 )
-from headroom.proxy.modes import PROXY_MODE_CACHE, normalize_proxy_mode
+from legroom.proxy.modes import PROXY_MODE_CACHE, normalize_proxy_mode
 
 from .main import main
 
@@ -38,7 +38,7 @@ from .main import main
 os.environ.setdefault("HF_HUB_DISABLE_IMPLICIT_TOKEN", "1")
 os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
 
-# Corporate TLS-inspection support (issue #1308). When HEADROOM_TLS_STRICT=0,
+# Corporate TLS-inspection support (issue #1308). When LEGROOM_TLS_STRICT=0,
 # strip OpenSSL's RFC 5280 strict CA-constraint check from urllib3's context
 # builder *before* huggingface_hub / requests import and cache it — otherwise
 # model downloads (huggingface.co) fail with "Basic Constraints of CA cert not
@@ -46,7 +46,7 @@ os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
 # httpx upstream client is handled separately in proxy/server.py via
 # build_httpx_verify(). No-op unless the toggle is set.
 try:  # pragma: no cover - exercised via integration, not unit-importable cheaply
-    from headroom.proxy.ssl_context import apply_global_tls_relaxation as _apply_tls_relax
+    from legroom.proxy.ssl_context import apply_global_tls_relaxation as _apply_tls_relax
 
     _apply_tls_relax()
 except Exception:  # never let TLS relaxation wiring break startup
@@ -66,7 +66,7 @@ warnings.filterwarnings("ignore", category=UserWarning, module="huggingface_hub"
 
 # ---------------------------------------------------------------------------
 
-_CONTEXT_TOOL_ENV = "HEADROOM_CONTEXT_TOOL"
+_CONTEXT_TOOL_ENV = "LEGROOM_CONTEXT_TOOL"
 _CONTEXT_TOOL_RTK = "rtk"
 _CONTEXT_TOOL_LEAN_CTX = "lean-ctx"
 _VALID_CONTEXT_TOOLS = {_CONTEXT_TOOL_RTK, _CONTEXT_TOOL_LEAN_CTX}
@@ -99,9 +99,9 @@ def _get_env_int(name: str, default: int) -> int:
     """Return the env var as an int, or ``default`` only when it is unset.
 
     Unlike ``_get_env_int_optional(name) or default``, an explicit ``0`` is
-    preserved — ``0`` is a legitimate value (e.g. ``HEADROOM_MIN_TOKENS=0``
+    preserved — ``0`` is a legitimate value (e.g. ``LEGROOM_MIN_TOKENS=0``
     means "crush every item") and ``0 or default`` would silently discard it.
-    Mirrors ``headroom.proxy.server._get_env_int``.
+    Mirrors ``legroom.proxy.server._get_env_int``.
     """
     value = _get_env_int_optional(name)
     return default if value is None else value
@@ -136,14 +136,14 @@ def _selected_context_tool() -> str:
     "-p",
     default=8787,
     type=click.IntRange(1, 65535),
-    envvar="HEADROOM_PORT",
-    help="Proxy port (default: 8787, env: HEADROOM_PORT)",
+    envvar="LEGROOM_PORT",
+    help="Proxy port (default: 8787, env: LEGROOM_PORT)",
 )
 @click.option("--no-open", is_flag=True, help="Print the URL instead of opening a browser")
 def dashboard(port: int, no_open: bool) -> None:
-    """Open the Headroom savings dashboard in your browser.
+    """Open the Legroom savings dashboard in your browser.
 
-    Requires a running proxy (start one with `headroom proxy` or `headroom wrap ...`).
+    Requires a running proxy (start one with `legroom proxy` or `legroom wrap ...`).
     """
     import webbrowser
 
@@ -160,56 +160,56 @@ def dashboard(port: int, no_open: bool) -> None:
 @click.option(
     "--host",
     default="127.0.0.1",
-    envvar="HEADROOM_HOST",
-    help="Host to bind to (default: 127.0.0.1, env: HEADROOM_HOST)",
+    envvar="LEGROOM_HOST",
+    help="Host to bind to (default: 127.0.0.1, env: LEGROOM_HOST)",
 )
 @click.option(
     "--port",
     "-p",
     default=8787,
     type=click.IntRange(1, 65535),
-    envvar="HEADROOM_PORT",
-    help="Port to bind to (default: 8787, env: HEADROOM_PORT)",
+    envvar="LEGROOM_PORT",
+    help="Port to bind to (default: 8787, env: LEGROOM_PORT)",
 )
 @click.option(
     "--workers",
     default=1,
     type=click.IntRange(min=1),
-    envvar="HEADROOM_WORKERS",
-    help="Number of Uvicorn worker processes (default: 1, env: HEADROOM_WORKERS)",
+    envvar="LEGROOM_WORKERS",
+    help="Number of Uvicorn worker processes (default: 1, env: LEGROOM_WORKERS)",
 )
 @click.option(
     "--limit-concurrency",
     default=1000,
     type=click.IntRange(min=1),
-    envvar="HEADROOM_LIMIT_CONCURRENCY",
+    envvar="LEGROOM_LIMIT_CONCURRENCY",
     help=(
         "Maximum concurrent connections before Uvicorn returns 503 "
-        "(default: 1000, env: HEADROOM_LIMIT_CONCURRENCY)"
+        "(default: 1000, env: LEGROOM_LIMIT_CONCURRENCY)"
     ),
 )
 @click.option(
     "--max-connections",
     default=500,
     type=click.IntRange(min=1),
-    envvar="HEADROOM_MAX_CONNECTIONS",
-    help="Maximum upstream HTTP connections (default: 500, env: HEADROOM_MAX_CONNECTIONS)",
+    envvar="LEGROOM_MAX_CONNECTIONS",
+    help="Maximum upstream HTTP connections (default: 500, env: LEGROOM_MAX_CONNECTIONS)",
 )
 @click.option(
     "--max-keepalive",
     "max_keepalive_connections",
     default=100,
     type=click.IntRange(min=0),
-    envvar="HEADROOM_MAX_KEEPALIVE",
-    help="Maximum upstream keep-alive connections (default: 100, env: HEADROOM_MAX_KEEPALIVE)",
+    envvar="LEGROOM_MAX_KEEPALIVE",
+    help="Maximum upstream keep-alive connections (default: 100, env: LEGROOM_MAX_KEEPALIVE)",
 )
 @click.option(
     "--http2/--no-http2",
     "http2",
     default=True,
-    envvar="HEADROOM_HTTP2",
+    envvar="LEGROOM_HTTP2",
     help=(
-        "Use HTTP/2 to upstream providers (default: on, env: HEADROOM_HTTP2). "
+        "Use HTTP/2 to upstream providers (default: on, env: LEGROOM_HTTP2). "
         "Disable to force HTTP/1.1, which avoids shared-connection TLS corruption "
         "(SSLV3_ALERT_BAD_RECORD_MAC) when many concurrent streams are cancelled."
     ),
@@ -217,10 +217,10 @@ def dashboard(port: int, no_open: bool) -> None:
 @click.option(
     "--http-proxy",
     default=None,
-    envvar="HEADROOM_HTTP_PROXY",
+    envvar="LEGROOM_HTTP_PROXY",
     help=(
         "HTTP proxy URL for upstream provider requests only "
-        "(HTTPS uses CONNECT; env: HEADROOM_HTTP_PROXY)."
+        "(HTTPS uses CONNECT; env: LEGROOM_HTTP_PROXY)."
     ),
 )
 @click.option(
@@ -228,8 +228,8 @@ def dashboard(port: int, no_open: bool) -> None:
     "keepalive_expiry",
     default=90.0,
     type=click.FloatRange(min=0),
-    envvar="HEADROOM_KEEPALIVE_EXPIRY",
-    help="Seconds an idle upstream keep-alive connection is kept open (default: 90, env: HEADROOM_KEEPALIVE_EXPIRY)",
+    envvar="LEGROOM_KEEPALIVE_EXPIRY",
+    help="Seconds an idle upstream keep-alive connection is kept open (default: 90, env: LEGROOM_KEEPALIVE_EXPIRY)",
 )
 @click.option(
     "--mode",
@@ -246,7 +246,7 @@ def dashboard(port: int, no_open: bool) -> None:
             "cache_mode",
             "token_savings",
             "cost_savings",
-            "token_headroom",
+            "token_legroom",
         ],
         case_sensitive=False,
     ),
@@ -254,8 +254,8 @@ def dashboard(port: int, no_open: bool) -> None:
         "Optimization mode (default: cache).\n"
         "  token  — prioritize compression; prior turns may be rewritten for max savings.\n"
         "  cache  — freeze prior turns to maximise provider prefix-cache hit rate.\n"
-        "Legacy aliases (token_mode, token_savings, token_headroom, cache_mode, "
-        "cost_savings) are still accepted. Env: HEADROOM_MODE."
+        "Legacy aliases (token_mode, token_savings, token_legroom, cache_mode, "
+        "cost_savings) are still accepted. Env: LEGROOM_MODE."
     ),
 )
 @click.option(
@@ -263,12 +263,12 @@ def dashboard(port: int, no_open: bool) -> None:
     type=float,
     default=None,
     show_default=True,
-    envvar="HEADROOM_TARGET_RATIO",
+    envvar="LEGROOM_TARGET_RATIO",
     help=(
         "Override Kompress keep-ratio for text (prose/code) compression — lower is "
         "more aggressive (e.g. 0.4 keeps ~40% of tokens). Unset (default): let "
         "Kompress decide via its own importance threshold (conservative). "
-        "Env: HEADROOM_TARGET_RATIO."
+        "Env: LEGROOM_TARGET_RATIO."
     ),
 )
 @click.option(
@@ -285,7 +285,7 @@ def dashboard(port: int, no_open: bool) -> None:
 @click.option(
     "--protect-tool-results",
     default=None,
-    envvar="HEADROOM_PROTECT_TOOL_RESULTS",
+    envvar="LEGROOM_PROTECT_TOOL_RESULTS",
     help=(
         "Comma-separated tool names whose results are never lossy-compressed, "
         "merged with the built-in defaults (e.g. Bash,WebFetch). "
@@ -293,215 +293,215 @@ def dashboard(port: int, no_open: bool) -> None:
         "from 0.3 (only recent ~30% of results protected) to 0.0 (all "
         "results protected indefinitely), which prevents older Read/Glob/"
         "Grep/Write/Edit tool results from being silently compressed. "
-        "Env: HEADROOM_PROTECT_TOOL_RESULTS."
+        "Env: LEGROOM_PROTECT_TOOL_RESULTS."
     ),
 )
 @click.option(
     "--rpm",
     default=None,
     type=click.IntRange(min=1),
-    envvar="HEADROOM_RPM",
-    help="Max requests per minute. Env: HEADROOM_RPM. Default: 60.",
+    envvar="LEGROOM_RPM",
+    help="Max requests per minute. Env: LEGROOM_RPM. Default: 60.",
 )
 @click.option(
     "--tpm",
     default=None,
     type=click.IntRange(min=1),
-    envvar="HEADROOM_TPM",
-    help="Max tokens per minute. Env: HEADROOM_TPM. Default: 100000.",
+    envvar="LEGROOM_TPM",
+    help="Max tokens per minute. Env: LEGROOM_TPM. Default: 100000.",
 )
 @click.option(
     "--no-ccr",
     is_flag=True,
-    envvar="HEADROOM_NO_CCR",
+    envvar="LEGROOM_NO_CCR",
     help=(
         "Disable CCR entirely: no retrieval markers in compressed content AND no "
-        "headroom_retrieve tool injected. Lossy compression with no recovery path "
+        "legroom_retrieve tool injected. Lossy compression with no recovery path "
         "(maximum savings; also right for streaming / non-MCP clients that can't "
-        "resolve an injected tool). Env: HEADROOM_NO_CCR."
+        "resolve an injected tool). Env: LEGROOM_NO_CCR."
     ),
 )
 @click.option(
     "--lossless",
     is_flag=True,
-    envvar="HEADROOM_LOSSLESS",
+    envvar="LEGROOM_LOSSLESS",
     help=(
         "No-CCR lossless mode: compress tool outputs with format-native lossless "
         "compaction (and marker-free SmartCrusher) without emitting any CCR "
-        "retrieval marker, so no MCP retrieve tool is needed. Env: HEADROOM_LOSSLESS=1."
+        "retrieval marker, so no MCP retrieve tool is needed. Env: LEGROOM_LOSSLESS=1."
     ),
 )
 @click.option(
     "--no-ccr-proactive-expansion",
     is_flag=True,
-    envvar="HEADROOM_NO_CCR_PROACTIVE_EXPANSION",
+    envvar="LEGROOM_NO_CCR_PROACTIVE_EXPANSION",
     help=(
         "Disable proactive expansion of previously compressed content. "
-        "Env: HEADROOM_NO_CCR_PROACTIVE_EXPANSION."
+        "Env: LEGROOM_NO_CCR_PROACTIVE_EXPANSION."
     ),
 )
 @click.option(
     "--proxy-extension",
     "proxy_extension",
     multiple=True,
-    envvar="HEADROOM_PROXY_EXTENSIONS",
+    envvar="LEGROOM_PROXY_EXTENSIONS",
     help=(
         "Enable a registered proxy extension by entry-point name (opt-in). "
         "Repeat the flag or pass a comma-separated list. Use '*' to enable "
-        "every discovered extension. Env: HEADROOM_PROXY_EXTENSIONS."
+        "every discovered extension. Env: LEGROOM_PROXY_EXTENSIONS."
     ),
 )
 @click.option(
     "--no-subscription-tracking",
     is_flag=True,
-    envvar="HEADROOM_NO_SUBSCRIPTION_TRACKING",
+    envvar="LEGROOM_NO_SUBSCRIPTION_TRACKING",
     help=(
         "Disable the Anthropic Claude Code subscription usage poller "
-        "(GET /api/oauth/usage). Env: HEADROOM_NO_SUBSCRIPTION_TRACKING."
+        "(GET /api/oauth/usage). Env: LEGROOM_NO_SUBSCRIPTION_TRACKING."
     ),
 )
 @click.option(
     "--subscription-poll-interval",
     type=click.IntRange(min=1, max=3600),
     default=None,
-    envvar="HEADROOM_SUBSCRIPTION_POLL_INTERVAL",
+    envvar="LEGROOM_SUBSCRIPTION_POLL_INTERVAL",
     help=(
         "Seconds between Anthropic subscription usage polls (1–3600, default 300). "
         "Lower values give fresher /stats but risk 429s from Anthropic. "
-        "Env: HEADROOM_SUBSCRIPTION_POLL_INTERVAL."
+        "Env: LEGROOM_SUBSCRIPTION_POLL_INTERVAL."
     ),
 )
 @click.option(
     "--retry-max-attempts",
     type=click.IntRange(min=1, max=10),
     default=None,
-    envvar="HEADROOM_RETRY_MAX_ATTEMPTS",
+    envvar="LEGROOM_RETRY_MAX_ATTEMPTS",
     help=(
         "Maximum upstream retry attempts for connect/read/5xx failures (1–10, default: 3). "
-        "Env: HEADROOM_RETRY_MAX_ATTEMPTS."
+        "Env: LEGROOM_RETRY_MAX_ATTEMPTS."
     ),
 )
 @click.option(
     "--retry-base-delay-ms",
     type=click.IntRange(min=0),
     default=None,
-    envvar="HEADROOM_RETRY_BASE_DELAY_MS",
+    envvar="LEGROOM_RETRY_BASE_DELAY_MS",
     help=(
         "Initial upstream retry delay in milliseconds (minimum: 0, default: 1000). "
-        "Env: HEADROOM_RETRY_BASE_DELAY_MS."
+        "Env: LEGROOM_RETRY_BASE_DELAY_MS."
     ),
 )
 @click.option(
     "--retry-max-delay-ms",
     type=click.IntRange(min=0),
     default=None,
-    envvar="HEADROOM_RETRY_MAX_DELAY_MS",
+    envvar="LEGROOM_RETRY_MAX_DELAY_MS",
     help=(
         "Maximum upstream retry delay in milliseconds (minimum: 0, default: 30000). "
-        "Env: HEADROOM_RETRY_MAX_DELAY_MS."
+        "Env: LEGROOM_RETRY_MAX_DELAY_MS."
     ),
 )
 @click.option(
     "--request-timeout-seconds",
     type=int,
     default=None,
-    envvar="HEADROOM_REQUEST_TIMEOUT",
+    envvar="LEGROOM_REQUEST_TIMEOUT",
     help=(
         "Request timeout in seconds (default: 300). "
         "Useful for slow providers (eg local). "
-        "Env: HEADROOM_REQUEST_TIMEOUT."
+        "Env: LEGROOM_REQUEST_TIMEOUT."
     ),
 )
 @click.option(
     "--connect-timeout-seconds",
     type=click.IntRange(min=1, max=300),
     default=None,
-    envvar="HEADROOM_CONNECT_TIMEOUT_SECONDS",
+    envvar="LEGROOM_CONNECT_TIMEOUT_SECONDS",
     help=(
         "Upstream connection timeout in seconds (1–300, default: 10). "
-        "Env: HEADROOM_CONNECT_TIMEOUT_SECONDS."
+        "Env: LEGROOM_CONNECT_TIMEOUT_SECONDS."
     ),
 )
 @click.option(
     "--anthropic-buffered-request-timeout-seconds",
     type=click.IntRange(min=1),
     default=None,
-    envvar="HEADROOM_ANTHROPIC_BUFFERED_REQUEST_TIMEOUT_SECONDS",
+    envvar="LEGROOM_ANTHROPIC_BUFFERED_REQUEST_TIMEOUT_SECONDS",
     help=(
         "Buffered Anthropic read timeout in seconds for non-streaming "
         "message and batch paths (default: 600). "
-        "Env: HEADROOM_ANTHROPIC_BUFFERED_REQUEST_TIMEOUT_SECONDS."
+        "Env: LEGROOM_ANTHROPIC_BUFFERED_REQUEST_TIMEOUT_SECONDS."
     ),
 )
 @click.option(
     "--anthropic-pre-upstream-concurrency",
     type=int,
     default=None,
-    envvar="HEADROOM_ANTHROPIC_PRE_UPSTREAM_CONCURRENCY",
+    envvar="LEGROOM_ANTHROPIC_PRE_UPSTREAM_CONCURRENCY",
     help=(
         "Cap the number of Anthropic HTTP requests that may run pre-upstream work "
         "(request parse / deep-copy / first compression stage / memory context / upstream connect) "
         "concurrently. Prevents cold-start replay storms from starving /livez and new Codex WS opens. "
         "Default: max(2, min(8, os.cpu_count() or 4)). "
         "Set to 0 or negative to disable (unbounded). "
-        "Env: HEADROOM_ANTHROPIC_PRE_UPSTREAM_CONCURRENCY."
+        "Env: LEGROOM_ANTHROPIC_PRE_UPSTREAM_CONCURRENCY."
     ),
 )
 @click.option(
     "--anthropic-pre-upstream-acquire-timeout-seconds",
     type=float,
     default=None,
-    envvar="HEADROOM_ANTHROPIC_PRE_UPSTREAM_ACQUIRE_TIMEOUT_SECONDS",
+    envvar="LEGROOM_ANTHROPIC_PRE_UPSTREAM_ACQUIRE_TIMEOUT_SECONDS",
     help=(
         "Fail-fast timeout for waiting on the Anthropic pre-upstream semaphore "
         "before failing open to passthrough compression. "
         "Default: 15.0 seconds. "
-        "Env: HEADROOM_ANTHROPIC_PRE_UPSTREAM_ACQUIRE_TIMEOUT_SECONDS."
+        "Env: LEGROOM_ANTHROPIC_PRE_UPSTREAM_ACQUIRE_TIMEOUT_SECONDS."
     ),
 )
 @click.option(
     "--anthropic-pre-upstream-memory-context-timeout-seconds",
     type=float,
     default=None,
-    envvar="HEADROOM_ANTHROPIC_PRE_UPSTREAM_MEMORY_CONTEXT_TIMEOUT_SECONDS",
+    envvar="LEGROOM_ANTHROPIC_PRE_UPSTREAM_MEMORY_CONTEXT_TIMEOUT_SECONDS",
     help=(
         "Fail-open timeout for Anthropic memory-context lookup while the request "
         "still holds a pre-upstream slot. "
         "Default: 2.0 seconds. "
-        "Env: HEADROOM_ANTHROPIC_PRE_UPSTREAM_MEMORY_CONTEXT_TIMEOUT_SECONDS."
+        "Env: LEGROOM_ANTHROPIC_PRE_UPSTREAM_MEMORY_CONTEXT_TIMEOUT_SECONDS."
     ),
 )
 @click.option(
     "--compression-max-workers",
     type=int,
     default=None,
-    envvar="HEADROOM_COMPRESSION_MAX_WORKERS",
+    envvar="LEGROOM_COMPRESSION_MAX_WORKERS",
     help=(
         "Bound the dedicated compression threadpool (CPU-bound Kompress work). "
         "Default (unset): cpu_count or 1. Lower it to reduce CPU "
         "oversubscription under concurrent sessions; a value < 1 is clamped to 1. "
-        "Env: HEADROOM_COMPRESSION_MAX_WORKERS."
+        "Env: LEGROOM_COMPRESSION_MAX_WORKERS."
     ),
 )
 @click.option(
     "--log-file",
     default=None,
-    envvar="HEADROOM_LOG_FILE",
+    envvar="LEGROOM_LOG_FILE",
     help=(
         "Path to write request/response logs as JSONL. "
         "Each line is a JSON object with fields: timestamp, request_id, model, "
         "tokens_before, tokens_after, latency_ms, etc. "
-        "Disabled in --stateless mode. Env: HEADROOM_LOG_FILE."
+        "Disabled in --stateless mode. Env: LEGROOM_LOG_FILE."
     ),
 )
 @click.option(
     "--log-messages",
     is_flag=True,
-    envvar="HEADROOM_LOG_MESSAGES",
+    envvar="LEGROOM_LOG_MESSAGES",
     help=(
         "Enable full message logging: request/response content is stored in the log file "
         "and served on the live feed endpoint. WARNING: may log sensitive data. "
-        "Env: HEADROOM_LOG_MESSAGES."
+        "Env: LEGROOM_LOG_MESSAGES."
     ),
 )
 @click.option(
@@ -514,33 +514,33 @@ def dashboard(port: int, no_open: bool) -> None:
     default=None,
     help=(
         "Directory for Codex wire snapshots (default: "
-        "~/.headroom/logs/codex_wire or workspace .headroom/logs/codex_wire)."
+        "~/.legroom/logs/codex_wire or workspace .legroom/logs/codex_wire)."
     ),
 )
 @click.option(
     "--budget",
     type=click.FloatRange(min=0.0),
     default=None,
-    envvar="HEADROOM_BUDGET",
+    envvar="LEGROOM_BUDGET",
     help=(
         "Budget limit in USD per --budget-period. Requests are rejected with 429 "
-        "once the limit is reached. Env: HEADROOM_BUDGET."
+        "once the limit is reached. Env: LEGROOM_BUDGET."
     ),
 )
 @click.option(
     "--budget-period",
     type=click.Choice(["hourly", "daily", "monthly"]),
     default="daily",
-    envvar="HEADROOM_BUDGET_PERIOD",
+    envvar="LEGROOM_BUDGET_PERIOD",
     help=(
         "Period the --budget limit applies to. Hourly resets on a rolling hour, "
         "daily at local midnight, monthly on the 1st. Default: daily. "
-        "Env: HEADROOM_BUDGET_PERIOD."
+        "Env: LEGROOM_BUDGET_PERIOD."
     ),
 )
-# Code-aware compression (AST-based, requires `pip install headroom-ai[code]`).
+# Code-aware compression (AST-based, requires `pip install legroom-ai[code]`).
 # Pair of flags so users can override the env-var default in either direction.
-# We resolve HEADROOM_CODE_AWARE_ENABLED in the body (not via Click's envvar=),
+# We resolve LEGROOM_CODE_AWARE_ENABLED in the body (not via Click's envvar=),
 # because Click's envvar handling for paired bool flags is brittle in older
 # Click versions.
 @click.option(
@@ -549,47 +549,47 @@ def dashboard(port: int, no_open: bool) -> None:
     default=None,
     help=(
         "Enable/disable AST-based code compression. Requires the optional "
-        "tree-sitter dependency: pip install headroom-ai[code]. "
-        "Default: disabled. Env: HEADROOM_CODE_AWARE_ENABLED=1 to enable."
+        "tree-sitter dependency: pip install legroom-ai[code]. "
+        "Default: disabled. Env: LEGROOM_CODE_AWARE_ENABLED=1 to enable."
     ),
 )
 @click.option(
     "--disable-kompress",
     is_flag=True,
-    envvar="HEADROOM_DISABLE_KOMPRESS",
+    envvar="LEGROOM_DISABLE_KOMPRESS",
     help=(
         "Disable Kompress ML compression while keeping structural compression enabled. "
-        "Env: HEADROOM_DISABLE_KOMPRESS=1."
+        "Env: LEGROOM_DISABLE_KOMPRESS=1."
     ),
 )
 @click.option(
     "--disable-kompress-fallback",
     is_flag=True,
-    envvar="HEADROOM_DISABLE_KOMPRESS_FALLBACK",
+    envvar="LEGROOM_DISABLE_KOMPRESS_FALLBACK",
     help=(
         "With --disable-kompress, route fall-through content to PASSTHROUGH instead of "
         "the default KOMPRESS fallback (restores legacy --disable-kompress behaviour). "
-        "Env: HEADROOM_DISABLE_KOMPRESS_FALLBACK=1."
+        "Env: LEGROOM_DISABLE_KOMPRESS_FALLBACK=1."
     ),
 )
 @click.option(
     "--disable-kompress-anthropic/--enable-kompress-anthropic",
     "disable_kompress_anthropic",
     default=None,
-    envvar="HEADROOM_DISABLE_KOMPRESS_ANTHROPIC",
+    envvar="LEGROOM_DISABLE_KOMPRESS_ANTHROPIC",
     help=(
         "Disable (or --enable-) Kompress for the Anthropic pipeline only, overriding "
-        "--disable-kompress. Env: HEADROOM_DISABLE_KOMPRESS_ANTHROPIC=1."
+        "--disable-kompress. Env: LEGROOM_DISABLE_KOMPRESS_ANTHROPIC=1."
     ),
 )
 @click.option(
     "--disable-kompress-openai/--enable-kompress-openai",
     "disable_kompress_openai",
     default=None,
-    envvar="HEADROOM_DISABLE_KOMPRESS_OPENAI",
+    envvar="LEGROOM_DISABLE_KOMPRESS_OPENAI",
     help=(
         "Disable (or --enable-) Kompress for the OpenAI/Codex pipeline only, overriding "
-        "--disable-kompress. Env: HEADROOM_DISABLE_KOMPRESS_OPENAI=1."
+        "--disable-kompress. Env: LEGROOM_DISABLE_KOMPRESS_OPENAI=1."
     ),
 )
 # Code graph: indexes project + watches files for live reindex via codebase-memory-mcp.
@@ -614,11 +614,11 @@ def dashboard(port: int, no_open: bool) -> None:
 @click.option(
     "--read-maturation",
     is_flag=True,
-    envvar="HEADROOM_READ_MATURATION",
+    envvar="LEGROOM_READ_MATURATION",
     help=(
         "EXPERIMENTAL: activity-based read maturation — hold fresh Reads "
         "out of the provider prefix cache and compress them once their "
-        "file quiesces (env: HEADROOM_READ_MATURATION=1)"
+        "file quiesces (env: LEGROOM_READ_MATURATION=1)"
     ),
 )
 @click.option(
@@ -626,7 +626,7 @@ def dashboard(port: int, no_open: bool) -> None:
     type=click.IntRange(min=1),
     default=5,
     show_default=True,
-    envvar="HEADROOM_READ_MATURATION_QUIESCE_TURNS",
+    envvar="LEGROOM_READ_MATURATION_QUIESCE_TURNS",
     help="Read maturation: mature a held Read once its file is quiet this many assistant turns.",
 )
 @click.option(
@@ -634,7 +634,7 @@ def dashboard(port: int, no_open: bool) -> None:
     type=click.IntRange(min=1),
     default=25,
     show_default=True,
-    envvar="HEADROOM_READ_MATURATION_MAX_HOLD_TURNS",
+    envvar="LEGROOM_READ_MATURATION_MAX_HOLD_TURNS",
     help="Read maturation: force-mature a Read held this many turns even if its file stays active.",
 )
 @click.option(
@@ -642,7 +642,7 @@ def dashboard(port: int, no_open: bool) -> None:
     type=click.IntRange(min=0),
     default=2048,
     show_default=True,
-    envvar="HEADROOM_READ_MATURATION_MIN_SIZE_BYTES",
+    envvar="LEGROOM_READ_MATURATION_MIN_SIZE_BYTES",
     help="Read maturation: only hold/mature Read outputs at least this many bytes.",
 )
 # Memory System (Multi-Provider Support)
@@ -653,17 +653,17 @@ def dashboard(port: int, no_open: bool) -> None:
         "Enable persistent memory. Auto-detects provider and uses appropriate tool format. "
         "By default (--memory-storage=project) each workspace gets its own DB so memories "
         "from unrelated projects can never bleed in (GH #462). Override scoping with "
-        "x-headroom-user-id and/or x-headroom-project-id / x-headroom-cwd request headers."
+        "x-legroom-user-id and/or x-legroom-project-id / x-legroom-cwd request headers."
     ),
 )
 @click.option(
     "--memory-db-path",
     default="",
-    envvar="HEADROOM_MEMORY_DB_PATH",
+    envvar="LEGROOM_MEMORY_DB_PATH",
     help=(
         "Path to the legacy single-file memory DB (used in --memory-storage=global, "
         "and as the seed for the project-mode storage root). "
-        "Default: {cwd}/.headroom/memory.db. Env: HEADROOM_MEMORY_DB_PATH."
+        "Default: {cwd}/.legroom/memory.db. Env: LEGROOM_MEMORY_DB_PATH."
     ),
 )
 @click.option(
@@ -674,7 +674,7 @@ def dashboard(port: int, no_open: bool) -> None:
     help=(
         "Memory partitioning strategy. project (default): one SQLite DB per resolved "
         "workspace under <db_path_dir>/memories/projects/<basename>-<hash>/memory.db — "
-        "no cross-project bleed. user: one DB per x-headroom-user-id. global: a single "
+        "no cross-project bleed. user: one DB per x-legroom-user-id. global: a single "
         "shared DB (pre-fix behaviour; --memory-db-path file is reused so existing "
         "memories remain reachable)."
     ),
@@ -682,40 +682,40 @@ def dashboard(port: int, no_open: bool) -> None:
 @click.option(
     "--memory-project-root",
     default="",
-    envvar="HEADROOM_MEMORY_PROJECT_ROOT",
+    envvar="LEGROOM_MEMORY_PROJECT_ROOT",
     help=(
         "Override the project root used for --memory-storage=project. Useful when the "
         "client doesn't put a cwd in the system prompt or you want to force a specific "
-        "workspace. Takes effect after the x-headroom-project-id and x-headroom-cwd "
-        "headers. Env: HEADROOM_MEMORY_PROJECT_ROOT."
+        "workspace. Takes effect after the x-legroom-project-id and x-legroom-cwd "
+        "headers. Env: LEGROOM_MEMORY_PROJECT_ROOT."
     ),
 )
 @click.option(
     "--no-memory-tools",
     is_flag=True,
-    envvar="HEADROOM_NO_MEMORY_TOOLS",
+    envvar="LEGROOM_NO_MEMORY_TOOLS",
     help=(
         "Disable automatic injection of memory_save/memory_search tools into requests. "
-        "Env: HEADROOM_NO_MEMORY_TOOLS."
+        "Env: LEGROOM_NO_MEMORY_TOOLS."
     ),
 )
 @click.option(
     "--no-memory-context",
     is_flag=True,
-    envvar="HEADROOM_NO_MEMORY_CONTEXT",
+    envvar="LEGROOM_NO_MEMORY_CONTEXT",
     help=(
         "Disable automatic injection of relevant past memories into the system prompt. "
-        "Env: HEADROOM_NO_MEMORY_CONTEXT."
+        "Env: LEGROOM_NO_MEMORY_CONTEXT."
     ),
 )
 @click.option(
     "--memory-top-k",
     type=click.IntRange(min=1, max=100),
     default=10,
-    envvar="HEADROOM_MEMORY_TOP_K",
+    envvar="LEGROOM_MEMORY_TOP_K",
     help=(
         "Number of semantically-relevant memories to inject as context (1–100, default: 10). "
-        "Env: HEADROOM_MEMORY_TOP_K."
+        "Env: LEGROOM_MEMORY_TOP_K."
     ),
 )
 @click.option(
@@ -725,7 +725,7 @@ def dashboard(port: int, no_open: bool) -> None:
         "Full Qdrant URL for the qdrant-neo4j backend "
         "(e.g. https://xyz.cloud.qdrant.io:6333). When set, takes precedence over "
         "--memory-qdrant-host/--memory-qdrant-port. "
-        "Also reads HEADROOM_QDRANT_URL."
+        "Also reads LEGROOM_QDRANT_URL."
     ),
 )
 @click.option(
@@ -733,7 +733,7 @@ def dashboard(port: int, no_open: bool) -> None:
     default=None,
     help=(
         "Qdrant host for the qdrant-neo4j backend "
-        "(default: localhost, also reads HEADROOM_QDRANT_HOST)"
+        "(default: localhost, also reads LEGROOM_QDRANT_HOST)"
     ),
 )
 @click.option(
@@ -741,13 +741,13 @@ def dashboard(port: int, no_open: bool) -> None:
     type=click.IntRange(1, 65535),
     default=None,
     help=(
-        "Qdrant port for the qdrant-neo4j backend (default: 6333, also reads HEADROOM_QDRANT_PORT)"
+        "Qdrant port for the qdrant-neo4j backend (default: 6333, also reads LEGROOM_QDRANT_PORT)"
     ),
 )
 @click.option(
     "--memory-qdrant-api-key",
     default=None,
-    help=("API key for hosted Qdrant (e.g. Qdrant Cloud). Also reads HEADROOM_QDRANT_API_KEY."),
+    help=("API key for hosted Qdrant (e.g. Qdrant Cloud). Also reads LEGROOM_QDRANT_API_KEY."),
 )
 # Traffic Learning (live pattern extraction from proxy traffic)
 @click.option(
@@ -766,31 +766,31 @@ def dashboard(port: int, no_open: bool) -> None:
     "--min-evidence",
     type=click.IntRange(min=1),
     default=None,
-    envvar="HEADROOM_MIN_EVIDENCE",
+    envvar="LEGROOM_MIN_EVIDENCE",
     help=(
         "Minimum number of times a pattern must be observed before it is "
         "persisted to memory. Higher values reduce one-shot noise at the "
-        "cost of slower learning. Default: 5. (env: HEADROOM_MIN_EVIDENCE)"
+        "cost of slower learning. Default: 5. (env: LEGROOM_MIN_EVIDENCE)"
     ),
 )
 # Backend configuration
 @click.option(
     "--backend",
     default="anthropic",
-    envvar="HEADROOM_BACKEND",
+    envvar="LEGROOM_BACKEND",
     help=(
         "API backend: 'anthropic' (direct), 'bedrock' (AWS), 'openrouter' (OpenRouter), "
         "'anyllm' (any-llm), or 'litellm-<provider>' (e.g., litellm-vertex). "
-        "Env: HEADROOM_BACKEND."
+        "Env: LEGROOM_BACKEND."
     ),
 )
 @click.option(
     "--anyllm-provider",
     default="openai",
-    envvar="HEADROOM_ANYLLM_PROVIDER",
+    envvar="LEGROOM_ANYLLM_PROVIDER",
     help=(
         "Provider for any-llm backend: openai, mistral, groq, ollama, etc. (default: openai). "
-        "Env: HEADROOM_ANYLLM_PROVIDER."
+        "Env: LEGROOM_ANYLLM_PROVIDER."
     ),
 )
 @click.option(
@@ -830,8 +830,8 @@ def dashboard(port: int, no_open: bool) -> None:
 @click.option(
     "--region",
     default="us-west-2",
-    envvar="HEADROOM_REGION",
-    help="Cloud region for Bedrock/Vertex/etc (default: us-west-2). Env: HEADROOM_REGION.",
+    envvar="LEGROOM_REGION",
+    help="Cloud region for Bedrock/Vertex/etc (default: us-west-2). Env: LEGROOM_REGION.",
 )
 @click.option(
     "--bedrock-region",
@@ -856,19 +856,19 @@ def dashboard(port: int, no_open: bool) -> None:
 @click.option(
     "--telemetry",
     is_flag=True,
-    help="Opt in to anonymous usage telemetry — off by default (env: HEADROOM_TELEMETRY=on)",
+    help="Opt in to anonymous usage telemetry — off by default (env: LEGROOM_TELEMETRY=on)",
 )
 @click.option(
     "--no-telemetry",
     is_flag=True,
-    help="Force anonymous usage telemetry off (already the default; env: HEADROOM_TELEMETRY=off)",
+    help="Force anonymous usage telemetry off (already the default; env: LEGROOM_TELEMETRY=off)",
 )
 @click.option(
     "--stateless",
     is_flag=True,
     help="Disable all filesystem writes — run purely in-memory. "
     "For containerized / read-only / load-balanced deployments. "
-    "(env: HEADROOM_STATELESS=true)",
+    "(env: LEGROOM_STATELESS=true)",
 )
 @click.option(
     "--embedding-server/--no-embedding-server",
@@ -876,14 +876,14 @@ def dashboard(port: int, no_open: bool) -> None:
     help="Run a dedicated embedding server sidecar (Option E). "
     "Shares a single ONNX embedder + HNSW index across all worker processes, "
     "saving ~600 MB RSS. Default: disabled (opt-in for testing). "
-    "(env: HEADROOM_EMBEDDING_SERVER=true)",
+    "(env: LEGROOM_EMBEDDING_SERVER=true)",
 )
 @click.option(
     "--embedding-server-socket",
     default=None,
     help="Unix socket path for the embedding server sidecar. "
-    "Default: /tmp/headroom-embed-{port}.sock. "
-    "(env: HEADROOM_EMBEDDING_SERVER_SOCKET)",
+    "Default: /tmp/legroom-embed-{port}.sock. "
+    "(env: LEGROOM_EMBEDDING_SERVER_SOCKET)",
 )
 @click.option(
     "--anthropic-extra-headers",
@@ -993,9 +993,9 @@ def proxy(
 
     \b
     Examples:
-        headroom proxy                    Start proxy on port 8787
-        headroom proxy --port 8080        Start proxy on port 8080
-        headroom proxy --no-optimize      Passthrough mode (no optimization)
+        legroom proxy                    Start proxy on port 8787
+        legroom proxy --port 8080        Start proxy on port 8080
+        legroom proxy --no-optimize      Passthrough mode (no optimization)
 
     \b
     Usage with Claude Code:
@@ -1007,7 +1007,7 @@ def proxy(
     """
     # Import here to avoid slow startup
     try:
-        from headroom.proxy.server import (
+        from legroom.proxy.server import (
             ProxyConfig,
             _parse_csv_tools,
             _parse_exclude_tools,
@@ -1016,7 +1016,7 @@ def proxy(
         )
     except ImportError as e:
         click.secho(
-            "Error: Proxy dependencies not installed. Run: pip install headroom-ai[proxy]",
+            "Error: Proxy dependencies not installed. Run: pip install legroom-ai[proxy]",
             fg="red",
             err=True,
         )
@@ -1060,7 +1060,7 @@ def proxy(
     # for capabilities the user hasn't asked for. The TransformPipeline reads
     # this env var at construction time.
     if intercept_tool_results:
-        from headroom.binaries import ensure_tools
+        from legroom.binaries import ensure_tools
 
         resolved_tools = ensure_tools()
         critical_tools = ["ast-grep"]
@@ -1071,13 +1071,13 @@ def proxy(
             # installed, or drop the flag if they want pass-through behavior.
             click.secho(
                 f"error: --intercept-tool-results requires tool(s) that could not "
-                f"be installed: {missing}. Run `headroom tools doctor` to diagnose, "
+                f"be installed: {missing}. Run `legroom tools doctor` to diagnose, "
                 "or omit the flag to start the proxy without interceptors.",
                 fg="red",
                 err=True,
             )
             sys.exit(1)
-        os.environ["HEADROOM_INTERCEPT_ENABLED"] = "1"
+        os.environ["LEGROOM_INTERCEPT_ENABLED"] = "1"
 
     try:
         resolved_anthropic_extra_headers = resolve_extra_headers(
@@ -1100,23 +1100,23 @@ def proxy(
     )
 
     # Resolve anyllm provider. An explicit --anyllm-provider flag always wins;
-    # otherwise honor HEADROOM_ANYLLM_PROVIDER, which the settings store may
+    # otherwise honor LEGROOM_ANYLLM_PROVIDER, which the settings store may
     # have exported into os.environ after Click parsed the option (so the
     # already-parsed param can't see it).
     _anyllm_source = click.get_current_context().get_parameter_source("anyllm_provider")
     if _anyllm_source is click.core.ParameterSource.COMMANDLINE:
         effective_anyllm_provider = anyllm_provider
     else:
-        effective_anyllm_provider = os.environ.get("HEADROOM_ANYLLM_PROVIDER") or anyllm_provider
+        effective_anyllm_provider = os.environ.get("LEGROOM_ANYLLM_PROVIDER") or anyllm_provider
 
-    # Resolve mode: CLI flag > env var > default. Default is CACHE (Headroom's
+    # Resolve mode: CLI flag > env var > default. Default is CACHE (Legroom's
     # coding posture): delta-only compression at ~0 prefix-cache busts.
     effective_mode: str = normalize_proxy_mode(
-        mode or os.environ.get("HEADROOM_MODE") or PROXY_MODE_CACHE
+        mode or os.environ.get("LEGROOM_MODE") or PROXY_MODE_CACHE
     )
 
     # Stateless mode: CLI flag or env var
-    is_stateless = stateless or os.environ.get("HEADROOM_STATELESS", "").lower() in (
+    is_stateless = stateless or os.environ.get("LEGROOM_STATELESS", "").lower() in (
         "true",
         "1",
         "yes",
@@ -1126,26 +1126,26 @@ def proxy(
     # Telemetry is opt-in (off by default). --telemetry opts in; --no-telemetry
     # forces it off. If both are passed, the explicit opt-out wins (fail-closed).
     if telemetry:
-        os.environ["HEADROOM_TELEMETRY"] = "on"
+        os.environ["LEGROOM_TELEMETRY"] = "on"
     if no_telemetry:
-        os.environ["HEADROOM_TELEMETRY"] = "off"
+        os.environ["LEGROOM_TELEMETRY"] = "off"
 
     if codex_wire_debug or codex_wire_debug_dir:
-        os.environ["HEADROOM_CODEX_WIRE_DEBUG"] = "1"
-        os.environ["HEADROOM_CODEX_WIRE_DEBUG_DIR"] = codex_wire_debug_dir or str(
+        os.environ["LEGROOM_CODEX_WIRE_DEBUG"] = "1"
+        os.environ["LEGROOM_CODEX_WIRE_DEBUG_DIR"] = codex_wire_debug_dir or str(
             _paths.codex_wire_debug_dir()
         )
 
     # Stateless mode: suppress TOIN filesystem persistence
     if is_stateless:
-        os.environ["HEADROOM_TOIN_BACKEND"] = "none"
+        os.environ["LEGROOM_TOIN_BACKEND"] = "none"
 
     # License key for managed/enterprise deployments (optional)
-    license_key = os.environ.get("HEADROOM_LICENSE_KEY")
+    license_key = os.environ.get("LEGROOM_LICENSE_KEY")
 
     # Qdrant connection for the qdrant-neo4j backend. CLI flags default
     # to None; when omitted we let ProxyConfig's default_factory resolve
-    # HEADROOM_QDRANT_* env vars. Explicit CLI values win over env.
+    # LEGROOM_QDRANT_* env vars. Explicit CLI values win over env.
     qdrant_overrides: dict[str, Any] = {}
     if memory_qdrant_url is not None:
         qdrant_overrides["memory_qdrant_url"] = memory_qdrant_url
@@ -1173,21 +1173,21 @@ def proxy(
         rate_limit_enabled=not no_rate_limit,
         rate_limit_requests_per_minute=rpm if rpm is not None else 60,
         rate_limit_tokens_per_minute=tpm if tpm is not None else 100_000,
-        compress_user_messages=_get_env_bool("HEADROOM_COMPRESS_USER_MESSAGES", False),
-        min_tokens_to_crush=_get_env_int("HEADROOM_MIN_TOKENS", 500),
-        max_items_after_crush=_get_env_int("HEADROOM_MAX_ITEMS", 50),
+        compress_user_messages=_get_env_bool("LEGROOM_COMPRESS_USER_MESSAGES", False),
+        min_tokens_to_crush=_get_env_int("LEGROOM_MIN_TOKENS", 500),
+        max_items_after_crush=_get_env_int("LEGROOM_MAX_ITEMS", 50),
         exclude_tools=_parse_exclude_tools(None) or None,
         protect_tool_results=frozenset(_parse_csv_tools(protect_tool_results))
         if protect_tool_results
         else frozenset(),
         tool_profiles=_parse_tool_profiles([]) or None,
-        smart_crusher_with_compaction=_get_env_bool_optional("HEADROOM_SMART_CRUSHER_COMPACTION"),
-        savings_profile=os.environ.get("HEADROOM_SAVINGS_PROFILE") or "coding",
+        smart_crusher_with_compaction=_get_env_bool_optional("LEGROOM_SMART_CRUSHER_COMPACTION"),
+        savings_profile=os.environ.get("LEGROOM_SAVINGS_PROFILE") or "coding",
         target_ratio=target_ratio,
-        compress_system_messages=_get_env_bool_optional("HEADROOM_COMPRESS_SYSTEM_MESSAGES"),
-        protect_recent=_get_env_int_optional("HEADROOM_PROTECT_RECENT"),
-        protect_analysis_context=_get_env_bool_optional("HEADROOM_PROTECT_ANALYSIS_CONTEXT"),
-        accuracy_guard=os.environ.get("HEADROOM_ACCURACY_GUARD") or None,
+        compress_system_messages=_get_env_bool_optional("LEGROOM_COMPRESS_SYSTEM_MESSAGES"),
+        protect_recent=_get_env_int_optional("LEGROOM_PROTECT_RECENT"),
+        protect_analysis_context=_get_env_bool_optional("LEGROOM_PROTECT_ANALYSIS_CONTEXT"),
+        accuracy_guard=os.environ.get("LEGROOM_ACCURACY_GUARD") or None,
         # CCR opt-out: --no-ccr disables both halves at once (markers in content
         # AND the injected retrieve tool). Markers without a tool — or a tool
         # without markers — are useless, so it is a single switch. Default keeps
@@ -1197,7 +1197,7 @@ def proxy(
         lossless=lossless,
         ccr_proactive_expansion=not no_ccr_proactive_expansion,
         # Flatten repeat-flag tuple AND any comma-separated values inside it.
-        # `--proxy-extension a,b --proxy-extension c` and `HEADROOM_PROXY_EXTENSIONS=a,b,c`
+        # `--proxy-extension a,b --proxy-extension c` and `LEGROOM_PROXY_EXTENSIONS=a,b,c`
         # both yield ["a", "b", "c"]. None when nothing was supplied.
         proxy_extensions=(
             [part.strip() for chunk in proxy_extension for part in chunk.split(",") if part.strip()]
@@ -1228,12 +1228,12 @@ def proxy(
         http_proxy=http_proxy,
         log_file=None if is_stateless else log_file,
         log_full_messages=log_messages
-        or os.environ.get("HEADROOM_LOG_MESSAGES", "").lower() in ("true", "1", "yes", "on"),
+        or os.environ.get("LEGROOM_LOG_MESSAGES", "").lower() in ("true", "1", "yes", "on"),
         budget_limit_usd=budget,
         budget_period=cast(Literal["hourly", "daily", "monthly"], budget_period),
         # Code-aware compression resolution:
         # 1. Explicit --code-aware / --no-code-aware always wins.
-        # 2. Otherwise read HEADROOM_CODE_AWARE_ENABLED (truthy = on).
+        # 2. Otherwise read LEGROOM_CODE_AWARE_ENABLED (truthy = on).
         # 3. Otherwise default off — matches the prior cli/proxy.py behavior so
         #    existing users see no change unless they opt in.
         # Default ON (coding posture; consistent with the argparse server path).
@@ -1241,7 +1241,7 @@ def proxy(
         code_aware_enabled=(
             bool(code_aware_flag)
             if code_aware_flag is not None
-            else os.environ.get("HEADROOM_CODE_AWARE_ENABLED", "1").strip().lower()
+            else os.environ.get("LEGROOM_CODE_AWARE_ENABLED", "1").strip().lower()
             in ("true", "1", "yes", "on")
         ),
         disable_kompress=disable_kompress,
@@ -1249,8 +1249,8 @@ def proxy(
         disable_kompress_anthropic=disable_kompress_anthropic,
         disable_kompress_openai=disable_kompress_openai,
         # Optional inbound auth token + air-gap switch (env-driven).
-        proxy_token=os.environ.get("HEADROOM_PROXY_TOKEN") or None,
-        offline=_get_env_bool("HEADROOM_OFFLINE", False),
+        proxy_token=os.environ.get("LEGROOM_PROXY_TOKEN") or None,
+        offline=_get_env_bool("LEGROOM_OFFLINE", False),
         # Code graph: live file watcher for incremental reindexing
         code_graph_watcher=code_graph,
         # Read lifecycle: ON by default (use --no-read-lifecycle to disable)
@@ -1274,7 +1274,7 @@ def proxy(
         # Traffic Learning: only with --learn, never with --no-learn
         # Stateless mode disables learning (requires filesystem)
         traffic_learning_enabled=False if is_stateless else (learn and not no_learn),
-        traffic_learning_agent_type=os.environ.get("HEADROOM_AGENT_TYPE", "unknown"),
+        traffic_learning_agent_type=os.environ.get("LEGROOM_AGENT_TYPE", "unknown"),
         traffic_learning_min_evidence=min_evidence if min_evidence is not None else 5,
         # Backend (Anthropic direct, Bedrock, LiteLLM, or any-llm)
         backend=backend,
@@ -1289,7 +1289,7 @@ def proxy(
         # Stateless mode: disable all filesystem writes
         stateless=is_stateless,
         # Unit 4: bounded pre-upstream concurrency on the Anthropic HTTP
-        # path. ``None`` -> HeadroomProxy computes ``max(2, min(8,
+        # path. ``None`` -> LegroomProxy computes ``max(2, min(8,
         # os.cpu_count() or 4))``; ``<= 0`` -> disabled (unbounded).
         # Precedence: CLI > env > auto-compute (click's ``envvar``
         # handles the env-var fallback).
@@ -1330,7 +1330,7 @@ def proxy(
 """
     elif config.backend != "anthropic":
         # LiteLLM backend
-        from headroom.backends.litellm import get_provider_config
+        from legroom.backends.litellm import get_provider_config
 
         provider = config.backend.replace("litellm-", "")
         provider_config = get_provider_config(provider)
@@ -1343,7 +1343,7 @@ def proxy(
 IMPORTANT for {provider_config.display_name} users:
   1. Set credentials: {env_vars_str}
   2. Set a dummy Anthropic key: ANTHROPIC_API_KEY="sk-ant-dummy"
-     (Headroom ignores this - it uses your {provider_config.display_name} credentials)
+     (Legroom ignores this - it uses your {provider_config.display_name} credentials)
   3. Set base URL: ANTHROPIC_BASE_URL=http://{config.host}:{config.port}"""
         if provider_config.model_format_hint:
             backend_section += f"\n  4. Use model names: {provider_config.model_format_hint}"
@@ -1358,7 +1358,7 @@ Memory (Multi-Provider):
   - Anthropic: Uses native memory tool (memory_20250818) - subscription safe
   - OpenAI/Gemini/Others: Uses function calling format
   - All providers share the same semantic vector store backend
-  - Storage mode: {config.memory_storage_mode} (per-project DB by default — set x-headroom-project-id / x-headroom-cwd to override)
+  - Storage mode: {config.memory_storage_mode} (per-project DB by default — set x-legroom-project-id / x-legroom-cwd to override)
   - Tools: {"ENABLED" if config.memory_inject_tools else "DISABLED"}
   - Context injection: {"ENABLED" if config.memory_inject_context else "DISABLED"}
   - Database: {config.memory_db_path} (legacy / global-mode DB)
@@ -1371,27 +1371,27 @@ Memory (Multi-Provider):
             "  Stateless:    YES (no filesystem writes — memory, logs, TOIN disabled)\n"
         )
 
-    from headroom.telemetry.beacon import is_telemetry_enabled
+    from legroom.telemetry.beacon import is_telemetry_enabled
 
     # Build telemetry section for the startup banner. Telemetry is opt-in
     # (off by default); the disabled line surfaces how to opt in.
     if is_telemetry_enabled():
         telemetry_line = (
             "  Telemetry:    ENABLED (anonymous aggregate stats — you opted in)\n"
-            "                Disable: HEADROOM_TELEMETRY=off or headroom proxy --no-telemetry"
+            "                Disable: LEGROOM_TELEMETRY=off or legroom proxy --no-telemetry"
         )
     else:
         telemetry_line = (
-            "  Telemetry:    DISABLED (opt in: HEADROOM_TELEMETRY=on or headroom proxy --telemetry)"
+            "  Telemetry:    DISABLED (opt in: LEGROOM_TELEMETRY=on or legroom proxy --telemetry)"
         )
 
     # Discover proxy extensions (third-party packages registered via the
-    # `headroom.proxy_extension` entry-point group). Surfaced in the banner
+    # `legroom.proxy_extension` entry-point group). Surfaced in the banner
     # so operators can see what's available + what's currently opted-in.
     # Discovery does NOT run extension code; only the explicitly-enabled
     # set in config.proxy_extensions actually installs.
     try:
-        from headroom.proxy.extensions import discover as _discover_extensions
+        from legroom.proxy.extensions import discover as _discover_extensions
 
         _ext_available = sorted(name for name, _ in _discover_extensions())
     except Exception:  # noqa: BLE001 — banner must never crash startup
@@ -1402,7 +1402,7 @@ Memory (Multi-Provider):
     elif not _ext_enabled:
         extensions_line = (
             f"  Extensions:   discovered={','.join(_ext_available)} "
-            f"(opt-in: --proxy-extension <name> or HEADROOM_PROXY_EXTENSIONS=<n>)"
+            f"(opt-in: --proxy-extension <name> or LEGROOM_PROXY_EXTENSIONS=<n>)"
         )
     elif "*" in _ext_enabled:
         extensions_line = f"  Extensions:   ENABLED (wildcard) {','.join(_ext_available)}"
@@ -1414,9 +1414,9 @@ Memory (Multi-Provider):
 
     # Security posture line: inbound auth token + air-gap mode, and a loud
     # flag for the open-bind case (non-loopback host with no token).
-    from headroom.proxy.loopback_guard import is_loopback_host
+    from legroom.proxy.loopback_guard import is_loopback_host
 
-    _auth_on = bool(config.proxy_token or os.environ.get("HEADROOM_PROXY_TOKEN"))
+    _auth_on = bool(config.proxy_token or os.environ.get("LEGROOM_PROXY_TOKEN"))
     if config.offline:
         _security_status = "OFFLINE (all egress disabled)" + (
             " · inbound token REQUIRED (non-loopback)" if _auth_on else ""
@@ -1426,7 +1426,7 @@ Memory (Multi-Provider):
     elif not is_loopback_host(config.host):
         _security_status = (
             "WARNING non-loopback bind with NO token — /v1/* is UNAUTHENTICATED "
-            "(set HEADROOM_PROXY_TOKEN)"
+            "(set LEGROOM_PROXY_TOKEN)"
         )
     else:
         _security_status = "loopback-only (no inbound token)"
@@ -1435,14 +1435,14 @@ Memory (Multi-Provider):
     # Code-aware status line — same logic the inner banner uses, surfaced here
     # so the click-CLI banner is a complete picture (avoids the dual-banner
     # confusion this branch retired).
-    from headroom.proxy.server import _get_code_aware_banner_status
+    from legroom.proxy.server import _get_code_aware_banner_status
 
     code_aware_line = f"  Code-Aware:   {_get_code_aware_banner_status(config)}"
     context_tool_line = f"  Context Tool: {_selected_context_tool()}"
 
     # Performance tuning section — only shown when at least one tuning var is active.
-    _embed_socket = os.environ.get("HEADROOM_EMBEDDING_SERVER_SOCKET") or (
-        embedding_server and (embedding_server_socket or f"/tmp/headroom-embed-{port}.sock")
+    _embed_socket = os.environ.get("LEGROOM_EMBEDDING_SERVER_SOCKET") or (
+        embedding_server and (embedding_server_socket or f"/tmp/legroom-embed-{port}.sock")
     )
     _tuning_lines: list[str] = []
     if _embed_socket:
@@ -1454,7 +1454,7 @@ Memory (Multi-Provider):
 
     click.echo(f"""
 ╔═══════════════════════════════════════════════════════════════════════╗
-║                         HEADROOM PROXY                                 ║
+║                         LEGROOM PROXY                                 ║
 ║           The Context Optimization Layer for LLM Applications          ║
 ╚═══════════════════════════════════════════════════════════════════════╝
 
@@ -1499,7 +1499,7 @@ Press Ctrl+C to stop.
     # Surface an "update available" notice (reads cache only; no network here).
     # Best-effort: a broken update check must never block proxy startup.
     try:
-        from headroom.update_check import format_update_notice
+        from legroom.update_check import format_update_notice
 
         _update_notice = format_update_notice()
         if _update_notice:
@@ -1512,9 +1512,9 @@ Press Ctrl+C to stop.
     # -----------------------------------------------------------------------
     _embed_watchdog = None
     if embedding_server:
-        _embed_socket = embedding_server_socket or f"/tmp/headroom-embed-{config.port}.sock"
+        _embed_socket = embedding_server_socket or f"/tmp/legroom-embed-{config.port}.sock"
         # Pass socket path to all worker processes via environment variable
-        os.environ["HEADROOM_EMBEDDING_SERVER_SOCKET"] = _embed_socket
+        os.environ["LEGROOM_EMBEDDING_SERVER_SOCKET"] = _embed_socket
         click.echo(f"  Embedding server: starting sidecar on {_embed_socket}...")
 
         import asyncio as _asyncio
@@ -1524,7 +1524,7 @@ Press Ctrl+C to stop.
             # optional and may be absent; keeping the import here lets the
             # try/except below fall back to the per-worker embedder instead of
             # crashing the proxy at startup with ModuleNotFoundError.
-            from headroom.memory.adapters.watchdog import EmbeddingServerWatchdog
+            from legroom.memory.adapters.watchdog import EmbeddingServerWatchdog
 
             wd = EmbeddingServerWatchdog(socket_path=_embed_socket)
             await wd.start()
@@ -1547,7 +1547,7 @@ Press Ctrl+C to stop.
                 "Falling back to per-worker embedder.",
                 err=True,
             )
-            os.environ.pop("HEADROOM_EMBEDDING_SERVER_SOCKET", None)
+            os.environ.pop("LEGROOM_EMBEDDING_SERVER_SOCKET", None)
 
     try:
         run_kwargs: dict[str, Any] = {}
@@ -1556,7 +1556,7 @@ Press Ctrl+C to stop.
         if limit_concurrency != 1000:
             run_kwargs["limit_concurrency"] = limit_concurrency
         # Suppress run_server's legacy banner — the click CLI already printed
-        # a richer one above. Direct `python -m headroom.proxy.server` keeps
+        # a richer one above. Direct `python -m legroom.proxy.server` keeps
         # the legacy banner via run_server's default.
         run_kwargs["print_banner"] = False
         run_server(config, **run_kwargs)

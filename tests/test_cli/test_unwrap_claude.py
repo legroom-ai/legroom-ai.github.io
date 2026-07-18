@@ -7,8 +7,8 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner
 
-from headroom.cli import wrap as wrap_cli
-from headroom.cli.main import main
+from legroom.cli import wrap as wrap_cli
+from legroom.cli.main import main
 
 
 @pytest.fixture
@@ -104,18 +104,18 @@ def test_unwrap_claude_removes_mcp_rtk_and_stops_proxy(
             return None
 
     with (
-        patch("headroom.mcp_registry.ClaudeRegistrar", return_value=Registrar()),
+        patch("legroom.mcp_registry.ClaudeRegistrar", return_value=Registrar()),
         patch(
-            "headroom.cli.wrap._stop_local_proxy_for_unwrap",
+            "legroom.cli.wrap._stop_local_proxy_for_unwrap",
             side_effect=lambda port: stopped.append(port) or "stopped",
         ),
     ):
         result = runner.invoke(main, ["unwrap", "claude", "--port", "9999"])
 
     assert result.exit_code == 0, result.output
-    assert unregistered == ["headroom", "codebase-memory-mcp"]
+    assert unregistered == ["legroom", "codebase-memory-mcp"]
     assert stopped == [9999]
-    assert "Stopped local Headroom proxy on port 9999" in result.output
+    assert "Stopped local Legroom proxy on port 9999" in result.output
     assert "hooks" not in json.loads(settings.read_text(encoding="utf-8"))
 
 
@@ -124,7 +124,7 @@ def test_unwrap_claude_preserves_user_managed_serena(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    monkeypatch.setenv("HEADROOM_WORKSPACE_DIR", str(tmp_path / ".headroom"))
+    monkeypatch.setenv("LEGROOM_WORKSPACE_DIR", str(tmp_path / ".legroom"))
     unregistered: list[str] = []
 
     class Registrar:
@@ -139,31 +139,31 @@ def test_unwrap_claude_preserves_user_managed_serena(
 
         def get_server(self, server_name: str):
             if server_name == "serena":
-                from headroom.mcp_registry.base import ServerSpec
+                from legroom.mcp_registry.base import ServerSpec
 
                 return ServerSpec(name="serena", command="/usr/local/bin/custom-serena")
             return None
 
     with (
-        patch("headroom.mcp_registry.ClaudeRegistrar", return_value=Registrar()),
-        patch("headroom.cli.wrap._remove_claude_rtk_hooks", return_value=False),
-        patch("headroom.cli.wrap._stop_local_proxy_for_unwrap"),
+        patch("legroom.mcp_registry.ClaudeRegistrar", return_value=Registrar()),
+        patch("legroom.cli.wrap._remove_claude_rtk_hooks", return_value=False),
+        patch("legroom.cli.wrap._stop_local_proxy_for_unwrap"),
     ):
         result = runner.invoke(main, ["unwrap", "claude"])
 
     assert result.exit_code == 0, result.output
-    assert unregistered == ["headroom", "codebase-memory-mcp"]
+    assert unregistered == ["legroom", "codebase-memory-mcp"]
 
 
-def test_unwrap_claude_removes_headroom_installed_serena(
+def test_unwrap_claude_removes_legroom_installed_serena(
     runner: CliRunner,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    monkeypatch.setenv("HEADROOM_WORKSPACE_DIR", str(tmp_path / ".headroom"))
+    monkeypatch.setenv("LEGROOM_WORKSPACE_DIR", str(tmp_path / ".legroom"))
 
-    from headroom.mcp_registry import build_serena_spec
-    from headroom.mcp_registry.ledger import record_install
+    from legroom.mcp_registry import build_serena_spec
+    from legroom.mcp_registry.ledger import record_install
 
     serena_spec = build_serena_spec("claude-code")
     record_install("claude", serena_spec)
@@ -185,24 +185,24 @@ def test_unwrap_claude_removes_headroom_installed_serena(
             return None
 
     with (
-        patch("headroom.mcp_registry.ClaudeRegistrar", return_value=Registrar()),
-        patch("headroom.cli.wrap._remove_claude_rtk_hooks", return_value=False),
-        patch("headroom.cli.wrap._stop_local_proxy_for_unwrap"),
+        patch("legroom.mcp_registry.ClaudeRegistrar", return_value=Registrar()),
+        patch("legroom.cli.wrap._remove_claude_rtk_hooks", return_value=False),
+        patch("legroom.cli.wrap._stop_local_proxy_for_unwrap"),
     ):
         result = runner.invoke(main, ["unwrap", "claude"])
 
     assert result.exit_code == 0, result.output
-    assert unregistered == ["headroom", "codebase-memory-mcp", "serena"]
-    assert "Removed Headroom-installed Serena MCP server" in result.output
+    assert unregistered == ["legroom", "codebase-memory-mcp", "serena"]
+    assert "Removed Legroom-installed Serena MCP server" in result.output
 
 
 def test_unwrap_claude_keep_flags_skip_cleanup(
     runner: CliRunner,
 ) -> None:
     with (
-        patch("headroom.mcp_registry.ClaudeRegistrar") as registrar,
-        patch("headroom.cli.wrap._remove_claude_rtk_hooks") as remove_rtk,
-        patch("headroom.cli.wrap._stop_local_proxy_for_unwrap") as stop_proxy,
+        patch("legroom.mcp_registry.ClaudeRegistrar") as registrar,
+        patch("legroom.cli.wrap._remove_claude_rtk_hooks") as remove_rtk,
+        patch("legroom.cli.wrap._stop_local_proxy_for_unwrap") as stop_proxy,
     ):
         result = runner.invoke(
             main,
@@ -221,7 +221,7 @@ def test_unwrap_claude_restores_all_base_url_modes(runner: CliRunner) -> None:
     def restore_base_url(previous: str | None, **kwargs: object) -> None:
         restore_calls.append({"previous": previous, **kwargs})
 
-    with patch("headroom.cli.wrap._restore_claude_wrap_base_url", side_effect=restore_base_url):
+    with patch("legroom.cli.wrap._restore_claude_wrap_base_url", side_effect=restore_base_url):
         result = runner.invoke(
             main,
             ["unwrap", "claude", "--keep-mcp", "--keep-rtk", "--no-stop-proxy"],
@@ -267,16 +267,16 @@ def test_unwrap_claude_stops_claude_owned_persistent_deployment(
 
     monkeypatch.setattr(wrap_cli, "_find_persistent_manifest", lambda port: Manifest())
     monkeypatch.setattr(
-        "headroom.cli.install._deactivate_deployment_mutations",
+        "legroom.cli.install._deactivate_deployment_mutations",
         lambda manifest: deactivated.append(manifest.profile),
     )
     monkeypatch.setattr(
-        "headroom.cli.install._stop_deployment",
+        "legroom.cli.install._stop_deployment",
         lambda manifest: stopped.append(manifest.profile),
     )
 
     with (
-        patch("headroom.cli.wrap._stop_local_proxy_for_unwrap") as stop_local,
+        patch("legroom.cli.wrap._stop_local_proxy_for_unwrap") as stop_local,
     ):
         result = runner.invoke(
             main,
@@ -288,7 +288,7 @@ def test_unwrap_claude_stops_claude_owned_persistent_deployment(
     assert deactivated == ["unwrap-2340"]
     assert stopped == ["unwrap-2340"]
     assert "Stopped Claude-owned persistent deployment 'unwrap-2340' on port 8787." in result.output
-    assert "Claude is no longer durably wrapped by Headroom." in result.output
+    assert "Claude is no longer durably wrapped by Legroom." in result.output
 
 
 def test_unwrap_claude_reports_ambiguous_same_port_persistent_deployment(
@@ -304,7 +304,7 @@ def test_unwrap_claude_reports_ambiguous_same_port_persistent_deployment(
 
     monkeypatch.setattr(wrap_cli, "_find_persistent_manifest", lambda port: Manifest())
 
-    with patch("headroom.cli.wrap._stop_local_proxy_for_unwrap") as stop_local:
+    with patch("legroom.cli.wrap._stop_local_proxy_for_unwrap") as stop_local:
         result = runner.invoke(
             main,
             ["unwrap", "claude", "--keep-mcp", "--keep-rtk", "--port", "8787"],
@@ -313,8 +313,8 @@ def test_unwrap_claude_reports_ambiguous_same_port_persistent_deployment(
     assert result.exit_code == 0, result.output
     stop_local.assert_not_called()
     assert "same-port persistent deployment 'shared-proxy' still owns port 8787" in result.output
-    assert "headroom install stop --profile shared-proxy" in result.output
-    assert "Claude is no longer durably wrapped by Headroom." not in result.output
+    assert "legroom install stop --profile shared-proxy" in result.output
+    assert "Claude is no longer durably wrapped by Legroom." not in result.output
 
 
 def test_unwrap_claude_warns_about_same_port_inherited_env(
@@ -323,7 +323,7 @@ def test_unwrap_claude_warns_about_same_port_inherited_env(
 ) -> None:
     monkeypatch.setenv("ANTHROPIC_BASE_URL", "http://127.0.0.1:8787")
 
-    with patch("headroom.cli.wrap._stop_local_proxy_for_unwrap", return_value="stopped"):
+    with patch("legroom.cli.wrap._stop_local_proxy_for_unwrap", return_value="stopped"):
         result = runner.invoke(
             main,
             ["unwrap", "claude", "--keep-mcp", "--keep-rtk", "--port", "8787"],
@@ -331,7 +331,7 @@ def test_unwrap_claude_warns_about_same_port_inherited_env(
 
     assert result.exit_code == 0, result.output
     assert "current shell still exports ANTHROPIC_BASE_URL for port 8787" in result.output
-    assert "Claude is no longer durably wrapped by Headroom." not in result.output
+    assert "Claude is no longer durably wrapped by Legroom." not in result.output
 
 
 def test_unwrap_claude_ignores_malformed_inherited_env_port(
@@ -340,7 +340,7 @@ def test_unwrap_claude_ignores_malformed_inherited_env_port(
 ) -> None:
     monkeypatch.setenv("ANTHROPIC_BASE_URL", "http://127.0.0.1:notaport")
 
-    with patch("headroom.cli.wrap._stop_local_proxy_for_unwrap", return_value="stopped"):
+    with patch("legroom.cli.wrap._stop_local_proxy_for_unwrap", return_value="stopped"):
         result = runner.invoke(
             main,
             ["unwrap", "claude", "--keep-mcp", "--keep-rtk", "--port", "8787"],
@@ -348,7 +348,7 @@ def test_unwrap_claude_ignores_malformed_inherited_env_port(
 
     assert result.exit_code == 0, result.output
     assert "current shell still exports ANTHROPIC_BASE_URL" not in result.output
-    assert "Claude is no longer durably wrapped by Headroom." in result.output
+    assert "Claude is no longer durably wrapped by Legroom." in result.output
 
 
 def test_remove_claude_rtk_hooks_removes_init_hooks_and_env(tmp_path: Path) -> None:
@@ -366,8 +366,8 @@ def test_remove_claude_rtk_hooks_removes_init_hooks_and_env(tmp_path: Path) -> N
                                 {
                                     "type": "command",
                                     "command": (
-                                        "/home/u/.local/bin/headroom init hook ensure "
-                                        "--profile init-user --marker headroom-init-claude"
+                                        "/home/u/.local/bin/legroom init hook ensure "
+                                        "--profile init-user --marker legroom-init-claude"
                                     ),
                                     "timeout": 15,
                                 }
@@ -380,7 +380,7 @@ def test_remove_claude_rtk_hooks_removes_init_hooks_and_env(tmp_path: Path) -> N
                             "hooks": [
                                 {
                                     "type": "command",
-                                    "command": "headroom init hook ensure --marker headroom-init-claude",
+                                    "command": "legroom init hook ensure --marker legroom-init-claude",
                                 },
                                 {"type": "command", "command": "echo keep-me"},
                             ],

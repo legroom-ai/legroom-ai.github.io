@@ -277,7 +277,7 @@ async fn oauth_chat_completions_no_injection_byte_equal() {
         ]
     });
     let body = serde_json::to_vec(&payload).unwrap();
-    // OAuth: 3-segment JWT shape. Headroom's auth_mode classifier
+    // OAuth: 3-segment JWT shape. Legroom's auth_mode classifier
     // detects this and routes to AuthMode::OAuth, which the E4
     // hook short-circuits.
     let resp = reqwest::Client::new()

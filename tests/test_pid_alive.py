@@ -5,7 +5,7 @@ from __future__ import annotations
 import sys
 import types
 
-from headroom._subprocess import pid_alive
+from legroom._subprocess import pid_alive
 
 
 def test_pid_alive_rejects_non_positive() -> None:
@@ -19,7 +19,7 @@ def test_pid_alive_prefers_psutil_without_signalling(monkeypatch) -> None:
     def boom(pid: int, sig: int) -> None:
         raise AssertionError("os.kill must not run when psutil answers")
 
-    monkeypatch.setattr("headroom._subprocess.os.kill", boom)
+    monkeypatch.setattr("legroom._subprocess.os.kill", boom)
     assert pid_alive(4321) is True
 
 
@@ -31,7 +31,7 @@ def test_pid_alive_systemerror_is_not_alive(monkeypatch) -> None:
         types.SimpleNamespace(pid_exists=lambda pid: (_ for _ in ()).throw(RuntimeError())),
     )
     monkeypatch.setattr(
-        "headroom._subprocess.os.kill",
+        "legroom._subprocess.os.kill",
         lambda pid, sig: (_ for _ in ()).throw(SystemError("WinError 87")),
     )
     assert pid_alive(4321) is False
@@ -45,7 +45,7 @@ def test_pid_alive_only_uses_signal_zero(monkeypatch) -> None:
         types.SimpleNamespace(pid_exists=lambda pid: (_ for _ in ()).throw(RuntimeError())),
     )
     sent: list[int] = []
-    monkeypatch.setattr("headroom._subprocess.os.kill", lambda pid, sig: sent.append(sig))
+    monkeypatch.setattr("legroom._subprocess.os.kill", lambda pid, sig: sent.append(sig))
     assert pid_alive(4321) is True
     assert sent == [0]
 
@@ -57,7 +57,7 @@ def test_pid_alive_win32_no_psutil_never_calls_os_kill(monkeypatch) -> None:
         "psutil",
         types.SimpleNamespace(pid_exists=lambda pid: (_ for _ in ()).throw(RuntimeError())),
     )
-    monkeypatch.setattr("headroom._subprocess.sys.platform", "win32")
+    monkeypatch.setattr("legroom._subprocess.sys.platform", "win32")
 
     fake_handle = 42
     opened: list[int] = []
@@ -81,7 +81,7 @@ def test_pid_alive_win32_no_psutil_never_calls_os_kill(monkeypatch) -> None:
     def boom(pid: int, sig: int) -> None:
         raise AssertionError("os.kill must not be called on Windows")
 
-    monkeypatch.setattr("headroom._subprocess.os.kill", boom)
+    monkeypatch.setattr("legroom._subprocess.os.kill", boom)
 
     assert pid_alive(4321) is True
     assert opened == [4321]
@@ -95,7 +95,7 @@ def test_pid_alive_win32_no_psutil_no_ctypes_returns_conservative(monkeypatch) -
         "psutil",
         types.SimpleNamespace(pid_exists=lambda pid: (_ for _ in ()).throw(RuntimeError())),
     )
-    monkeypatch.setattr("headroom._subprocess.sys.platform", "win32")
+    monkeypatch.setattr("legroom._subprocess.sys.platform", "win32")
     monkeypatch.setitem(
         sys.modules,
         "ctypes",
@@ -111,7 +111,7 @@ def test_pid_alive_win32_no_psutil_no_ctypes_returns_conservative(monkeypatch) -
     def boom(pid: int, sig: int) -> None:
         raise AssertionError("os.kill must not be called on Windows")
 
-    monkeypatch.setattr("headroom._subprocess.os.kill", boom)
+    monkeypatch.setattr("legroom._subprocess.os.kill", boom)
 
     assert pid_alive(4321) is True
 
@@ -123,7 +123,7 @@ def test_pid_alive_win32_access_denied_returns_alive(monkeypatch) -> None:
         "psutil",
         types.SimpleNamespace(pid_exists=lambda pid: (_ for _ in ()).throw(RuntimeError())),
     )
-    monkeypatch.setattr("headroom._subprocess.sys.platform", "win32")
+    monkeypatch.setattr("legroom._subprocess.sys.platform", "win32")
 
     ERROR_ACCESS_DENIED = 5
 
@@ -137,6 +137,6 @@ def test_pid_alive_win32_access_denied_returns_alive(monkeypatch) -> None:
     def boom(pid: int, sig: int) -> None:
         raise AssertionError("os.kill must not be called on Windows")
 
-    monkeypatch.setattr("headroom._subprocess.os.kill", boom)
+    monkeypatch.setattr("legroom._subprocess.os.kill", boom)
 
     assert pid_alive(4321) is True

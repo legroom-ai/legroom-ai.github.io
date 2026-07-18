@@ -1,10 +1,10 @@
-"""MCP (Model Context Protocol) integration for Headroom.
+"""MCP (Model Context Protocol) integration for Legroom.
 
 This package provides compression utilities for MCP tool results,
 helping reduce context usage when tools return large outputs.
 
 Example:
-    from headroom.integrations.mcp import compress_tool_result
+    from legroom.integrations.mcp import compress_tool_result
 
     # Compress large tool output
     result = compress_tool_result(
@@ -16,22 +16,22 @@ Example:
 
 from .server import (
     DEFAULT_MCP_PROFILES,
-    HeadroomMCPClientWrapper,
-    HeadroomMCPCompressor,
+    LegroomMCPClientWrapper,
+    LegroomMCPCompressor,
     MCPCompressionResult,
     MCPToolProfile,
     compress_tool_result,
     compress_tool_result_with_metrics,
-    create_headroom_mcp_proxy,
+    create_legroom_mcp_proxy,
 )
 
 __all__ = [
-    "HeadroomMCPCompressor",
-    "HeadroomMCPClientWrapper",
+    "LegroomMCPCompressor",
+    "LegroomMCPClientWrapper",
     "MCPCompressionResult",
     "MCPToolProfile",
     "compress_tool_result",
     "compress_tool_result_with_metrics",
-    "create_headroom_mcp_proxy",
+    "create_legroom_mcp_proxy",
     "DEFAULT_MCP_PROFILES",
 ]

@@ -27,7 +27,7 @@ mod common;
 use bytes::Bytes;
 use common::start_proxy_with;
 use futures_util::StreamExt;
-use headroom_proxy::sse::{openai_responses::ResponseState, SseFramer};
+use legroom_proxy::sse::{openai_responses::ResponseState, SseFramer};
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use std::convert::Infallible;
@@ -180,7 +180,7 @@ async fn streaming_request_bytes_byte_equal_upstream() {
     let (addr, captured, _server) = responses_sse_upstream().await;
     let proxy = start_proxy_with(&format!("http://{addr}"), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
         // Default ON, but pin it explicitly so the test pins behaviour
         // even if the project default flips later.
         c.enable_responses_streaming = true;
@@ -226,7 +226,7 @@ async fn streaming_response_round_trips_through_framer() {
     let (addr, _captured, _server) = responses_sse_upstream().await;
     let proxy = start_proxy_with(&format!("http://{addr}"), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
         c.enable_responses_streaming = true;
     })
     .await;
@@ -281,7 +281,7 @@ async fn streaming_response_round_trips_through_framer() {
     assert_eq!(state.response_id.as_deref(), Some("resp_test"));
     assert_eq!(
         state.status,
-        headroom_proxy::sse::openai_responses::StreamStatus::Completed
+        legroom_proxy::sse::openai_responses::StreamStatus::Completed
     );
     assert!(state.items.contains_key("msg_1"));
     let item = state.items.get("msg_1").unwrap();
@@ -301,7 +301,7 @@ async fn streaming_pipeline_disabled_still_passes_bytes() {
     let (addr, _captured, _server) = responses_sse_upstream().await;
     let proxy = start_proxy_with(&format!("http://{addr}"), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
         c.enable_responses_streaming = false;
     })
     .await;
@@ -346,7 +346,7 @@ async fn streaming_request_no_compression_when_input_below_threshold() {
     let (addr, captured, _server) = responses_sse_upstream().await;
     let proxy = start_proxy_with(&format!("http://{addr}"), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 

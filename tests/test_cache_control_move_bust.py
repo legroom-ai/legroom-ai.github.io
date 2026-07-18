@@ -13,7 +13,7 @@ These tests pin the exact scenario, prove the content-only guard fixes it, and
 document the remaining piece (marker accumulation > 4 → needs stable placement).
 """
 
-from headroom.cache.prefix_tracker import (
+from legroom.cache.prefix_tracker import (
     PrefixCacheTracker,
     PrefixFreezeConfig,
     overlay_cached_prefix,
@@ -56,7 +56,7 @@ def test_marker_move_would_fail_a_raw_dict_guard():
     # prefix differs ONLY because cache_control moved off msg1.
     assert CUR_ORIG[:2] != PREV_ORIG
     # ...but with cache_control stripped, the content is an append-only extension.
-    from headroom.cache.prefix_tracker import _strip_cache_control
+    from legroom.cache.prefix_tracker import _strip_cache_control
 
     assert _strip_cache_control(CUR_ORIG[:2]) == _strip_cache_control(PREV_ORIG)
 
@@ -131,8 +131,8 @@ def test_moving_marker_no_bust_with_overlay():
         assert act >= exp, f"cache bust under moved marker: expected {exp} read {act}"
 
 
-# ── fix-2: Headroom owns cache_control placement (realistic block content) ────
-from headroom.cache.prefix_tracker import (  # noqa: E402
+# ── fix-2: Legroom owns cache_control placement (realistic block content) ────
+from legroom.cache.prefix_tracker import (  # noqa: E402
     _strip_cache_control,
     normalize_message_cache_control,
 )

@@ -6,7 +6,7 @@ import httpx
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
-from headroom.providers.openai_responses import (
+from legroom.providers.openai_responses import (
     OPENAI_RESPONSES_ROOT_PATHS,
     OPENAI_RESPONSES_SUBPATH_ROUTES,
     OPENAI_RESPONSES_WEBSOCKET_PATHS,
@@ -131,7 +131,7 @@ def test_handle_openai_responses_subpath_returns_502_on_failure() -> None:
         )
 
     with TestClient(app) as client:
-        with patch("headroom.providers.openai_responses.logger") as logger:
+        with patch("legroom.providers.openai_responses.logger") as logger:
             response = client.delete("/probe/items/resp_1?trace=1")
 
     assert response.status_code == 502

@@ -1,6 +1,6 @@
 import json
 
-from headroom.providers.codex.images import (
+from legroom.providers.codex.images import (
     codex_image_forward_error_response,
     codex_image_url,
     normalize_codex_image_headers,
@@ -22,7 +22,7 @@ def test_codex_image_headers_drop_proxy_only_headers_and_resolve_auth() -> None:
             "Host": "localhost:8787",
             "Authorization": "Bearer token",
             "Accept-Encoding": "gzip",
-            "X-Headroom-Bypass": "1",
+            "X-Legroom-Bypass": "1",
             "ChatGPT-Account-ID": "acct",
             "Content-Type": "application/json",
         }

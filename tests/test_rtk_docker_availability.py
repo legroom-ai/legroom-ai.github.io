@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from headroom.proxy.helpers import (
+from legroom.proxy.helpers import (
     _context_tool_zero_payload,
     _read_rtk_lifetime_stats,
 )
@@ -20,7 +20,7 @@ class TestRtkNotInstalledPayload:
         assert payload["tokens_saved"] == 0
 
     def test_read_rtk_returns_not_installed_when_binary_missing(self) -> None:
-        with patch("headroom.rtk.get_rtk_path", return_value=None):
+        with patch("legroom.rtk.get_rtk_path", return_value=None):
             result = _read_rtk_lifetime_stats()
         assert result is not None
         assert result["installed"] is False

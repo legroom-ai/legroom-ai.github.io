@@ -1,4 +1,4 @@
-"""Regression tests: `headroom learn` honors CLAUDE_CONFIG_DIR (issue #1630).
+"""Regression tests: `legroom learn` honors CLAUDE_CONFIG_DIR (issue #1630).
 
 Claude Code relocates its config (conversation logs under ``projects/`` and the
 global ``CLAUDE.md``) when ``CLAUDE_CONFIG_DIR`` is set. The learn scanner and
@@ -10,10 +10,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from headroom.learn._shared import claude_config_dir
-from headroom.learn.models import ProjectInfo
-from headroom.learn.plugins.claude import ClaudeCodePlugin
-from headroom.learn.writer import ClaudeCodeWriter
+from legroom.learn._shared import claude_config_dir
+from legroom.learn.models import ProjectInfo
+from legroom.learn.plugins.claude import ClaudeCodePlugin
+from legroom.learn.writer import ClaudeCodeWriter
 
 
 def test_config_dir_honors_env(tmp_path, monkeypatch) -> None:

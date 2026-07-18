@@ -26,7 +26,7 @@ import re
 import sys
 import time
 
-from headroom.transforms.text_crusher import TextCrusher
+from legroom.transforms.text_crusher import TextCrusher
 
 _SEG = re.compile(r"(?<=[.!?])\s+|\n+")
 _SALIENT = re.compile(
@@ -213,7 +213,7 @@ if __name__ == "__main__":
     else:
         print(f"SQuAD not found at {squad}; skipping Part A")
     if tx is None:
-        found = glob.glob(os.path.expanduser("~/.claude/projects/*headroom*/*.jsonl"))
+        found = glob.glob(os.path.expanduser("~/.claude/projects/*legroom*/*.jsonl"))
         tx = max(found, key=os.path.getsize) if found else None
     if tx and os.path.exists(tx):
         eval_transcript(tx)

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "updated": "2026-07-06",
   "source_issues": [
-    "https://github.com/headroomlabs-ai/headroom/issues/1843"
+    "https://github.com/legroom-ai/legroom/issues/1843"
   ],
   "status_values": [
     "covered",
@@ -172,14 +172,14 @@
         "linux": {
           "status": "covered",
           "tests": [
-            "crates/headroom-core/tests/ccr_backends.rs",
+            "crates/legroom-core/tests/ccr_backends.rs",
             "tests/test_storage_backends.py"
           ]
         },
         "macos": {
           "status": "partial",
           "tests": [
-            "crates/headroom-core/tests/ccr_backends.rs",
+            "crates/legroom-core/tests/ccr_backends.rs",
             "tests/test_storage_backends.py"
           ],
           "gap": "Rust backend tests run in the Rust workflow; native macOS restart e2e is not yet present."
@@ -187,7 +187,7 @@
         "windows": {
           "status": "partial",
           "tests": [
-            "crates/headroom-core/tests/ccr_backends.rs",
+            "crates/legroom-core/tests/ccr_backends.rs",
             "tests/test_storage_backends.py"
           ],
           "gap": "Windows restart e2e is blocked by the native wheel CRT conflict."
@@ -196,7 +196,7 @@
     },
     {
       "id": "init_cli",
-      "name": "headroom init configures supported agents",
+      "name": "legroom init configures supported agents",
       "risk": "install",
       "platforms": {
         "linux": {
@@ -222,7 +222,7 @@
     },
     {
       "id": "wrap_prepare_only",
-      "name": "headroom wrap prepare-only mutates config safely",
+      "name": "legroom wrap prepare-only mutates config safely",
       "risk": "install",
       "platforms": {
         "linux": {

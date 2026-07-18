@@ -13,16 +13,16 @@ from unittest.mock import patch
 
 from click.testing import CliRunner
 
-from headroom.cli.main import main
-from headroom.proxy.server import (
-    HeadroomProxy,
+from legroom.cli.main import main
+from legroom.proxy.server import (
+    LegroomProxy,
     ProxyConfig,
     _get_env_optional_bool,
     _proxy_config_from_env,
 )
 
 
-def _build(**overrides: object) -> HeadroomProxy:
+def _build(**overrides: object) -> LegroomProxy:
     config = ProxyConfig(
         optimize=False,
         cache_enabled=False,
@@ -31,10 +31,10 @@ def _build(**overrides: object) -> HeadroomProxy:
         code_aware_enabled=False,
         **overrides,
     )
-    return HeadroomProxy(config)
+    return LegroomProxy(config)
 
 
-def _routers(proxy: HeadroomProxy):
+def _routers(proxy: LegroomProxy):
     # ContentRouter is the last transform in each pipeline.
     return (
         proxy.anthropic_pipeline.transforms[-1],
@@ -96,8 +96,8 @@ def test_proxy_config_from_env_reads_per_provider_kompress() -> None:
     with patch.dict(
         os.environ,
         {
-            "HEADROOM_DISABLE_KOMPRESS_ANTHROPIC": "1",
-            "HEADROOM_DISABLE_KOMPRESS_OPENAI": "0",
+            "LEGROOM_DISABLE_KOMPRESS_ANTHROPIC": "1",
+            "LEGROOM_DISABLE_KOMPRESS_OPENAI": "0",
         },
     ):
         config = _proxy_config_from_env()
@@ -111,7 +111,7 @@ def test_cli_disable_kompress_anthropic_only() -> None:
     def mock_run_server(config, **kwargs):
         captured["config"] = config
 
-    with patch("headroom.proxy.server.run_server", mock_run_server):
+    with patch("legroom.proxy.server.run_server", mock_run_server):
         result = CliRunner().invoke(
             main,
             ["proxy", "--disable-kompress-anthropic"],
@@ -128,11 +128,11 @@ def test_cli_enable_kompress_openai_from_env() -> None:
     def mock_run_server(config, **kwargs):
         captured["config"] = config
 
-    with patch("headroom.proxy.server.run_server", mock_run_server):
+    with patch("legroom.proxy.server.run_server", mock_run_server):
         result = CliRunner().invoke(
             main,
             ["proxy"],
-            env={"HEADROOM_DISABLE_KOMPRESS_OPENAI": "0"},
+            env={"LEGROOM_DISABLE_KOMPRESS_OPENAI": "0"},
             catch_exceptions=False,
         )
     assert result.exit_code == 0, result.output

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from headroom.proxy.forwarded_policy import (
+from legroom.proxy.forwarded_policy import (
     ForwardedHeaderInputs,
     header_first,
     parse_cidr_list,

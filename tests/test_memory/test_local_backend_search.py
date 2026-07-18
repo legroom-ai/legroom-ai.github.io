@@ -8,8 +8,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from headroom.memory.backends.local import LocalBackend
-from headroom.memory.models import Memory
+from legroom.memory.backends.local import LocalBackend
+from legroom.memory.models import Memory
 
 
 def _backend_with_related_memory(related_memory: Memory) -> LocalBackend:

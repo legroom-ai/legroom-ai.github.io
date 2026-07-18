@@ -1,6 +1,6 @@
 # Compression pipeline default configuration.
 #
-# This file is embedded into the headroom-core binary via `include_str!`
+# This file is embedded into the legroom-core binary via `include_str!`
 # at build time, so a stock binary needs no external file. Production
 # deployments override these defaults by loading their own TOML at
 # startup via `PipelineConfig::from_str` or `from_file`.

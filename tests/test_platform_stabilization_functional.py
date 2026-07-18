@@ -7,12 +7,12 @@ from typing import Any
 import pytest
 
 pytest.importorskip("fastapi")
-pytest.importorskip("headroom._core")
+pytest.importorskip("legroom._core")
 
 from fastapi.testclient import TestClient
 
-from headroom.config import TransformResult
-from headroom.proxy.server import ProxyConfig, create_app
+from legroom.config import TransformResult
+from legroom.proxy.server import ProxyConfig, create_app
 
 
 def _proxy_config(**overrides: Any) -> ProxyConfig:
@@ -34,7 +34,7 @@ def _proxy_config(**overrides: Any) -> ProxyConfig:
 
 
 def test_proxy_health_surfaces_compression_runtime_metrics(monkeypatch) -> None:
-    monkeypatch.setenv("HEADROOM_SKIP_UPSTREAM_CHECK", "1")
+    monkeypatch.setenv("LEGROOM_SKIP_UPSTREAM_CHECK", "1")
     app = create_app(_proxy_config(optimize=False))
 
     with TestClient(app, base_url="http://127.0.0.1", client=("127.0.0.1", 12345)) as client:
@@ -51,7 +51,7 @@ def test_proxy_health_surfaces_compression_runtime_metrics(monkeypatch) -> None:
 
 
 def test_v1_compress_success_reports_actual_metrics(monkeypatch) -> None:
-    monkeypatch.setenv("HEADROOM_SKIP_UPSTREAM_CHECK", "1")
+    monkeypatch.setenv("LEGROOM_SKIP_UPSTREAM_CHECK", "1")
     app = create_app(_proxy_config())
     proxy = app.state.proxy
     request_messages = [{"role": "user", "content": "summarize this repeated payload"}]
@@ -89,7 +89,7 @@ def test_v1_compress_success_reports_actual_metrics(monkeypatch) -> None:
 
 
 def test_v1_compress_timeout_fails_open_quickly(monkeypatch) -> None:
-    monkeypatch.setenv("HEADROOM_SKIP_UPSTREAM_CHECK", "1")
+    monkeypatch.setenv("LEGROOM_SKIP_UPSTREAM_CHECK", "1")
     app = create_app(_proxy_config())
     proxy = app.state.proxy
     request_messages = [{"role": "user", "content": "do not mutate me"}]
@@ -119,7 +119,7 @@ def test_v1_compress_timeout_fails_open_quickly(monkeypatch) -> None:
 
 
 def test_v1_compress_real_json_tool_payload_reduces_tokens(monkeypatch) -> None:
-    monkeypatch.setenv("HEADROOM_SKIP_UPSTREAM_CHECK", "1")
+    monkeypatch.setenv("LEGROOM_SKIP_UPSTREAM_CHECK", "1")
     app = create_app(
         _proxy_config(
             ccr_inject_marker=False,

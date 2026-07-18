@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from headroom.install.models import ConfigScope, DeploymentManifest
-from headroom.providers.opencode.install import (
+from legroom.install.models import ConfigScope, DeploymentManifest
+from legroom.providers.opencode.install import (
     apply_provider_scope,
     build_install_env,
     revert_provider_scope,
@@ -41,7 +41,7 @@ def test_build_install_env() -> None:
 def test_apply_provider_scope_creates_config(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """apply_provider_scope creates the opencode config with headroom provider."""
+    """apply_provider_scope creates the opencode config with legroom provider."""
     home = str(tmp_path)
     monkeypatch.setenv("HOME", home)
     monkeypatch.setenv("USERPROFILE", home)
@@ -59,7 +59,7 @@ def test_apply_provider_scope_creates_config(
     import json
 
     config = json.loads(config_file.read_text())
-    assert config["provider"]["headroom"]["options"]["baseURL"] == "http://127.0.0.1:8787/v1"
+    assert config["provider"]["legroom"]["options"]["baseURL"] == "http://127.0.0.1:8787/v1"
     assert "mcp" not in config
 
 
@@ -76,7 +76,7 @@ def test_apply_provider_scope_skips_when_scope_is_not_provider(
 def test_revert_provider_scope_restores_file(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """revert_provider_scope strips the Headroom block from the config."""
+    """revert_provider_scope strips the Legroom block from the config."""
     home = str(tmp_path)
     monkeypatch.setenv("HOME", home)
     monkeypatch.setenv("USERPROFILE", home)
@@ -87,7 +87,7 @@ def test_revert_provider_scope_restores_file(
     config_file.parent.mkdir(parents=True, exist_ok=True)
     config_file.write_text('{"model": "openai/gpt-4o"}')
 
-    from headroom.install.models import ManagedMutation
+    from legroom.install.models import ManagedMutation
 
     mutation = ManagedMutation(
         target="opencode",
@@ -104,7 +104,7 @@ def test_revert_provider_scope_noop_when_file_missing(
     tmp_path: Path,
 ) -> None:
     """revert_provider_scope is a safe no-op when the config file is gone."""
-    from headroom.install.models import ManagedMutation
+    from legroom.install.models import ManagedMutation
 
     mutation = ManagedMutation(
         target="opencode",

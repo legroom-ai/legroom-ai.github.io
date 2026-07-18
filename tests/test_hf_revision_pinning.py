@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from headroom.onnx_runtime import _PINNED_REVISIONS, _resolve_revision
+from legroom.onnx_runtime import _PINNED_REVISIONS, _resolve_revision
 
 
 def test_known_repos_are_pinned_to_sha():
@@ -27,27 +27,27 @@ def test_default_kompress_model_is_pinned():
 
 
 def test_resolve_uses_pin_for_known_repo(monkeypatch):
-    monkeypatch.delenv("HEADROOM_HF_PIN", raising=False)
+    monkeypatch.delenv("LEGROOM_HF_PIN", raising=False)
     repo = "ghaliba3/kompress-v2-base"
     assert _resolve_revision(repo, None) == _PINNED_REVISIONS[repo]
 
 
 def test_explicit_revision_overrides_pin(monkeypatch):
-    monkeypatch.delenv("HEADROOM_HF_PIN", raising=False)
+    monkeypatch.delenv("LEGROOM_HF_PIN", raising=False)
     assert _resolve_revision("ghaliba3/kompress-v2-base", "deadbeef") == "deadbeef"
 
 
 def test_unknown_repo_is_not_pinned(monkeypatch):
-    monkeypatch.delenv("HEADROOM_HF_PIN", raising=False)
+    monkeypatch.delenv("LEGROOM_HF_PIN", raising=False)
     assert _resolve_revision("some/unknown-model", None) is None
 
 
 @pytest.mark.parametrize("value", ["off", "0", "false", "no", "OFF"])
 def test_pin_can_be_disabled_via_env(monkeypatch, value):
-    monkeypatch.setenv("HEADROOM_HF_PIN", value)
+    monkeypatch.setenv("LEGROOM_HF_PIN", value)
     assert _resolve_revision("ghaliba3/kompress-v2-base", None) is None
 
 
 def test_pin_disabled_still_respects_explicit_revision(monkeypatch):
-    monkeypatch.setenv("HEADROOM_HF_PIN", "off")
+    monkeypatch.setenv("LEGROOM_HF_PIN", "off")
     assert _resolve_revision("ghaliba3/kompress-v2-base", "abc123") == "abc123"

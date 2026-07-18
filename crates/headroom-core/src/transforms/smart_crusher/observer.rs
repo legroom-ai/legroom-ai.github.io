@@ -9,7 +9,7 @@
 //!
 //! Enterprise consumers ship richer observers — `AuditObserver` for
 //! SOC2/HIPAA decision logs, `MetricsObserver` for Datadog/Atlas
-//! gauges, `LoopTrainingObserver` to stream events to Headroom Loop —
+//! gauges, `LoopTrainingObserver` to stream events to Legroom Loop —
 //! all on the same trait.
 
 use super::traits::{CrushEvent, Observer};
@@ -29,7 +29,7 @@ impl Observer for TracingObserver {
         // the fields are evaluated, so this is essentially free at
         // higher log levels.
         tracing::debug!(
-            target: "headroom::smart_crusher",
+            target: "legroom::smart_crusher",
             strategy = %event.strategy,
             input_bytes = event.input_bytes,
             output_bytes = event.output_bytes,

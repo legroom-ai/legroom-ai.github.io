@@ -11,7 +11,7 @@ pytest.importorskip("fastapi")
 
 from fastapi.testclient import TestClient
 
-from headroom.proxy.server import ProxyConfig, create_app
+from legroom.proxy.server import ProxyConfig, create_app
 
 
 class _FakePrefixTracker:
@@ -445,8 +445,8 @@ def test_openai_chat_completions_compacts_tools_when_profile_enabled() -> None:
         )
 
         assert response.status_code == 200
-        assert "openai:chat:tool_schema_compaction" in response.headers["x-headroom-transforms"]
-        assert int(response.headers["x-headroom-tokens-saved"]) > 0
+        assert "openai:chat:tool_schema_compaction" in response.headers["x-legroom-transforms"]
+        assert int(response.headers["x-legroom-tokens-saved"]) > 0
         sent_params = captured["body"]["tools"][0]["function"]["parameters"]
         assert "$schema" not in sent_params
         assert "title" not in sent_params

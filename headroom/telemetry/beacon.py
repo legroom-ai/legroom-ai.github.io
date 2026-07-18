@@ -1,13 +1,13 @@
-"""Telemetry opt-in state for Headroom.
+"""Telemetry opt-in state for Legroom.
 
-Headroom collects only **local**, aggregate telemetry (tokens saved, compression
+Legroom collects only **local**, aggregate telemetry (tokens saved, compression
 ratios, timings) for the in-process collector and the ``/stats`` /
-``/v1/telemetry`` endpoints. **Nothing is sent to Headroom Labs:** the anonymous
+``/v1/telemetry`` endpoints. **Nothing is sent to Legroom Labs:** the anonymous
 telemetry beacon that previously shipped aggregate stats has been removed.
 Operational metrics can still be exported to *your own* OpenTelemetry collector
-via ``HEADROOM_OTEL_METRICS_*`` (a destination you control).
+via ``LEGROOM_OTEL_METRICS_*`` (a destination you control).
 
-This module holds the ``HEADROOM_TELEMETRY`` opt-in predicate (off by default)
+This module holds the ``LEGROOM_TELEMETRY`` opt-in predicate (off by default)
 that gates local collection, plus the CLI notice helpers.
 """
 
@@ -22,28 +22,28 @@ _ON_VALUES = frozenset(("on", "true", "1", "yes", "enable", "enabled"))
 def is_telemetry_enabled() -> bool:
     """Check if local telemetry collection is enabled (off by default, opt-in).
 
-    Fail-closed: only enabled when HEADROOM_TELEMETRY is set to an explicit
+    Fail-closed: only enabled when LEGROOM_TELEMETRY is set to an explicit
     on-value (on/true/1/yes/enable/enabled). Anything else — including unset,
     empty, or an unrecognized value — leaves it disabled. Local collection only
     feeds the in-process collector and the ``/stats`` endpoint; nothing is
-    transmitted to Headroom Labs.
+    transmitted to Legroom Labs.
     """
-    from headroom.offline import is_offline
+    from legroom.offline import is_offline
 
     if is_offline():
         return False
-    val = os.environ.get("HEADROOM_TELEMETRY", "").lower().strip()
+    val = os.environ.get("LEGROOM_TELEMETRY", "").lower().strip()
     return val in _ON_VALUES
 
 
 def is_telemetry_warn_enabled() -> bool:
     """Check if telemetry warnings are enabled (feature flag, on by default).
 
-    Set HEADROOM_TELEMETRY_WARN=off to suppress startup/wrap notices.
+    Set LEGROOM_TELEMETRY_WARN=off to suppress startup/wrap notices.
     This is a build/pack-time feature flag intended for operators who want
     to disable the notice without disabling telemetry itself.
     """
-    val = os.environ.get("HEADROOM_TELEMETRY_WARN", "on").lower().strip()
+    val = os.environ.get("LEGROOM_TELEMETRY_WARN", "on").lower().strip()
     return val not in _OFF_VALUES
 
 
@@ -60,5 +60,5 @@ def format_telemetry_notice(*, prefix: str = "") -> str:
         return ""
     return (
         f"{prefix}Telemetry:    ENABLED (local aggregate stats only — nothing sent externally) | "
-        "Disable: HEADROOM_TELEMETRY=off or --no-telemetry"
+        "Disable: LEGROOM_TELEMETRY=off or --no-telemetry"
     )

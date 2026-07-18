@@ -1,4 +1,4 @@
-"""OpenAI provider implementation for Headroom SDK.
+"""OpenAI provider implementation for Legroom SDK.
 
 Token counting is accurate (uses tiktoken).
 Cost estimates are APPROXIMATE - always verify against your actual billing.
@@ -15,7 +15,7 @@ from datetime import date
 from functools import lru_cache
 from typing import Any, cast
 
-from headroom import paths as _paths
+from legroom import paths as _paths
 
 from .base import Provider, TokenCounter
 
@@ -150,8 +150,8 @@ def _load_custom_model_config() -> dict[str, Any]:
     """Load custom model configuration from environment or config file.
 
     Checks (in order):
-    1. HEADROOM_MODEL_LIMITS environment variable (JSON string or file path)
-    2. ~/.headroom/models.json config file
+    1. LEGROOM_MODEL_LIMITS environment variable (JSON string or file path)
+    2. ~/.legroom/models.json config file
 
     Returns:
         Dict with 'context_limits' and 'pricing' keys.
@@ -159,7 +159,7 @@ def _load_custom_model_config() -> dict[str, Any]:
     config: dict[str, Any] = {"context_limits": {}, "pricing": {}, "encodings": {}}
 
     # Check environment variable
-    env_config = os.environ.get("HEADROOM_MODEL_LIMITS", "")
+    env_config = os.environ.get("LEGROOM_MODEL_LIMITS", "")
     if env_config:
         try:
             # Check if it's a file path
@@ -178,9 +178,9 @@ def _load_custom_model_config() -> dict[str, Any]:
             if "encodings" in openai_config:
                 config["encodings"].update(openai_config["encodings"])
 
-            logger.debug("Loaded custom OpenAI model config from HEADROOM_MODEL_LIMITS")
+            logger.debug("Loaded custom OpenAI model config from LEGROOM_MODEL_LIMITS")
         except (json.JSONDecodeError, OSError) as e:
-            logger.warning(f"Failed to load HEADROOM_MODEL_LIMITS: {e}")
+            logger.warning(f"Failed to load LEGROOM_MODEL_LIMITS: {e}")
 
     # Check config file. Prefer the canonical config-dir location, then fall
     # back to the legacy workspace-root location for backward compatibility.
@@ -377,12 +377,12 @@ class OpenAIProvider(Provider):
         You can configure custom models via environment variable or config file:
 
         1. Environment variable (JSON string):
-           export HEADROOM_MODEL_LIMITS='{"openai": {"context_limits": {"my-model": 128000}}}'
+           export LEGROOM_MODEL_LIMITS='{"openai": {"context_limits": {"my-model": 128000}}}'
 
         2. Environment variable (file path):
-           export HEADROOM_MODEL_LIMITS=/path/to/models.json
+           export LEGROOM_MODEL_LIMITS=/path/to/models.json
 
-        3. Config file (~/.headroom/models.json):
+        3. Config file (~/.legroom/models.json):
            {
              "openai": {
                "context_limits": {"my-model": 128000},
@@ -452,8 +452,8 @@ class OpenAIProvider(Provider):
         Resolution order:
         1. LiteLLM (if available, most up-to-date)
         2. Explicit context_limits passed to constructor
-        3. HEADROOM_MODEL_LIMITS environment variable
-        4. ~/.headroom/models.json config file
+        3. LEGROOM_MODEL_LIMITS environment variable
+        4. ~/.legroom/models.json config file
         5. Built-in _CONTEXT_LIMITS
         6. Pattern-based inference (gpt-4o, gpt-4, etc.)
         7. Default fallback (128K)
@@ -506,8 +506,8 @@ class OpenAIProvider(Provider):
             _UNKNOWN_MODEL_WARNINGS.add(model)
             logger.warning(
                 f"Unknown OpenAI model '{model}': {reason} ({limit:,} tokens). "
-                f"To configure explicitly, set HEADROOM_MODEL_LIMITS env var or "
-                f"add to ~/.headroom/models.json"
+                f"To configure explicitly, set LEGROOM_MODEL_LIMITS env var or "
+                f"add to ~/.legroom/models.json"
             )
 
     def estimate_cost(

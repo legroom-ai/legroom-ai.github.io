@@ -3,10 +3,10 @@ from __future__ import annotations
 import threading
 from types import MethodType, SimpleNamespace
 
-from headroom.proxy.handlers import openai as openai_handler
-from headroom.proxy.handlers.openai import OpenAIHandlerMixin
-from headroom.transforms.compression_units import UnitCompressionResult
-from headroom.transforms.content_router import (
+from legroom.proxy.handlers import openai as openai_handler
+from legroom.proxy.handlers.openai import OpenAIHandlerMixin
+from legroom.transforms.compression_units import UnitCompressionResult
+from legroom.transforms.content_router import (
     CompressionStrategy,
     ContentRouter,
     RouterCompressionResult,
@@ -28,16 +28,16 @@ def _handler_with_router(router: ContentRouter) -> OpenAIHandlerMixin:
 
 
 def test_openai_responses_unit_parallelism_env_defaults_and_clamps(monkeypatch):
-    monkeypatch.delenv("HEADROOM_TOOL_OUTPUT_COMPRESSION_PARALLELISM", raising=False)
+    monkeypatch.delenv("LEGROOM_TOOL_OUTPUT_COMPRESSION_PARALLELISM", raising=False)
     assert openai_handler._openai_responses_unit_parallelism() == 4
 
-    monkeypatch.setenv("HEADROOM_TOOL_OUTPUT_COMPRESSION_PARALLELISM", "bad")
+    monkeypatch.setenv("LEGROOM_TOOL_OUTPUT_COMPRESSION_PARALLELISM", "bad")
     assert openai_handler._openai_responses_unit_parallelism() == 4
 
-    monkeypatch.setenv("HEADROOM_TOOL_OUTPUT_COMPRESSION_PARALLELISM", "0")
+    monkeypatch.setenv("LEGROOM_TOOL_OUTPUT_COMPRESSION_PARALLELISM", "0")
     assert openai_handler._openai_responses_unit_parallelism() == 1
 
-    monkeypatch.setenv("HEADROOM_TOOL_OUTPUT_COMPRESSION_PARALLELISM", "999")
+    monkeypatch.setenv("LEGROOM_TOOL_OUTPUT_COMPRESSION_PARALLELISM", "999")
     assert openai_handler._openai_responses_unit_parallelism() == 16
 
 
@@ -502,7 +502,7 @@ def test_openai_responses_adapter_reuses_identical_tool_output_in_same_request()
 
 
 def test_openai_responses_adapter_parallelizes_cache_misses_preserving_order(monkeypatch):
-    monkeypatch.setenv("HEADROOM_TOOL_OUTPUT_COMPRESSION_PARALLELISM", "4")
+    monkeypatch.setenv("LEGROOM_TOOL_OUTPUT_COMPRESSION_PARALLELISM", "4")
     router = ContentRouter()
     lock = threading.Lock()
     release = threading.Event()
@@ -584,7 +584,7 @@ def test_openai_responses_adapter_accepts_empty_input_list():
     assert strategy_chain == []
 
 
-def test_openai_responses_adapter_preserves_headroom_retrieve_outputs():
+def test_openai_responses_adapter_preserves_legroom_retrieve_outputs():
     router = ContentRouter()
 
     def compress(self, content: str, **_kwargs):
@@ -603,7 +603,7 @@ def test_openai_responses_adapter_preserves_headroom_retrieve_outputs():
             {
                 "type": "function_call",
                 "call_id": "call_retrieve",
-                "name": "mcp__headroom__headroom_retrieve",
+                "name": "mcp__legroom__legroom_retrieve",
                 "arguments": "{}",
             },
             {
@@ -631,7 +631,7 @@ def test_openai_responses_adapter_preserves_headroom_retrieve_outputs():
 
 
 def test_openai_responses_adapter_preserves_excluded_tool_outputs():
-    """Regression for #940: outputs for HEADROOM_EXCLUDE_TOOLS tools stay raw.
+    """Regression for #940: outputs for LEGROOM_EXCLUDE_TOOLS tools stay raw.
 
     The Responses path carries the tool name on the ``function_call`` item and
     the originating ``call_id`` on the matching ``function_call_output``; the
@@ -687,7 +687,7 @@ def test_openai_responses_adapter_losslessly_folds_excluded_grep_output():
     """Excluded tools skip *lossy* compression, but grep/log/json output is still
     byte/data-losslessly compacted on the Responses path (matches chat/Anthropic).
     """
-    from headroom.transforms.lossless_compaction import search_unheading
+    from legroom.transforms.lossless_compaction import search_unheading
 
     router = ContentRouter()
     router.config.exclude_tools = {"grep"}
@@ -722,7 +722,7 @@ def test_openai_responses_adapter_losslessly_folds_excluded_grep_output():
 
 
 def test_openai_responses_adapter_losslessly_folds_excluded_output_content_parts():
-    from headroom.transforms.lossless_compaction import search_unheading
+    from legroom.transforms.lossless_compaction import search_unheading
 
     router = ContentRouter()
     router.config.exclude_tools = {"grep"}
@@ -771,7 +771,7 @@ def test_openai_responses_adapter_losslessly_folds_excluded_grep_output_content_
     refusals), the lossless fold should only update output_text/input_text parts
     and leave everything else intact.
     """
-    from headroom.transforms.lossless_compaction import search_unheading
+    from legroom.transforms.lossless_compaction import search_unheading
 
     router = ContentRouter()
     router.config.exclude_tools = {"grep"}
@@ -891,7 +891,7 @@ def test_openai_responses_adapter_keeps_websearch_output_verbatim():
     output = (
         "{\n"
         '  "results": [\n'
-        '    {"title": "Headroom", "snippet": "structured web payload with spacing that must remain verbatim"}\n'
+        '    {"title": "Legroom", "snippet": "structured web payload with spacing that must remain verbatim"}\n'
         "  ]\n"
         "}"
     )
@@ -1014,7 +1014,7 @@ def test_openai_responses_payload_routes_through_content_router_without_rust(
     router.compress = MethodType(compress, router)
     handler = _handler_with_router(router)
 
-    import headroom._core as core
+    import legroom._core as core
 
     def rust_must_not_run(*_args, **_kwargs):
         raise AssertionError("Responses payload compression should route through ContentRouter")

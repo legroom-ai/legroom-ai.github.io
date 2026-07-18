@@ -1,4 +1,4 @@
-"""Transform pipeline orchestration for Headroom SDK."""
+"""Transform pipeline orchestration for Legroom SDK."""
 
 from __future__ import annotations
 
@@ -13,12 +13,12 @@ from typing import TYPE_CHECKING, Any, TypeVar
 from ..config import (
     CacheAlignerConfig,
     DiffArtifact,
-    HeadroomConfig,
+    LegroomConfig,
     TransformDiff,
     TransformResult,
     WasteSignals,
 )
-from ..observability import get_headroom_tracer, get_otel_metrics
+from ..observability import get_legroom_tracer, get_otel_metrics
 from ..tokenizer import Tokenizer
 from ..utils import deep_copy_messages
 from .base import Transform
@@ -44,7 +44,7 @@ _MIN_TOKENS_SAVED_FOR_WASTE_SIGNALS = 100
 
 # OTel GenAI semantic conventions (open-telemetry/semantic-conventions-genai).
 # The compression-pipeline span carries this gen_ai.* attribute alongside the
-# proprietary headroom.* ones, so Headroom's telemetry groups/filters by the
+# proprietary legroom.* ones, so Legroom's telemetry groups/filters by the
 # standard schema in any OTel-native backend (Grafana, Datadog, etc.). It is a
 # string literal rather than an opentelemetry.semconv constant because the gen_ai
 # attributes are stability=development (no stable constants are published).
@@ -55,12 +55,12 @@ _MIN_TOKENS_SAVED_FOR_WASTE_SIGNALS = 100
 #   - gen_ai.operation.name: apply() is shared by many callers (chat, /v1/compress,
 #     batch, Gemini countTokens), so no single value is right — it must be threaded
 #     from each caller, not hardcoded.
-#   - gen_ai.provider.name: Headroom's provider label can't distinguish Bedrock /
+#   - gen_ai.provider.name: Legroom's provider label can't distinguish Bedrock /
 #     Gemini from Anthropic / OpenAI at this layer (Bedrock routes via the
 #     Anthropic provider).
 #   - gen_ai.usage.*: provider-authoritative usage lives on the response path, not
 #     this pre-flight compression span (the compressed-input estimate stays under
-#     headroom.tokens.after).
+#     legroom.tokens.after).
 GEN_AI_REQUEST_MODEL = "gen_ai.request.model"
 
 
@@ -100,7 +100,7 @@ class TransformPipeline:
 
     def __init__(
         self,
-        config: HeadroomConfig | None = None,
+        config: LegroomConfig | None = None,
         transforms: list[Transform] | None = None,
         provider: Provider | None = None,
     ):
@@ -108,11 +108,11 @@ class TransformPipeline:
         Initialize pipeline.
 
         Args:
-            config: Headroom configuration.
+            config: Legroom configuration.
             transforms: Optional custom transform list (overrides config).
             provider: Provider for model-specific behavior.
         """
-        self.config = config or HeadroomConfig()
+        self.config = config or LegroomConfig()
         self._provider = provider
 
         if transforms is not None:
@@ -124,8 +124,8 @@ class TransformPipeline:
         # failures, pass messages through untouched for a cooldown window
         # instead of re-running (and re-failing) transforms on every
         # request. Threshold <= 0 disables the breaker.
-        self._breaker_threshold = _breaker_env("HEADROOM_PIPELINE_BREAKER_THRESHOLD", 3, int)
-        self._breaker_cooldown_s = _breaker_env("HEADROOM_PIPELINE_BREAKER_COOLDOWN_S", 60.0, float)
+        self._breaker_threshold = _breaker_env("LEGROOM_PIPELINE_BREAKER_THRESHOLD", 3, int)
+        self._breaker_cooldown_s = _breaker_env("LEGROOM_PIPELINE_BREAKER_COOLDOWN_S", 60.0, float)
         self._breaker_lock = threading.Lock()
         self._breaker_failures = 0
         self._breaker_open_until = 0.0
@@ -138,16 +138,16 @@ class TransformPipeline:
 
         # 0. Tool-result interceptors (ast-grep Read outline, etc.) run first
         # so downstream compressors operate on the already-shrunk content.
-        # OPT-IN: enable via HeadroomConfig.intercept_tool_results, or for
+        # OPT-IN: enable via LegroomConfig.intercept_tool_results, or for
         # non-config callers (CLI / SDK / tests) the env var
-        # HEADROOM_INTERCEPT_ENABLED=1. Off by default while this ships — lets
+        # LEGROOM_INTERCEPT_ENABLED=1. Off by default while this ships — lets
         # users try it and compare before we make it the default.
         import os as _os
 
         if getattr(self.config, "intercept_tool_results", False) or _os.environ.get(
-            "HEADROOM_INTERCEPT_ENABLED"
+            "LEGROOM_INTERCEPT_ENABLED"
         ):
-            from headroom.proxy.interceptors import ToolResultInterceptorTransform
+            from legroom.proxy.interceptors import ToolResultInterceptorTransform
 
             transforms.append(ToolResultInterceptorTransform())
 
@@ -185,7 +185,7 @@ class TransformPipeline:
         # No provider — use the tokenizer registry (auto-detects per model)
         # TokenCounter from tokenizers and providers have the same interface
         # (count_text, count_messages) but are different Protocol types.
-        from headroom.tokenizers import get_tokenizer
+        from legroom.tokenizers import get_tokenizer
 
         return Tokenizer(get_tokenizer(model), model)  # type: ignore[arg-type]
 
@@ -265,7 +265,7 @@ class TransformPipeline:
         if model_limit is None:
             raise ValueError(
                 "model_limit is required. Provide it via kwargs or "
-                "configure model_context_limits in HeadroomClient."
+                "configure model_context_limits in LegroomClient."
             )
 
         # Start with original tokens
@@ -290,20 +290,20 @@ class TransformPipeline:
             model,
         )
 
-        tracer = get_headroom_tracer()
+        tracer = get_legroom_tracer()
         span_attributes: dict[str, Any] = {
-            "headroom.model": model,
-            "headroom.provider": provider_name or "unknown",
-            "headroom.message_count": len(messages),
-            "headroom.tokens.before": tokens_before,
+            "legroom.model": model,
+            "legroom.provider": provider_name or "unknown",
+            "legroom.message_count": len(messages),
+            "legroom.tokens.before": tokens_before,
         }
-        # OTel GenAI semconv request descriptor — emitted alongside headroom.* so
+        # OTel GenAI semconv request descriptor — emitted alongside legroom.* so
         # the span is groupable by the standard schema (v1: model only).
         if model:
             span_attributes[GEN_AI_REQUEST_MODEL] = model
         pipeline_span_context = (
             tracer.start_as_current_span(
-                "headroom.compression.pipeline",
+                "legroom.compression.pipeline",
                 attributes=span_attributes,
             )
             if record_metrics
@@ -349,11 +349,11 @@ class TransformPipeline:
 
                 transform_span_context = (
                     tracer.start_as_current_span(
-                        "headroom.compression.transform",
+                        "legroom.compression.transform",
                         attributes={
-                            "headroom.model": model,
-                            "headroom.provider": provider_name or "unknown",
-                            "headroom.transform": transform.name,
+                            "legroom.model": model,
+                            "legroom.provider": provider_name or "unknown",
+                            "legroom.transform": transform.name,
                         },
                     )
                     if record_metrics
@@ -380,18 +380,18 @@ class TransformPipeline:
 
                     if transform_span is not None and transform_span.is_recording():
                         transform_span.set_attribute(
-                            "headroom.tokens.before", tokens_before_transform
+                            "legroom.tokens.before", tokens_before_transform
                         )
                         transform_span.set_attribute(
-                            "headroom.tokens.after", tokens_after_transform
+                            "legroom.tokens.after", tokens_after_transform
                         )
                         transform_span.set_attribute(
-                            "headroom.tokens.saved",
+                            "legroom.tokens.saved",
                             tokens_before_transform - tokens_after_transform,
                         )
-                        transform_span.set_attribute("headroom.duration_ms", duration_ms)
+                        transform_span.set_attribute("legroom.duration_ms", duration_ms)
                         transform_span.set_attribute(
-                            "headroom.transforms_applied",
+                            "legroom.transforms_applied",
                             len(result.transforms_applied),
                         )
 
@@ -514,11 +514,11 @@ class TransformPipeline:
                     pass
 
             if pipeline_span is not None and pipeline_span.is_recording():
-                pipeline_span.set_attribute("headroom.tokens.after", tokens_after)
-                pipeline_span.set_attribute("headroom.tokens.saved", total_saved)
-                pipeline_span.set_attribute("headroom.duration_ms", pipeline_ms)
-                pipeline_span.set_attribute("headroom.transforms_applied", len(all_transforms))
-                pipeline_span.set_attribute("headroom.warnings", len(all_warnings))
+                pipeline_span.set_attribute("legroom.tokens.after", tokens_after)
+                pipeline_span.set_attribute("legroom.tokens.saved", total_saved)
+                pipeline_span.set_attribute("legroom.duration_ms", pipeline_ms)
+                pipeline_span.set_attribute("legroom.transforms_applied", len(all_transforms))
+                pipeline_span.set_attribute("legroom.warnings", len(all_warnings))
 
             if record_metrics:
                 get_otel_metrics().record_pipeline_run(
@@ -579,7 +579,7 @@ def create_pipeline(
     Returns:
         Configured TransformPipeline.
     """
-    config = HeadroomConfig()
+    config = LegroomConfig()
 
     if cache_aligner_config is not None:
         config.cache_aligner = cache_aligner_config

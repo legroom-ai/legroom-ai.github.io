@@ -1,4 +1,4 @@
-"""Embedder implementations for Headroom Memory.
+"""Embedder implementations for Legroom Memory.
 
 Provides embedding generation via multiple backends:
 - LocalEmbedder: sentence-transformers (local, no API needed)
@@ -20,8 +20,8 @@ from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
-from headroom.models.config import ML_MODEL_DEFAULTS
-from headroom.onnx_runtime import create_cpu_session_options, hf_hub_download_local_first
+from legroom.models.config import ML_MODEL_DEFAULTS
+from legroom.onnx_runtime import create_cpu_session_options, hf_hub_download_local_first
 
 if TYPE_CHECKING:
     from sentence_transformers import SentenceTransformer
@@ -62,12 +62,12 @@ logger = logging.getLogger(__name__)
 # threads, so a one-shot cap would miss most workers. Instead, CPU encodes run
 # on a dedicated, size-limited executor whose ``initializer`` pins each worker's
 # thread pool once. Total embedding threads are then bounded by
-# ``workers (HEADROOM_EMBED_CONCURRENCY) x threads-per-encode
-# (HEADROOM_EMBED_NUM_THREADS)``. Applies to the CPU device only (GPU/MPS do
+# ``workers (LEGROOM_EMBED_CONCURRENCY) x threads-per-encode
+# (LEGROOM_EMBED_NUM_THREADS)``. Applies to the CPU device only (GPU/MPS do
 # their compute off-CPU).
-_EMBED_THREADS_ENV = "HEADROOM_EMBED_NUM_THREADS"
+_EMBED_THREADS_ENV = "LEGROOM_EMBED_NUM_THREADS"
 _DEFAULT_EMBED_THREADS = 1
-_EMBED_CONCURRENCY_ENV = "HEADROOM_EMBED_CONCURRENCY"
+_EMBED_CONCURRENCY_ENV = "LEGROOM_EMBED_CONCURRENCY"
 _DEFAULT_EMBED_CONCURRENCY = 4
 _BLAS_THREAD_ENV_VARS = (
     "OMP_NUM_THREADS",
@@ -99,12 +99,12 @@ def _resolve_positive_int_env(env_var: str, default: int) -> int:
 
 
 def _resolve_embed_thread_cap() -> int:
-    """Resolve the per-encode CPU thread cap (``HEADROOM_EMBED_NUM_THREADS``)."""
+    """Resolve the per-encode CPU thread cap (``LEGROOM_EMBED_NUM_THREADS``)."""
     return _resolve_positive_int_env(_EMBED_THREADS_ENV, _DEFAULT_EMBED_THREADS)
 
 
 def _resolve_embed_concurrency() -> int:
-    """Resolve the max concurrent CPU encodes (``HEADROOM_EMBED_CONCURRENCY``).
+    """Resolve the max concurrent CPU encodes (``LEGROOM_EMBED_CONCURRENCY``).
 
     Defaults to ``min(4, os.cpu_count())`` so embedding cannot occupy every core
     and starve the event loop, while still allowing useful parallelism.
@@ -260,7 +260,7 @@ class LocalEmbedder:
             return
 
         self._check_dependencies()
-        from headroom.models.ml_models import MLModelRegistry
+        from legroom.models.ml_models import MLModelRegistry
 
         # Determine device
         if self._requested_device:

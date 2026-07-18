@@ -7,8 +7,8 @@ index.
 
 from __future__ import annotations
 
-from headroom.memory.config import EmbedderBackend, MemoryConfig
-from headroom.memory.factory import _create_embedder, _reset_embedder_cache_for_tests
+from legroom.memory.config import EmbedderBackend, MemoryConfig
+from legroom.memory.factory import _create_embedder, _reset_embedder_cache_for_tests
 
 
 def test_ollama_embedder_cache_keys_on_base_url():

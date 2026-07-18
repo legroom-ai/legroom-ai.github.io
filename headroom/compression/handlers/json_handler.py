@@ -17,8 +17,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, cast
 
-from headroom.compression.handlers.base import BaseStructureHandler, HandlerResult
-from headroom.compression.masks import EntropyScore, StructureMask
+from legroom.compression.handlers.base import BaseStructureHandler, HandlerResult
+from legroom.compression.masks import EntropyScore, StructureMask
 
 
 class JSONTokenType(Enum):

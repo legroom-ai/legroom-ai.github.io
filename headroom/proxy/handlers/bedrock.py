@@ -1,10 +1,10 @@
-"""AWS Bedrock ``InvokeModel`` passthrough handler for HeadroomProxy.
+"""AWS Bedrock ``InvokeModel`` passthrough handler for LegroomProxy.
 
 Claude Code (and other clients) launched with ``CLAUDE_CODE_USE_BEDROCK=1``
 talk to a Bedrock *runtime endpoint* over plain HTTP, POSTing to
 ``/model/{modelId}/invoke`` and ``/model/{modelId}/invoke-with-response-stream``
 instead of the Anthropic ``/v1/messages`` route. Those requests previously fell
-through Headroom's catch-all and were forwarded verbatim — no compression.
+through Legroom's catch-all and were forwarded verbatim — no compression.
 
 This mixin intercepts that Bedrock REST shape, compresses the request body with
 the **same** ``anthropic_pipeline`` used for ``/v1/messages``, and forwards to a
@@ -37,7 +37,7 @@ if TYPE_CHECKING:
     from fastapi import Request
     from fastapi.responses import Response, StreamingResponse
 
-logger = logging.getLogger("headroom.proxy")
+logger = logging.getLogger("legroom.proxy")
 
 LOG_TAG = "bedrock_invoke"
 
@@ -72,17 +72,17 @@ class BedrockHandlerMixin:
         """
         from fastapi.responses import JSONResponse
 
-        from headroom.proxy.auth_mode import classify_client
-        from headroom.proxy.helpers import (
+        from legroom.proxy.auth_mode import classify_client
+        from legroom.proxy.helpers import (
             COMPRESSION_TIMEOUT_SECONDS,
             MAX_MESSAGE_ARRAY_LENGTH,
-            _headroom_bypass_enabled,
+            _legroom_bypass_enabled,
             _strip_internal_headers,
             extract_tags,
             read_request_json_with_bytes,
         )
-        from headroom.proxy.modes import is_cache_mode
-        from headroom.utils import extract_user_query
+        from legroom.proxy.modes import is_cache_mode
+        from legroom.utils import extract_user_query
 
         start_time = time.time()
         request_id = await self._next_request_id()  # type: ignore[attr-defined]
@@ -151,7 +151,7 @@ class BedrockHandlerMixin:
 
         messages = body.get("messages")
         bypass = (
-            _headroom_bypass_enabled(request.headers)
+            _legroom_bypass_enabled(request.headers)
             or not getattr(self.config, "optimize", True)  # type: ignore[attr-defined]
             or is_cache_mode(getattr(self.config, "mode", "token"))  # type: ignore[attr-defined]
             or not isinstance(messages, list)
@@ -220,7 +220,7 @@ class BedrockHandlerMixin:
         # byte-faithfully and never parsed. The valuable figure, request-side
         # compression, is recorded in full.
         try:
-            from headroom.proxy.outcome import RequestOutcome
+            from legroom.proxy.outcome import RequestOutcome
 
             await self._record_request_outcome(  # type: ignore[attr-defined]
                 RequestOutcome(

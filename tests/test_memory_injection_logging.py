@@ -3,12 +3,12 @@
 import ast
 from pathlib import Path
 
-from headroom.proxy.helpers import log_memory_injection
+from legroom.proxy.helpers import log_memory_injection
 
 HANDLER_FILES = [
-    Path("headroom/proxy/handlers/anthropic.py"),
-    Path("headroom/proxy/handlers/openai.py"),
-    Path("headroom/proxy/handlers/gemini.py"),
+    Path("legroom/proxy/handlers/anthropic.py"),
+    Path("legroom/proxy/handlers/openai.py"),
+    Path("legroom/proxy/handlers/gemini.py"),
 ]
 
 

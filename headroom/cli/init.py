@@ -16,7 +16,7 @@ from hashlib import sha1
 from pathlib import Path
 from typing import Any
 
-from headroom._subprocess import run
+from legroom._subprocess import run
 
 try:
     import tomllib
@@ -25,39 +25,39 @@ except ModuleNotFoundError:  # Python < 3.11
 
 import click
 
-from headroom.install.models import ConfigScope, InstallPreset, RuntimeKind, SupervisorKind
-from headroom.install.paths import claude_settings_path, codex_config_path, validate_profile_name
-from headroom.install.planner import build_manifest
-from headroom.install.providers import _apply_unix_env_scope, _apply_windows_env_scope
-from headroom.install.runtime import (
+from legroom.install.models import ConfigScope, InstallPreset, RuntimeKind, SupervisorKind
+from legroom.install.paths import claude_settings_path, codex_config_path, validate_profile_name
+from legroom.install.planner import build_manifest
+from legroom.install.providers import _apply_unix_env_scope, _apply_windows_env_scope
+from legroom.install.runtime import (
     acquire_runtime_start_lock,
-    resolve_headroom_command,
+    resolve_legroom_command,
     runtime_status,
     start_detached_agent,
     start_persistent_docker,
     stop_runtime,
     wait_ready,
 )
-from headroom.install.state import ManifestError, load_manifest, save_manifest
-from headroom.install.supervisors import start_supervisor
-from headroom.providers.claude import TOOL_SEARCH_DEFAULT, TOOL_SEARCH_ENV
-from headroom.providers.codex.install import codex_uses_chatgpt_auth
-from headroom.providers.codex.threads import retag_to_headroom
+from legroom.install.state import ManifestError, load_manifest, save_manifest
+from legroom.install.supervisors import start_supervisor
+from legroom.providers.claude import TOOL_SEARCH_DEFAULT, TOOL_SEARCH_ENV
+from legroom.providers.codex.install import codex_uses_chatgpt_auth
+from legroom.providers.codex.threads import retag_to_legroom
 
 from .main import main
 
 logger = logging.getLogger(__name__)
 
-_VERBOSE_HANDLER_ATTR = "_headroom_init_verbose_handler"
+_VERBOSE_HANDLER_ATTR = "_legroom_init_verbose_handler"
 
 _GLOBAL_PROFILE = "init-user"
-_CLAUDE_HOOK_MARKER = "headroom-init-claude"
-_COPILOT_HOOK_MARKER = "headroom-init-copilot"
-_CODEX_HOOK_MARKER = "headroom-init-codex"
-_CODEX_PROVIDER_MARKER_START = "# --- Headroom init provider ---"
-_CODEX_PROVIDER_MARKER_END = "# --- end Headroom init provider ---"
-_CODEX_FEATURE_MARKER_START = "# --- Headroom init features ---"
-_CODEX_FEATURE_MARKER_END = "# --- end Headroom init features ---"
+_CLAUDE_HOOK_MARKER = "legroom-init-claude"
+_COPILOT_HOOK_MARKER = "legroom-init-copilot"
+_CODEX_HOOK_MARKER = "legroom-init-codex"
+_CODEX_PROVIDER_MARKER_START = "# --- Legroom init provider ---"
+_CODEX_PROVIDER_MARKER_END = "# --- end Legroom init provider ---"
+_CODEX_FEATURE_MARKER_START = "# --- Legroom init features ---"
+_CODEX_FEATURE_MARKER_END = "# --- end Legroom init features ---"
 _SUPPORTED_TARGETS = ("claude", "copilot", "codex", "openclaw")
 _LOCAL_TARGETS = {"claude", "codex"}
 _GLOBAL_TARGETS = {"claude", "copilot", "codex", "openclaw"}
@@ -84,7 +84,7 @@ def _command_string(parts: list[str]) -> str:
 
 
 def _hook_command(*parts: str) -> str:
-    return _command_string([*resolve_headroom_command(), "init", "hook", "ensure", *parts])
+    return _command_string([*resolve_legroom_command(), "init", "hook", "ensure", *parts])
 
 
 def _powershell_matcher() -> str:
@@ -96,14 +96,14 @@ def _enable_verbose_logging() -> None:
 
     Idempotent: calling this multiple times in one process (e.g. when nested
     subcommands are invoked) leaves exactly one handler attached. Does NOT
-    mutate stdout; all verbose output goes to stderr so ``headroom init``
+    mutate stdout; all verbose output goes to stderr so ``legroom init``
     can still be composed in pipes that consume stdout.
     """
 
     if getattr(logger, _VERBOSE_HANDLER_ATTR, None) is not None:
         return
     handler = logging.StreamHandler(stream=sys.stderr)
-    handler.setFormatter(logging.Formatter("[headroom init] %(message)s"))
+    handler.setFormatter(logging.Formatter("[legroom init] %(message)s"))
     handler.setLevel(logging.DEBUG)
     logger.addHandler(handler)
     logger.setLevel(logging.DEBUG)
@@ -156,7 +156,7 @@ def _json_file(path: Path) -> dict[str, Any]:
         # This is a user-owned file (e.g. ~/.claude/settings.json or Codex's
         # hooks.json) that the callers read-merge-write. Returning {} would make
         # the following _write_json overwrite it, silently discarding the user's
-        # settings; letting the raw JSONDecodeError propagate crashes `headroom
+        # settings; letting the raw JSONDecodeError propagate crashes `legroom
         # init` with a traceback. Abort with an actionable message so the user
         # can fix the JSON (or move it aside) without losing it.
         raise click.ClickException(
@@ -200,13 +200,13 @@ def _ensure_claude_hooks(path: Path, profile: str, port: int) -> None:
             if not isinstance(hook_items, list):
                 retained.append(entry)
                 continue
-            has_headroom = any(
+            has_legroom = any(
                 isinstance(item, dict)
                 and item.get("command")
                 and _CLAUDE_HOOK_MARKER in str(item.get("command"))
                 for item in hook_items
             )
-            if not has_headroom:
+            if not has_legroom:
                 retained.append(entry)
         retained.append(
             {
@@ -273,7 +273,7 @@ def _remove_marker_block(content: str, marker_start: str, marker_end: str) -> st
 
 
 def _strip_codex_init_block(content: str) -> str:
-    """Remove all Headroom init-managed blocks and orphan keys from a Codex config.toml string."""
+    """Remove all Legroom init-managed blocks and orphan keys from a Codex config.toml string."""
     import re
 
     # Remove any provider marker → end marker span, possibly repeated.
@@ -291,20 +291,20 @@ def _strip_codex_init_block(content: str) -> str:
 
     # Strip any orphan top-level keys that a crashed or partial write may have
     # left outside the marker block.
-    content = re.sub(r'(?m)^[ \t]*model_provider[ \t]*=[ \t]*"headroom"[ \t]*\r?\n', "", content)
+    content = re.sub(r'(?m)^[ \t]*model_provider[ \t]*=[ \t]*"legroom"[ \t]*\r?\n', "", content)
     content = re.sub(
         r'(?m)^[ \t]*openai_base_url[ \t]*=[ \t]*"http://127\.0\.0\.1:\d+/v1"[ \t]*\r?\n',
         "",
         content,
     )
 
-    # Strip any orphaned [model_providers.headroom] table that is recognisably ours.
-    orphan_headroom_table = re.compile(
-        r"(?ms)^\[model_providers\.headroom\][^\[]*?"
+    # Strip any orphaned [model_providers.legroom] table that is recognisably ours.
+    orphan_legroom_table = re.compile(
+        r"(?ms)^\[model_providers\.legroom\][^\[]*?"
         r'base_url[ \t]*=[ \t]*"http://127\.0\.0\.1:\d+/v1"[^\[]*?'
         r"(?=^\[|\Z)"
     )
-    content = orphan_headroom_table.sub("", content)
+    content = orphan_legroom_table.sub("", content)
 
     return content.lstrip("\n").rstrip() + "\n" if content.strip() else ""
 
@@ -323,10 +323,10 @@ def _ensure_codex_provider(path: Path, port: int) -> None:
     )
     block = (
         f"{_CODEX_PROVIDER_MARKER_START}\n"
-        'model_provider = "headroom"\n'
+        'model_provider = "legroom"\n'
         f'openai_base_url = "http://127.0.0.1:{port}/v1"\n\n'
-        "[model_providers.headroom]\n"
-        'name = "Headroom init proxy"\n'
+        "[model_providers.legroom]\n"
+        'name = "Legroom init proxy"\n'
         f'base_url = "http://127.0.0.1:{port}/v1"\n'
         "supports_websockets = true\n"
         f"{requires_openai_auth}"
@@ -338,7 +338,7 @@ def _ensure_codex_provider(path: Path, port: int) -> None:
     # key (#260). Scope the strip to the document root (everything before the
     # first table header) -- these keys also appear legitimately inside
     # [profiles.*] tables as per-profile overrides, and stripping them there
-    # silently reroutes the user's profiles to the injected "headroom" default.
+    # silently reroutes the user's profiles to the injected "legroom" default.
     _first_table = re.search(r"(?m)^[ \t]*\[", content)
     _split = _first_table.start() if _first_table else len(content)
     root, rest = content[:_split], content[_split:]
@@ -353,11 +353,11 @@ def _ensure_codex_provider(path: Path, port: int) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
     # Codex filters its history menu by the active model_provider, so existing
-    # native threads vanish once we switch to "headroom". Retag them to match the
+    # native threads vanish once we switch to "legroom". Retag them to match the
     # active provider so the history stays whole (#961), mirroring the install
     # (providers.codex.install) and wrap (cli.wrap) paths. The revert direction is
-    # handled by `headroom unwrap codex`.
-    retag_to_headroom(path.parent)
+    # handled by `legroom unwrap codex`.
+    retag_to_legroom(path.parent)
 
 
 def _codex_feature_block() -> str:
@@ -489,7 +489,7 @@ def _ensure_codex_hooks(path: Path, profile: str) -> None:
     command = f"{_hook_command('--profile', profile)} --marker {_CODEX_HOOK_MARKER}"
     # Read-merge-write rather than overwrite: the previous version wrote a fresh
     # payload wholesale, destroying any user-managed hooks (and other top-level
-    # keys) in codex hooks.json. Merge per event and dedup on the Headroom
+    # keys) in codex hooks.json. Merge per event and dedup on the Legroom
     # marker, matching _ensure_claude_hooks / _ensure_copilot_hooks.
     payload = _json_file(path)
     hooks = dict(payload.get("hooks") or {}) if isinstance(payload.get("hooks"), dict) else {}
@@ -507,13 +507,13 @@ def _ensure_codex_hooks(path: Path, profile: str) -> None:
             if not isinstance(hook_items, list):
                 retained.append(entry)
                 continue
-            has_headroom = any(
+            has_legroom = any(
                 isinstance(item, dict)
                 and item.get("command")
                 and _CODEX_HOOK_MARKER in str(item.get("command"))
                 for item in hook_items
             )
-            if not has_headroom:
+            if not has_legroom:
                 retained.append(entry)
         retained.append(
             {
@@ -578,7 +578,7 @@ def _ensure_runtime_manifest(
         proxy_mode="token",
         memory_enabled=memory,
         telemetry_enabled=True,
-        image="ghcr.io/headroomlabs-ai/headroom:latest",
+        image="ghcr.io/legroom-ai/legroom:latest",
     )
     manifest.supervisor_kind = SupervisorKind.NONE.value
     manifest.artifacts = []
@@ -614,7 +614,7 @@ def _env_manifest(values: dict[str, str]) -> Any:
         proxy_mode="token",
         memory_enabled=False,
         telemetry_enabled=True,
-        image="ghcr.io/headroomlabs-ai/headroom:latest",
+        image="ghcr.io/legroom-ai/legroom:latest",
     )
 
 
@@ -644,13 +644,13 @@ def _resolve_copilot_env(port: int, backend: str) -> dict[str, str]:
 
 
 def _marketplace_source() -> str:
-    override = os.environ.get("HEADROOM_MARKETPLACE_SOURCE")
+    override = os.environ.get("LEGROOM_MARKETPLACE_SOURCE")
     if override:
         return override
     repo_root = Path(__file__).resolve().parents[2]
     if (repo_root / ".claude-plugin" / "marketplace.json").exists():
         return str(repo_root)
-    return "ghaliba3/headroom"
+    return "ghaliba3/legroom"
 
 
 def _run_checked(command: list[str], *, action: str) -> None:
@@ -687,7 +687,7 @@ def _install_claude_marketplace(scope: str) -> None:
         [claude_bin, "plugin", "marketplace", "add", source], action="claude marketplace add"
     )
     _run_checked(
-        [claude_bin, "plugin", "install", "headroom@headroom-marketplace", "--scope", scope],
+        [claude_bin, "plugin", "install", "legroom@legroom-marketplace", "--scope", scope],
         action="claude plugin install",
     )
 
@@ -702,7 +702,7 @@ def _install_copilot_marketplace() -> None:
         action="copilot marketplace add",
     )
     _run_checked(
-        [copilot_bin, "plugin", "install", "headroom@headroom-marketplace"],
+        [copilot_bin, "plugin", "install", "legroom@legroom-marketplace"],
         action="copilot plugin install",
     )
 
@@ -807,7 +807,7 @@ def _format_empty_detection_error(global_scope: bool) -> str:
     lines: list[str] = [
         f"No supported {scope_label}-scope agents were found on PATH.",
         "",
-        "Headroom probed the following agents via shutil.which():",
+        "Legroom probed the following agents via shutil.which():",
     ]
     for name, path in probes:
         status = f"found at {path}" if path else "not found"
@@ -817,19 +817,19 @@ def _format_empty_detection_error(global_scope: bool) -> str:
         [
             "",
             f"The {scope_flag or '--local (no flag)'} option is still supported; "
-            "headroom init just needs to know which agent to target.",
+            "legroom init just needs to know which agent to target.",
             "Install the agent you want first, then re-run with an explicit target:",
             "",
         ]
     )
     for name, _path in probes:
         flag = " -g" if global_scope else ""
-        lines.append(f"  headroom init{flag} {name}")
+        lines.append(f"  legroom init{flag} {name}")
 
     lines.extend(
         [
             "",
-            "Tip: run `headroom init --help` to see all options.",
+            "Tip: run `legroom init --help` to see all options.",
         ]
     )
     return "\n".join(lines)
@@ -839,7 +839,7 @@ def _init_claude(*, global_scope: bool, profile: str, port: int) -> None:
     _ensure_claude_hooks(_claude_scope_path(global_scope), profile, port)
     _install_claude_marketplace("user" if global_scope else "local")
     click.echo(f"Configured Claude Code ({'user' if global_scope else 'local'} scope).")
-    click.echo("Restart Claude Code to activate Headroom hooks and provider routing.")
+    click.echo("Restart Claude Code to activate Legroom hooks and provider routing.")
 
 
 def _init_copilot(*, global_scope: bool, profile: str, port: int, backend: str) -> None:
@@ -851,7 +851,7 @@ def _init_copilot(*, global_scope: bool, profile: str, port: int, backend: str) 
     _apply_user_env(_resolve_copilot_env(port, backend))
     _install_copilot_marketplace()
     click.echo("Configured GitHub Copilot CLI (user scope).")
-    click.echo("Restart Copilot CLI to activate Headroom hooks and provider routing.")
+    click.echo("Restart Copilot CLI to activate Legroom hooks and provider routing.")
 
 
 def _init_codex(*, global_scope: bool, profile: str, port: int) -> None:
@@ -864,7 +864,7 @@ def _init_codex(*, global_scope: bool, profile: str, port: int) -> None:
         click.echo(
             "Codex hooks are currently disabled upstream on Windows; provider routing was still installed."
         )
-    click.echo("Restart Codex to activate Headroom configuration.")
+    click.echo("Restart Codex to activate Legroom configuration.")
 
 
 def _init_openclaw(*, global_scope: bool, port: int) -> None:
@@ -872,7 +872,7 @@ def _init_openclaw(*, global_scope: bool, port: int) -> None:
         raise click.ClickException(
             "OpenClaw durable init currently requires -g (current-user scope)."
         )
-    command = [*resolve_headroom_command(), "wrap", "openclaw", "--proxy-port", str(port)]
+    command = [*resolve_legroom_command(), "wrap", "openclaw", "--proxy-port", str(port)]
     result = subprocess.run(command)
     if result.returncode != 0:
         raise SystemExit(result.returncode)
@@ -918,16 +918,16 @@ def _run_init_targets(
         elif target == "openclaw":
             _init_openclaw(global_scope=global_scope, port=port)
 
-    # Register the headroom MCP server with every targeted agent that has
+    # Register the legroom MCP server with every targeted agent that has
     # a registrar implemented. Wave 1 covers Claude Code; subsequent waves
     # add Cursor / Codex / Continue / Cline / Windsurf / Goose without
     # touching the call sites.
-    _install_headroom_mcp_for_targets(targets=targets, port=port)
+    _install_legroom_mcp_for_targets(targets=targets, port=port)
 
 
-def _install_headroom_mcp_for_targets(*, targets: list[str], port: int) -> None:
-    """Install the headroom MCP server into each detected target agent."""
-    from headroom.mcp_registry import format_results, install_everywhere
+def _install_legroom_mcp_for_targets(*, targets: list[str], port: int) -> None:
+    """Install the legroom MCP server into each detected target agent."""
+    from legroom.mcp_registry import format_results, install_everywhere
 
     proxy_url = f"http://127.0.0.1:{port}"
     results = install_everywhere(proxy_url=proxy_url, agents=targets)
@@ -937,7 +937,7 @@ def _install_headroom_mcp_for_targets(*, targets: list[str], port: int) -> None:
     lines = format_results(
         results,
         verbose=True,
-        overwrite_hint=f"headroom mcp install --proxy-url {proxy_url} --force",
+        overwrite_hint=f"legroom mcp install --proxy-url {proxy_url} --force",
     )
     if lines:
         click.echo("\nMCP retrieve tool:")
@@ -952,7 +952,7 @@ def _install_headroom_mcp_for_targets(*, targets: list[str], port: int) -> None:
     default=8787,
     type=click.IntRange(1, 65535),
     show_default=True,
-    help="Headroom proxy port.",
+    help="Legroom proxy port.",
 )
 @click.option("--backend", default="anthropic", show_default=True, help="Proxy backend.")
 @click.option("--anyllm-provider", default=None, help="Provider for any-llm backends.")
@@ -976,7 +976,7 @@ def init(
     memory: bool,
     verbose: bool,
 ) -> None:
-    """Install durable Headroom integrations for supported agents."""
+    """Install durable Legroom integrations for supported agents."""
     if verbose:
         _enable_verbose_logging()
     logger.debug(
@@ -1075,7 +1075,7 @@ def init_codex(ctx: click.Context) -> None:
 @init.command("openclaw")
 @click.pass_context
 def init_openclaw(ctx: click.Context) -> None:
-    """Install the durable OpenClaw Headroom plugin."""
+    """Install the durable OpenClaw Legroom plugin."""
     _run_init_targets(
         targets=["openclaw"],
         global_scope=bool(_ctx_value(ctx, "global_scope")),

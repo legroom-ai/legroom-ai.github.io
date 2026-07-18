@@ -9,7 +9,7 @@
 //! build time, override-loadable at startup — gives ops a knob without
 //! losing the "stock binary works" property.
 //!
-//! Defaults live in `crates/headroom-core/config/pipeline.toml` and are
+//! Defaults live in `crates/legroom-core/config/pipeline.toml` and are
 //! pulled in via `include_str!`. `PipelineConfig::default()` deserializes
 //! that string; `PipelineConfig::from_toml_str` accepts an override TOML.
 //! All thresholds are intentionally conservative — Claude Code, Codex,

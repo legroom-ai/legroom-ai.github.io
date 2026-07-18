@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import pytest
 
-from headroom.proxy.models import ProxyConfig
+from legroom.proxy.models import ProxyConfig
 
 
 def test_zero_rpm_with_limiting_enabled_is_rejected():

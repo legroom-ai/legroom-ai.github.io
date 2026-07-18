@@ -6,11 +6,11 @@ to avoid loading the same model multiple times across different components.
 This is different from registry.py which stores LLM metadata. This module
 manages actual loaded model instances that consume memory.
 
-Model defaults are configured in headroom/models/config.py - change them there
+Model defaults are configured in legroom/models/config.py - change them there
 to switch model variants across the entire codebase.
 
 Usage:
-    from headroom.models.ml_models import MLModelRegistry
+    from legroom.models.ml_models import MLModelRegistry
 
     # Get shared sentence transformer (loads on first access, uses config default)
     model = MLModelRegistry.get_sentence_transformer()
@@ -279,7 +279,7 @@ class MLModelRegistry:
 
         # Default to HuggingFace model, check for local first
         if model_path is None:
-            local_path = Path("headroom/models/technique-router-mini/final/")
+            local_path = Path("legroom/models/technique-router-mini/final/")
             if local_path.exists():
                 model_path = str(local_path)
             else:

@@ -1,6 +1,6 @@
 """Per-auth-mode compression policy — Phase F PR-F2.1, extended in F2.2 (Python parity).
 
-Hand-mirrored port of `headroom_core::compression_policy::CompressionPolicy`
+Hand-mirrored port of `legroom_core::compression_policy::CompressionPolicy`
 (Rust). The Rust crate is the source of truth; this module exists so
 the Python proxy's `TransformPipeline` (which still runs `CacheAligner`
 and other detector-only transforms) can read the same per-mode flags
@@ -12,7 +12,7 @@ tests assert. F2.2 should consider exposing the Rust struct via PyO3
 to retire this hand-mirror — that's deliberately out of scope here so
 F2.1/F2.2 can ship.
 
-See `crates/headroom-core/src/compression_policy.rs` for the canonical
+See `crates/legroom-core/src/compression_policy.rs` for the canonical
 docstring (per-mode rationale, why-a-struct, etc.).
 """
 
@@ -22,11 +22,11 @@ import math
 import os
 from dataclasses import dataclass
 
-from headroom.proxy.auth_mode import AuthMode
+from legroom.proxy.auth_mode import AuthMode
 
 # ── F2.2 per-mode default values (CONSERVATIVE pending bake telemetry) ──
 # Mirrors the Rust ``pub(crate) const`` block in
-# ``crates/headroom-core/src/compression_policy.rs``. Centralised here so
+# ``crates/legroom-core/src/compression_policy.rs``. Centralised here so
 # a follow-up tune lands in one place per language. The Rust tests assert
 # the values directly; the Python parity tests assert the *fields* match
 # (not the values — that would double-pin against drift in a way that
@@ -234,7 +234,7 @@ def policy_for_mode(mode: AuthMode) -> CompressionPolicy:
 
 def policy_default_payg() -> CompressionPolicy:
     """The PAYG-equivalent policy used when the
-    ``HEADROOM_PROXY_AUTH_MODE_POLICY_ENFORCEMENT`` flag is disabled
+    ``LEGROOM_PROXY_AUTH_MODE_POLICY_ENFORCEMENT`` flag is disabled
     (default in F2.1 c1-c4; flipped to enabled in c5/5).
 
     Centralised so the proxy handlers do not duplicate the constant,
@@ -244,7 +244,7 @@ def policy_default_payg() -> CompressionPolicy:
     return policy_for_mode(AuthMode.PAYG)
 
 
-_ENFORCEMENT_ENV = "HEADROOM_PROXY_AUTH_MODE_POLICY_ENFORCEMENT"
+_ENFORCEMENT_ENV = "LEGROOM_PROXY_AUTH_MODE_POLICY_ENFORCEMENT"
 
 
 def is_enforcement_enabled() -> bool:
@@ -261,7 +261,7 @@ def is_enforcement_enabled() -> bool:
     """
     val = os.environ.get(_ENFORCEMENT_ENV, "enabled").strip().lower()
     # Same set of off-values the telemetry beacon honours
-    # (`headroom/telemetry/beacon.py::_OFF_VALUES`) so operators don't
+    # (`legroom/telemetry/beacon.py::_OFF_VALUES`) so operators don't
     # have to remember a different vocabulary per flag.
     return val not in ("disabled", "off", "false", "0", "no")
 

@@ -1,8 +1,8 @@
-"""Headroom-owned MCP install ledger.
+"""Legroom-owned MCP install ledger.
 
-The ledger tracks MCP servers that Headroom registered on the user's behalf
-when the target agent config cannot carry Headroom-specific ownership markers.
-It lets unwrap remove only entries still matching the spec Headroom installed,
+The ledger tracks MCP servers that Legroom registered on the user's behalf
+when the target agent config cannot carry Legroom-specific ownership markers.
+It lets unwrap remove only entries still matching the spec Legroom installed,
 preserving user-managed MCP servers with the same name.
 """
 
@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from headroom import paths
+from legroom import paths
 
 from .base import ServerSpec
 
@@ -22,7 +22,7 @@ _LEDGER_FILE = "mcp_installs.json"
 
 
 def ledger_path() -> Path:
-    """Return the Headroom MCP install ledger path."""
+    """Return the Legroom MCP install ledger path."""
     return paths.workspace_dir() / _LEDGER_FILE
 
 
@@ -39,7 +39,7 @@ def spec_fingerprint(spec: ServerSpec) -> str:
 
 
 def record_install(agent: str, spec: ServerSpec, *, path: Path | None = None) -> None:
-    """Record that Headroom installed ``spec`` for ``agent``."""
+    """Record that Legroom installed ``spec`` for ``agent``."""
     ledger_file = path or ledger_path()
     data = _read_ledger(ledger_file)
     agents = data.setdefault("agents", {})
@@ -69,13 +69,13 @@ def clear_install(agent: str, server_name: str, *, path: Path | None = None) -> 
     _write_ledger(ledger_file, data)
 
 
-def headroom_installed_matching(
+def legroom_installed_matching(
     agent: str,
     current_spec: ServerSpec | None,
     *,
     path: Path | None = None,
 ) -> bool:
-    """Return True when the ledger says Headroom installed ``current_spec``."""
+    """Return True when the ledger says Legroom installed ``current_spec``."""
     if current_spec is None:
         return False
     ledger_file = path or ledger_path()

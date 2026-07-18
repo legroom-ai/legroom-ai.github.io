@@ -10,7 +10,7 @@ one that leaks.
 
 from __future__ import annotations
 
-from headroom.transforms import kompress_compressor as kc
+from legroom.transforms import kompress_compressor as kc
 
 
 def test_compress_bails_at_deadline_keeping_tail_verbatim(monkeypatch):
@@ -19,7 +19,7 @@ def test_compress_bails_at_deadline_keeping_tail_verbatim(monkeypatch):
     clock = iter([0.0] + [999.0] * 50)
     monkeypatch.setattr(kc.time, "perf_counter", lambda: next(clock))
     monkeypatch.setattr(kc, "_load_kompress", lambda *a, **k: (object(), object(), "onnx"))
-    monkeypatch.setenv("HEADROOM_COMPRESSION_DEADLINE_MS", "20000")
+    monkeypatch.setenv("LEGROOM_COMPRESSION_DEADLINE_MS", "20000")
 
     comp = kc.KompressCompressor()
     monkeypatch.setattr(comp, "_should_batch_single_content", lambda *a, **k: False)
@@ -65,7 +65,7 @@ def test_compress_partial_run_keeps_processed_head_plus_verbatim_tail(monkeypatc
 
     monkeypatch.setattr(kc, "_load_kompress", lambda *a, **k: (_Model(), _Tok(), "onnx"))
     monkeypatch.setattr(kc, "_model_device_type", lambda *a, **k: "cpu")
-    monkeypatch.setenv("HEADROOM_COMPRESSION_DEADLINE_MS", "20000")
+    monkeypatch.setenv("LEGROOM_COMPRESSION_DEADLINE_MS", "20000")
 
     comp = kc.KompressCompressor()
     comp.config.chunk_words = 10  # 20 words -> 2 chunks

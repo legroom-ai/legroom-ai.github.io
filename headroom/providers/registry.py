@@ -9,16 +9,16 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, cast
 
-from headroom.providers.claude import DEFAULT_API_URL as DEFAULT_ANTHROPIC_API_URL
-from headroom.providers.codex import DEFAULT_API_URL as DEFAULT_OPENAI_API_URL
-from headroom.providers.gemini import DEFAULT_API_URL as DEFAULT_GEMINI_API_URL
+from legroom.providers.claude import DEFAULT_API_URL as DEFAULT_ANTHROPIC_API_URL
+from legroom.providers.codex import DEFAULT_API_URL as DEFAULT_OPENAI_API_URL
+from legroom.providers.gemini import DEFAULT_API_URL as DEFAULT_GEMINI_API_URL
 
 DEFAULT_CLOUDCODE_API_URL = "https://cloudcode-pa.googleapis.com"
 DEFAULT_VERTEX_API_URL = "https://us-central1-aiplatform.googleapis.com"
 
 if TYPE_CHECKING:
-    from headroom.backends.base import Backend
-    from headroom.providers.base import Provider
+    from legroom.backends.base import Backend
+    from legroom.providers.base import Provider
 
 AnyLLMBackendType: Any = None
 LiteLLMBackendType: Any = None
@@ -78,7 +78,7 @@ class ProxyProviderRuntime:
         if headers.get("x-goog-api-key"):
             return self.api_targets.gemini
         if headers.get("api-key"):
-            azure_base = headers.get("x-headroom-base-url", "")
+            azure_base = headers.get("x-legroom-base-url", "")
             if azure_base:
                 return azure_base.rstrip("/")
         return self.api_targets.openai
@@ -170,8 +170,8 @@ def resolve_api_targets(overrides: ProviderApiOverrides) -> ProviderApiTargets:
 
 def build_proxy_provider_runtime(config: Any) -> ProxyProviderRuntime:
     """Build provider runtime objects and resolved targets for the proxy."""
-    from headroom.providers.anthropic import AnthropicProvider
-    from headroom.providers.openai import OpenAIProvider
+    from legroom.providers.anthropic import AnthropicProvider
+    from legroom.providers.openai import OpenAIProvider
 
     api_targets = resolve_api_targets(config.provider_api_overrides)
     return ProxyProviderRuntime(
@@ -256,7 +256,7 @@ def format_backend_status(*, backend: str, anyllm_provider: str, bedrock_region:
     if backend == "anyllm" or backend.startswith("anyllm-"):
         return f"{anyllm_provider.title()} via any-llm"
 
-    from headroom.backends.litellm import get_provider_config
+    from legroom.backends.litellm import get_provider_config
 
     provider = backend.replace("litellm-", "")
     provider_config = get_provider_config(provider)
@@ -294,7 +294,7 @@ def call_client_transport(
 def _load_anyllm_backend() -> Any:
     global AnyLLMBackendType
     if AnyLLMBackendType is None:
-        from headroom.backends.anyllm import AnyLLMBackend
+        from legroom.backends.anyllm import AnyLLMBackend
 
         AnyLLMBackendType = AnyLLMBackend
     return AnyLLMBackendType
@@ -303,7 +303,7 @@ def _load_anyllm_backend() -> Any:
 def _load_litellm_backend() -> Any:
     global LiteLLMBackendType
     if LiteLLMBackendType is None:
-        from headroom.backends.litellm import LiteLLMBackend
+        from legroom.backends.litellm import LiteLLMBackend
 
         LiteLLMBackendType = LiteLLMBackend
     return LiteLLMBackendType

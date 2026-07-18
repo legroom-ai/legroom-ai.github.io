@@ -63,7 +63,7 @@ use crate::proxy::AppState;
 // `Extension<AuthMode>` so the middleware-supplied value is the
 // single source of truth — handler does NOT re-classify; that
 // would risk drift from the middleware's resolution + WARN log.
-use headroom_core::auth_mode::AuthMode;
+use legroom_core::auth_mode::AuthMode;
 
 use crate::bedrock::vendor::is_anthropic_model_id;
 
@@ -433,7 +433,7 @@ fn run_anthropic_compression(
         body,
         state.config.compression_mode,
         state.config.cache_control_auto_frozen,
-        headroom_core::auth_mode::AuthMode::OAuth,
+        legroom_core::auth_mode::AuthMode::OAuth,
         request_id,
     );
     match outcome {
@@ -536,7 +536,7 @@ fn collect_signed_headers(headers: &HeaderMap, upstream_url: &Url) -> Vec<(Strin
             // Drop client-managed + signer-managed headers.
             continue;
         }
-        if n.starts_with("x-headroom-") {
+        if n.starts_with("x-legroom-") {
             // Internal headers are stripped from upstream traffic
             // (PR-A5). The Bedrock route inherits the same default.
             continue;
@@ -713,7 +713,7 @@ mod tests {
         headers.insert("content-type", "application/json".parse().unwrap());
         headers.insert("host", "proxy.example".parse().unwrap());
         headers.insert("authorization", "Bearer x".parse().unwrap());
-        headers.insert("x-headroom-mode", "live".parse().unwrap());
+        headers.insert("x-legroom-mode", "live".parse().unwrap());
         headers.insert("accept", "application/json".parse().unwrap());
         let upstream =
             Url::parse("https://bedrock-runtime.us-east-1.amazonaws.com/model/x/invoke").unwrap();
@@ -723,7 +723,7 @@ mod tests {
         assert!(names.contains(&"accept"));
         assert!(names.contains(&"host"));
         assert!(!names.contains(&"authorization"));
-        assert!(!names.contains(&"x-headroom-mode"));
+        assert!(!names.contains(&"x-legroom-mode"));
         // host must be the upstream host, not the proxy host.
         let host = out
             .iter()

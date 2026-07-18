@@ -1,4 +1,4 @@
-"""Shared pytest fixtures for Headroom tests."""
+"""Shared pytest fixtures for Legroom tests."""
 
 # CRITICAL: Must be set before ANY imports that could trigger sentence_transformers
 # The Rust tokenizers use parallelism that deadlocks with pytest-asyncio
@@ -17,15 +17,15 @@ import pytest
 from tests._skip_helpers import external_model_skip_reason
 
 
-# A live `headroom` dev session exports HEADROOM_* into the shell (and the
+# A live `legroom` dev session exports LEGROOM_* into the shell (and the
 # Claude wrap adds ANTHROPIC_CUSTOM_HEADERS). Click `envvar=` options pick
 # those up inside CliRunner, so assertions would see the developer's proxy
 # config instead of the test's. Scrub them so local runs match CI; tests
 # that need a value set it explicitly via monkeypatch or CliRunner env.
 @pytest.fixture(autouse=True)
-def _scrub_developer_headroom_env(monkeypatch):
+def _scrub_developer_legroom_env(monkeypatch):
     for key in list(os.environ):
-        if key.startswith("HEADROOM_"):
+        if key.startswith("LEGROOM_"):
             monkeypatch.delenv(key, raising=False)
     monkeypatch.delenv("ANTHROPIC_CUSTOM_HEADERS", raising=False)
 
@@ -55,30 +55,30 @@ def pytest_runtest_call(item):
 
 
 @pytest.fixture(autouse=True)
-def _reset_headroom_logger_propagation():
-    """Keep `headroom.*` log records flowing to pytest's caplog handler.
+def _reset_legroom_logger_propagation():
+    """Keep `legroom.*` log records flowing to pytest's caplog handler.
 
-    Two sources disable propagation on the headroom logger tree and never
+    Two sources disable propagation on the legroom logger tree and never
     restore it, which then makes later `caplog`-based assertions flaky in
     full-suite runs (caplog attaches to root, so a `propagate=False` anywhere
     on the chain silently drops the records):
 
-    - ``headroom.proxy.helpers._setup_file_logging`` sets
-      ``getLogger("headroom").propagate = False`` on proxy startup.
-    - ``benchmarks.claude_session_mode_benchmark._disable_headroom_benchmark_logging``
+    - ``legroom.proxy.helpers._setup_file_logging`` sets
+      ``getLogger("legroom").propagate = False`` on proxy startup.
+    - ``benchmarks.claude_session_mode_benchmark._disable_legroom_benchmark_logging``
       (exercised by ``test_claude_session_mode_benchmark``) sets
-      ``propagate = False`` + ``CRITICAL`` on ``headroom``, ``headroom.proxy``,
-      ``headroom.transforms``, ``headroom.cache`` (and children).
+      ``propagate = False`` + ``CRITICAL`` on ``legroom``, ``legroom.proxy``,
+      ``legroom.transforms``, ``legroom.cache`` (and children).
 
-    Resetting only ``"headroom"`` is not enough — a child like
-    ``"headroom.proxy"`` left non-propagating blocks the record before it
+    Resetting only ``"legroom"`` is not enough — a child like
+    ``"legroom.proxy"`` left non-propagating blocks the record before it
     reaches root. Reset the whole subtree before every test so capture is
     deterministic regardless of run order.
     """
     import logging as _logging
 
-    for _name in ("headroom", *list(_logging.root.manager.loggerDict)):
-        if _name == "headroom" or _name.startswith("headroom."):
+    for _name in ("legroom", *list(_logging.root.manager.loggerDict)):
+        if _name == "legroom" or _name.startswith("legroom."):
             logger = _logging.getLogger(_name)
             logger.disabled = False
             # The benchmark also raises the level to CRITICAL; children
@@ -230,7 +230,7 @@ def temp_jsonl_file():
 @pytest.fixture
 def openai_provider():
     """OpenAI provider instance."""
-    from headroom.providers.openai import OpenAIProvider
+    from legroom.providers.openai import OpenAIProvider
 
     return OpenAIProvider()
 
@@ -238,7 +238,7 @@ def openai_provider():
 @pytest.fixture
 def openai_tokenizer():
     """OpenAI token counter for gpt-4o."""
-    from headroom.providers.openai import OpenAITokenCounter
+    from legroom.providers.openai import OpenAITokenCounter
 
     return OpenAITokenCounter("gpt-4o")
 
@@ -246,16 +246,16 @@ def openai_tokenizer():
 # Config fixtures
 @pytest.fixture
 def default_config():
-    """Default HeadroomConfig."""
-    from headroom.config import HeadroomConfig
+    """Default LegroomConfig."""
+    from legroom.config import LegroomConfig
 
-    return HeadroomConfig()
+    return LegroomConfig()
 
 
 @pytest.fixture
 def smart_crusher_config():
     """SmartCrusher config for testing."""
-    from headroom.config import SmartCrusherConfig
+    from legroom.config import SmartCrusherConfig
 
     return SmartCrusherConfig(
         enabled=True,
@@ -269,7 +269,7 @@ def smart_crusher_config():
 @pytest.fixture
 def sample_request_metrics():
     """Sample RequestMetrics for storage tests."""
-    from headroom.config import RequestMetrics
+    from legroom.config import RequestMetrics
 
     return RequestMetrics(
         request_id="test-123",

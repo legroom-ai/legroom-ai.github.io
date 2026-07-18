@@ -16,11 +16,11 @@ import types
 import httpx
 import pytest
 
-from headroom.proxy.server import HeadroomProxy
+from legroom.proxy.server import LegroomProxy
 
 
 def _make_proxy(http_client, *, retry_max_attempts=3, retry_enabled=True):
-    proxy = HeadroomProxy.__new__(HeadroomProxy)
+    proxy = LegroomProxy.__new__(LegroomProxy)
     proxy.http_client = http_client
     proxy.config = types.SimpleNamespace(
         retry_enabled=retry_enabled,

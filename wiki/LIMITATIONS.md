@@ -1,8 +1,8 @@
-# Headroom Limitations & Known Behavior
+# Legroom Limitations & Known Behavior
 
-Honest documentation of when Headroom helps, when it doesn't, and what to watch out for.
+Honest documentation of when Legroom helps, when it doesn't, and what to watch out for.
 
-## When Headroom Helps (and When It Doesn't)
+## When Legroom Helps (and When It Doesn't)
 
 | Content Type | Compression | Latency Impact | Best For |
 |---|---|---|---|
@@ -20,7 +20,7 @@ See [LATENCY_BENCHMARKS.md](LATENCY_BENCHMARKS.md) for full data with per-scenar
 
 ## Code Compression
 
-Headroom includes an AST-aware CodeCompressor (tree-sitter, 8 languages) but it's gated behind safety protections that prevent it from firing in most real-world scenarios. This is intentional.
+Legroom includes an AST-aware CodeCompressor (tree-sitter, 8 languages) but it's gated behind safety protections that prevent it from firing in most real-world scenarios. This is intentional.
 
 **Why code mostly passes through:**
 
@@ -30,9 +30,9 @@ Headroom includes an AST-aware CodeCompressor (tree-sitter, 8 languages) but it'
 
 **Why this is the right default**: Code is almost always fetched because the user wants to work with it. Compressing function bodies would remove exactly what they need. LLMs like Claude are excellent at navigating large code files without compression.
 
-**Where code savings come from**: Headroom does not strip function bodies from active code or drop old code messages. Code savings come from compressing the newest content blocks (live-zone-only compression) when they are not protected, leaving the conversation history intact.
+**Where code savings come from**: Legroom does not strip function bodies from active code or drop old code messages. Code savings come from compressing the newest content blocks (live-zone-only compression) when they are not protected, leaving the conversation history intact.
 
-**Override**: Set `protect_analysis_context=False` in `ContentRouterConfig` for aggressive code compression. Requires `headroom-ai[code]` for tree-sitter.
+**Override**: Set `protect_analysis_context=False` in `ContentRouterConfig` for aggressive code compression. Requires `legroom-ai[code]` for tree-sitter.
 
 ## JSON Compression Constraints
 
@@ -75,12 +75,12 @@ These are kept even if they exceed the K budget.
 
 ## ML Text Compression (Kompress, opt-in)
 
-- **Requires**: `headroom-ai[ml]` — downloads model weights and needs GPU/CPU RAM for inference
+- **Requires**: `legroom-ai[ml]` — downloads model weights and needs GPU/CPU RAM for inference
 - **First call**: model-load latency (cached globally after)
 - **Latency**: Adds overhead that doesn't break even on fast models. Use for **cost savings**, not speed
 - **Thread safety**: Single global model instance with lock — sequential access under concurrency
 
-> The earlier LLMLingua-2 integration (`headroom-ai[llmlingua]`) was retired and is no longer installable.
+> The earlier LLMLingua-2 integration (`legroom-ai[llmlingua]`) was retired and is no longer installable.
 
 ## Error Handling
 

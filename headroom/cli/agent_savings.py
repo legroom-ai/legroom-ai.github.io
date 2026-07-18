@@ -8,7 +8,7 @@ from pathlib import Path
 
 import click
 
-from headroom.agent_savings import get_agent_savings_profile
+from legroom.agent_savings import get_agent_savings_profile
 
 from .main import main
 
@@ -44,7 +44,7 @@ from .main import main
     "--accuracy-report",
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
     default=None,
-    help="Headroom eval JSON report proving accuracy preservation.",
+    help="Legroom eval JSON report proving accuracy preservation.",
 )
 @click.option(
     "--write-smoke-fixture",
@@ -84,8 +84,8 @@ def agent_savings(
         eval_path = _write_smoke_fixture(write_smoke_fixture)
         click.echo(f"Wrote agent-90 smoke fixture to {write_smoke_fixture}")
         click.echo(
-            "Verify with: HEADROOM_WORKSPACE_DIR="
-            f"{write_smoke_fixture} headroom agent-savings --check-perf "
+            "Verify with: LEGROOM_WORKSPACE_DIR="
+            f"{write_smoke_fixture} legroom agent-savings --check-perf "
             "--hours 0 --require-agents claude,codex,cursor "
             f"--accuracy-report {eval_path}"
         )
@@ -93,7 +93,7 @@ def agent_savings(
 
     if check_perf or accuracy_report is not None:
         messages: list[str] = []
-        from headroom.perf.analyzer import build_perf_summary, parse_log_files
+        from legroom.perf.analyzer import build_perf_summary, parse_log_files
 
         if check_perf:
             perf_report = parse_log_files(last_n_hours=hours)
@@ -226,7 +226,7 @@ def _perf_line(
 ) -> str:
     saved = before - after
     return (
-        f"{timestamp} - headroom.proxy - INFO - [{request_id}] PERF "
+        f"{timestamp} - legroom.proxy - INFO - [{request_id}] PERF "
         f"model={model} msgs=3 tok_before={before} tok_after={after} "
         f"tok_saved={saved} cache_read=0 cache_write=0 cache_hit_pct=0 "
         f"opt_ms=1 transforms=agent90_smoke client={client}"

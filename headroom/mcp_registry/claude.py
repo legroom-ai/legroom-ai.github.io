@@ -19,7 +19,7 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from headroom._subprocess import run
+from legroom._subprocess import run
 
 from .base import MCPRegistrar, RegisterResult, RegisterStatus, ServerSpec
 

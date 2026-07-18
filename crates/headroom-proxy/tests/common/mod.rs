@@ -5,8 +5,8 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use headroom_proxy::vertex::TokenSource;
-use headroom_proxy::{build_app, AppState, Config};
+use legroom_proxy::vertex::TokenSource;
+use legroom_proxy::{build_app, AppState, Config};
 use tokio::sync::oneshot;
 use url::Url;
 
@@ -100,7 +100,7 @@ where
 /// `AppState`. Returns the modified state so it composes with
 /// `start_proxy_with_state`'s `FnOnce(AppState) -> AppState`.
 pub fn install_static_token_source(mut state: AppState, bearer: &str) -> AppState {
-    state.vertex_token_source = Arc::new(headroom_proxy::vertex::StaticTokenSource::new(
+    state.vertex_token_source = Arc::new(legroom_proxy::vertex::StaticTokenSource::new(
         bearer.to_string(),
     )) as Arc<dyn TokenSource>;
     state

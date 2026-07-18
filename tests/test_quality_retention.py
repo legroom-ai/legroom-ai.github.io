@@ -12,9 +12,9 @@ import json
 
 import pytest
 
-from headroom.providers.anthropic import AnthropicTokenCounter
-from headroom.tokenizer import Tokenizer
-from headroom.transforms.smart_crusher import (
+from legroom.providers.anthropic import AnthropicTokenCounter
+from legroom.tokenizer import Tokenizer
+from legroom.transforms.smart_crusher import (
     SmartCrusher,
     SmartCrusherConfig,
     smart_crush_tool_output,

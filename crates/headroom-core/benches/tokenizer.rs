@@ -1,11 +1,11 @@
-//! Throughput benchmark for `headroom_core::tokenizer`.
+//! Throughput benchmark for `legroom_core::tokenizer`.
 //!
 //! Measures the tiktoken-rs–backed counter on a small / medium / large input.
 //! Used as a baseline; future stages can compare against this to catch
 //! regressions when we change tokenizer backends or add caching layers.
 
 use criterion::{black_box, criterion_group, criterion_main, BatchSize, Criterion, Throughput};
-use headroom_core::tokenizer::{TiktokenCounter, Tokenizer};
+use legroom_core::tokenizer::{TiktokenCounter, Tokenizer};
 
 fn bench_count_text(c: &mut Criterion) {
     let counter = TiktokenCounter::for_model("gpt-4o-mini").expect("init");

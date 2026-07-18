@@ -1,6 +1,6 @@
 """Provider detection for Strands models.
 
-Automatically detects the correct Headroom provider based on the Strands model type.
+Automatically detects the correct Legroom provider based on the Strands model type.
 """
 
 from __future__ import annotations
@@ -8,14 +8,14 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from headroom.providers.anthropic import AnthropicProvider
-from headroom.providers.base import Provider
-from headroom.providers.google import GoogleProvider
-from headroom.providers.openai import OpenAIProvider
+from legroom.providers.anthropic import AnthropicProvider
+from legroom.providers.base import Provider
+from legroom.providers.google import GoogleProvider
+from legroom.providers.openai import OpenAIProvider
 
 logger = logging.getLogger(__name__)
 
-# Mapping from Strands model class names to Headroom providers
+# Mapping from Strands model class names to Legroom providers
 _STRANDS_MODEL_PROVIDERS: dict[str, type[Provider]] = {
     # Bedrock models (primarily Claude via Bedrock)
     "BedrockModel": AnthropicProvider,
@@ -34,8 +34,8 @@ _STRANDS_MODEL_PROVIDERS: dict[str, type[Provider]] = {
 }
 
 
-def get_headroom_provider(model: Any) -> Provider:
-    """Get the appropriate Headroom provider for a Strands model.
+def get_legroom_provider(model: Any) -> Provider:
+    """Get the appropriate Legroom provider for a Strands model.
 
     Detection strategy:
     1. Check model class name against known Strands model types
@@ -46,14 +46,14 @@ def get_headroom_provider(model: Any) -> Provider:
         model: A Strands model instance (BedrockModel, AnthropicModel, etc.)
 
     Returns:
-        Appropriate Headroom Provider instance.
+        Appropriate Legroom Provider instance.
 
     Example:
         from strands.models import BedrockModel
-        from headroom.integrations.strands.providers import get_headroom_provider
+        from legroom.integrations.strands.providers import get_legroom_provider
 
         model = BedrockModel(model_id="anthropic.claude-3-5-sonnet-20241022-v2:0")
-        provider = get_headroom_provider(model)  # Returns AnthropicProvider
+        provider = get_legroom_provider(model)  # Returns AnthropicProvider
     """
     # Strategy 1: Class name matching
     class_name = model.__class__.__name__

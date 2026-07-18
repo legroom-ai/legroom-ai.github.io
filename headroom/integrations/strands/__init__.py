@@ -1,22 +1,22 @@
-"""Strands Agents integration for Headroom SDK.
+"""Strands Agents integration for Legroom SDK.
 
 This module provides seamless integration with Strands Agents,
 enabling automatic context optimization for Strands agents.
 
 Components:
-1. HeadroomStrandsModel - Wraps any Strands model to apply Headroom transforms
-2. HeadroomHookProvider - Hook provider for Strands agents
-3. get_headroom_provider - Detects appropriate provider for a Strands model
+1. LegroomStrandsModel - Wraps any Strands model to apply Legroom transforms
+2. LegroomHookProvider - Hook provider for Strands agents
+3. get_legroom_provider - Detects appropriate provider for a Strands model
 4. get_model_name_from_strands - Extracts model name from a Strands model
 
 Example:
     from strands import Agent
     from strands.models import BedrockModel
-    from headroom.integrations.strands import HeadroomStrandsModel
+    from legroom.integrations.strands import LegroomStrandsModel
 
     # Wrap any Strands model
     model = BedrockModel(model_id="anthropic.claude-3-5-sonnet-20241022-v2:0")
-    optimized_model = HeadroomStrandsModel(model)
+    optimized_model = LegroomStrandsModel(model)
 
     # Use with agent
     agent = Agent(model=optimized_model)
@@ -29,10 +29,10 @@ import importlib.util
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from .bundle import HeadroomBundle
-    from .hooks import HeadroomHookProvider
-    from .model import HeadroomStrandsModel, OptimizationMetrics, optimize_messages
-    from .providers import get_headroom_provider, get_model_name_from_strands
+    from .bundle import LegroomBundle
+    from .hooks import LegroomHookProvider
+    from .model import LegroomStrandsModel, OptimizationMetrics, optimize_messages
+    from .providers import get_legroom_provider, get_model_name_from_strands
 
 
 def strands_available() -> bool:
@@ -47,14 +47,14 @@ def strands_available() -> bool:
 # Lazy imports to avoid import errors when strands is not installed
 def __getattr__(name: str) -> Any:
     """Lazy import of integration components."""
-    if name == "HeadroomHookProvider":
-        from .hooks import HeadroomHookProvider
+    if name == "LegroomHookProvider":
+        from .hooks import LegroomHookProvider
 
-        return HeadroomHookProvider
-    elif name == "HeadroomStrandsModel":
-        from .model import HeadroomStrandsModel
+        return LegroomHookProvider
+    elif name == "LegroomStrandsModel":
+        from .model import LegroomStrandsModel
 
-        return HeadroomStrandsModel
+        return LegroomStrandsModel
     elif name == "OptimizationMetrics":
         from .model import OptimizationMetrics
 
@@ -63,18 +63,18 @@ def __getattr__(name: str) -> Any:
         from .model import optimize_messages
 
         return optimize_messages
-    elif name == "get_headroom_provider":
-        from .providers import get_headroom_provider
+    elif name == "get_legroom_provider":
+        from .providers import get_legroom_provider
 
-        return get_headroom_provider
+        return get_legroom_provider
     elif name == "get_model_name_from_strands":
         from .providers import get_model_name_from_strands
 
         return get_model_name_from_strands
-    elif name == "HeadroomBundle":
-        from .bundle import HeadroomBundle
+    elif name == "LegroomBundle":
+        from .bundle import LegroomBundle
 
-        return HeadroomBundle
+        return LegroomBundle
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
@@ -82,14 +82,14 @@ __all__ = [
     # Availability check
     "strands_available",
     # Hook provider
-    "HeadroomHookProvider",
+    "LegroomHookProvider",
     # Model wrapper
-    "HeadroomStrandsModel",
+    "LegroomStrandsModel",
     "OptimizationMetrics",
     "optimize_messages",
     # Provider detection
-    "get_headroom_provider",
+    "get_legroom_provider",
     "get_model_name_from_strands",
-    # One-helper MCP + hook wiring (Headroom + tokensave/Serena + RTK-equivalent)
-    "HeadroomBundle",
+    # One-helper MCP + hook wiring (Legroom + tokensave/Serena + RTK-equivalent)
+    "LegroomBundle",
 ]

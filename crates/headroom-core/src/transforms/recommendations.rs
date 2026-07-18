@@ -9,7 +9,7 @@
 //! broke prompt caching (P2-27, P5-56). PR-B5 retired the request-time
 //! hint API; recommendations now flow through this loader at startup:
 //!
-//! 1. The Python `headroom.cli.toin_publish` CLI walks the on-disk TOIN
+//! 1. The Python `legroom.cli.toin_publish` CLI walks the on-disk TOIN
 //!    store and emits `recommendations.toml`.
 //! 2. The deploy pipeline ships that TOML alongside the Rust binary.
 //! 3. At startup, [`RecommendationStore::load_default`] reads the file
@@ -51,7 +51,7 @@ use serde::Deserialize;
 /// Environment variable that overrides the default `recommendations.toml`
 /// path. The Rust proxy reads it once at startup; runtime changes do
 /// not propagate.
-pub const RECOMMENDATIONS_PATH_ENV_VAR: &str = "HEADROOM_RECOMMENDATIONS_PATH";
+pub const RECOMMENDATIONS_PATH_ENV_VAR: &str = "LEGROOM_RECOMMENDATIONS_PATH";
 
 /// Default file the proxy looks at when the env var is unset.
 const DEFAULT_RECOMMENDATIONS_PATH: &str = "./recommendations.toml";
@@ -216,7 +216,7 @@ static GLOBAL: OnceLock<RecommendationStore> = OnceLock::new();
 
 /// Compute the path the loader will read.
 ///
-/// Honors `HEADROOM_RECOMMENDATIONS_PATH` for prod overrides; falls
+/// Honors `LEGROOM_RECOMMENDATIONS_PATH` for prod overrides; falls
 /// back to [`DEFAULT_RECOMMENDATIONS_PATH`].
 pub fn default_path() -> PathBuf {
     std::env::var(RECOMMENDATIONS_PATH_ENV_VAR)

@@ -5,7 +5,7 @@ The default is filesystem storage (JSON), but alternative backends can be
 implemented for distributed/multi-tenant scenarios (Redis, PostgreSQL, etc.).
 
 Usage:
-    from headroom.telemetry.backends import TOINBackend, FileSystemTOINBackend
+    from legroom.telemetry.backends import TOINBackend, FileSystemTOINBackend
 
     # Use default filesystem backend
     backend = FileSystemTOINBackend("/path/to/toin.json")

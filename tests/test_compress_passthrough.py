@@ -16,7 +16,7 @@ from __future__ import annotations
 import json
 from types import SimpleNamespace
 
-from headroom.proxy.handlers.openai import OpenAIHandlerMixin
+from legroom.proxy.handlers.openai import OpenAIHandlerMixin
 
 
 def _make_handler(compress_impl):
@@ -88,7 +88,7 @@ async def test_compressor_error_fails_open() -> None:
 
 
 def test_config_defaults_off() -> None:
-    from headroom.proxy.models import ProxyConfig
+    from legroom.proxy.models import ProxyConfig
 
     assert ProxyConfig().compress_passthrough is False
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from headroom.proxy.wire_debug_format_policy import (
+from legroom.proxy.wire_debug_format_policy import (
     WIRE_DEBUG_NAME_MAX_CHARS,
     safe_wire_debug_name,
     wire_debug_preview,

@@ -14,8 +14,8 @@ Async/Background Mode:
     task_id, and processing happens in the background.
 
 Usage:
-    from headroom.memory.backends.direct_mem0 import DirectMem0Adapter, Mem0Config
-    from headroom.memory.system import MemorySystem
+    from legroom.memory.backends.direct_mem0 import DirectMem0Adapter, Mem0Config
+    from legroom.memory.system import MemorySystem
 
     # Sync mode (default) - waits for save to complete
     config = Mem0Config(mode="local", enable_graph=True)
@@ -55,9 +55,9 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
-from headroom.memory import qdrant_env
-from headroom.memory.models import Memory
-from headroom.memory.ports import MemorySearchResult
+from legroom.memory import qdrant_env
+from legroom.memory.models import Memory
+from legroom.memory.ports import MemorySearchResult
 
 logger = logging.getLogger(__name__)
 
@@ -71,8 +71,8 @@ def _utcnow() -> datetime:
 class Mem0Config:
     """Configuration for Direct Mem0 adapter.
 
-    Qdrant connection fields default to values read from ``HEADROOM_QDRANT_*``
-    environment variables (see :mod:`headroom.memory.qdrant_env`). Passing an
+    Qdrant connection fields default to values read from ``LEGROOM_QDRANT_*``
+    environment variables (see :mod:`legroom.memory.qdrant_env`). Passing an
     explicit value to the constructor always wins over the environment.
 
     Attributes:
@@ -101,7 +101,7 @@ class Mem0Config:
     neo4j_user: str = "neo4j"
     neo4j_password: str = "password"
 
-    # Qdrant settings (defaults resolve from HEADROOM_QDRANT_* env vars)
+    # Qdrant settings (defaults resolve from LEGROOM_QDRANT_* env vars)
     qdrant_url: str | None = field(default_factory=qdrant_env.qdrant_env_url)
     qdrant_host: str = field(default_factory=qdrant_env.qdrant_env_host)
     qdrant_port: int = field(default_factory=qdrant_env.qdrant_env_port)
@@ -114,7 +114,7 @@ class Mem0Config:
     embedder_model: str = "text-embedding-3-small"
 
     # Collection settings
-    collection_name: str = "headroom_memories"
+    collection_name: str = "legroom_memories"
 
     # Feature flags
     enable_graph: bool = True
@@ -250,7 +250,7 @@ class DirectMem0Adapter:
             self._mem0_client = await asyncio.to_thread(Mem0Memory.from_config, mem0_config)
         except ImportError:
             raise ImportError(
-                "mem0 package not installed. Install with: pip install 'headroom-ai[memory-stack]'"
+                "mem0 package not installed. Install with: pip install 'legroom-ai[memory-stack]'"
             ) from None
 
         self._initialized = True

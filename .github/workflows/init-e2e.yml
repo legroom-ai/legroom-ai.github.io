@@ -3,12 +3,12 @@ name: Init E2E
 on:
   pull_request:
     branches: [main]
-    # Scoped to what the `headroom init` flow actually exercises (mirrors
-    # init-native-e2e), not all of headroom/** — a pure-Python logic change
+    # Scoped to what the `legroom init` flow actually exercises (mirrors
+    # init-native-e2e), not all of legroom/** — a pure-Python logic change
     # elsewhere shouldn't spin up a docker init E2E.
     paths:
-      - 'headroom/cli/**'
-      - 'headroom/install/**'
+      - 'legroom/cli/**'
+      - 'legroom/install/**'
       - 'crates/**'
       - 'docker/**'
       - 'Dockerfile'
@@ -21,7 +21,7 @@ on:
       - 'uv.lock'
       - '.claude-plugin'
       - '.github/plugin/**'
-      - 'plugins/headroom-agent-hooks/**'
+      - 'plugins/legroom-agent-hooks/**'
       - '.github/workflows/init-e2e.yml'
   push:
     branches: [main]
@@ -40,7 +40,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Build init e2e image
-        run: docker build -f e2e/init/Dockerfile -t headroom-init-e2e .
+        run: docker build -f e2e/init/Dockerfile -t legroom-init-e2e .
 
       - name: Run init e2e container
-        run: docker run --rm headroom-init-e2e
+        run: docker run --rm legroom-init-e2e

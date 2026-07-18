@@ -10,10 +10,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from headroom.memory.models import Memory
+from legroom.memory.models import Memory
 
 try:
-    from headroom.memory.adapters.hnsw import _check_hnswlib_available
+    from legroom.memory.adapters.hnsw import _check_hnswlib_available
 
     HNSW_AVAILABLE = _check_hnswlib_available()
 except ImportError:
@@ -38,7 +38,7 @@ def _mem(i: int, dim: int = 8) -> Memory:
 @pytest.mark.skipif(not HNSW_AVAILABLE, reason="hnswlib not installed")
 @pytest.mark.asyncio
 async def test_index_batch_after_deletion_churn_does_not_overflow(temp_hnsw_path):
-    from headroom.memory.adapters.hnsw import HNSWVectorIndex
+    from legroom.memory.adapters.hnsw import HNSWVectorIndex
 
     # Small ceiling so we hit it quickly. mark_deleted (remove) never frees a
     # slot, so the assigned-id counter climbs toward max_elements while the live

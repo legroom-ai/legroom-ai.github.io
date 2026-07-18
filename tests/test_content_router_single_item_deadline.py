@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import time
 
-from headroom.transforms.content_detector import ContentType
-from headroom.transforms.content_router import (
+from legroom.transforms.content_detector import ContentType
+from legroom.transforms.content_router import (
     CompressionStrategy,
     ContentRouter,
     ContentRouterConfig,
@@ -61,7 +61,7 @@ def test_single_cache_miss_fails_open_at_deadline(monkeypatch, caplog):
         return _compression_result(content, "compressed output")
 
     monkeypatch.setattr(router, "compress", slow_compress)
-    monkeypatch.setenv("HEADROOM_COMPRESSION_DEADLINE_MS", "10")
+    monkeypatch.setenv("LEGROOM_COMPRESSION_DEADLINE_MS", "10")
 
     started = time.perf_counter()
     result = router.apply(
@@ -83,7 +83,7 @@ def test_single_cache_miss_preserves_under_deadline_output(monkeypatch):
         "compress",
         lambda content, *, context="", bias=1.0: _compression_result(content, "compressed output"),
     )
-    monkeypatch.setenv("HEADROOM_COMPRESSION_DEADLINE_MS", "1000")
+    monkeypatch.setenv("LEGROOM_COMPRESSION_DEADLINE_MS", "1000")
 
     result = router.apply(
         _messages(),
@@ -102,7 +102,7 @@ def test_single_cache_miss_preserves_disabled_deadline(monkeypatch):
         "compress",
         lambda content, *, context="", bias=1.0: _compression_result(content, "compressed output"),
     )
-    monkeypatch.setenv("HEADROOM_COMPRESSION_DEADLINE_MS", "0")
+    monkeypatch.setenv("LEGROOM_COMPRESSION_DEADLINE_MS", "0")
 
     result = router.apply(
         _messages(),

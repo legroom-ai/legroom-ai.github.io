@@ -16,7 +16,7 @@ What we DON'T collect:
 - File paths or tool names (unless opted in)
 
 Usage:
-    from headroom.telemetry import get_telemetry_collector
+    from legroom.telemetry import get_telemetry_collector
 
     collector = get_telemetry_collector()
 
@@ -33,7 +33,7 @@ Usage:
     stats = collector.export_stats()
 
 TOIN (Tool Output Intelligence Network) — observation-only since PR-B5:
-    from headroom.telemetry import get_toin
+    from legroom.telemetry import get_toin
 
     toin = get_toin()
 
@@ -44,7 +44,7 @@ TOIN (Tool Output Intelligence Network) — observation-only since PR-B5:
     toin.record_retrieval(sig_hash, retrieval_type, query, query_fields)
 
     # Aggregated recommendations are emitted offline:
-    #   python -m headroom.cli.toin_publish --output recommendations.toml
+    #   python -m legroom.cli.toin_publish --output recommendations.toml
     # The Rust proxy loads that TOML at startup; there is no
     # request-time hint API.
 """

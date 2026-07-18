@@ -3,7 +3,7 @@
 Input-side analog of :class:`CompressionDecision`. Pre-this-PR, the
 6 memory-injection sites across four handler files computed the gate
 inline with subtle drift — most notably, 3 sites (Anthropic chat,
-OpenAI chat, Gemini) never gated on ``x-headroom-bypass``, so
+OpenAI chat, Gemini) never gated on ``x-legroom-bypass``, so
 memory injection silently mutated requests when the user explicitly
 asked for byte-faithful passthrough.
 
@@ -19,8 +19,8 @@ Precedence (highest first):
   1. ``bypass_header`` — user's explicit "do not touch my bytes"
   2. ``no_handler`` — no memory backend configured
   3. ``no_user_id`` — per-request user_id missing
-  4. ``mode_disabled`` — operator HEADROOM_MEMORY_INJECTION_MODE=disabled
-  5. ``mode_tool`` — operator HEADROOM_MEMORY_INJECTION_MODE=tool
+  4. ``mode_disabled`` — operator LEGROOM_MEMORY_INJECTION_MODE=disabled
+  5. ``mode_tool`` — operator LEGROOM_MEMORY_INJECTION_MODE=tool
      (auto-inject off; the agent calls memory tools explicitly)
   6. otherwise → ``inject=True``
 
@@ -33,7 +33,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from headroom.proxy.memory_decision_policy import (
+from legroom.proxy.memory_decision_policy import (
     apply_memory_skip_reason,
     decide_memory_injection,
 )
@@ -55,11 +55,11 @@ class MemoryDecision:
     # When ``inject`` is False, this is the canonical reason surfaced
     # in logs and in RequestOutcome.tags["memory_skip_reason"] so the
     # dashboard can slice memory-skip traffic by cause. One of:
-    #   * "bypass_header"  — user set x-headroom-bypass/x-headroom-mode
+    #   * "bypass_header"  — user set x-legroom-bypass/x-legroom-mode
     #   * "no_handler"     — no memory backend configured on the proxy
     #   * "no_user_id"     — per-request user_id missing
-    #   * "mode_disabled"  — operator HEADROOM_MEMORY_INJECTION_MODE=disabled
-    #   * "mode_tool"      — operator HEADROOM_MEMORY_INJECTION_MODE=tool
+    #   * "mode_disabled"  — operator LEGROOM_MEMORY_INJECTION_MODE=disabled
+    #   * "mode_tool"      — operator LEGROOM_MEMORY_INJECTION_MODE=tool
     # When ``inject`` is True, this is None.
     skip_reason: str | None
 
@@ -86,18 +86,18 @@ class MemoryDecision:
         headers
             Inbound request headers. Accepts any object with a
             ``.get(key)`` method (dict, starlette Headers, mapping).
-            Bypass detected via ``_headroom_bypass_enabled``.
+            Bypass detected via ``_legroom_bypass_enabled``.
         memory_handler
             The proxy's memory handler instance, or ``None`` if no
             memory backend is configured. Presence only is checked —
             no methods called.
         memory_user_id
-            Per-request user_id from ``x-headroom-user-id`` header (or
+            Per-request user_id from ``x-legroom-user-id`` header (or
             env default). ``None`` or empty string treated as missing.
         mode_name
             One of ``"auto_tail"`` / ``"tool"`` / ``"disabled"``.
             Comes from ``get_memory_injection_mode()`` which reads
-            ``HEADROOM_MEMORY_INJECTION_MODE``.
+            ``LEGROOM_MEMORY_INJECTION_MODE``.
         """
         decision = decide_memory_injection(
             headers=headers,

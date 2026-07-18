@@ -1,11 +1,11 @@
 //! Unit + property tests for the `cache_control` walker (PR-A4).
 //!
-//! These tests exercise [`headroom_core::compute_frozen_count`] in
+//! These tests exercise [`legroom_core::compute_frozen_count`] in
 //! isolation — no proxy, no upstream, no I/O. Integration tests that
 //! drive the walker through the proxy live in
-//! `crates/headroom-proxy/tests/integration_cache_control.rs`.
+//! `crates/legroom-proxy/tests/integration_cache_control.rs`.
 
-use headroom_core::compute_frozen_count;
+use legroom_core::compute_frozen_count;
 use proptest::prelude::*;
 use serde_json::{json, Value};
 

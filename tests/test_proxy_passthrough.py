@@ -1,4 +1,4 @@
-from headroom.proxy.passthrough import custom_base_passthrough_telemetry
+from legroom.proxy.passthrough import custom_base_passthrough_telemetry
 
 
 def test_custom_base_passthrough_telemetry_recognizes_opencode_zen_chat() -> None:

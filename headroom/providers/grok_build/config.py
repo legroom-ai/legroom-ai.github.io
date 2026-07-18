@@ -7,12 +7,12 @@ import re
 import shutil
 from pathlib import Path
 
-from headroom import fsutil
+from legroom import fsutil
 
 from .runtime import build_proxy_targets
 
-_MARKER_START = "# --- headroom:grok-build:start ---"
-_MARKER_END = "# --- headroom:grok-build:end ---"
+_MARKER_START = "# --- legroom:grok-build:start ---"
+_MARKER_END = "# --- legroom:grok-build:end ---"
 _BLOCK_RE = re.compile(
     re.escape(_MARKER_START) + r".*?" + re.escape(_MARKER_END) + r"\n?",
     re.DOTALL,
@@ -35,12 +35,12 @@ def grok_home_dir() -> Path:
 def grok_config_paths() -> tuple[Path, Path]:
     """Return ``(config_file, backup_file)`` for Grok Build."""
     config_file = grok_home_dir() / "config.toml"
-    backup_file = config_file.with_suffix(".toml.headroom-backup")
+    backup_file = config_file.with_suffix(".toml.legroom-backup")
     return config_file, backup_file
 
 
 def snapshot_grok_config_if_unwrapped(config_file: Path, backup_file: Path) -> None:
-    """Snapshot ``config.toml`` before the first Headroom injection."""
+    """Snapshot ``config.toml`` before the first Legroom injection."""
     if backup_file.exists():
         return
     if not config_file.exists():
@@ -55,8 +55,8 @@ def snapshot_grok_config_if_unwrapped(config_file: Path, backup_file: Path) -> N
     shutil.copy2(config_file, backup_file)
 
 
-def strip_grok_headroom_blocks(content: str) -> str:
-    """Remove Headroom-managed Grok config blocks."""
+def strip_grok_legroom_blocks(content: str) -> str:
+    """Remove Legroom-managed Grok config blocks."""
     content = _BLOCK_RE.sub("", content)
     content = re.sub(r"\n{3,}", "\n\n", content)
     return content.strip()
@@ -74,7 +74,7 @@ def redirect_existing_grok_build_base_url(content: str, base_url: str) -> tuple[
     ``[model.grok-build]`` we update that table in place instead of appending
     a second one. The previous ``base_url`` value is preserved in a trailing
     ``# was: …`` comment for visibility; the pre-wrap snapshot still enables
-    byte-for-byte restore on ``headroom unwrap grok-build``.
+    byte-for-byte restore on ``legroom unwrap grok-build``.
     """
     match = _GROK_BUILD_TABLE_RE.search(content)
     if match is None:
@@ -102,20 +102,20 @@ def redirect_existing_grok_build_base_url(content: str, base_url: str) -> tuple[
     return updated, updated != content
 
 
-def render_headroom_block(port: int, project: str | None = None) -> str:
-    """Render the Headroom-managed ``[model.grok-build]`` override block."""
+def render_legroom_block(port: int, project: str | None = None) -> str:
+    """Render the Legroom-managed ``[model.grok-build]`` override block."""
     target = build_proxy_targets(port, project)
     return f'{_MARKER_START}\n[model.grok-build]\nbase_url = "{target.base_url}"\n{_MARKER_END}\n'
 
 
 def inject_grok_provider_config(port: int, project: str | None = None) -> Path:
-    """Inject or refresh the Headroom proxy override into Grok config."""
+    """Inject or refresh the Legroom proxy override into Grok config."""
     config_file, backup_file = grok_config_paths()
     config_file.parent.mkdir(parents=True, exist_ok=True)
     snapshot_grok_config_if_unwrapped(config_file, backup_file)
 
     if config_file.exists():
-        content = strip_grok_headroom_blocks(fsutil.read_text(config_file))
+        content = strip_grok_legroom_blocks(fsutil.read_text(config_file))
     else:
         content = ""
 
@@ -123,7 +123,7 @@ def inject_grok_provider_config(port: int, project: str | None = None) -> Path:
     if has_user_grok_build_model_table(content):
         content, _ = redirect_existing_grok_build_base_url(content, target.base_url)
     else:
-        block = render_headroom_block(port, project)
+        block = render_legroom_block(port, project)
         if content:
             content = content.rstrip() + "\n\n" + block
         else:
@@ -144,7 +144,7 @@ def restore_grok_provider_config() -> tuple[str, Path]:
     if not config_file.exists():
         return "noop", config_file
 
-    content = strip_grok_headroom_blocks(fsutil.read_text(config_file))
+    content = strip_grok_legroom_blocks(fsutil.read_text(config_file))
     if content:
         fsutil.write_text(config_file, content)
         return "cleaned", config_file

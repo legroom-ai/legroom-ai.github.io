@@ -33,8 +33,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar
 
 if TYPE_CHECKING:
-    from headroom.learn.models import ProjectInfo
-    from headroom.memory.backends.local import LocalBackend
+    from legroom.learn.models import ProjectInfo
+    from legroom.memory.backends.local import LocalBackend
 
 logger = logging.getLogger(__name__)
 
@@ -548,7 +548,7 @@ class TrafficLearner:
         Un-anchored patterns (no absolute path in content) are dropped in v1.
         """
         try:
-            from headroom.learn.registry import auto_detect_plugins, get_plugin
+            from legroom.learn.registry import auto_detect_plugins, get_plugin
         except Exception as e:
             logger.debug("Traffic learner flush: learn package unavailable (%s)", e)
             return
@@ -1581,7 +1581,7 @@ def _patterns_to_recommendations(patterns: list[ExtractedPattern]) -> list:
 
     Returns a list of Recommendation objects ready for ContextWriter.write.
     """
-    from headroom.learn.models import Recommendation, RecommendationTarget
+    from legroom.learn.models import Recommendation, RecommendationTarget
 
     by_category: dict[PatternCategory, list[ExtractedPattern]] = {}
     for p in patterns:

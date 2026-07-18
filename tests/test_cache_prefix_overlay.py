@@ -9,7 +9,7 @@ Forwarding original then mismatches the cached prefix and busts the prompt cache
 so the cache still hits — in BOTH proxy modes.
 """
 
-from headroom.cache.prefix_tracker import overlay_cached_prefix
+from legroom.cache.prefix_tracker import overlay_cached_prefix
 
 
 def M(role, text):
@@ -90,7 +90,7 @@ def test_cache_hit_property_prefix_matches_last_forward():
 # giving OpenAI/Kimi tool harnesses ~zero compression. These lock in the fix.
 import json as _json
 
-from headroom.cache.prefix_tracker import PrefixCacheTracker, PrefixFreezeConfig
+from legroom.cache.prefix_tracker import PrefixCacheTracker, PrefixFreezeConfig
 
 
 def _openai_asst(cmd):

@@ -1,11 +1,11 @@
-"""Tests for headroom.learn.verbosity — behavioral signal extraction."""
+"""Tests for legroom.learn.verbosity — behavioral signal extraction."""
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
-from headroom.learn.verbosity import (
+from legroom.learn.verbosity import (
     VerbosityProfile,
     VerbositySignals,
     _parse_session,
@@ -268,7 +268,7 @@ class TestAnalyze:
         assert profile.source == "heuristic"
 
     def test_profile_roundtrip(self, tmp_path):
-        from headroom.learn.verbosity import VerbosityProfile
+        from legroom.learn.verbosity import VerbosityProfile
 
         prof = VerbosityProfile(
             project_path="/proj",
@@ -286,7 +286,7 @@ class TestAnalyze:
         assert loaded.confidence == "high"
 
     def test_load_missing_returns_none(self, tmp_path):
-        from headroom.learn.verbosity import VerbosityProfile
+        from legroom.learn.verbosity import VerbosityProfile
 
         assert VerbosityProfile.load(tmp_path / "nope.json") is None
 

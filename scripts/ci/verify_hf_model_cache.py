@@ -17,7 +17,7 @@ def main() -> int:
     os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
     os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
 
-    from headroom.models.config import ML_MODEL_DEFAULTS
+    from legroom.models.config import ML_MODEL_DEFAULTS
 
     model_name = ML_MODEL_DEFAULTS.sentence_transformer
     expected_dim = ML_MODEL_DEFAULTS.sentence_transformer_dim
@@ -26,7 +26,7 @@ def main() -> int:
         from sentence_transformers import SentenceTransformer
 
         model = SentenceTransformer(model_name, local_files_only=True)
-        embedding = model.encode(["headroom cache preflight"], convert_to_numpy=True)
+        embedding = model.encode(["legroom cache preflight"], convert_to_numpy=True)
     except Exception as exc:
         print(
             f"::error::Hugging Face offline model cache is not usable for {model_name!r}: {exc}",

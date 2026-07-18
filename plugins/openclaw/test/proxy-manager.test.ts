@@ -3,7 +3,7 @@ import {
   ProxyManager,
   normalizeAndValidateProxyUrl,
   isLocalProxyUrl,
-  probeHeadroomProxy,
+  probeLegroomProxy,
 } from "../src/proxy-manager.js";
 
 const retrieveStatsBody = JSON.stringify({ store: { entry_count: 0 }, recent_retrievals: [] });
@@ -26,8 +26,8 @@ function stubProbeSuccess() {
   return mock;
 }
 
-function stubProbeNonHeadroom() {
-  // Every endpoint reachable but non-OK => reachable, non-Headroom (occupied port).
+function stubProbeNonLegroom() {
+  // Every endpoint reachable but non-OK => reachable, non-Legroom (occupied port).
   const mock = vi.fn().mockResolvedValue({ ok: false, status: 404 });
   vi.stubGlobal("fetch", mock);
   return mock;
@@ -47,8 +47,8 @@ describe("normalizeAndValidateProxyUrl", () => {
 
   it("accepts remote URLs", () => {
     expect(normalizeAndValidateProxyUrl("http://example.com:8787")).toBe("http://example.com:8787");
-    expect(normalizeAndValidateProxyUrl("https://headroom.example.com")).toBe("https://headroom.example.com");
-    expect(normalizeAndValidateProxyUrl("https://headroom.example.com:9090")).toBe("https://headroom.example.com:9090");
+    expect(normalizeAndValidateProxyUrl("https://legroom.example.com")).toBe("https://legroom.example.com");
+    expect(normalizeAndValidateProxyUrl("https://legroom.example.com:9090")).toBe("https://legroom.example.com:9090");
   });
 
   it("rejects malformed URLs", () => {
@@ -69,7 +69,7 @@ describe("isLocalProxyUrl", () => {
 
   it("returns false for remote addresses", () => {
     expect(isLocalProxyUrl("http://example.com:8787")).toBe(false);
-    expect(isLocalProxyUrl("https://headroom.example.com")).toBe(false);
+    expect(isLocalProxyUrl("https://legroom.example.com")).toBe(false);
   });
 
   it("returns false for invalid URLs", () => {
@@ -77,7 +77,7 @@ describe("isLocalProxyUrl", () => {
   });
 });
 
-describe("probeHeadroomProxy", () => {
+describe("probeLegroomProxy", () => {
   /**
    * Resolve fetch outcomes by request path so tests express the new probe order
    * (/readyz, /v1/retrieve/stats, /stats, /health) without depending on call
@@ -100,58 +100,58 @@ describe("probeHeadroomProxy", () => {
     return mock;
   }
 
-  it("does not treat /readyz success alone as Headroom identity", async () => {
+  it("does not treat /readyz success alone as Legroom identity", async () => {
     stubByPath({
       "/readyz": { ok: true, status: 200 },
       "/v1/retrieve/stats": { ok: false, status: 404 },
       "/stats": { ok: false, status: 404 },
       "/health": { ok: false, status: 404 },
     });
-    const result = await probeHeadroomProxy("http://127.0.0.1:8787");
+    const result = await probeLegroomProxy("http://127.0.0.1:8787");
     expect(result.reachable).toBe(true);
-    expect(result.isHeadroom).toBe(false);
+    expect(result.isLegroom).toBe(false);
   });
 
-  it("treats Headroom-shaped /v1/retrieve/stats 200 as Headroom even when /readyz is OK and /health is 503", async () => {
+  it("treats Legroom-shaped /v1/retrieve/stats 200 as Legroom even when /readyz is OK and /health is 503", async () => {
     stubByPath({
       "/health": { ok: false, status: 503 },
       "/readyz": { ok: true, status: 200 },
       "/v1/retrieve/stats": { ok: true, status: 200, body: retrieveStatsBody },
     });
-    const result = await probeHeadroomProxy("http://127.0.0.1:8787");
-    expect(result).toEqual({ reachable: true, isHeadroom: true });
+    const result = await probeLegroomProxy("http://127.0.0.1:8787");
+    expect(result).toEqual({ reachable: true, isLegroom: true });
   });
 
-  it("treats Headroom-shaped /v1/retrieve/stats 200 as Headroom even when /health is 503", async () => {
+  it("treats Legroom-shaped /v1/retrieve/stats 200 as Legroom even when /health is 503", async () => {
     stubByPath({
       "/health": { ok: false, status: 503 },
       "/readyz": { ok: false, status: 404 },
       "/v1/retrieve/stats": { ok: true, status: 200, body: retrieveStatsBody },
     });
-    const result = await probeHeadroomProxy("http://127.0.0.1:8787");
-    expect(result).toEqual({ reachable: true, isHeadroom: true });
+    const result = await probeLegroomProxy("http://127.0.0.1:8787");
+    expect(result).toEqual({ reachable: true, isLegroom: true });
   });
 
-  it("does not treat generic /v1/retrieve/stats 200 as Headroom identity", async () => {
+  it("does not treat generic /v1/retrieve/stats 200 as Legroom identity", async () => {
     stubByPath({
       "/readyz": { ok: true, status: 200 },
       "/v1/retrieve/stats": { ok: true, status: 200, body: JSON.stringify({ ok: true }) },
       "/stats": { ok: false, status: 404 },
       "/health": { ok: true, status: 200 },
     });
-    const result = await probeHeadroomProxy("http://127.0.0.1:8787");
+    const result = await probeLegroomProxy("http://127.0.0.1:8787");
     expect(result.reachable).toBe(true);
-    expect(result.isHeadroom).toBe(false);
+    expect(result.isLegroom).toBe(false);
   });
 
-  it("falls through from auth-gated /v1/retrieve/stats to Headroom-shaped /stats", async () => {
+  it("falls through from auth-gated /v1/retrieve/stats to Legroom-shaped /stats", async () => {
     stubByPath({
       "/readyz": { ok: true, status: 200 },
       "/v1/retrieve/stats": { ok: false, status: 403 },
       "/stats": { ok: true, status: 200, body: proxyStatsBody },
     });
-    const result = await probeHeadroomProxy("http://127.0.0.1:8787");
-    expect(result).toEqual({ reachable: true, isHeadroom: true });
+    const result = await probeLegroomProxy("http://127.0.0.1:8787");
+    expect(result).toEqual({ reachable: true, isLegroom: true });
   });
 
   it("continues probing when one endpoint is unreachable", async () => {
@@ -160,44 +160,44 @@ describe("probeHeadroomProxy", () => {
       // /v1/retrieve/stats rejects because it is not listed.
       "/stats": { ok: true, status: 200, body: proxyStatsBody },
     });
-    const result = await probeHeadroomProxy("http://127.0.0.1:8787");
-    expect(result).toEqual({ reachable: true, isHeadroom: true });
+    const result = await probeLegroomProxy("http://127.0.0.1:8787");
+    expect(result).toEqual({ reachable: true, isLegroom: true });
   });
 
-  it("falls back to /stats only when the response has a Headroom stats shape", async () => {
+  it("falls back to /stats only when the response has a Legroom stats shape", async () => {
     stubByPath({
       // /readyz and /v1/retrieve/stats unavailable (reject), /stats answers.
       "/stats": { ok: true, status: 200, body: proxyStatsBody },
     });
-    const result = await probeHeadroomProxy("http://127.0.0.1:8787");
-    expect(result).toEqual({ reachable: true, isHeadroom: true });
+    const result = await probeLegroomProxy("http://127.0.0.1:8787");
+    expect(result).toEqual({ reachable: true, isLegroom: true });
   });
 
-  it("does not treat generic /stats 200 as Headroom identity", async () => {
+  it("does not treat generic /stats 200 as Legroom identity", async () => {
     stubByPath({
       "/readyz": { ok: false, status: 404 },
       "/v1/retrieve/stats": { ok: false, status: 404 },
       "/stats": { ok: true, status: 200, body: JSON.stringify({ uptime: 123 }) },
       "/health": { ok: true, status: 200 },
     });
-    const result = await probeHeadroomProxy("http://127.0.0.1:8787");
+    const result = await probeLegroomProxy("http://127.0.0.1:8787");
     expect(result.reachable).toBe(true);
-    expect(result.isHeadroom).toBe(false);
+    expect(result.isLegroom).toBe(false);
   });
 
-  it("returns reachable but non-headroom when identity endpoints are non-OK", async () => {
-    stubProbeNonHeadroom();
-    const result = await probeHeadroomProxy("http://127.0.0.1:8787");
+  it("returns reachable but non-legroom when identity endpoints are non-OK", async () => {
+    stubProbeNonLegroom();
+    const result = await probeLegroomProxy("http://127.0.0.1:8787");
     expect(result.reachable).toBe(true);
-    expect(result.isHeadroom).toBe(false);
+    expect(result.isLegroom).toBe(false);
     expect(result.reason).toMatch(/retrieve stats HTTP 404/);
   });
 
   it("returns unreachable when no endpoint responds", async () => {
     stubProbeUnreachable();
-    const result = await probeHeadroomProxy("http://127.0.0.1:8787");
+    const result = await probeLegroomProxy("http://127.0.0.1:8787");
     expect(result.reachable).toBe(false);
-    expect(result.isHeadroom).toBe(false);
+    expect(result.isLegroom).toBe(false);
   });
 });
 
@@ -221,7 +221,7 @@ describe("ProxyManager.start", () => {
       }); // localhost /v1/retrieve/stats
     vi.stubGlobal("fetch", fetchMock);
 
-    const startSpy = vi.spyOn(manager as any, "startHeadroomProxy");
+    const startSpy = vi.spyOn(manager as any, "startLegroomProxy");
     const url = await manager.start();
     expect(url).toBe("http://localhost:8787");
     expect(startSpy).not.toHaveBeenCalled();
@@ -241,15 +241,15 @@ describe("ProxyManager.start", () => {
     await expect(manager.start()).rejects.toThrow(/proxyPort must be an integer between 1 and 65535/);
   });
 
-  it("fails when explicit URL is reachable but not a headroom proxy", async () => {
+  it("fails when explicit URL is reachable but not a legroom proxy", async () => {
     const manager = new ProxyManager({ proxyUrl: "http://127.0.0.1:8787" });
-    stubProbeNonHeadroom();
-    await expect(manager.start()).rejects.toThrow(/does not appear to be a Headroom proxy/);
+    stubProbeNonLegroom();
+    await expect(manager.start()).rejects.toThrow(/does not appear to be a Legroom proxy/);
   });
 
   it("applies default proxyPort when explicit proxyUrl omits port", async () => {
     const manager = new ProxyManager({ proxyUrl: "http://127.0.0.1", autoStart: true });
-    const startSpy = vi.spyOn(manager as any, "startHeadroomProxy").mockResolvedValue(undefined);
+    const startSpy = vi.spyOn(manager as any, "startLegroomProxy").mockResolvedValue(undefined);
 
     // Initial probe of the single candidate fails on all four endpoints, then
     // after auto-start the identity probe succeeds on /v1/retrieve/stats.
@@ -273,35 +273,35 @@ describe("ProxyManager.start", () => {
   });
 
   it("connects to remote proxy without auto-start", async () => {
-    const manager = new ProxyManager({ proxyUrl: "http://headroom.remote.example:8787", autoStart: true });
-    const startSpy = vi.spyOn(manager as any, "startHeadroomProxy").mockResolvedValue(undefined);
+    const manager = new ProxyManager({ proxyUrl: "http://legroom.remote.example:8787", autoStart: true });
+    const startSpy = vi.spyOn(manager as any, "startLegroomProxy").mockResolvedValue(undefined);
     stubProbeSuccess();
 
     const url = await manager.start();
-    expect(url).toBe("http://headroom.remote.example:8787");
+    expect(url).toBe("http://legroom.remote.example:8787");
     expect(startSpy).not.toHaveBeenCalled();
   });
 
   it("does not apply proxyPort default to remote URLs", async () => {
-    const manager = new ProxyManager({ proxyUrl: "https://headroom.remote.example", proxyPort: 9999 });
+    const manager = new ProxyManager({ proxyUrl: "https://legroom.remote.example", proxyPort: 9999 });
     stubProbeSuccess();
 
     const url = await manager.start();
-    expect(url).toBe("https://headroom.remote.example");
+    expect(url).toBe("https://legroom.remote.example");
   });
 
   it("fails fast for unreachable remote proxy without attempting auto-start", async () => {
-    const manager = new ProxyManager({ proxyUrl: "https://headroom.remote.example:8787", autoStart: true });
-    const startSpy = vi.spyOn(manager as any, "startHeadroomProxy").mockResolvedValue(undefined);
+    const manager = new ProxyManager({ proxyUrl: "https://legroom.remote.example:8787", autoStart: true });
+    const startSpy = vi.spyOn(manager as any, "startLegroomProxy").mockResolvedValue(undefined);
     stubProbeUnreachable();
 
-    await expect(manager.start()).rejects.toThrow(/Remote Headroom proxy not reachable/);
+    await expect(manager.start()).rejects.toThrow(/Remote Legroom proxy not reachable/);
     expect(startSpy).not.toHaveBeenCalled();
   });
 
   it("auto-starts when nothing is detected", async () => {
     const manager = new ProxyManager({ autoStart: true });
-    const startSpy = vi.spyOn(manager as any, "startHeadroomProxy").mockResolvedValue(undefined);
+    const startSpy = vi.spyOn(manager as any, "startLegroomProxy").mockResolvedValue(undefined);
 
     // Both candidates fail all four probes, then the post-start identity probe
     // succeeds on /v1/retrieve/stats.
@@ -341,30 +341,30 @@ describe("ProxyManager launch internals", () => {
 
   it("prefers configured pythonPath ahead of PATH launchers", () => {
     const manager = new ProxyManager({ pythonPath: "C:\\Python311\\python.exe" });
-    vi.spyOn(manager as any, "getPyenvResolvedHeadroom").mockReturnValue(null);
+    vi.spyOn(manager as any, "getPyenvResolvedLegroom").mockReturnValue(null);
 
     const specs = (manager as any).buildLaunchSpecs("127.0.0.1", "8787") as Array<Record<string, unknown>>;
 
     expect(specs[0]?.label).toContain("Configured Python:");
     expect(specs[0]?.command).toBe("C:\\Python311\\python.exe");
-    expect(specs[0]?.args).toEqual(["-m", "headroom.cli", "proxy", "--host", "127.0.0.1", "--port", "8787"]);
+    expect(specs[0]?.args).toEqual(["-m", "legroom.cli", "proxy", "--host", "127.0.0.1", "--port", "8787"]);
   });
 
-  it("uses lightweight PATH checks instead of booting the headroom CLI", () => {
+  it("uses lightweight PATH checks instead of booting the legroom CLI", () => {
     const manager = new ProxyManager({});
     const specs = (manager as any).buildLaunchSpecs("127.0.0.1", "8787") as Array<Record<string, unknown>>;
-    const pathSpec = specs.find((spec) => spec.command === "headroom");
+    const pathSpec = specs.find((spec) => spec.command === "legroom");
 
     expect(pathSpec).toBeDefined();
-    expect(pathSpec.command).toBe("headroom");
+    expect(pathSpec.command).toBe("legroom");
     expect(pathSpec.args).toEqual(["proxy", "--host", "127.0.0.1", "--port", "8787"]);
     if (process.platform === "win32") {
       expect(pathSpec.checkCommand).toBe("where.exe");
-      expect(pathSpec.checkArgs).toEqual(["headroom"]);
+      expect(pathSpec.checkArgs).toEqual(["legroom"]);
       expect(pathSpec.checkUseShell).toBe(false);
     } else {
       expect(pathSpec.checkCommand).toBe("sh");
-      expect(pathSpec.checkArgs).toEqual(["-lc", "command -v headroom >/dev/null 2>&1"]);
+      expect(pathSpec.checkArgs).toEqual(["-lc", "command -v legroom >/dev/null 2>&1"]);
     }
   });
 
@@ -372,14 +372,14 @@ describe("ProxyManager launch internals", () => {
     if (process.platform !== "win32") return;
 
     const manager = new ProxyManager({});
-    vi.spyOn(manager as any, "getPyenvResolvedHeadroom").mockReturnValue("C:\\Python312\\Scripts\\headroom.exe");
+    vi.spyOn(manager as any, "getPyenvResolvedLegroom").mockReturnValue("C:\\Python312\\Scripts\\legroom.exe");
 
     const specs = (manager as any).buildLaunchSpecs("127.0.0.1", "8787") as Array<Record<string, unknown>>;
 
     expect(specs[0]?.label).toContain("pyenv:");
-    expect(specs[0]?.command).toBe("C:\\Python312\\Scripts\\headroom.exe");
+    expect(specs[0]?.command).toBe("C:\\Python312\\Scripts\\legroom.exe");
     expect(specs[0]?.useShell).toBe(false);
-    expect(specs[1]?.command).toBe("headroom");
+    expect(specs[1]?.command).toBe("legroom");
   });
 
   it("passes through fast-fail launch flags when configured", () => {
@@ -408,7 +408,7 @@ describe("ProxyManager launch internals", () => {
     expect(pythonSpec).toBeDefined();
     expect(pythonSpec?.checkArgs).toEqual([
       "-c",
-      "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec('headroom') else 1)",
+      "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec('legroom') else 1)",
     ]);
   });
 
@@ -432,7 +432,7 @@ describe("ProxyManager launch internals", () => {
     ];
     const infoSpy = vi.spyOn((manager as any).logger, "info");
 
-    await (manager as any).startHeadroomProxy("http://127.0.0.1:8787");
+    await (manager as any).startLegroomProxy("http://127.0.0.1:8787");
     expect(infoSpy).toHaveBeenCalledWith(expect.stringContaining("Auto-start launcher selected"));
     expect(infoSpy).toHaveBeenCalledWith(expect.stringContaining("second-node"));
   });
@@ -452,7 +452,7 @@ describe("ProxyManager launch internals", () => {
     ];
     const infoSpy = vi.spyOn((manager as any).logger, "info");
 
-    await (manager as any).startHeadroomProxy("http://127.0.0.1:8787", 8787);
+    await (manager as any).startLegroomProxy("http://127.0.0.1:8787", 8787);
 
     expect(infoSpy).toHaveBeenCalledWith(expect.stringContaining("Auto-start launcher selected"));
     expect(infoSpy).toHaveBeenCalledWith(expect.stringContaining("shell-backed"));
@@ -471,8 +471,8 @@ describe("ProxyManager launch internals", () => {
     ];
     (manager as any).canExecute = () => false;
 
-    await expect((manager as any).startHeadroomProxy("http://127.0.0.1:8787")).rejects.toThrow(
-      /No usable Headroom launcher found/,
+    await expect((manager as any).startLegroomProxy("http://127.0.0.1:8787")).rejects.toThrow(
+      /No usable Legroom launcher found/,
     );
   });
 });

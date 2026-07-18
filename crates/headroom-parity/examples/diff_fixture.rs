@@ -1,9 +1,9 @@
 //! Diagnostic: load one parity fixture and print expected vs actual.
 //!
-//! Usage: cargo run -p headroom-parity --example diff_fixture -- <path-to-fixture.json>
+//! Usage: cargo run -p legroom-parity --example diff_fixture -- <path-to-fixture.json>
 
 use anyhow::{bail, Context, Result};
-use headroom_parity::{builtin_comparators, Fixture};
+use legroom_parity::{builtin_comparators, Fixture};
 use std::env;
 use std::fs;
 

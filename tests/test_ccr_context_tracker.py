@@ -13,11 +13,11 @@ import time
 
 import pytest
 
-from headroom.cache.compression_store import (
+from legroom.cache.compression_store import (
     get_compression_store,
     reset_compression_store,
 )
-from headroom.ccr.context_tracker import (
+from legroom.ccr.context_tracker import (
     CompressedContext,
     ContextTracker,
     ContextTrackerConfig,
@@ -463,8 +463,8 @@ class TestExpansionFormatting:
         assert "[Proactive Context Expansion" in formatted
         assert "Expanded from earlier" in formatted
         assert '[{"id": 1}, {"id": 2}]' in formatted
-        assert formatted.startswith("<headroom_proactive_expansion>\n")
-        assert formatted.endswith("\n</headroom_proactive_expansion>")
+        assert formatted.startswith("<legroom_proactive_expansion>\n")
+        assert formatted.endswith("\n</legroom_proactive_expansion>")
 
     def test_format_empty_expansions(self):
         """Empty expansions return empty string."""
@@ -487,15 +487,15 @@ class TestExpansionFormatting:
             }
         ]
         result = tracker.format_expansions_for_context(expansions)
-        assert result.startswith("<headroom_proactive_expansion>\n")
-        assert result.endswith("\n</headroom_proactive_expansion>")
+        assert result.startswith("<legroom_proactive_expansion>\n")
+        assert result.endswith("\n</legroom_proactive_expansion>")
         assert "[Proactive Context Expansion" in result
         assert result.count("[End Proactive Expansion]") == 1
 
     def test_proactive_expansion_identifiable_after_injection(self):
         """Injected expansion carries XML provenance tag after full injection chain."""
-        from headroom.ccr.context_tracker import ContextTracker
-        from headroom.proxy.handlers.anthropic import AnthropicHandlerMixin
+        from legroom.ccr.context_tracker import ContextTracker
+        from legroom.proxy.handlers.anthropic import AnthropicHandlerMixin
 
         tracker = ContextTracker()
         expansions = [
@@ -522,9 +522,9 @@ class TestExpansionFormatting:
             messages, expansion_text, frozen_message_count=0
         )
         injected = result[0]["content"][0]["text"]
-        # Headroom-injected content is identifiable by XML tag, distinct from peer content
-        assert "<headroom_proactive_expansion>" in injected
-        assert "</headroom_proactive_expansion>" in injected
+        # Legroom-injected content is identifiable by XML tag, distinct from peer content
+        assert "<legroom_proactive_expansion>" in injected
+        assert "</legroom_proactive_expansion>" in injected
         assert "<peer_turn from='AgentX'>" in injected  # peer content unchanged
 
     def test_format_expansion_xml_close_tag_in_payload_escaped(self):
@@ -534,16 +534,16 @@ class TestExpansionFormatting:
             {
                 "hash": "h1",
                 "type": "full",
-                "content": "return '</headroom_proactive_expansion>'",
+                "content": "return '</legroom_proactive_expansion>'",
                 "item_count": 1,
                 "reason": "high relevance",
             }
         ]
         result = tracker.format_expansions_for_context(expansions)
-        assert result.startswith("<headroom_proactive_expansion>\n")
-        assert result.endswith("\n</headroom_proactive_expansion>")
-        assert result.count("<headroom_proactive_expansion>") == 1
-        assert result.count("</headroom_proactive_expansion>") == 1
+        assert result.startswith("<legroom_proactive_expansion>\n")
+        assert result.endswith("\n</legroom_proactive_expansion>")
+        assert result.count("<legroom_proactive_expansion>") == 1
+        assert result.count("</legroom_proactive_expansion>") == 1
 
 
 class TestGlobalTracker:

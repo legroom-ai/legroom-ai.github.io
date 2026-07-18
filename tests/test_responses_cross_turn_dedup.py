@@ -1,6 +1,6 @@
 """Cross-turn dedup on the OpenAI Responses path (Codex ``function_call_output``).
 
-Fixtures mirror a REAL Codex run captured through the headroom proxy: a file read
+Fixtures mirror a REAL Codex run captured through the legroom proxy: a file read
 returns as ``{"type":"function_call_output","call_id":...,"output":"Chunk ID: …\\n
 Wall time: …\\nProcess exited with code 0\\nOriginal token count: …\\nOutput:\\n
 <FILE BODY>\\n"}``. The ``Chunk ID`` / ``Wall time`` header varies per call, so a
@@ -10,7 +10,7 @@ body and leave the varying header verbatim.
 
 from __future__ import annotations
 
-from headroom.proxy.handlers.openai import (
+from legroom.proxy.handlers.openai import (
     _RESPONSES_OUTPUT_ITEM_TYPES,
     _dedup_responses_output_items,
 )
@@ -102,12 +102,12 @@ def test_protected_websearch_outputs_do_not_fold():
         {
             "type": "function_call_output",
             "call_id": "c1",
-            "output": '{\n  "results": [\n    {"title": "Headroom"}\n  ]\n}',
+            "output": '{\n  "results": [\n    {"title": "Legroom"}\n  ]\n}',
         },
         {
             "type": "function_call_output",
             "call_id": "c2",
-            "output": '{\n  "results": [\n    {"title": "Headroom"}\n  ]\n}',
+            "output": '{\n  "results": [\n    {"title": "Legroom"}\n  ]\n}',
         },
     ]
     folded, saved = _dedup_responses_output_items(
@@ -119,8 +119,8 @@ def test_protected_websearch_outputs_do_not_fold():
 
     assert folded == 0
     assert saved == 0
-    assert items[0]["output"].endswith('{"title": "Headroom"}\n  ]\n}')
-    assert items[1]["output"].endswith('{"title": "Headroom"}\n  ]\n}')
+    assert items[0]["output"].endswith('{"title": "Legroom"}\n  ]\n}')
+    assert items[1]["output"].endswith('{"title": "Legroom"}\n  ]\n}')
 
 
 def test_non_output_items_untouched():

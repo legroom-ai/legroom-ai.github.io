@@ -2,12 +2,12 @@
 
 import pytest
 
-from headroom.cache import (
+from legroom.cache import (
     AnthropicCacheOptimizer,
     CacheConfig,
     OptimizationContext,
 )
-from headroom.cache.base import CacheStrategy
+from legroom.cache.base import CacheStrategy
 
 
 class TestAnthropicCacheOptimizer:

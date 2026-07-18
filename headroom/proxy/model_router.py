@@ -187,10 +187,10 @@ def _parse_routes(routes_raw: str | None) -> tuple[ModelRoute, ...]:
     try:
         parsed = json.loads(routes_raw)
     except (ValueError, TypeError) as exc:
-        logger.warning("invalid HEADROOM_MODEL_ROUTES JSON; ignoring: %s", exc)
+        logger.warning("invalid LEGROOM_MODEL_ROUTES JSON; ignoring: %s", exc)
         return ()
     if not isinstance(parsed, list):
-        logger.warning("HEADROOM_MODEL_ROUTES must be a JSON array; ignoring")
+        logger.warning("LEGROOM_MODEL_ROUTES must be a JSON array; ignoring")
         return ()
 
     routes: list[ModelRoute] = []

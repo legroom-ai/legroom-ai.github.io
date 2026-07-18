@@ -7,7 +7,7 @@ httpx = pytest.importorskip("httpx")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from headroom.proxy.server import ProxyConfig, create_app  # noqa: E402
+from legroom.proxy.server import ProxyConfig, create_app  # noqa: E402
 
 
 class _FakePrefixTracker:
@@ -345,7 +345,7 @@ def test_anthropic_memory_continuation_uses_buffered_timeout() -> None:
                 "x-api-key": "test-key",
                 "anthropic-version": "2023-06-01",
                 "content-type": "application/json",
-                "x-headroom-user-id": "user-1",
+                "x-legroom-user-id": "user-1",
             },
             json={
                 "model": "claude-sonnet-4-6",

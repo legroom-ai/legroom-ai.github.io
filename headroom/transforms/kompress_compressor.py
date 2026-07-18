@@ -3,10 +3,10 @@
 Auto-downloads the model from HuggingFace (ghaliba3/kompress-v2-base)
 on first use.
 
-Requires the [ml] extra: pip install headroom-ai[ml]
+Requires the [ml] extra: pip install legroom-ai[ml]
 
 Usage:
-    >>> from headroom.transforms.kompress_compressor import KompressCompressor
+    >>> from legroom.transforms.kompress_compressor import KompressCompressor
     >>> compressor = KompressCompressor()
     >>> result = compressor.compress(long_tool_output)
     >>> print(result.compressed)
@@ -44,7 +44,7 @@ HF_MODEL_ID = "ghaliba3/kompress-v2-base"
 # Numbers, ALLCAPS identifiers, dotted paths, unix paths, file extensions,
 # CLI flags, and CamelCase names carry semantic meaning that agents cannot
 # reconstruct from context — dropping them degrades reasoning correctness.
-# Disable with HEADROOM_KOMPRESS_MUST_KEEP=0.
+# Disable with LEGROOM_KOMPRESS_MUST_KEEP=0.
 _KOMPRESS_MUST_KEEP_RE = re.compile(
     r"\b0x[0-9A-Fa-f]+\b"  # hex addresses/IDs: 0x7fff2038
     r"|(?<![\w.])\d+(?:\.\d+)?(?![\w.])"  # standalone numbers: 42, 3.14
@@ -55,9 +55,9 @@ _KOMPRESS_MUST_KEEP_RE = re.compile(
     r"|--?[a-z][\w-]*"  # flags: --verbose, -n
     r"|\b[A-Z][a-z]+[A-Z]\w*"  # CamelCase: EXC_BAD_INSTRUCTION, IndexError
 )
-_KOMPRESS_MUST_KEEP_ENV = "HEADROOM_KOMPRESS_MUST_KEEP"
-KOMPRESS_BACKEND_ENV = "HEADROOM_KOMPRESS_BACKEND"
-KOMPRESS_ONNX_FILENAME_ENV = "HEADROOM_KOMPRESS_ONNX_FILENAME"
+_KOMPRESS_MUST_KEEP_ENV = "LEGROOM_KOMPRESS_MUST_KEEP"
+KOMPRESS_BACKEND_ENV = "LEGROOM_KOMPRESS_BACKEND"
+KOMPRESS_ONNX_FILENAME_ENV = "LEGROOM_KOMPRESS_ONNX_FILENAME"
 
 
 def _add_kompress_must_keep_words(
@@ -85,22 +85,22 @@ def _add_kompress_must_keep_words(
 # - kompress-fp32.onnx: lossless reference, 601MB.
 # - kompress-int8.onnx: v1-era dynamic int8 (kept for custom domain repos).
 #
-# An operator can pin an exact file via HEADROOM_KOMPRESS_ONNX_FILENAME.
+# An operator can pin an exact file via LEGROOM_KOMPRESS_ONNX_FILENAME.
 _DEFAULT_ONNX_FILENAMES = (
     "onnx/kompress-int8-wo.onnx",
     "onnx/kompress-fp32.onnx",
     "onnx/kompress-int8.onnx",
 )
-KOMPRESS_ONNX_INTRA_THREADS_ENV = "HEADROOM_KOMPRESS_ONNX_INTRA_THREADS"
-KOMPRESS_ONNX_INTER_THREADS_ENV = "HEADROOM_KOMPRESS_ONNX_INTER_THREADS"
-KOMPRESS_COREML_CACHE_DIR_ENV = "HEADROOM_KOMPRESS_COREML_CACHE_DIR"
-KOMPRESS_MAX_CONCURRENT_ENV = "HEADROOM_KOMPRESS_MAX_CONCURRENT"
-KOMPRESS_EXECUTION_SEMAPHORE_WAIT_MS_ENV = "HEADROOM_KOMPRESS_EXECUTION_TIMEOUT_MS"
+KOMPRESS_ONNX_INTRA_THREADS_ENV = "LEGROOM_KOMPRESS_ONNX_INTRA_THREADS"
+KOMPRESS_ONNX_INTER_THREADS_ENV = "LEGROOM_KOMPRESS_ONNX_INTER_THREADS"
+KOMPRESS_COREML_CACHE_DIR_ENV = "LEGROOM_KOMPRESS_COREML_CACHE_DIR"
+KOMPRESS_MAX_CONCURRENT_ENV = "LEGROOM_KOMPRESS_MAX_CONCURRENT"
+KOMPRESS_EXECUTION_SEMAPHORE_WAIT_MS_ENV = "LEGROOM_KOMPRESS_EXECUTION_TIMEOUT_MS"
 KOMPRESS_EXECUTION_SEMAPHORE_WAIT_MS_DEFAULT = 25
-KOMPRESS_BATCH_SIZE_ENV = "HEADROOM_KOMPRESS_BATCH_SIZE"
-KOMPRESS_ACQUIRE_TIMEOUT_ENV = "HEADROOM_KOMPRESS_ACQUIRE_TIMEOUT_SECONDS"
-KOMPRESS_TIME_BUDGET_ENV = "HEADROOM_KOMPRESS_TIME_BUDGET_SECONDS"
-KOMPRESS_CANARY_THRESHOLD_ENV = "HEADROOM_KOMPRESS_CANARY_SECONDS"
+KOMPRESS_BATCH_SIZE_ENV = "LEGROOM_KOMPRESS_BATCH_SIZE"
+KOMPRESS_ACQUIRE_TIMEOUT_ENV = "LEGROOM_KOMPRESS_ACQUIRE_TIMEOUT_SECONDS"
+KOMPRESS_TIME_BUDGET_ENV = "LEGROOM_KOMPRESS_TIME_BUDGET_SECONDS"
+KOMPRESS_CANARY_THRESHOLD_ENV = "LEGROOM_KOMPRESS_CANARY_SECONDS"
 
 # Both defaults sit well under the proxy's 30s compression-stage timeout so a
 # slow model gives up (passthrough) before the request is abandoned. A thread
@@ -296,7 +296,7 @@ def _canary_threshold_seconds() -> float | None:
 
 
 _CANARY_SENTENCE = (
-    "Headroom probes model latency at startup so a degraded runtime is "
+    "Legroom probes model latency at startup so a degraded runtime is "
     "detected before live traffic depends on it."
 )
 
@@ -491,12 +491,12 @@ def is_kompress_available() -> bool:
 
 
 def _get_model_class() -> type:
-    """Return the HeadroomCompressorModel class, importing torch on demand."""
+    """Return the LegroomCompressorModel class, importing torch on demand."""
     import torch
     import torch.nn as nn
     from transformers import AutoModel
 
-    class HeadroomCompressorModel(nn.Module):
+    class LegroomCompressorModel(nn.Module):
         """Dual-head ModernBERT: token classification + span importance CNN."""
 
         def __init__(self, model_name: str = "answerdotai/ModernBERT-base"):
@@ -549,7 +549,7 @@ def _get_model_class() -> type:
                 span_scores = self.span_conv(hidden.transpose(1, 2)).squeeze(1)
                 return token_probs * (0.5 + 0.5 * span_scores)  # type: ignore[no-any-return]
 
-    return HeadroomCompressorModel
+    return LegroomCompressorModel
 
 
 # ── Model Loading ─────────────────────────────────────────────────────
@@ -665,7 +665,7 @@ def _load_kompress_onnx(
         backend = "onnx_coreml" if use_coreml else "onnx"
         providers: list[Any]
         if use_coreml:
-            from headroom import paths as _paths
+            from legroom import paths as _paths
 
             coreml_cache_dir = os.environ.get(KOMPRESS_COREML_CACHE_DIR_ENV, "").strip()
             cache_dir = (
@@ -739,8 +739,8 @@ def _load_kompress_pytorch(
                 raise KompressModelNotCached(model_id) from exc
             raise
 
-        HeadroomCompressorModel = _get_model_class()
-        model = HeadroomCompressorModel()
+        LegroomCompressorModel = _get_model_class()
+        model = LegroomCompressorModel()
 
         from safetensors.torch import load_file
 
@@ -771,7 +771,7 @@ def _validate_pytorch_device(model: Any, tokenizer: Any, device: str) -> None:
         return
 
     encoding = tokenizer(
-        ["headroom", "kompress", "probe"],
+        ["legroom", "kompress", "probe"],
         is_split_into_words=True,
         truncation=True,
         max_length=512,
@@ -799,7 +799,7 @@ def _load_kompress(
 
     The default keeps the historic behavior: try ONNX CPU first
     (lightweight), then fall back to PyTorch. Operators can override via
-    HEADROOM_KOMPRESS_BACKEND:
+    LEGROOM_KOMPRESS_BACKEND:
 
     - auto: ONNX CPU first, then PyTorch.
     - onnx / onnx_cpu: force ONNX CPU.
@@ -845,7 +845,7 @@ def _load_kompress(
 
     # Auto mode: preserve stable default behavior. This avoids changing
     # compression quality/perf characteristics for existing installs while
-    # allowing opt-in MPS/CoreML experiments via HEADROOM_KOMPRESS_BACKEND.
+    # allowing opt-in MPS/CoreML experiments via LEGROOM_KOMPRESS_BACKEND.
     if _is_onnx_available():
         try:
             return _load_kompress_onnx(model_id, use_coreml=False, allow_download=allow_download)
@@ -861,7 +861,7 @@ def _load_kompress(
         return _load_kompress_pytorch(model_id, device, allow_download=allow_download)
 
     raise ImportError(
-        "Kompress requires onnxruntime or torch. Install with: pip install headroom-ai[proxy]"
+        "Kompress requires onnxruntime or torch. Install with: pip install legroom-ai[proxy]"
     )
 
 
@@ -900,7 +900,7 @@ def unload_kompress_model(model_id: str | None = None) -> bool:
 # The proxy request path must never block on a cold model download. A first
 # deep-path request would otherwise resolve the 274MB ONNX artifact via an
 # inline hf_hub_download on the request thread, where it races the proxy's
-# compression timeout (HEADROOM_COMPRESSION_TIMEOUT_SECONDS, default 30s). The
+# compression timeout (LEGROOM_COMPRESSION_TIMEOUT_SECONDS, default 30s). The
 # fetch is cancelled mid-transfer, the blob never finalizes in the HF cache,
 # and every subsequent request re-hangs and fails open. Instead the request
 # path resolves the model cache-only (allow_download=False) and pulls it down
@@ -1028,7 +1028,7 @@ def store_kompress_in_ccr(original: str, compressed: str, original_tokens: int) 
     return its retrieval hash (or None on any failure).
 
     Module-level so both the in-process compressor and the remote client
-    (:mod:`headroom.transforms.kompress_remote`) share one CCR policy. Model-free
+    (:mod:`legroom.transforms.kompress_remote`) share one CCR policy. Model-free
     — touches only the compression store + telemetry, never the ONNX model — so
     it works in a sandboxed proxy installed without the ``[ml]`` extra.
     """
@@ -1212,7 +1212,7 @@ class KompressCompressor(Transform):
                 the historic auto-download-on-first-use behavior.
             ccr_original: Text to store in CCR instead of ``content``. Used when
                 ``content`` is a tag-protected placeholder intermediate
-                ({{HEADROOM_TAG_N}}); passing the pre-protection original keeps a
+                ({{LEGROOM_TAG_N}}); passing the pre-protection original keeps a
                 later full retrieval lossless. Defaults to ``content``.
 
         Returns:
@@ -1229,14 +1229,14 @@ class KompressCompressor(Transform):
         # so one large block can run for minutes holding a worker (the leak ->
         # executor-saturation -> queue-timeout cascade). Bail at the next chunk
         # boundary past this budget, keeping the unprocessed tail verbatim. 0
-        # disables. Env HEADROOM_COMPRESSION_DEADLINE_MS overrides (default 20s).
+        # disables. Env LEGROOM_COMPRESSION_DEADLINE_MS overrides (default 20s).
         # Cached per instance: operator config, read once -- not per compress() call.
         deadline_s = getattr(self, "_deadline_s", None)
         if deadline_s is None:
             try:
                 deadline_s = max(
                     0.0,
-                    float(os.environ.get("HEADROOM_COMPRESSION_DEADLINE_MS", "20000")) / 1000.0,
+                    float(os.environ.get("LEGROOM_COMPRESSION_DEADLINE_MS", "20000")) / 1000.0,
                 )
             except ValueError:
                 deadline_s = 20.0
@@ -1389,7 +1389,7 @@ class KompressCompressor(Transform):
 
                 # Hard override: always keep must-keep tokens regardless of model score.
                 # Numbers, error names, paths, and flags carry meaning agents cannot
-                # reconstruct from context. Disable via HEADROOM_KOMPRESS_MUST_KEEP=0.
+                # reconstruct from context. Disable via LEGROOM_KOMPRESS_MUST_KEEP=0.
                 _add_kompress_must_keep_words(kept_ids, chunk_words, chunk_start)
 
             if not kept_ids:

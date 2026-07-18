@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 
-from headroom.proxy.tool_injection_policy import (
+from legroom.proxy.tool_injection_policy import (
     TOOL_INJECTION_STICKY_DEFAULT,
     TOOL_INJECTION_STICKY_ENV,
     TOOL_TRACKER_MAX_SESSIONS_DEFAULT,

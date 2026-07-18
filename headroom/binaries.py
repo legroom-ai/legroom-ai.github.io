@@ -1,6 +1,6 @@
 """Fetcher for bundled CLI tool binaries.
 
-`pip install headroom-ai` pulls `ast-grep-cli` as a proper PyPI binary wheel
+`pip install legroom-ai` pulls `ast-grep-cli` as a proper PyPI binary wheel
 (core dependency), so ast-grep is always on PATH. The other two high-value
 tools — `difft` (difftastic) and `scc` — are fetched from pinned upstream
 GitHub releases at proxy startup, verified, cached per-user, and exec'd.
@@ -10,9 +10,9 @@ Windows x86_64. Unsupported platforms raise PlatformNotSupported; callers in
 the compression pipeline should fall back to their non-accelerated path.
 
 Env vars:
-    HEADROOM_BINARIES_MIRROR   base URL that replaces https://github.com
-    HEADROOM_BINARIES_CACHE    override cache dir
-    HEADROOM_BINARIES_OFFLINE  if set, never reach the network
+    LEGROOM_BINARIES_MIRROR   base URL that replaces https://github.com
+    LEGROOM_BINARIES_CACHE    override cache dir
+    LEGROOM_BINARIES_OFFLINE  if set, never reach the network
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from headroom._subprocess import run
+from legroom._subprocess import run
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ class Sha256Mismatch(BinaryError):
 
 
 class OfflineError(BinaryError):
-    """Raised when a network fetch is required but HEADROOM_BINARIES_OFFLINE is set."""
+    """Raised when a network fetch is required but LEGROOM_BINARIES_OFFLINE is set."""
 
 
 # ---------- Platform detection -------------------------------------------- #
@@ -164,17 +164,17 @@ def _has_writable_existing_parent(path: Path) -> bool:
 
 
 def cache_dir() -> Path:
-    override = os.environ.get("HEADROOM_BINARIES_CACHE")
+    override = os.environ.get("LEGROOM_BINARIES_CACHE")
     if override:
         return Path(override).expanduser().resolve()
     if sys.platform.startswith("win"):
         base = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
-        return Path(base) / "headroom" / "bin"
+        return Path(base) / "legroom" / "bin"
     if sys.platform == "darwin":
-        return Path.home() / "Library" / "Caches" / "headroom" / "bin"
+        return Path.home() / "Library" / "Caches" / "legroom" / "bin"
     xdg = os.environ.get("XDG_CACHE_HOME")
     base = Path(xdg) if xdg else Path.home() / ".cache"
-    return base / "headroom" / "bin"
+    return base / "legroom" / "bin"
 
 
 # ---------- Registry ------------------------------------------------------ #
@@ -208,7 +208,7 @@ def _asset_for_platform(tool: str, plat: PlatformKey) -> dict[str, Any]:
     entry = _tool_entry(tool)
     if _is_pypi_tool(tool):
         raise PlatformNotSupported(
-            f"{tool}: distributed via PyPI only; `pip install headroom-ai` "
+            f"{tool}: distributed via PyPI only; `pip install legroom-ai` "
             f"should have placed `{entry.get('binary', tool)}` on PATH."
         )
     assets: dict[str, Any] = entry.get("assets", {})
@@ -222,7 +222,7 @@ def _asset_for_platform(tool: str, plat: PlatformKey) -> dict[str, Any]:
 
 
 def _mirror_url(url: str) -> str:
-    mirror = os.environ.get("HEADROOM_BINARIES_MIRROR")
+    mirror = os.environ.get("LEGROOM_BINARIES_MIRROR")
     if not mirror:
         return url
     # Only substitute the github.com host so that paths remain intact.
@@ -236,15 +236,15 @@ def _mirror_url(url: str) -> str:
 
 
 def _download(url: str, dest: Path, *, progress: bool = True) -> None:
-    if os.environ.get("HEADROOM_BINARIES_OFFLINE"):
-        raise OfflineError(f"offline mode (HEADROOM_BINARIES_OFFLINE=1) but fetch required: {url}")
+    if os.environ.get("LEGROOM_BINARIES_OFFLINE"):
+        raise OfflineError(f"offline mode (LEGROOM_BINARIES_OFFLINE=1) but fetch required: {url}")
     if not _has_writable_existing_parent(dest.parent):
         raise OSError(f"binary cache directory parent is not writable: {dest.parent}")
     dest.parent.mkdir(parents=True, exist_ok=True)
     if not _is_writable_dir(dest.parent):
         raise OSError(f"binary cache directory is not writable: {dest.parent}")
     final_url = _mirror_url(url)
-    req = urllib.request.Request(final_url, headers={"User-Agent": "headroom-binaries/1"})
+    req = urllib.request.Request(final_url, headers={"User-Agent": "legroom-binaries/1"})
     try:
         with urllib.request.urlopen(req, timeout=60) as resp:  # noqa: S310 (https)
             total = int(resp.headers.get("Content-Length") or 0)
@@ -432,7 +432,7 @@ def resolve(tool: str) -> Path:
     """Return a path to the tool binary, fetching it on first use.
 
     Raises PlatformNotSupported if the tool is unavailable on this platform,
-    OfflineError if a fetch is required but HEADROOM_BINARIES_OFFLINE is set,
+    OfflineError if a fetch is required but LEGROOM_BINARIES_OFFLINE is set,
     Sha256Mismatch if verification fails, BinaryFetchError on other IO errors.
     """
     on_path = _path_lookup(tool)
@@ -454,7 +454,7 @@ def resolve(tool: str) -> Path:
     sha256 = asset.get("sha256")
     member = asset.get("member", _binary_name(tool, plat))
 
-    with tempfile.TemporaryDirectory(prefix="headroom-fetch-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="legroom-fetch-") as tmp:
         tmp_dir = Path(tmp)
         # Strip query params so mirror URLs like `.../difft.tar.gz?token=...`
         # don't produce filenames that break archive-type detection.
@@ -466,7 +466,7 @@ def resolve(tool: str) -> Path:
         _extract(download_path, member, staging)
         binary_path.parent.mkdir(parents=True, exist_ok=True)
         # Atomic move with a PID-scoped partial name so two concurrent
-        # `headroom proxy` starts don't race on the same .partial path.
+        # `legroom proxy` starts don't race on the same .partial path.
         tmp_final = binary_path.with_name(f"{binary_path.name}.{os.getpid()}.partial")
         shutil.move(str(staging), tmp_final)
         try:
@@ -484,7 +484,7 @@ def ensure_tools(quiet: bool = False) -> dict[str, Path | None]:
         return {name: which(name) for name in _registry().get("tools", {})}
     """Install every tool in the registry if missing. Safe to call repeatedly.
 
-    Called at proxy startup and on first `headroom` CLI invocation so that no
+    Called at proxy startup and on first `legroom` CLI invocation so that no
     tool fetch ever happens inside a live request. Skips tools that are on
     PATH, already cached, or distributed via PyPI-only (ast-grep).
 
@@ -512,14 +512,14 @@ def ensure_tools(quiet: bool = False) -> dict[str, Path | None]:
         ) as e:
             out[name] = None
             if not quiet:
-                print(f"headroom: skipping {name}: {e}", file=sys.stderr)
+                print(f"legroom: skipping {name}: {e}", file=sys.stderr)
     return out
 
 
 def status() -> list[dict[str, Any]]:
     """Return a list of status dicts for every tool in the registry.
 
-    Used by `headroom tools doctor`. Never fetches — only inspects.
+    Used by `legroom tools doctor`. Never fetches — only inspects.
     """
     out: list[dict[str, Any]] = []
     plat = detect_platform()

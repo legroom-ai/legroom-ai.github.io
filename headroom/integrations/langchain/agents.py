@@ -1,13 +1,13 @@
 """Agent tool integration for LangChain with output compression.
 
-This module provides HeadroomToolWrapper and wrap_tools_with_headroom
+This module provides LegroomToolWrapper and wrap_tools_with_legroom
 for wrapping LangChain tools to automatically compress their outputs
 and track per-tool compression metrics.
 
 Example:
     from langchain.agents import create_openai_tools_agent
     from langchain.tools import Tool
-    from headroom.integrations import wrap_tools_with_headroom
+    from legroom.integrations import wrap_tools_with_legroom
 
     # Define tools
     tools = [
@@ -15,8 +15,8 @@ Example:
         Tool(name="database", func=db_func, description="Query DB"),
     ]
 
-    # Wrap with Headroom compression
-    wrapped_tools = wrap_tools_with_headroom(tools)
+    # Wrap with Legroom compression
+    wrapped_tools = wrap_tools_with_legroom(tools)
 
     # Use in agent - outputs are automatically compressed
     agent = create_openai_tools_agent(llm, wrapped_tools, prompt)
@@ -40,7 +40,7 @@ except ImportError:
     StructuredTool = object  # type: ignore[misc,assignment]
     Tool = object  # type: ignore[misc,assignment]
 
-from headroom.integrations.mcp import compress_tool_result
+from legroom.integrations.mcp import compress_tool_result
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ def _check_langchain_available() -> None:
     if not LANGCHAIN_AVAILABLE:
         raise ImportError(
             "LangChain is required for this integration. "
-            "Install with: pip install headroom[langchain] "
+            "Install with: pip install legroom[langchain] "
             "or: pip install langchain-core"
         )
 
@@ -135,7 +135,7 @@ def reset_tool_metrics() -> None:
     _global_metrics = ToolMetricsCollector()
 
 
-class HeadroomToolWrapper:
+class LegroomToolWrapper:
     """Wraps a LangChain tool to compress its output.
 
     Applies SmartCrusher compression to tool outputs, particularly
@@ -144,14 +144,14 @@ class HeadroomToolWrapper:
 
     Example:
         from langchain.tools import Tool
-        from headroom.integrations import HeadroomToolWrapper
+        from legroom.integrations import LegroomToolWrapper
 
         def search(query: str) -> str:
             # Returns large JSON with 1000 results
             return json.dumps({"results": [...1000 items...]})
 
         search_tool = Tool(name="search", func=search, description="Search")
-        wrapped = HeadroomToolWrapper(search_tool)
+        wrapped = LegroomToolWrapper(search_tool)
 
         # Use wrapped tool - output automatically compressed
         result = wrapped("python tutorials")
@@ -168,7 +168,7 @@ class HeadroomToolWrapper:
         min_chars_to_compress: int = 1000,
         metrics_collector: ToolMetricsCollector | None = None,
     ):
-        """Initialize HeadroomToolWrapper.
+        """Initialize LegroomToolWrapper.
 
         Args:
             tool: The LangChain BaseTool to wrap.
@@ -263,7 +263,7 @@ class HeadroomToolWrapper:
 
         if was_compressed and chars_saved > 0:
             logger.info(
-                f"HeadroomToolWrapper[{self.name}]: {chars_before} -> {chars_after} chars "
+                f"LegroomToolWrapper[{self.name}]: {chars_before} -> {chars_after} chars "
                 f"({chars_saved} saved, {metric.compression_ratio:.1%} of original)"
             )
 
@@ -283,12 +283,12 @@ class HeadroomToolWrapper:
         )
 
 
-def wrap_tools_with_headroom(
+def wrap_tools_with_legroom(
     tools: list[BaseTool],
     min_chars_to_compress: int = 1000,
     metrics_collector: ToolMetricsCollector | None = None,
 ) -> list[StructuredTool]:
-    """Wrap multiple LangChain tools with Headroom compression.
+    """Wrap multiple LangChain tools with Legroom compression.
 
     Convenience function to wrap all tools in a list at once.
 
@@ -302,10 +302,10 @@ def wrap_tools_with_headroom(
 
     Example:
         from langchain.tools import Tool
-        from headroom.integrations import wrap_tools_with_headroom
+        from legroom.integrations import wrap_tools_with_legroom
 
         tools = [search_tool, database_tool, api_tool]
-        wrapped = wrap_tools_with_headroom(tools)
+        wrapped = wrap_tools_with_legroom(tools)
 
         # Use wrapped tools in agent
         agent = create_openai_tools_agent(llm, wrapped, prompt)
@@ -316,7 +316,7 @@ def wrap_tools_with_headroom(
 
     wrapped = []
     for tool in tools:
-        wrapper = HeadroomToolWrapper(
+        wrapper = LegroomToolWrapper(
             tool=tool,
             min_chars_to_compress=min_chars_to_compress,
             metrics_collector=collector,

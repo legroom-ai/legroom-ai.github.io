@@ -26,20 +26,20 @@ __all__ = [
     "get_spacy",
 ]
 
-# Keep the package entrypoint lightweight so importing headroom.models does
+# Keep the package entrypoint lightweight so importing legroom.models does
 # not eagerly load optional ML dependencies until a specific export is used.
 _LAZY_EXPORTS: dict[str, tuple[str, str]] = {
     # LLM registry
-    "ModelRegistry": ("headroom.models.registry", "ModelRegistry"),
-    "ModelInfo": ("headroom.models.registry", "ModelInfo"),
-    "get_model_info": ("headroom.models.registry", "get_model_info"),
-    "list_models": ("headroom.models.registry", "list_models"),
-    "register_model": ("headroom.models.registry", "register_model"),
+    "ModelRegistry": ("legroom.models.registry", "ModelRegistry"),
+    "ModelInfo": ("legroom.models.registry", "ModelInfo"),
+    "get_model_info": ("legroom.models.registry", "get_model_info"),
+    "list_models": ("legroom.models.registry", "list_models"),
+    "register_model": ("legroom.models.registry", "register_model"),
     # ML model registry
-    "MLModelRegistry": ("headroom.models.ml_models", "MLModelRegistry"),
-    "get_sentence_transformer": ("headroom.models.ml_models", "get_sentence_transformer"),
-    "get_siglip": ("headroom.models.ml_models", "get_siglip"),
-    "get_spacy": ("headroom.models.ml_models", "get_spacy"),
+    "MLModelRegistry": ("legroom.models.ml_models", "MLModelRegistry"),
+    "get_sentence_transformer": ("legroom.models.ml_models", "get_sentence_transformer"),
+    "get_siglip": ("legroom.models.ml_models", "get_siglip"),
+    "get_spacy": ("legroom.models.ml_models", "get_spacy"),
 }
 
 

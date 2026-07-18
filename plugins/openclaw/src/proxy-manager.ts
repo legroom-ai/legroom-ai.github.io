@@ -1,5 +1,5 @@
 /**
- * Manages connectivity to a Headroom proxy (local or remote).
+ * Manages connectivity to a Legroom proxy (local or remote).
  *
  * Security model:
  * - Local proxies (127.0.0.1 / localhost) can be auto-started via subprocess
@@ -30,17 +30,17 @@ export interface ProxyManagerLogger {
   debug(message: string): void;
 }
 
-/** Default logger that prefixes all messages with `[headroom]`. */
+/** Default logger that prefixes all messages with `[legroom]`. */
 export const defaultLogger: ProxyManagerLogger = {
-  info: (m) => console.log(`[headroom] ${m}`),
-  warn: (m) => console.warn(`[headroom] ${m}`),
-  error: (m) => console.error(`[headroom] ${m}`),
+  info: (m) => console.log(`[legroom] ${m}`),
+  warn: (m) => console.warn(`[legroom] ${m}`),
+  error: (m) => console.error(`[legroom] ${m}`),
   debug: () => {},
 };
 
 export interface ProxyProbeResult {
   reachable: boolean;
-  isHeadroom: boolean;
+  isLegroom: boolean;
   reason?: string;
 }
 
@@ -54,8 +54,8 @@ interface LaunchSpec {
   checkUseShell?: boolean;
 }
 
-const HEADROOM_MODULE_DISCOVERY_SNIPPET =
-  "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec('headroom') else 1)";
+const LEGROOM_MODULE_DISCOVERY_SNIPPET =
+  "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec('legroom') else 1)";
 
 export class ProxyManager {
   private config: ProxyManagerConfig;
@@ -85,20 +85,20 @@ export class ProxyManager {
     const probeByUrl = new Map<string, ProxyProbeResult>();
 
     for (const url of candidateUrls) {
-      const probe = await probeHeadroomProxy(url);
+      const probe = await probeLegroomProxy(url);
       probeByUrl.set(url, probe);
-      if (probe.reachable && probe.isHeadroom) {
+      if (probe.reachable && probe.isLegroom) {
         this.proxyUrl = url;
-        this.logger.info(`Headroom proxy already running at ${url}`);
+        this.logger.info(`Legroom proxy already running at ${url}`);
         return url;
       }
     }
 
     if (explicitUrl) {
       const explicitProbe = probeByUrl.get(explicitUrl);
-      if (explicitProbe?.reachable && !explicitProbe.isHeadroom) {
+      if (explicitProbe?.reachable && !explicitProbe.isLegroom) {
         throw new Error(
-          `Service reachable at ${explicitUrl}, but it does not appear to be a Headroom proxy (${explicitProbe.reason ?? "unknown service"}).`,
+          `Service reachable at ${explicitUrl}, but it does not appear to be a Legroom proxy (${explicitProbe.reason ?? "unknown service"}).`,
         );
       }
     }
@@ -106,7 +106,7 @@ export class ProxyManager {
     // Remote URLs are connect-only — never auto-start a subprocess for them
     if (explicitUrl && !isLocalProxyUrl(explicitUrl)) {
       throw new Error(
-        `Remote Headroom proxy not reachable at ${explicitUrl}. Ensure the proxy is running at that address.`,
+        `Remote Legroom proxy not reachable at ${explicitUrl}. Ensure the proxy is running at that address.`,
       );
     }
 
@@ -114,39 +114,39 @@ export class ProxyManager {
     if (this.config.autoStart === true) {
       const startupUrl = explicitUrl ?? defaultCandidates[0];
       const startupProbe = probeByUrl.get(startupUrl);
-      if (startupProbe?.reachable && !startupProbe.isHeadroom) {
+      if (startupProbe?.reachable && !startupProbe.isLegroom) {
         throw new Error(
-          `Cannot auto-start Headroom at ${startupUrl}: port is in use by a non-Headroom service (${startupProbe.reason ?? "unknown service"}).`,
+          `Cannot auto-start Legroom at ${startupUrl}: port is in use by a non-Legroom service (${startupProbe.reason ?? "unknown service"}).`,
         );
       }
 
       this.logger.info(
-        `No Headroom proxy detected${explicitUrl ? ` at ${startupUrl}` : " on default local endpoints"}; attempting to auto-start...`,
+        `No Legroom proxy detected${explicitUrl ? ` at ${startupUrl}` : " on default local endpoints"}; attempting to auto-start...`,
       );
-      await this.startHeadroomProxy(startupUrl, port);
+      await this.startLegroomProxy(startupUrl, port);
 
-      const startedProbe = await waitForHeadroomProxy(
+      const startedProbe = await waitForLegroomProxy(
         startupUrl,
         this.config.startupTimeoutMs ?? 20_000,
       );
-      if (startedProbe.reachable && startedProbe.isHeadroom) {
+      if (startedProbe.reachable && startedProbe.isLegroom) {
         this.proxyUrl = startupUrl;
-        this.logger.info(`Headroom proxy started and reachable at ${startupUrl}`);
+        this.logger.info(`Legroom proxy started and reachable at ${startupUrl}`);
         return startupUrl;
       }
       throw new Error(
-        `Attempted to start Headroom proxy, but it was not reachable at ${startupUrl} (${startedProbe.reason ?? "unknown"}).`,
+        `Attempted to start Legroom proxy, but it was not reachable at ${startupUrl} (${startedProbe.reason ?? "unknown"}).`,
       );
     }
 
     if (explicitUrl) {
       throw new Error(
-        `Headroom proxy not reachable at ${explicitUrl}. Ensure the proxy is running first.`,
+        `Legroom proxy not reachable at ${explicitUrl}. Ensure the proxy is running first.`,
       );
     }
 
     throw new Error(
-      `Headroom proxy not detected on default endpoints (${defaultCandidates.join(", ")}). ` +
+      `Legroom proxy not detected on default endpoints (${defaultCandidates.join(", ")}). ` +
         "Set proxyUrl explicitly or enable autoStart.",
     );
   }
@@ -177,7 +177,7 @@ export class ProxyManager {
 
   // --- Internal ---
 
-  private async startHeadroomProxy(proxyUrl: string, defaultPort: number): Promise<void> {
+  private async startLegroomProxy(proxyUrl: string, defaultPort: number): Promise<void> {
     const parsed = new URL(proxyUrl);
     const host = parsed.hostname;
     const port = parsed.port || String(defaultPort);
@@ -205,8 +205,8 @@ export class ProxyManager {
     }
 
     throw new Error(
-      "No usable Headroom launcher found. Tried PATH, local npm, global npm, and Python. " +
-        "Install headroom-ai (npm or pip) and ensure one launcher is available.\n" +
+      "No usable Legroom launcher found. Tried PATH, local npm, global npm, and Python. " +
+        "Install legroom-ai (npm or pip) and ensure one launcher is available.\n" +
         (errors.length > 0 ? `Launch errors: ${errors.join("; ")}` : ""),
     );
   }
@@ -228,23 +228,23 @@ export class ProxyManager {
     const configuredPython = this.getConfiguredPythonCommand();
     if (configuredPython) {
       specs.push({
-        label: `Configured Python: ${configuredPython} -m headroom.cli`,
+        label: `Configured Python: ${configuredPython} -m legroom.cli`,
         command: configuredPython,
-        args: ["-m", "headroom.cli", ...commonArgs],
+        args: ["-m", "legroom.cli", ...commonArgs],
         checkCommand: configuredPython,
-        checkArgs: ["-c", HEADROOM_MODULE_DISCOVERY_SNIPPET],
+        checkArgs: ["-c", LEGROOM_MODULE_DISCOVERY_SNIPPET],
       });
     }
 
     // 2) Windows pyenv: resolve the real executable so we avoid shim .bat wrappers.
     if (process.platform === "win32") {
-      const pyenvHeadroom = this.getPyenvResolvedHeadroom();
-      if (pyenvHeadroom) {
+      const pyenvLegroom = this.getPyenvResolvedLegroom();
+      if (pyenvLegroom) {
         specs.push({
-          label: `pyenv: ${pyenvHeadroom}`,
-          command: pyenvHeadroom,
+          label: `pyenv: ${pyenvLegroom}`,
+          command: pyenvLegroom,
           args: commonArgs,
-          checkCommand: pyenvHeadroom,
+          checkCommand: pyenvLegroom,
           checkArgs: ["--version"],
           useShell: false,
         });
@@ -253,21 +253,21 @@ export class ProxyManager {
 
     // 3) PATH
     specs.push({
-      label: "PATH: headroom",
-      command: "headroom",
+      label: "PATH: legroom",
+      command: "legroom",
       args: commonArgs,
       checkCommand: process.platform === "win32" ? "where.exe" : "sh",
       checkArgs: process.platform === "win32"
-        ? ["headroom"]
-        : ["-c", "command -v headroom >/dev/null 2>&1"],
+        ? ["legroom"]
+        : ["-c", "command -v legroom >/dev/null 2>&1"],
       useShell: process.platform === "win32",
       checkUseShell: false,
     });
 
-    // 4) uv tool install path (~/.local/bin/headroom)
+    // 4) uv tool install path (~/.local/bin/legroom)
     const uvBin = join(
       os.homedir(),
-      ".local", "bin", "headroom"
+      ".local", "bin", "legroom"
     );
     if (existsSync(uvBin)) {
       specs.push({
@@ -284,8 +284,8 @@ export class ProxyManager {
     const packageRoot = dirname(moduleDir);
     const localBinDir = join(packageRoot, "node_modules", ".bin");
     const localBins = process.platform === "win32"
-      ? [join(localBinDir, "headroom.cmd"), join(localBinDir, "headroom")]
-      : [join(localBinDir, "headroom")];
+      ? [join(localBinDir, "legroom.cmd"), join(localBinDir, "legroom")]
+      : [join(localBinDir, "legroom")];
     for (const localBin of localBins) {
       if (!existsSync(localBin)) continue;
         specs.push({
@@ -302,8 +302,8 @@ export class ProxyManager {
     const npmPrefix = this.getNpmGlobalPrefix();
     if (npmPrefix) {
       const globalBins = process.platform === "win32"
-        ? [join(npmPrefix, "headroom.cmd"), join(npmPrefix, "headroom")]
-        : [join(npmPrefix, "bin", "headroom"), join(npmPrefix, "headroom")];
+        ? [join(npmPrefix, "legroom.cmd"), join(npmPrefix, "legroom")]
+        : [join(npmPrefix, "bin", "legroom"), join(npmPrefix, "legroom")];
 
       for (const globalBin of globalBins) {
         if (!existsSync(globalBin)) continue;
@@ -323,11 +323,11 @@ export class ProxyManager {
     for (const pyCmd of pythonCommands) {
       if (configuredPython && pyCmd === configuredPython) continue;
       specs.push({
-        label: `Python: ${pyCmd} -m headroom.cli`,
+        label: `Python: ${pyCmd} -m legroom.cli`,
         command: pyCmd,
-        args: ["-m", "headroom.cli", ...commonArgs],
+        args: ["-m", "legroom.cli", ...commonArgs],
         checkCommand: pyCmd,
-        checkArgs: ["-c", HEADROOM_MODULE_DISCOVERY_SNIPPET],
+        checkArgs: ["-c", LEGROOM_MODULE_DISCOVERY_SNIPPET],
       });
     }
 
@@ -341,11 +341,11 @@ export class ProxyManager {
     return configured.length > 0 ? configured : null;
   }
 
-  private getPyenvResolvedHeadroom(): string | null {
+  private getPyenvResolvedLegroom(): string | null {
     if (process.platform !== "win32") return null;
 
     try {
-      const result = spawnSync("pyenv", ["which", "headroom"], {
+      const result = spawnSync("pyenv", ["which", "legroom"], {
         encoding: "utf8",
         stdio: ["ignore", "pipe", "ignore"],
         timeout: 5000,
@@ -443,9 +443,9 @@ function withDefaultPort(proxyUrl: string, defaultPort: number): string {
 }
 
 /**
- * Probe a configured URL and verify whether it is a running Headroom proxy.
+ * Probe a configured URL and verify whether it is a running Legroom proxy.
  */
-export async function probeHeadroomProxy(proxyUrl: string): Promise<ProxyProbeResult> {
+export async function probeLegroomProxy(proxyUrl: string): Promise<ProxyProbeResult> {
   const origin = normalizeAndValidateProxyUrl(proxyUrl);
   const probeEndpoint = async (
     path: string,
@@ -467,19 +467,19 @@ export async function probeHeadroomProxy(proxyUrl: string): Promise<ProxyProbeRe
 
   const ready = await probeEndpoint("/readyz");
   const retrieveStats = await probeEndpoint("/v1/retrieve/stats", { readBody: true });
-  if (retrieveStats.ok && hasHeadroomStatsShape(retrieveStats.body)) {
-    return { reachable: true, isHeadroom: true };
+  if (retrieveStats.ok && hasLegroomStatsShape(retrieveStats.body)) {
+    return { reachable: true, isLegroom: true };
   }
 
   const stats = await probeEndpoint("/stats", { readBody: true });
-  if (stats.ok && hasHeadroomStatsShape(stats.body)) {
-    return { reachable: true, isHeadroom: true };
+  if (stats.ok && hasLegroomStatsShape(stats.body)) {
+    return { reachable: true, isLegroom: true };
   }
 
   const health = await probeEndpoint("/health");
   const anyReachable = ready.reachable || retrieveStats.reachable || stats.reachable || health.reachable;
   if (!anyReachable) {
-    return { reachable: false, isHeadroom: false, reason: "proxy probe failed" };
+    return { reachable: false, isLegroom: false, reason: "proxy probe failed" };
   }
 
   const reasons = [
@@ -490,10 +490,10 @@ export async function probeHeadroomProxy(proxyUrl: string): Promise<ProxyProbeRe
     stats.reachable ? `stats HTTP ${stats.status}` : "stats endpoint unavailable",
     health.reachable ? `health HTTP ${health.status}` : "health check failed",
   ];
-  return { reachable: true, isHeadroom: false, reason: reasons.join("; ") };
+  return { reachable: true, isLegroom: false, reason: reasons.join("; ") };
 }
 
-function hasHeadroomStatsShape(body: string | undefined): boolean {
+function hasLegroomStatsShape(body: string | undefined): boolean {
   if (!body) {
     return false;
   }
@@ -515,14 +515,14 @@ function hasHeadroomStatsShape(body: string | undefined): boolean {
   }
 }
 
-async function waitForHeadroomProxy(proxyUrl: string, timeoutMs: number): Promise<ProxyProbeResult> {
+async function waitForLegroomProxy(proxyUrl: string, timeoutMs: number): Promise<ProxyProbeResult> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
-    const result = await probeHeadroomProxy(proxyUrl);
-    if (result.reachable && result.isHeadroom) {
+    const result = await probeLegroomProxy(proxyUrl);
+    if (result.reachable && result.isLegroom) {
       return result;
     }
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
-  return probeHeadroomProxy(proxyUrl);
+  return probeLegroomProxy(proxyUrl);
 }

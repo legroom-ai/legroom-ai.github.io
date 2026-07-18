@@ -21,7 +21,7 @@ from typing import Any
 
 import httpx
 
-from headroom.subscription.models import SubscriptionSnapshot
+from legroom.subscription.models import SubscriptionSnapshot
 
 logger = logging.getLogger(__name__)
 

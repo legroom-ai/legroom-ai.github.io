@@ -15,7 +15,7 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 
 **Please DO NOT open a public GitHub issue for security vulnerabilities.**
 
-Instead, please email us at: **security@headroomlabs.ai**
+Instead, please email us at: **security@legroom.ai**
 
 Include the following information:
 - Type of vulnerability (e.g., injection, data exposure, authentication bypass)
@@ -34,7 +34,7 @@ Include the following information:
 
 ### Security Best Practices for Users
 
-When using Headroom:
+When using Legroom:
 
 1. **API Keys**: Never commit API keys. Use environment variables.
 2. **Proxy Exposure**: Don't expose the proxy server to the public internet without authentication
@@ -44,8 +44,8 @@ When using Headroom:
 ### Scope
 
 The following are in scope for security reports:
-- Headroom Python package (`pip install headroom-ai`)
-- Headroom proxy server
+- Legroom Python package (`pip install legroom-ai`)
+- Legroom proxy server
 - Official integrations (LangChain, Agno, Strands, LiteLLM, Vercel AI SDK, Anthropic/OpenAI SDK wrappers, MCP)
 
 The following are out of scope:
@@ -55,11 +55,11 @@ The following are out of scope:
 
 ## Security Features
 
-Headroom includes several security features:
+Legroom includes several security features:
 
 - **No credential storage**: We never store or log API keys
 - **Passthrough mode**: Sensitive content passes through unchanged by default
 - **Input validation**: All inputs are validated before processing
 - **Safe defaults**: Security-conscious defaults out of the box
 
-Thank you for helping keep Headroom and its users safe!
+Thank you for helping keep Legroom and its users safe!

@@ -288,7 +288,7 @@ def simple_judge(
     Returns:
         Tuple of (score 1-5, reasoning).
     """
-    from headroom.evals.metrics import compute_exact_match, compute_f1
+    from legroom.evals.metrics import compute_exact_match, compute_f1
 
     # Check exact match first
     if compute_exact_match(prediction, ground_truth):

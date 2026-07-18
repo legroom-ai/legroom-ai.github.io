@@ -1,4 +1,4 @@
-"""Top-level helper functions and constants for the Headroom proxy.
+"""Top-level helper functions and constants for the Legroom proxy.
 
 Contains lazy loaders, file logging setup, request body decompression,
 and safety-limit constants.
@@ -22,9 +22,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, cast
 
-from headroom import paths as _paths
-from headroom._subprocess import run
-from headroom.proxy import (
+from legroom import paths as _paths
+from legroom._subprocess import run
+from legroom.proxy import (
     diagnostic_decode_policy,
     memory_injection_mode_policy,
     query_log_policy,
@@ -33,17 +33,17 @@ from headroom.proxy import (
     wire_debug_format_policy,
     wire_debug_redaction_policy,
 )
-from headroom.proxy.beta_header_merge import (
+from legroom.proxy.beta_header_merge import (
     merge_anthropic_beta as merge_anthropic_beta,
 )
-from headroom.proxy.beta_header_merge import (
+from legroom.proxy.beta_header_merge import (
     merge_beta_tokens,
     split_beta_tokens,
 )
-from headroom.proxy.beta_header_merge import (
+from legroom.proxy.beta_header_merge import (
     merge_openai_beta as merge_openai_beta,
 )
-from headroom.proxy.beta_header_policy import (
+from legroom.proxy.beta_header_policy import (
     BETA_HEADER_STICKY_DEFAULT,
     BETA_HEADER_STICKY_ENV,
     BETA_TRACKER_MAX_SESSIONS_DEFAULT,
@@ -52,33 +52,33 @@ from headroom.proxy.beta_header_policy import (
     resolve_beta_header_sticky_mode,
     resolve_beta_tracker_max_sessions,
 )
-from headroom.proxy.body_forwarding import (
+from legroom.proxy.body_forwarding import (
     BodyMutationTracker as BodyMutationTracker,  # noqa: F401 - compatibility export
 )
-from headroom.proxy.body_forwarding import (
+from legroom.proxy.body_forwarding import (
     PythonForwarderMode as PythonForwarderMode,  # noqa: F401 - compatibility export
 )
-from headroom.proxy.body_forwarding import (
+from legroom.proxy.body_forwarding import (
     get_python_forwarder_mode as get_python_forwarder_mode,  # noqa: F401 - compatibility export
 )
-from headroom.proxy.body_forwarding import (
+from legroom.proxy.body_forwarding import (
     prepare_outbound_body_bytes as prepare_outbound_body_bytes,  # noqa: F401 - compatibility export
 )
-from headroom.proxy.body_forwarding import (
+from legroom.proxy.body_forwarding import (
     serialize_body_canonical as serialize_body_canonical,  # noqa: F401 - compatibility export
 )
-from headroom.proxy.ccr_golden_policy import (
+from legroom.proxy.ccr_golden_policy import (
     create_fresh_ccr_tool_definition,
     replay_golden_ccr_tool_definition,
 )
-from headroom.proxy.ccr_marker_policy import (
+from legroom.proxy.ccr_marker_policy import (
     has_new_ccr_markers as _has_new_ccr_markers,
 )
-from headroom.proxy.ccr_marker_policy import (
+from legroom.proxy.ccr_marker_policy import (
     should_inject_ccr_tool as _should_inject_ccr_tool,
 )
-from headroom.proxy.ccr_session_tracker import SessionCcrTracker as _SessionCcrTracker
-from headroom.proxy.internal_header_policy import (
+from legroom.proxy.ccr_session_tracker import SessionCcrTracker as _SessionCcrTracker
+from legroom.proxy.internal_header_policy import (
     INTERNAL_HEADER_PREFIX,
     STRIP_INTERNAL_HEADERS_DEFAULT,
     STRIP_INTERNAL_HEADERS_ENV,
@@ -86,39 +86,39 @@ from headroom.proxy.internal_header_policy import (
     resolve_strip_internal_headers_mode,
     strip_internal_headers,
 )
-from headroom.proxy.memory_golden_policy import (
+from legroom.proxy.memory_golden_policy import (
     replay_golden_memory_tool_definition,
     serialize_memory_tool_definition_canonical,
 )
-from headroom.proxy.tool_definition_serialization import (
+from legroom.proxy.tool_definition_serialization import (
     serialize_tool_definition_canonical as _serialize_tool_definition_canonical,
 )
-from headroom.proxy.tool_injection_config import (
+from legroom.proxy.tool_injection_config import (
     ToolInjectionStickyMode,
 )
-from headroom.proxy.tool_injection_config import (
+from legroom.proxy.tool_injection_config import (
     get_tool_injection_sticky_mode as _get_tool_injection_sticky_mode,
 )
-from headroom.proxy.tool_injection_config import (
+from legroom.proxy.tool_injection_config import (
     get_tool_tracker_max_sessions as _get_tool_tracker_max_sessions,
 )
-from headroom.proxy.tool_injection_logging import (
+from legroom.proxy.tool_injection_logging import (
     ToolInjectionDecision,
 )
-from headroom.proxy.tool_injection_logging import (
+from legroom.proxy.tool_injection_logging import (
     log_tool_injection_decision as _log_tool_injection_decision,
 )
-from headroom.proxy.tool_injection_tracker import SessionToolTracker as _SessionToolTracker
-from headroom.proxy.tool_name_policy import extract_tool_name
+from legroom.proxy.tool_injection_tracker import SessionToolTracker as _SessionToolTracker
+from legroom.proxy.tool_name_policy import extract_tool_name
 
 if TYPE_CHECKING:
     import httpx
     from fastapi import Request
 
-logger = logging.getLogger("headroom.proxy")
+logger = logging.getLogger("legroom.proxy")
 
-_CODEX_WIRE_DEBUG_ENV = "HEADROOM_CODEX_WIRE_DEBUG"
-_CODEX_WIRE_DEBUG_DIR_ENV = "HEADROOM_CODEX_WIRE_DEBUG_DIR"
+_CODEX_WIRE_DEBUG_ENV = "LEGROOM_CODEX_WIRE_DEBUG"
+_CODEX_WIRE_DEBUG_DIR_ENV = "LEGROOM_CODEX_WIRE_DEBUG_DIR"
 _CODEX_WIRE_REDACTED = wire_debug_redaction_policy.WIRE_DEBUG_REDACTED
 _CODEX_WIRE_SECRET_KEYS = wire_debug_redaction_policy.WIRE_DEBUG_SECRET_KEYS
 
@@ -258,7 +258,7 @@ def capture_codex_wire_debug(
 #   - "disabled": Memory context lookup is skipped entirely; the request
 #     forwards untouched.
 #
-# Configurable via HEADROOM_MEMORY_INJECTION_MODE env var. There is no
+# Configurable via LEGROOM_MEMORY_INJECTION_MODE env var. There is no
 # "system_prompt" option — that path is permanently retired by I2 (cache hot
 # zone never modified). See REALIGNMENT/02-architecture.md §2.2.
 _MEMORY_INJECTION_MODE_ENV = memory_injection_mode_policy.MEMORY_INJECTION_MODE_ENV
@@ -286,7 +286,7 @@ def hash_query_for_log(query: str) -> str:
 
 
 def extract_tags(headers: Any) -> dict[str, str]:
-    """Extract ``x-headroom-*`` tags from inbound headers.
+    """Extract ``x-legroom-*`` tags from inbound headers.
 
     Pure function (no I/O, no state). Used by every handler at request
     entry to capture operator slicing tags into the per-request
@@ -296,25 +296,25 @@ def extract_tags(headers: Any) -> dict[str, str]:
     implementation.
 
     Header name match is case-insensitive; the returned key has the
-    ``x-headroom-`` prefix stripped.
+    ``x-legroom-`` prefix stripped.
     """
     return {
-        k.lower().replace("x-headroom-", ""): v
+        k.lower().replace("x-legroom-", ""): v
         for k, v in headers.items()
-        if k.lower().startswith("x-headroom-")
+        if k.lower().startswith("x-legroom-")
     }
 
 
-def _headroom_bypass_enabled(headers: Any) -> bool:
-    """Return True when inbound headers request full Headroom passthrough.
+def _legroom_bypass_enabled(headers: Any) -> bool:
+    """Return True when inbound headers request full Legroom passthrough.
 
     This is transport-neutral policy: HTTP and WebSocket handlers both call
     it on original inbound headers before request-body mutation.
     """
 
     try:
-        bypass = str(headers.get("x-headroom-bypass", "")).strip().lower() == "true"
-        passthrough = str(headers.get("x-headroom-mode", "")).strip().lower() == "passthrough"
+        bypass = str(headers.get("x-legroom-bypass", "")).strip().lower() == "true"
+        passthrough = str(headers.get("x-legroom-mode", "")).strip().lower() == "passthrough"
     except AttributeError:
         return False
     return bypass or passthrough
@@ -499,15 +499,15 @@ def append_text_to_latest_user_input_item(
     return body_input, 0
 
 
-_CONTEXT_TOOL_ENV = "HEADROOM_CONTEXT_TOOL"
+_CONTEXT_TOOL_ENV = "LEGROOM_CONTEXT_TOOL"
 _CONTEXT_TOOL_RTK = "rtk"
 _CONTEXT_TOOL_LEAN_CTX = "lean-ctx"
-_RTK_GAIN_SCOPE_ENV = "HEADROOM_RTK_GAIN_SCOPE"
+_RTK_GAIN_SCOPE_ENV = "LEGROOM_RTK_GAIN_SCOPE"
 _RTK_GAIN_SCOPE_GLOBAL = "global"
 _RTK_GAIN_SCOPE_PROJECT = "project"
 _RTK_GAIN_SCOPES = {_RTK_GAIN_SCOPE_GLOBAL, _RTK_GAIN_SCOPE_PROJECT}
 
-RTK_STATS_CACHE_TTL_SECONDS = float(os.environ.get("HEADROOM_CONTEXT_TOOL_STATS_TTL_SECONDS", "60"))
+RTK_STATS_CACHE_TTL_SECONDS = float(os.environ.get("LEGROOM_CONTEXT_TOOL_STATS_TTL_SECONDS", "60"))
 CONTEXT_TOOL_STATS_CACHE_TTL_SECONDS = RTK_STATS_CACHE_TTL_SECONDS
 _context_tool_stats_cache_lock = threading.Lock()
 _context_tool_stats_cache: dict[str, Any] = {
@@ -537,7 +537,7 @@ MAX_REQUEST_BODY_SIZE = 100 * 1024 * 1024
 MAX_SSE_BUFFER_SIZE = 10 * 1024 * 1024
 
 # Per-event SSE size cap (PR-A8 / P1-8). Configurable via
-# HEADROOM_SSE_BUFFER_MAX_BYTES. Guards against pathological huge events
+# LEGROOM_SSE_BUFFER_MAX_BYTES. Guards against pathological huge events
 # (a single event > 1 MB by default is treated as an upstream protocol bug
 # and surfaces loudly rather than silently growing the buffer).
 _SSE_EVENT_MAX_BYTES_ENV = request_limit_policy.SSE_EVENT_MAX_BYTES_ENV
@@ -618,7 +618,7 @@ def resolve_display_provider(
 
 
 # Body-too-large status code (PR-A8 / P5-59). Default 413 (RFC 7231 §6.5.11).
-# Configurable via HEADROOM_PROXY_BODY_TOO_LARGE_STATUS for operators who need
+# Configurable via LEGROOM_PROXY_BODY_TOO_LARGE_STATUS for operators who need
 # to override (no expected production use; documentation knob).
 _BODY_TOO_LARGE_STATUS_ENV = request_limit_policy.BODY_TOO_LARGE_STATUS_ENV
 _BODY_TOO_LARGE_STATUS_DEFAULT = request_limit_policy.BODY_TOO_LARGE_STATUS_DEFAULT
@@ -681,11 +681,11 @@ def parse_sse_events_from_byte_buffer(
 MAX_MESSAGE_ARRAY_LENGTH = 10000
 
 # Compression pipeline timeout in seconds. Override via the
-# HEADROOM_COMPRESSION_TIMEOUT_SECONDS env var for slow CPUs or long Claude Code
+# LEGROOM_COMPRESSION_TIMEOUT_SECONDS env var for slow CPUs or long Claude Code
 # conversations (GH #946). Falls back to 30 on an unparseable value.
 try:
     COMPRESSION_TIMEOUT_SECONDS = float(
-        os.environ.get("HEADROOM_COMPRESSION_TIMEOUT_SECONDS", "30")
+        os.environ.get("LEGROOM_COMPRESSION_TIMEOUT_SECONDS", "30")
     )
 except ValueError:
     COMPRESSION_TIMEOUT_SECONDS = 30.0
@@ -699,7 +699,7 @@ except ValueError:
 # 30s Kompress budget). Fail-open: on timeout the request forwards as before.
 try:
     COLD_START_FAST_PASS_TIMEOUT_SECONDS = float(
-        os.environ.get("HEADROOM_COLD_START_FAST_PASS_TIMEOUT_SECONDS", "10")
+        os.environ.get("LEGROOM_COLD_START_FAST_PASS_TIMEOUT_SECONDS", "10")
     )
 except ValueError:
     COLD_START_FAST_PASS_TIMEOUT_SECONDS = 10.0
@@ -708,10 +708,10 @@ except ValueError:
 # cache-only, allow_download=False) runs off the event loop during startup; this
 # bound only fires on a true hang or an uncatchable native stall so the proxy still
 # binds its port instead of never opening (GH #790). Override via
-# HEADROOM_EAGER_PRELOAD_TIMEOUT_SECONDS. Falls back to 120 on an unparseable value.
+# LEGROOM_EAGER_PRELOAD_TIMEOUT_SECONDS. Falls back to 120 on an unparseable value.
 try:
     EAGER_PRELOAD_TIMEOUT_SECONDS = float(
-        os.environ.get("HEADROOM_EAGER_PRELOAD_TIMEOUT_SECONDS", "120")
+        os.environ.get("LEGROOM_EAGER_PRELOAD_TIMEOUT_SECONDS", "120")
     )
 except ValueError:
     EAGER_PRELOAD_TIMEOUT_SECONDS = 120.0
@@ -724,23 +724,23 @@ MAX_COMPRESSION_CACHE_SESSIONS = 500
 # Compression-failure escape hatch
 # ---------------------------------------------------------------------------
 # When the proxy's compression stage fails (timeout, exception) on a frame
-# Headroom thought was large enough to compress, the legacy behaviour was to
+# Legroom thought was large enough to compress, the legacy behaviour was to
 # fall through and forward the *original* uncompressed frame to the upstream.
 # That fail-open turned a recoverable timeout into a context-window overflow
 # downstream: Codex's auto-compaction reads ``total_usage_tokens`` from
-# upstream (which Headroom's earlier successful compressions shrunk), then
+# upstream (which Legroom's earlier successful compressions shrunk), then
 # the un-compressed retry overflows the model context and the client
 # locks up.
 #
 # Default behaviour is now fail-CLOSED: refuse to forward, close the client
 # WS with code 1009 (or return HTTP 413) so the client knows to compact and
 # retry. Operators who want the old behaviour can set
-# ``HEADROOM_WS_FAIL_OPEN_ON_COMPRESSION_FAILURE=1``. The oversize threshold
+# ``LEGROOM_WS_FAIL_OPEN_ON_COMPRESSION_FAILURE=1``. The oversize threshold
 # below which transient errors still fall through to passthrough is
-# configurable via ``HEADROOM_WS_COMPRESSION_FAIL_THRESHOLD_BYTES``
+# configurable via ``LEGROOM_WS_COMPRESSION_FAIL_THRESHOLD_BYTES``
 # (default 256 KiB ≈ 64K tokens).
-WS_COMPRESSION_FAIL_OPEN_ENV = "HEADROOM_WS_FAIL_OPEN_ON_COMPRESSION_FAILURE"
-WS_COMPRESSION_OVERSIZE_BYTES_ENV = "HEADROOM_WS_COMPRESSION_FAIL_THRESHOLD_BYTES"
+WS_COMPRESSION_FAIL_OPEN_ENV = "LEGROOM_WS_FAIL_OPEN_ON_COMPRESSION_FAILURE"
+WS_COMPRESSION_OVERSIZE_BYTES_ENV = "LEGROOM_WS_COMPRESSION_FAIL_THRESHOLD_BYTES"
 WS_COMPRESSION_OVERSIZE_BYTES_DEFAULT = 256 * 1024
 
 
@@ -779,9 +779,9 @@ def decide_compression_failure_action(
     * Codex client compression timeout → forward. Codex currently treats
       the proxy's 1009/413 refusal path as a hard connection failure, so
       fail-open is safer for Codex sessions even when the proxy is run
-      standalone rather than through ``headroom wrap codex``.
+      standalone rather than through ``legroom wrap codex``.
     * exception is :class:`asyncio.TimeoutError` → refuse (the compression
-      stage hit its own timeout, which only fires on frames Headroom
+      stage hit its own timeout, which only fires on frames Legroom
       thought were big enough to need compression in the first place).
     * ``frame_bytes`` > :data:`WS_COMPRESSION_OVERSIZE_BYTES_ENV`
       (default 256 KiB) → refuse (large + any compression failure is a
@@ -896,7 +896,7 @@ async def request_with_transient_retry(
     complete message body (incomplete chunked read)") is raised when an
     upstream closes a pooled keep-alive connection that httpx then reuses for
     the next request. A direct ``curl`` never hits this because it opens a
-    fresh connection per call; Headroom reuses pooled connections, so the
+    fresh connection per call; Legroom reuses pooled connections, so the
     first request issued on a stale connection fails even though the upstream
     is healthy (it answers a fresh connection with 200). Retrying opens a new
     connection and succeeds, mirroring curl's behaviour. See GH #1112.
@@ -938,7 +938,7 @@ def _get_image_compressor():
         return None
 
     try:
-        from headroom.image import ImageCompressor
+        from legroom.image import ImageCompressor
 
         # Callers own closing the compressor; this helper only memoizes whether
         # the optional image stack is importable.
@@ -954,25 +954,25 @@ def _get_image_compressor():
         return None
 
 
-# Always-on file logging to the workspace logs directory for `headroom perf` analysis.
-# Resolved lazily so HEADROOM_WORKSPACE_DIR env-var changes are honored.
+# Always-on file logging to the workspace logs directory for `legroom perf` analysis.
+# Resolved lazily so LEGROOM_WORKSPACE_DIR env-var changes are honored.
 
 
-def _headroom_log_dir() -> Path:
+def _legroom_log_dir() -> Path:
     return _paths.log_dir()
 
 
 def _setup_file_logging() -> None:
-    """Add a RotatingFileHandler to the headroom root logger.
+    """Add a RotatingFileHandler to the legroom root logger.
 
-    Writes to ~/.headroom/logs/proxy.log with automatic rotation:
+    Writes to ~/.legroom/logs/proxy.log with automatic rotation:
     - Rotates at 10 MB
     - Keeps 5 backups (~50 MB max)
     """
     from logging.handlers import RotatingFileHandler
 
     try:
-        log_dir = _headroom_log_dir()
+        log_dir = _legroom_log_dir()
         log_dir.mkdir(parents=True, exist_ok=True)
         log_path = log_dir / "proxy.log"
         handler = RotatingFileHandler(
@@ -985,14 +985,14 @@ def _setup_file_logging() -> None:
         handler.setFormatter(
             logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         )
-        # Attach to the headroom root logger so all sub-loggers are captured.
+        # Attach to the legroom root logger so all sub-loggers are captured.
         # Disable propagation to root to avoid duplicate writes when
         # wrap.py redirects stderr to the same log file.
-        headroom_logger = logging.getLogger("headroom")
-        headroom_logger.setLevel(logging.INFO)
-        if not any(isinstance(h, RotatingFileHandler) for h in headroom_logger.handlers):
-            headroom_logger.addHandler(handler)
-        headroom_logger.propagate = False
+        legroom_logger = logging.getLogger("legroom")
+        legroom_logger.setLevel(logging.INFO)
+        if not any(isinstance(h, RotatingFileHandler) for h in legroom_logger.handlers):
+            legroom_logger.addHandler(handler)
+        legroom_logger.propagate = False
     except OSError:
         # Non-fatal: can't write logs (read-only fs, permissions, etc.)
         pass
@@ -1073,7 +1073,7 @@ def _context_tool_summary_payload(
     """Normalize RTK/lean-ctx lifetime gain output into one schema.
 
     Both tools expose cumulative counters, but field names vary slightly.
-    Headroom computes session values by subtracting a startup baseline, so
+    Legroom computes session values by subtracting a startup baseline, so
     keeping raw input/output counters is necessary for a truthful session
     savings percentage.
     """
@@ -1182,7 +1182,7 @@ def _context_tool_zero_payload(
 def _read_rtk_lifetime_stats() -> dict[str, Any] | None:
     """Read rtk's lifetime stats using the configured gain scope."""
 
-    from headroom.rtk import get_rtk_path
+    from legroom.rtk import get_rtk_path
 
     scope = _rtk_gain_scope()
     rtk_path = get_rtk_path()
@@ -1240,7 +1240,7 @@ def _read_rtk_lifetime_stats() -> dict[str, Any] | None:
 def _read_lean_ctx_lifetime_stats() -> dict[str, Any] | None:
     """Read lean-ctx's current project-level lifetime stats."""
 
-    from headroom.lean_ctx import get_lean_ctx_path
+    from legroom.lean_ctx import get_lean_ctx_path
 
     lean_ctx_path = get_lean_ctx_path()
     if not lean_ctx_path:
@@ -1343,7 +1343,7 @@ async def initialize_rtk_session_baseline() -> None:
 
 
 def _get_context_tool_stats() -> dict[str, Any] | None:
-    """Get context-tool savings for the current Headroom proxy session.
+    """Get context-tool savings for the current Legroom proxy session.
 
     RTK and lean-ctx persist project-level lifetime counters. Dashboard stats
     should be session-local, so we subtract the counter snapshot captured at
@@ -1535,21 +1535,21 @@ def is_anthropic_auth(headers: dict[str, str]) -> bool:
 # Internal-header stripping (PR-A5 — fixes P5-49).
 # ---------------------------------------------------------------------------
 #
-# `x-headroom-*` request headers (e.g. ``x-headroom-bypass``,
-# ``x-headroom-mode``, ``x-headroom-user-id``, ``x-headroom-stack``,
-# ``x-headroom-base-url``) are internal control flags consumed by the
+# `x-legroom-*` request headers (e.g. ``x-legroom-bypass``,
+# ``x-legroom-mode``, ``x-legroom-user-id``, ``x-legroom-stack``,
+# ``x-legroom-base-url``) are internal control flags consumed by the
 # proxy itself. They MUST NOT leak upstream — leaking them would (a)
 # fingerprint the proxy to subscription enforcers and (b) expose the
 # user-id/stack/base-url internals to whichever vendor terminates the
 # request.
 #
 # Inbound read paths (bypass gating, ``_extract_tags`` reading
-# ``x-headroom-*``, memory ``x-headroom-user-id`` lookup) keep using
+# ``x-legroom-*``, memory ``x-legroom-user-id`` lookup) keep using
 # the original dict / ``request.headers``. The stripped copy is what
 # every upstream-bound forwarder receives.
 #
-# Note: response-side ``X-Headroom-*`` injection (e.g.
-# ``x-headroom-tokens-saved``) is unrelated — the proxy is allowed to
+# Note: response-side ``X-Legroom-*`` injection (e.g.
+# ``x-legroom-tokens-saved``) is unrelated — the proxy is allowed to
 # tell its client about its own work. This helper only filters
 # request-side headers.
 
@@ -1569,15 +1569,15 @@ def get_strip_internal_headers_mode() -> StripInternalHeadersMode:
 
 
 def _strip_internal_headers(headers: dict[str, str]) -> dict[str, str]:
-    """Return a copy of ``headers`` with internal ``x-headroom-*`` keys stripped.
+    """Return a copy of ``headers`` with internal ``x-legroom-*`` keys stripped.
 
     Used at every upstream call site to prevent fingerprinting / leakage of
-    internal flags like ``x-headroom-bypass``, ``x-headroom-mode``,
-    ``x-headroom-user-id``, ``x-headroom-stack``, ``x-headroom-base-url``.
+    internal flags like ``x-legroom-bypass``, ``x-legroom-mode``,
+    ``x-legroom-user-id``, ``x-legroom-stack``, ``x-legroom-base-url``.
     Case-insensitive on the prefix. Returns a NEW dict; never mutates the
     caller's mapping. Pure function. No regex.
 
-    When the operator opt-in ``HEADROOM_STRIP_INTERNAL_HEADERS=disabled``
+    When the operator opt-in ``LEGROOM_STRIP_INTERNAL_HEADERS=disabled``
     is set, returns a shallow copy unchanged. That mode is for diagnostic
     shadow tracing only and is documented as a per-deploy choice.
     """
@@ -1635,7 +1635,7 @@ def log_outbound_headers(
 #      did an ad-hoc concat of `context-management-2025-06-27` onto the
 #      client value (anthropic.py:1244-1248) — every variant produced a
 #      different byte sequence and the order was undefined when the same
-#      client value already contained a Headroom-required token.
+#      client value already contained a Legroom-required token.
 #
 #   2. Token drop-out across turns: clients (Claude Code, Codex CLI) MAY
 #      drop a beta token between turn N and turn N+1 even when the proxy
@@ -1646,7 +1646,7 @@ def log_outbound_headers(
 # PR-A6 introduces:
 #   * `merge_anthropic_beta` / `merge_openai_beta`: deterministic, pure,
 #     order-preserving merge. Client tokens first (in their original order),
-#     then Headroom-required tokens (in the order passed). Dedupe is
+#     then Legroom-required tokens (in the order passed). Dedupe is
 #     case-insensitive but preserves original casing of first occurrence.
 #     Per Anthropic guide §6.3 #6: sticky-on means we add but never reorder.
 #
@@ -1658,7 +1658,7 @@ def log_outbound_headers(
 #     1000 sessions) prevents unbounded growth. Reentrant lock so future
 #     callers from inside another locked method don't self-deadlock.
 #
-# Operator opt-in `HEADROOM_BETA_HEADER_STICKY=disabled` short-circuits
+# Operator opt-in `LEGROOM_BETA_HEADER_STICKY=disabled` short-circuits
 # the tracker (returns the client value verbatim). That mode is loud and
 # explicit per realignment build constraint #4 — NOT a silent fallback.
 
@@ -1745,7 +1745,7 @@ class SessionBetaTracker:
         path — note WS sessions are short-lived and won't accumulate
         cross-turn).
 
-        When `HEADROOM_BETA_HEADER_STICKY=disabled` returns the client
+        When `LEGROOM_BETA_HEADER_STICKY=disabled` returns the client
         value verbatim (operator diagnostic opt-in; documented as a
         per-deploy choice, NOT a silent fallback).
 
@@ -1809,7 +1809,7 @@ _session_beta_tracker: SessionBetaTracker | None = None
 def get_session_beta_tracker() -> SessionBetaTracker:
     """Return the process-wide `SessionBetaTracker` singleton.
 
-    Lazily constructed so the env-var bound (`HEADROOM_BETA_TRACKER_MAX_SESSIONS`)
+    Lazily constructed so the env-var bound (`LEGROOM_BETA_TRACKER_MAX_SESSIONS`)
     is honored at first use. Tests use `_reset_session_beta_tracker_for_test`.
     """
     global _session_beta_tracker
@@ -1832,26 +1832,26 @@ def log_beta_header_merge(
     session_id: str | None,
     client_betas_count: int,
     sticky_betas_count: int,
-    headroom_added: list[str],
+    legroom_added: list[str],
     request_id: str | None,
 ) -> None:
     """Structured log for every cache-affecting beta-header merge.
 
-    `headroom_added` is a list of public, documented beta tokens
+    `legroom_added` is a list of public, documented beta tokens
     (e.g. ``context-management-2025-06-27``,
     ``responses_websockets=2026-02-06``) — safe to log. We intentionally
     do NOT log the raw client value because beta tokens, while public,
     can carry experiment IDs the user has not opted to share with
-    Headroom logs. Emitting counts only makes the decision auditable.
+    Legroom logs. Emitting counts only makes the decision auditable.
     """
     logger.info(
         "event=beta_header_merge provider=%s session_id=%s "
-        "client_betas=%d sticky_betas=%d headroom_added=%s request_id=%s",
+        "client_betas=%d sticky_betas=%d legroom_added=%s request_id=%s",
         provider,
         session_id or "",
         client_betas_count,
         sticky_betas_count,
-        ",".join(headroom_added) if headroom_added else "",
+        ",".join(legroom_added) if legroom_added else "",
         request_id or "",
     )
 
@@ -1887,7 +1887,7 @@ def log_beta_header_merge(
 # tool definition object so they are deterministic across deploys
 # regardless of dict insertion ordering quirks.
 #
-# Operator opt-in `HEADROOM_TOOL_INJECTION_STICKY=disabled` short-
+# Operator opt-in `LEGROOM_TOOL_INJECTION_STICKY=disabled` short-
 # circuits the tracker; per-turn decision flows through unchanged. That
 # mode is loud and explicit per realignment build constraint #4 — NOT a
 # silent fallback. It exists for diagnostic shadow tracing / emergency
@@ -1916,8 +1916,8 @@ def serialize_tool_definition_canonical(tool_definition: dict[str, Any]) -> byte
     no ASCII escaping). Python 3.7+ dict insertion order is preserved by
     ``json.dumps`` so callers must construct the tool definition with a
     stable key order — which the static schemas in
-    ``headroom/proxy/memory_handler.py`` and
-    ``headroom/proxy/memory_tool_adapter.py`` already do.
+    ``legroom/proxy/memory_handler.py`` and
+    ``legroom/proxy/memory_tool_adapter.py`` already do.
 
     Returned bytes pin the golden tool definition for a session: every
     follow-up turn must inject byte-equal output to keep the prefix
@@ -1945,7 +1945,7 @@ def get_session_tool_tracker() -> SessionToolTracker:
     """Return the process-wide `SessionToolTracker` singleton.
 
     Lazily constructed so the env-var bound
-    (`HEADROOM_TOOL_TRACKER_MAX_SESSIONS`) is honored at first use.
+    (`LEGROOM_TOOL_TRACKER_MAX_SESSIONS`) is honored at first use.
     Tests use ``_reset_session_tool_tracker_for_test``.
     """
     global _session_tool_tracker
@@ -2015,7 +2015,7 @@ def apply_session_sticky_memory_tools(
 
     Logic (guide §6.3 #2):
 
-      * If ``HEADROOM_TOOL_INJECTION_STICKY=disabled``: bypass tracker,
+      * If ``LEGROOM_TOOL_INJECTION_STICKY=disabled``: bypass tracker,
         inject only when ``inject_this_turn`` is True. Diagnostic mode.
 
       * If session previously injected and tracker has golden bytes:
@@ -2192,7 +2192,7 @@ def apply_session_sticky_memory_tools(
 #
 # Per realignment plan PR-B7 (`REALIGNMENT/04-phase-B-live-zone.md`):
 # once a session has performed any CCR compression, the
-# `headroom_retrieve` tool stays registered in `body["tools"]` for every
+# `legroom_retrieve` tool stays registered in `body["tools"]` for every
 # subsequent request in that session — never toggled off.
 #
 # The legacy `CCRToolInjector.has_compressed_content` flips on/off based
@@ -2264,7 +2264,7 @@ def should_inject_ccr_tool(
     frozen_message_count: int,
     has_compressed_content: bool,
 ) -> tuple[bool, bool]:
-    """Decide whether the ``headroom_retrieve`` tool must be injected this turn.
+    """Decide whether the ``legroom_retrieve`` tool must be injected this turn.
 
     This is the decision the Anthropic handler used to inline. It is extracted
     so the #1006 regression can be pinned at the decision point itself.
@@ -2319,7 +2319,7 @@ def apply_session_sticky_ccr_tool(
     Returns ``(updated_tools, was_injected)``. ``updated_tools`` is a
     fresh list (caller-safe).
     """
-    from headroom.ccr.tool_injection import CCR_TOOL_NAME
+    from legroom.ccr.tool_injection import CCR_TOOL_NAME
 
     if provider not in ("anthropic", "openai", "google"):
         raise ValueError(f"unsupported provider: {provider!r}")
@@ -2707,7 +2707,7 @@ def compute_turn_id(
 # local context window — tens of K tokens. That decision is made client-side
 # before the request reaches us, so the proxy cannot reverse it; the only
 # remedy is the ``ENABLE_TOOL_SEARCH`` env var (set automatically by
-# ``headroom wrap claude``). For users who run ``claude`` manually we cannot
+# ``legroom wrap claude``). For users who run ``claude`` manually we cannot
 # touch their environment, so the proxy emits a single actionable hint.
 # ---------------------------------------------------------------------------
 
@@ -2769,8 +2769,8 @@ def format_tool_search_disabled_hint(tools: list[Any]) -> str:
         f"(~{schema_kb:.0f} KB of tool schema in local context) because "
         "ENABLE_TOOL_SEARCH is unset with a custom ANTHROPIC_BASE_URL. Set "
         "ENABLE_TOOL_SEARCH=true (or auto) to keep on-demand tool loading active, "
-        "or launch via `headroom wrap claude` (which sets it automatically). "
-        "See https://github.com/ghaliba3/headroom/issues/746"
+        "or launch via `legroom wrap claude` (which sets it automatically). "
+        "See https://github.com/legroom-ai/legroom-ai.github.io/issues/746"
     )
 
 
@@ -2943,7 +2943,7 @@ _OPENAI_TOOL_SEARCH_MIN_TOOLS = 12
 _OPENAI_TOOL_SEARCH_RESIDENT_NAMES = frozenset({"terminal"})
 # gpt-5.4 is the first model with Responses tool_search (OpenAI docs). Version-
 # gated by default; overridable per deployment via a regex in
-# HEADROOM_OPENAI_TOOL_SEARCH_MODELS (matched against the model name) so new
+# LEGROOM_OPENAI_TOOL_SEARCH_MODELS (matched against the model name) so new
 # model families can be enabled without a code edit + release.
 _OPENAI_TOOL_SEARCH_MIN_VERSION = (5, 4)
 
@@ -2952,13 +2952,13 @@ def _model_supports_openai_tool_search(model: str | None) -> bool:
     """True when an OpenAI model supports the Responses ``tool_search`` feature.
 
     Default gate: ``gpt-<major>.<minor>`` >= 5.4. A regex in
-    ``HEADROOM_OPENAI_TOOL_SEARCH_MODELS`` (matched against the model name) wins
+    ``LEGROOM_OPENAI_TOOL_SEARCH_MODELS`` (matched against the model name) wins
     when set; a malformed pattern falls back to the version gate rather than
     crashing.
     """
     if not model:
         return False
-    override = os.environ.get("HEADROOM_OPENAI_TOOL_SEARCH_MODELS", "").strip()
+    override = os.environ.get("LEGROOM_OPENAI_TOOL_SEARCH_MODELS", "").strip()
     if override:
         try:
             return re.search(override, model) is not None

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from headroom.providers.cloudcode import normalize_cloudcode_passthrough_path
+from legroom.providers.cloudcode import normalize_cloudcode_passthrough_path
 
 
 def test_normalize_cloudcode_passthrough_path_accepts_internal_routes() -> None:

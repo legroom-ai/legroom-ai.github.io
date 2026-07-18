@@ -11,7 +11,7 @@ const mocked = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("headroom-ai", () => ({
+vi.mock("legroom-ai", () => ({
   compress: vi.fn(),
 }));
 
@@ -23,7 +23,7 @@ vi.mock("../src/proxy-manager.js", () => ({
   defaultLogger: mocked.logger,
 }));
 
-import { HeadroomContextEngine } from "../src/engine.js";
+import { LegroomContextEngine } from "../src/engine.js";
 
 afterEach(() => {
   mocked.start.mockReset();
@@ -35,9 +35,9 @@ afterEach(() => {
   mocked.logger.warn.mockClear();
 });
 
-describe("HeadroomContextEngine proxy startup helpers", () => {
+describe("LegroomContextEngine proxy startup helpers", () => {
   it("bootstraps by scheduling proxy startup when enabled", async () => {
-    const engine = new HeadroomContextEngine();
+    const engine = new LegroomContextEngine();
 
     await expect(
       engine.bootstrap({
@@ -52,7 +52,7 @@ describe("HeadroomContextEngine proxy startup helpers", () => {
   });
 
   it("removes unsubscribed proxy listeners before notifying readiness", async () => {
-    const engine = new HeadroomContextEngine();
+    const engine = new LegroomContextEngine();
     const first = vi.fn();
     const second = vi.fn();
 
@@ -68,7 +68,7 @@ describe("HeadroomContextEngine proxy startup helpers", () => {
   });
 
   it("returns the existing proxy URL without starting again", async () => {
-    const engine = new HeadroomContextEngine();
+    const engine = new LegroomContextEngine();
 
     (engine as { proxyUrl: string | null }).proxyUrl = "http://127.0.0.1:8787";
 
@@ -77,9 +77,9 @@ describe("HeadroomContextEngine proxy startup helpers", () => {
   });
 
   it("throws when proxy startup is disabled", async () => {
-    const engine = new HeadroomContextEngine({ enabled: false });
+    const engine = new LegroomContextEngine({ enabled: false });
 
-    await expect(engine.ensureProxyUrl()).rejects.toThrow("Headroom proxy startup is disabled");
+    await expect(engine.ensureProxyUrl()).rejects.toThrow("Legroom proxy startup is disabled");
     expect(mocked.start).not.toHaveBeenCalled();
   });
 
@@ -87,7 +87,7 @@ describe("HeadroomContextEngine proxy startup helpers", () => {
     mocked.start.mockReset();
     mocked.start.mockRejectedValue(new Error("proxy boom"));
 
-    const engine = new HeadroomContextEngine();
+    const engine = new LegroomContextEngine();
     const unhandled: unknown[] = [];
     const onUnhandled = (reason: unknown) => unhandled.push(reason);
     process.on("unhandledRejection", onUnhandled);
@@ -100,7 +100,7 @@ describe("HeadroomContextEngine proxy startup helpers", () => {
 
       expect(unhandled).toEqual([]);
       expect(mocked.logger.warn).toHaveBeenCalledWith(
-        expect.stringContaining("Headroom proxy unavailable"),
+        expect.stringContaining("Legroom proxy unavailable"),
       );
     } finally {
       process.off("unhandledRejection", onUnhandled);
@@ -112,7 +112,7 @@ describe("HeadroomContextEngine proxy startup helpers", () => {
     mocked.start.mockReset();
     mocked.start.mockRejectedValue(failure);
 
-    const engine = new HeadroomContextEngine();
+    const engine = new LegroomContextEngine();
     expect(engine.getProxyStartupError()).toBeNull();
 
     engine.ensureProxyStarted();
@@ -127,7 +127,7 @@ describe("HeadroomContextEngine proxy startup helpers", () => {
       .mockRejectedValueOnce(new Error("proxy boom"))
       .mockResolvedValueOnce("http://127.0.0.1:8787");
 
-    const engine = new HeadroomContextEngine();
+    const engine = new LegroomContextEngine();
 
     engine.ensureProxyStarted();
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -145,7 +145,7 @@ describe("HeadroomContextEngine proxy startup helpers", () => {
     mocked.start.mockReset();
     mocked.start.mockRejectedValue(failure);
 
-    const engine = new HeadroomContextEngine();
+    const engine = new LegroomContextEngine();
     const unhandled: unknown[] = [];
     const onUnhandled = (reason: unknown) => unhandled.push(reason);
     process.on("unhandledRejection", onUnhandled);
@@ -160,7 +160,7 @@ describe("HeadroomContextEngine proxy startup helpers", () => {
   });
 
   it("isolates and logs proxy-ready listener rejections", async () => {
-    const engine = new HeadroomContextEngine();
+    const engine = new LegroomContextEngine();
     const failing = vi.fn(async () => {
       throw new Error("listener boom");
     });
@@ -176,13 +176,13 @@ describe("HeadroomContextEngine proxy startup helpers", () => {
     expect(failing).toHaveBeenCalled();
     expect(healthy).toHaveBeenCalledWith("http://127.0.0.1:8787");
     expect(mocked.logger.warn).toHaveBeenCalledWith(
-      expect.stringContaining("Headroom proxy ready listener failed"),
+      expect.stringContaining("Legroom proxy ready listener failed"),
     );
     expect(engine.getProxyStartupError()).toBeNull();
   });
 
   it("schedules startup and returns original messages when assembling before proxy readiness", async () => {
-    const engine = new HeadroomContextEngine();
+    const engine = new LegroomContextEngine();
     const messages = [{ role: "user", content: "hello" }];
 
     await expect(

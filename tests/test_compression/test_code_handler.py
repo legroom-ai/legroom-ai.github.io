@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from headroom.compression.handlers.code_handler import (
+from legroom.compression.handlers.code_handler import (
     CodeStructureHandler,
     _check_tree_sitter,
     is_tree_sitter_available,
@@ -140,7 +140,7 @@ class TestAvailabilityProbe:
     def test_abi_mismatch_returns_false(self):
         import types
 
-        import headroom.compression.handlers.code_handler as mod
+        import legroom.compression.handlers.code_handler as mod
 
         mod._tree_sitter_available = None
 
@@ -170,7 +170,7 @@ class TestAvailabilityProbe:
 
     @requires_tree_sitter
     def test_healthy_install_returns_true(self):
-        import headroom.compression.handlers.code_handler as mod
+        import legroom.compression.handlers.code_handler as mod
 
         mod._tree_sitter_available = None
         assert _check_tree_sitter() is True

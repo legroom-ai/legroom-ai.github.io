@@ -1,6 +1,6 @@
 //! Content type detection for multi-format compression.
 //!
-//! Direct port of `headroom/transforms/content_detector.py`. This module
+//! Direct port of `legroom/transforms/content_detector.py`. This module
 //! detects the type of tool output content so the upstream
 //! `ContentRouter` can dispatch it to the right compressor:
 //!

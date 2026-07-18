@@ -36,7 +36,7 @@ async fn upstream_anthropic_request_id_captured() {
     // surfaced under the side-channel header.
     let echoed = resp
         .headers()
-        .get("headroom-upstream-request-id")
+        .get("legroom-upstream-request-id")
         .and_then(|v| v.to_str().ok());
     assert_eq!(echoed, Some(upstream_id));
     // The original `request-id` header is also forwarded.
@@ -73,7 +73,7 @@ async fn upstream_openai_x_request_id_captured() {
     assert_eq!(resp.status(), 200);
     let echoed = resp
         .headers()
-        .get("headroom-upstream-request-id")
+        .get("legroom-upstream-request-id")
         .and_then(|v| v.to_str().ok());
     assert_eq!(echoed, Some(upstream_id));
     proxy.shutdown().await;

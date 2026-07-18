@@ -26,17 +26,17 @@ from typing import Any
 
 import litellm
 
-from headroom.evals.memory.locomo import (
+from legroom.evals.memory.locomo import (
     LOCOMO_CATEGORIES,
     LoCoMoCase,
     LoCoMoConversation,
     load_locomo,
 )
-from headroom.evals.metrics import compute_exact_match, compute_f1
-from headroom.memory.backends.local import LocalBackend, LocalBackendConfig
-from headroom.memory.models import Memory
-from headroom.memory.system import MemoryBackend
-from headroom.memory.tools import MEMORY_TOOLS
+from legroom.evals.metrics import compute_exact_match, compute_f1
+from legroom.memory.backends.local import LocalBackend, LocalBackendConfig
+from legroom.memory.models import Memory
+from legroom.memory.system import MemoryBackend
+from legroom.memory.tools import MEMORY_TOOLS
 
 logger = logging.getLogger(__name__)
 
@@ -804,7 +804,7 @@ The answer should contain ONLY the specific information requested, nothing more.
 
         if self._config.llm_judge_enabled:
             try:
-                from headroom.evals.memory.judge import create_litellm_judge
+                from legroom.evals.memory.judge import create_litellm_judge
 
                 judge_fn = create_litellm_judge(model=self._config.llm_judge_model)
                 llm_judge_score, llm_judge_reasoning = judge_fn(

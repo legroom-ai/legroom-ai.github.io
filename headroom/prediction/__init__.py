@@ -11,7 +11,7 @@ Features are organized into 5 categories:
 5. Meta - Model settings, historical patterns
 
 Example:
-    from headroom.prediction import PromptFeatureExtractor, extract_features
+    from legroom.prediction import PromptFeatureExtractor, extract_features
 
     # Full extractor (with embeddings)
     extractor = PromptFeatureExtractor(use_embeddings=True)
@@ -25,7 +25,7 @@ Example:
     names = features.feature_names()
 
 Install full dependencies:
-    pip install headroom[prediction]
+    pip install legroom[prediction]
 
 This installs:
     - sentence-transformers (for embedding features)

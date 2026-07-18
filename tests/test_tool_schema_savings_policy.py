@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from headroom.proxy.tool_schema_savings_policy import (
+from legroom.proxy.tool_schema_savings_policy import (
     TOOL_SCHEMA_SAVINGS_TAGS,
     tool_schema_saved_from_tags,
 )
 
 
-def test_tool_schema_saved_from_tags_sums_headroom_deferral_tags() -> None:
+def test_tool_schema_saved_from_tags_sums_legroom_deferral_tags() -> None:
     assert (
         tool_schema_saved_from_tags(
             {

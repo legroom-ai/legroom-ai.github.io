@@ -1,4 +1,4 @@
-"""SQLite storage implementation for Headroom SDK."""
+"""SQLite storage implementation for Legroom SDK."""
 
 from __future__ import annotations
 

@@ -1,6 +1,6 @@
 //! BM25 keyword relevance scorer.
 //!
-//! Direct port of `headroom/relevance/bm25.py`. Zero ML dependencies —
+//! Direct port of `legroom/relevance/bm25.py`. Zero ML dependencies —
 //! pure-Rust regex tokenization + integer arithmetic. Excellent for
 //! exact-match cases (UUIDs, numeric IDs, tool-call argument values
 //! that appear verbatim in the response).

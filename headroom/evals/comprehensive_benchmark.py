@@ -1,10 +1,10 @@
 """Comprehensive LLM Benchmarks using EleutherAI lm-evaluation-harness.
 
-This module runs industry-standard benchmarks to prove Headroom preserves accuracy.
+This module runs industry-standard benchmarks to prove Legroom preserves accuracy.
 
 Approach:
 1. Run benchmarks directly against LLM provider (baseline)
-2. Run same benchmarks through Headroom proxy
+2. Run same benchmarks through Legroom proxy
 3. Compare scores - goal is accuracy preserved or improved
 
 Supported benchmarks:
@@ -16,13 +16,13 @@ Supported benchmarks:
 
 Usage:
     # Quick test (5 samples per task)
-    python -m headroom.evals.comprehensive_benchmark --quick
+    python -m legroom.evals.comprehensive_benchmark --quick
 
     # Full benchmark
-    python -m headroom.evals.comprehensive_benchmark --tasks mmlu,hellaswag
+    python -m legroom.evals.comprehensive_benchmark --tasks mmlu,hellaswag
 
     # Compare with baseline
-    python -m headroom.evals.comprehensive_benchmark --compare
+    python -m legroom.evals.comprehensive_benchmark --compare
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from headroom._subprocess import run
+from legroom._subprocess import run
 
 logger = logging.getLogger(__name__)
 
@@ -94,33 +94,33 @@ class BenchmarkResult:
 
 @dataclass
 class ComparisonResult:
-    """Comparison between baseline and Headroom results."""
+    """Comparison between baseline and Legroom results."""
 
     task: str
     metric: str
     baseline_score: float
-    headroom_score: float
+    legroom_score: float
 
     @property
     def delta(self) -> float:
-        return self.headroom_score - self.baseline_score
+        return self.legroom_score - self.baseline_score
 
     @property
     def accuracy_preserved(self) -> bool:
-        """True if Headroom score is within 2% of baseline."""
-        return self.headroom_score >= self.baseline_score - 0.02
+        """True if Legroom score is within 2% of baseline."""
+        return self.legroom_score >= self.baseline_score - 0.02
 
     @property
     def accuracy_improved(self) -> bool:
-        """True if Headroom score exceeds baseline."""
-        return self.headroom_score > self.baseline_score
+        """True if Legroom score exceeds baseline."""
+        return self.legroom_score > self.baseline_score
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "task": self.task,
             "metric": self.metric,
             "baseline": round(self.baseline_score, 4),
-            "headroom": round(self.headroom_score, 4),
+            "legroom": round(self.legroom_score, 4),
             "delta": round(self.delta, 4),
             "preserved": self.accuracy_preserved,
             "improved": self.accuracy_improved,
@@ -133,7 +133,7 @@ class BenchmarkSuiteResult:
 
     model: str
     baseline_results: list[BenchmarkResult] = field(default_factory=list)
-    headroom_results: list[BenchmarkResult] = field(default_factory=list)
+    legroom_results: list[BenchmarkResult] = field(default_factory=list)
     comparisons: list[ComparisonResult] = field(default_factory=list)
     total_duration_seconds: float = 0.0
 
@@ -146,7 +146,7 @@ class BenchmarkSuiteResult:
 
     @property
     def avg_delta(self) -> float:
-        """Average score delta (positive = Headroom better)."""
+        """Average score delta (positive = Legroom better)."""
         if not self.comparisons:
             return 0.0
         return sum(c.delta for c in self.comparisons) / len(self.comparisons)
@@ -158,37 +158,37 @@ class BenchmarkSuiteResult:
             "avg_delta": round(self.avg_delta, 4),
             "total_duration_seconds": round(self.total_duration_seconds, 2),
             "baseline": [r.to_dict() for r in self.baseline_results],
-            "headroom": [r.to_dict() for r in self.headroom_results],
+            "legroom": [r.to_dict() for r in self.legroom_results],
             "comparisons": [c.to_dict() for c in self.comparisons],
         }
 
     def print_summary(self) -> None:
         """Print a formatted summary to stdout."""
         print("\n" + "=" * 70)
-        print("HEADROOM COMPREHENSIVE BENCHMARK RESULTS")
+        print("LEGROOM COMPREHENSIVE BENCHMARK RESULTS")
         print("=" * 70)
         print(f"Model: {self.model}")
         print(f"Duration: {self.total_duration_seconds:.1f}s")
         print()
 
         if self.comparisons:
-            print(f"{'Task':<20} {'Baseline':>10} {'Headroom':>10} {'Delta':>10} {'Status':>10}")
+            print(f"{'Task':<20} {'Baseline':>10} {'Legroom':>10} {'Delta':>10} {'Status':>10}")
             print("-" * 70)
             for c in self.comparisons:
                 status = "PASS" if c.accuracy_preserved else "FAIL"
                 delta_str = f"{c.delta:+.4f}"
                 print(
-                    f"{c.task:<20} {c.baseline_score:>10.4f} {c.headroom_score:>10.4f} {delta_str:>10} {status:>10}"
+                    f"{c.task:<20} {c.baseline_score:>10.4f} {c.legroom_score:>10.4f} {delta_str:>10} {status:>10}"
                 )
             print("-" * 70)
             print(f"{'AVERAGE':<20} {'':<10} {'':<10} {self.avg_delta:>+10.4f}")
             print()
             print(f"ALL BENCHMARKS PASSED: {'YES' if self.all_preserved else 'NO'}")
         else:
-            print("Headroom results only (no baseline comparison):")
+            print("Legroom results only (no baseline comparison):")
             print(f"{'Task':<20} {'Score':>10} {'Metric':<15}")
             print("-" * 50)
-            for r in self.headroom_results:
+            for r in self.legroom_results:
                 print(f"{r.task:<20} {r.score:>10.4f} {r.metric:<15}")
 
         print("=" * 70 + "\n")
@@ -212,7 +212,7 @@ def run_lm_eval(
         num_fewshot: Number of few-shot examples
         limit: Limit samples per task (for quick testing)
         output_path: Where to save results
-        base_url: Base URL for API (for Headroom proxy)
+        base_url: Base URL for API (for Legroom proxy)
 
     Returns:
         Dictionary with results from lm-eval
@@ -402,17 +402,17 @@ def run_baseline_benchmark(
     return parse_lm_eval_results(raw_results)
 
 
-def run_headroom_benchmark(
+def run_legroom_benchmark(
     model: str = "gpt-4o-mini",
     tasks: list[str] | None = None,
     limit: int | None = None,
-    headroom_port: int = 8787,
+    legroom_port: int = 8787,
 ) -> list[BenchmarkResult]:
-    """Run benchmark through Headroom proxy."""
-    logger.info(f"Running Headroom benchmark with {model} through proxy...")
+    """Run benchmark through Legroom proxy."""
+    logger.info(f"Running Legroom benchmark with {model} through proxy...")
 
     # lm_eval expects base_url to be the full path to chat/completions
-    base_url = f"http://localhost:{headroom_port}/v1/chat/completions"
+    base_url = f"http://localhost:{legroom_port}/v1/chat/completions"
 
     # Get API key from environment
     api_key = os.environ.get("OPENAI_API_KEY", "")
@@ -432,25 +432,25 @@ def run_headroom_benchmark(
 
 def compare_results(
     baseline: list[BenchmarkResult],
-    headroom: list[BenchmarkResult],
+    legroom: list[BenchmarkResult],
 ) -> list[ComparisonResult]:
-    """Compare baseline and Headroom results."""
+    """Compare baseline and Legroom results."""
     comparisons = []
 
     # Match results by task
     baseline_by_task = {r.task: r for r in baseline}
-    headroom_by_task = {r.task: r for r in headroom}
+    legroom_by_task = {r.task: r for r in legroom}
 
     for task in baseline_by_task:
-        if task in headroom_by_task:
+        if task in legroom_by_task:
             b = baseline_by_task[task]
-            h = headroom_by_task[task]
+            h = legroom_by_task[task]
             comparisons.append(
                 ComparisonResult(
                     task=task,
                     metric=b.metric,
                     baseline_score=b.score,
-                    headroom_score=h.score,
+                    legroom_score=h.score,
                 )
             )
 
@@ -462,7 +462,7 @@ def run_comprehensive_benchmark(
     tasks: list[str] | None = None,
     limit: int | None = None,
     compare_baseline: bool = True,
-    headroom_port: int = 8787,
+    legroom_port: int = 8787,
 ) -> BenchmarkSuiteResult:
     """Run comprehensive benchmark suite.
 
@@ -471,7 +471,7 @@ def run_comprehensive_benchmark(
         tasks: List of benchmark tasks
         limit: Limit samples per task (for quick testing)
         compare_baseline: Whether to run baseline comparison
-        headroom_port: Port where Headroom proxy is running
+        legroom_port: Port where Legroom proxy is running
 
     Returns:
         BenchmarkSuiteResult with all results
@@ -482,7 +482,7 @@ def run_comprehensive_benchmark(
     suite = BenchmarkSuiteResult(model=model)
 
     # Run baseline FIRST to warm up OpenAI infrastructure (KV cache, prefix caching)
-    # This ensures a fair comparison - any speedup from Headroom is real, not from warm cache
+    # This ensures a fair comparison - any speedup from Legroom is real, not from warm cache
     if compare_baseline:
         suite.baseline_results = run_baseline_benchmark(
             model=model,
@@ -490,24 +490,24 @@ def run_comprehensive_benchmark(
             limit=limit,
         )
 
-    # Run Headroom benchmark (after baseline warms things up)
-    suite.headroom_results = run_headroom_benchmark(
+    # Run Legroom benchmark (after baseline warms things up)
+    suite.legroom_results = run_legroom_benchmark(
         model=model,
         tasks=tasks,
         limit=limit,
-        headroom_port=headroom_port,
+        legroom_port=legroom_port,
     )
 
     # Compare results
     if compare_baseline:
-        suite.comparisons = compare_results(suite.baseline_results, suite.headroom_results)
+        suite.comparisons = compare_results(suite.baseline_results, suite.legroom_results)
 
     suite.total_duration_seconds = time.time() - start_time
     return suite
 
 
-def check_headroom_proxy(port: int = 8787) -> bool:
-    """Check if Headroom proxy is running."""
+def check_legroom_proxy(port: int = 8787) -> bool:
+    """Check if Legroom proxy is running."""
     import socket
 
     try:
@@ -536,7 +536,7 @@ def main() -> None:
     _load_env()
 
     parser = argparse.ArgumentParser(
-        description="Run comprehensive LLM benchmarks to verify Headroom accuracy"
+        description="Run comprehensive LLM benchmarks to verify Legroom accuracy"
     )
     parser.add_argument(
         "--model", "-m", default="gpt-4o-mini", help="Model to benchmark (default: gpt-4o-mini)"
@@ -552,14 +552,14 @@ def main() -> None:
     )
     parser.add_argument("--limit", "-l", type=int, default=None, help="Limit samples per task")
     parser.add_argument(
-        "--compare", "-c", action="store_true", help="Compare with baseline (run without Headroom)"
+        "--compare", "-c", action="store_true", help="Compare with baseline (run without Legroom)"
     )
     parser.add_argument(
-        "--port", "-p", type=int, default=8787, help="Headroom proxy port (default: 8787)"
+        "--port", "-p", type=int, default=8787, help="Legroom proxy port (default: 8787)"
     )
     parser.add_argument("--output", "-o", default=None, help="Output file for results JSON")
     parser.add_argument(
-        "--headroom-only", action="store_true", help="Only run through Headroom (skip baseline)"
+        "--legroom-only", action="store_true", help="Only run through Legroom (skip baseline)"
     )
 
     args = parser.parse_args()
@@ -576,13 +576,13 @@ def main() -> None:
         limit = 5
 
     # Check proxy is running
-    if not check_headroom_proxy(args.port):
-        print(f"ERROR: Headroom proxy not running on port {args.port}")
-        print(f"Start it with: headroom proxy --port {args.port}")
+    if not check_legroom_proxy(args.port):
+        print(f"ERROR: Legroom proxy not running on port {args.port}")
+        print(f"Start it with: legroom proxy --port {args.port}")
         sys.exit(1)
 
     # Run benchmarks
-    compare = args.compare and not args.headroom_only
+    compare = args.compare and not args.legroom_only
 
     try:
         result = run_comprehensive_benchmark(
@@ -590,7 +590,7 @@ def main() -> None:
             tasks=tasks,
             limit=limit,
             compare_baseline=compare,
-            headroom_port=args.port,
+            legroom_port=args.port,
         )
     except Exception as e:
         print(f"ERROR: Benchmark failed: {e}")

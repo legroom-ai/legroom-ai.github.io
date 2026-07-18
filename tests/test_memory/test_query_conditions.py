@@ -6,8 +6,8 @@
 
 from __future__ import annotations
 
-from headroom.memory.adapters.sqlite import SQLiteMemoryStore
-from headroom.memory.ports import MemoryFilter
+from legroom.memory.adapters.sqlite import SQLiteMemoryStore
+from legroom.memory.ports import MemoryFilter
 
 
 def _conditions(**kwargs) -> tuple[list[str], list]:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from headroom.transforms.content_detector import (
+from legroom.transforms.content_detector import (
     ContentType,
     _try_detect_code,
     _try_detect_diff,
@@ -14,7 +14,7 @@ from headroom.transforms.content_detector import (
     is_json_array_of_dicts,
     normalize_concatenated_json,
 )
-from headroom.transforms.error_detection import (
+from legroom.transforms.error_detection import (
     ERROR_INDICATOR_KEYWORDS,
     ERROR_KEYWORDS,
     ERROR_PATTERN,

@@ -1,4 +1,4 @@
-"""Transform modules for Headroom SDK."""
+"""Transform modules for Legroom SDK."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     # Expose concrete types to static analysis while keeping runtime imports lazy.
-    from headroom.transforms.anchor_selector import (  # noqa: F401
+    from legroom.transforms.anchor_selector import (  # noqa: F401
         AnchorSelector,
         AnchorStrategy,
         AnchorWeights,
@@ -16,9 +16,9 @@ if TYPE_CHECKING:
         calculate_information_score,
         compute_item_hash,
     )
-    from headroom.transforms.base import Transform  # noqa: F401
-    from headroom.transforms.cache_aligner import CacheAligner  # noqa: F401
-    from headroom.transforms.code_compressor import (  # noqa: F401
+    from legroom.transforms.base import Transform  # noqa: F401
+    from legroom.transforms.cache_aligner import CacheAligner  # noqa: F401
+    from legroom.transforms.code_compressor import (  # noqa: F401
         CodeAwareCompressor,
         CodeCompressionResult,
         CodeCompressorConfig,
@@ -27,41 +27,41 @@ if TYPE_CHECKING:
         detect_language,
         is_tree_sitter_available,
     )
-    from headroom.transforms.content_detector import (  # noqa: F401
+    from legroom.transforms.content_detector import (  # noqa: F401
         ContentType,
         DetectionResult,
         detect_content_type,
     )
-    from headroom.transforms.content_router import (  # noqa: F401
+    from legroom.transforms.content_router import (  # noqa: F401
         CompressionStrategy,
         ContentRouter,
         ContentRouterConfig,
         RouterCompressionResult,
     )
-    from headroom.transforms.diff_compressor import (  # noqa: F401
+    from legroom.transforms.diff_compressor import (  # noqa: F401
         DiffCompressionResult,
         DiffCompressor,
         DiffCompressorConfig,
     )
-    from headroom.transforms.html_extractor import (  # noqa: F401
+    from legroom.transforms.html_extractor import (  # noqa: F401
         HTMLExtractionResult,
         HTMLExtractor,
         HTMLExtractorConfig,
         is_html_content,
     )
-    from headroom.transforms.log_compressor import (  # noqa: F401
+    from legroom.transforms.log_compressor import (  # noqa: F401
         LogCompressionResult,
         LogCompressor,
         LogCompressorConfig,
     )
-    from headroom.transforms.pipeline import TransformPipeline  # noqa: F401
-    from headroom.transforms.search_compressor import (  # noqa: F401
+    from legroom.transforms.pipeline import TransformPipeline  # noqa: F401
+    from legroom.transforms.search_compressor import (  # noqa: F401
         SearchCompressionResult,
         SearchCompressor,
         SearchCompressorConfig,
     )
-    from headroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig  # noqa: F401
-    from headroom.transforms.tabular_ingest import (  # noqa: F401
+    from legroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig  # noqa: F401
+    from legroom.transforms.tabular_ingest import (  # noqa: F401
         TabularCompressionResult,
         TabularCompressor,
         TabularCompressorConfig,
@@ -131,81 +131,81 @@ if _HTML_EXTRACTOR_AVAILABLE:
 
 _LAZY_EXPORTS: dict[str, tuple[str, str]] = {
     # Base
-    "Transform": ("headroom.transforms.base", "Transform"),
-    "TransformPipeline": ("headroom.transforms.pipeline", "TransformPipeline"),
+    "Transform": ("legroom.transforms.base", "Transform"),
+    "TransformPipeline": ("legroom.transforms.pipeline", "TransformPipeline"),
     # Anchor selection
-    "AnchorSelector": ("headroom.transforms.anchor_selector", "AnchorSelector"),
-    "AnchorStrategy": ("headroom.transforms.anchor_selector", "AnchorStrategy"),
-    "AnchorWeights": ("headroom.transforms.anchor_selector", "AnchorWeights"),
-    "DataPattern": ("headroom.transforms.anchor_selector", "DataPattern"),
+    "AnchorSelector": ("legroom.transforms.anchor_selector", "AnchorSelector"),
+    "AnchorStrategy": ("legroom.transforms.anchor_selector", "AnchorStrategy"),
+    "AnchorWeights": ("legroom.transforms.anchor_selector", "AnchorWeights"),
+    "DataPattern": ("legroom.transforms.anchor_selector", "DataPattern"),
     "calculate_information_score": (
-        "headroom.transforms.anchor_selector",
+        "legroom.transforms.anchor_selector",
         "calculate_information_score",
     ),
-    "compute_item_hash": ("headroom.transforms.anchor_selector", "compute_item_hash"),
+    "compute_item_hash": ("legroom.transforms.anchor_selector", "compute_item_hash"),
     # JSON compression
-    "SmartCrusher": ("headroom.transforms.smart_crusher", "SmartCrusher"),
-    "SmartCrusherConfig": ("headroom.transforms.smart_crusher", "SmartCrusherConfig"),
+    "SmartCrusher": ("legroom.transforms.smart_crusher", "SmartCrusher"),
+    "SmartCrusherConfig": ("legroom.transforms.smart_crusher", "SmartCrusherConfig"),
     # Text compression (coding tasks)
-    "ContentType": ("headroom.transforms.content_detector", "ContentType"),
-    "DetectionResult": ("headroom.transforms.content_detector", "DetectionResult"),
-    "detect_content_type": ("headroom.transforms.content_detector", "detect_content_type"),
-    "SearchCompressor": ("headroom.transforms.search_compressor", "SearchCompressor"),
+    "ContentType": ("legroom.transforms.content_detector", "ContentType"),
+    "DetectionResult": ("legroom.transforms.content_detector", "DetectionResult"),
+    "detect_content_type": ("legroom.transforms.content_detector", "detect_content_type"),
+    "SearchCompressor": ("legroom.transforms.search_compressor", "SearchCompressor"),
     "SearchCompressorConfig": (
-        "headroom.transforms.search_compressor",
+        "legroom.transforms.search_compressor",
         "SearchCompressorConfig",
     ),
     "SearchCompressionResult": (
-        "headroom.transforms.search_compressor",
+        "legroom.transforms.search_compressor",
         "SearchCompressionResult",
     ),
-    "LogCompressor": ("headroom.transforms.log_compressor", "LogCompressor"),
-    "LogCompressorConfig": ("headroom.transforms.log_compressor", "LogCompressorConfig"),
-    "LogCompressionResult": ("headroom.transforms.log_compressor", "LogCompressionResult"),
-    "TabularCompressor": ("headroom.transforms.tabular_ingest", "TabularCompressor"),
+    "LogCompressor": ("legroom.transforms.log_compressor", "LogCompressor"),
+    "LogCompressorConfig": ("legroom.transforms.log_compressor", "LogCompressorConfig"),
+    "LogCompressionResult": ("legroom.transforms.log_compressor", "LogCompressionResult"),
+    "TabularCompressor": ("legroom.transforms.tabular_ingest", "TabularCompressor"),
     "TabularCompressorConfig": (
-        "headroom.transforms.tabular_ingest",
+        "legroom.transforms.tabular_ingest",
         "TabularCompressorConfig",
     ),
     "TabularCompressionResult": (
-        "headroom.transforms.tabular_ingest",
+        "legroom.transforms.tabular_ingest",
         "TabularCompressionResult",
     ),
-    "DiffCompressor": ("headroom.transforms.diff_compressor", "DiffCompressor"),
-    "DiffCompressorConfig": ("headroom.transforms.diff_compressor", "DiffCompressorConfig"),
+    "DiffCompressor": ("legroom.transforms.diff_compressor", "DiffCompressor"),
+    "DiffCompressorConfig": ("legroom.transforms.diff_compressor", "DiffCompressorConfig"),
     "DiffCompressionResult": (
-        "headroom.transforms.diff_compressor",
+        "legroom.transforms.diff_compressor",
         "DiffCompressionResult",
     ),
     # Code-aware compression (AST-based)
-    "CodeAwareCompressor": ("headroom.transforms.code_compressor", "CodeAwareCompressor"),
-    "CodeCompressorConfig": ("headroom.transforms.code_compressor", "CodeCompressorConfig"),
+    "CodeAwareCompressor": ("legroom.transforms.code_compressor", "CodeAwareCompressor"),
+    "CodeCompressorConfig": ("legroom.transforms.code_compressor", "CodeCompressorConfig"),
     "CodeCompressionResult": (
-        "headroom.transforms.code_compressor",
+        "legroom.transforms.code_compressor",
         "CodeCompressionResult",
     ),
-    "CodeLanguage": ("headroom.transforms.code_compressor", "CodeLanguage"),
-    "DocstringMode": ("headroom.transforms.code_compressor", "DocstringMode"),
-    "detect_language": ("headroom.transforms.code_compressor", "detect_language"),
+    "CodeLanguage": ("legroom.transforms.code_compressor", "CodeLanguage"),
+    "DocstringMode": ("legroom.transforms.code_compressor", "DocstringMode"),
+    "detect_language": ("legroom.transforms.code_compressor", "detect_language"),
     "is_tree_sitter_available": (
-        "headroom.transforms.code_compressor",
+        "legroom.transforms.code_compressor",
         "is_tree_sitter_available",
     ),
     # Content routing
-    "ContentRouter": ("headroom.transforms.content_router", "ContentRouter"),
-    "ContentRouterConfig": ("headroom.transforms.content_router", "ContentRouterConfig"),
+    "ContentRouter": ("legroom.transforms.content_router", "ContentRouter"),
+    "ContentRouterConfig": ("legroom.transforms.content_router", "ContentRouterConfig"),
     "RouterCompressionResult": (
-        "headroom.transforms.content_router",
+        "legroom.transforms.content_router",
         "RouterCompressionResult",
     ),
-    "CompressionStrategy": ("headroom.transforms.content_router", "CompressionStrategy"),
+    "CompressionStrategy": ("legroom.transforms.content_router", "CompressionStrategy"),
     # Other transforms
-    "CacheAligner": ("headroom.transforms.cache_aligner", "CacheAligner"),
+    "CacheAligner": ("legroom.transforms.cache_aligner", "CacheAligner"),
     # HTML extraction (optional dependency - requires trafilatura)
-    "HTMLExtractor": ("headroom.transforms.html_extractor", "HTMLExtractor"),
-    "HTMLExtractorConfig": ("headroom.transforms.html_extractor", "HTMLExtractorConfig"),
-    "HTMLExtractionResult": ("headroom.transforms.html_extractor", "HTMLExtractionResult"),
-    "is_html_content": ("headroom.transforms.html_extractor", "is_html_content"),
+    "HTMLExtractor": ("legroom.transforms.html_extractor", "HTMLExtractor"),
+    "HTMLExtractorConfig": ("legroom.transforms.html_extractor", "HTMLExtractorConfig"),
+    "HTMLExtractionResult": ("legroom.transforms.html_extractor", "HTMLExtractionResult"),
+    "is_html_content": ("legroom.transforms.html_extractor", "is_html_content"),
 }
 
 

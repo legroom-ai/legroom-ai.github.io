@@ -5,7 +5,7 @@ import errno
 import click
 import pytest
 
-import headroom.cli.wrap as wrap_cli
+import legroom.cli.wrap as wrap_cli
 
 
 @pytest.fixture(autouse=True)
@@ -13,7 +13,7 @@ def _no_attached_wrappers(monkeypatch: pytest.MonkeyPatch) -> None:
     """Default: no other wrap clients attached, so restart paths are hermetic.
 
     The ephemeral restart guards consult ``_live_proxy_clients``; without this, a
-    real ``headroom wrap`` session on the dev's machine could make these tests
+    real ``legroom wrap`` session on the dev's machine could make these tests
     flaky. Individual tests override this to simulate attached wrappers.
     """
     monkeypatch.setattr(wrap_cli, "_live_proxy_clients", lambda *a, **kw: [])
@@ -31,13 +31,13 @@ def test_ensure_proxy_recovers_matching_persistent_deployment(monkeypatch) -> No
 
     monkeypatch.setattr(wrap_cli, "_check_proxy", lambda port: False)
     monkeypatch.setattr(wrap_cli, "_find_persistent_manifest", lambda port: _Manifest())
-    monkeypatch.setattr("headroom.install.health.probe_ready", lambda url: False)
+    monkeypatch.setattr("legroom.install.health.probe_ready", lambda url: False)
     monkeypatch.setattr(
-        "headroom.install.supervisors.start_supervisor",
+        "legroom.install.supervisors.start_supervisor",
         lambda manifest: calls.append(f"start:{manifest.profile}"),
     )
     monkeypatch.setattr(
-        "headroom.install.runtime.wait_ready", lambda manifest, timeout_seconds=45: True
+        "legroom.install.runtime.wait_ready", lambda manifest, timeout_seconds=45: True
     )
     monkeypatch.setattr(
         wrap_cli,
@@ -59,13 +59,13 @@ def test_ensure_proxy_recovers_persistent_deployment_when_socket_is_bound(monkey
 
     monkeypatch.setattr(wrap_cli, "_check_proxy", lambda port: True)
     monkeypatch.setattr(wrap_cli, "_find_persistent_manifest", lambda port: _Manifest())
-    monkeypatch.setattr("headroom.install.health.probe_ready", lambda url: False)
+    monkeypatch.setattr("legroom.install.health.probe_ready", lambda url: False)
     monkeypatch.setattr(
-        "headroom.install.supervisors.start_supervisor",
+        "legroom.install.supervisors.start_supervisor",
         lambda manifest: calls.append(f"start:{manifest.profile}"),
     )
     monkeypatch.setattr(
-        "headroom.install.runtime.wait_ready", lambda manifest, timeout_seconds=45: True
+        "legroom.install.runtime.wait_ready", lambda manifest, timeout_seconds=45: True
     )
 
     proc, actual_port = wrap_cli._ensure_proxy(8787, False)
@@ -78,7 +78,7 @@ def test_ensure_proxy_recovers_persistent_deployment_when_socket_is_bound(monkey
 def test_ensure_proxy_rejects_unhealthy_persistent_deployment(monkeypatch) -> None:
     monkeypatch.setattr(wrap_cli, "_check_proxy", lambda port: True)
     monkeypatch.setattr(wrap_cli, "_find_persistent_manifest", lambda port: _Manifest())
-    monkeypatch.setattr("headroom.install.health.probe_ready", lambda url: False)
+    monkeypatch.setattr("legroom.install.health.probe_ready", lambda url: False)
     monkeypatch.setattr(wrap_cli, "_recover_persistent_proxy", lambda port: False)
 
     try:
@@ -94,7 +94,7 @@ def test_ensure_proxy_falls_back_when_persistent_manifest_is_stale(monkeypatch) 
 
     monkeypatch.setattr(wrap_cli, "_check_proxy", lambda port: False)
     monkeypatch.setattr(wrap_cli, "_find_persistent_manifest", lambda port: _Manifest())
-    monkeypatch.setattr("headroom.install.health.probe_ready", lambda url: False)
+    monkeypatch.setattr("legroom.install.health.probe_ready", lambda url: False)
     monkeypatch.setattr(wrap_cli, "_recover_persistent_proxy", lambda port: False)
     monkeypatch.setattr(wrap_cli, "_port_bind_error", lambda port: None)
     monkeypatch.setattr(wrap_cli, "_find_available_port", lambda port, **kw: port)
@@ -141,7 +141,7 @@ def test_ensure_proxy_restarts_idle_stale_persistent_deployment(monkeypatch) -> 
     }
 
     monkeypatch.setattr(wrap_cli, "_find_persistent_manifest", lambda port: _Manifest())
-    monkeypatch.setattr("headroom.install.health.probe_ready", lambda url: True)
+    monkeypatch.setattr("legroom.install.health.probe_ready", lambda url: True)
     monkeypatch.setattr(wrap_cli, "_query_proxy_health", lambda port: health)
     monkeypatch.setattr(
         wrap_cli,
@@ -172,9 +172,9 @@ def test_ensure_proxy_restarts_stale_proxy_from_dev_build(monkeypatch) -> None:
         "runtime": {"websocket_sessions": {"active_sessions": 0, "active_relay_tasks": 0}},
         "config": {"pid": 12345},
     }
-    monkeypatch.setattr(wrap_cli, "_HEADROOM_VERSION", "0.32.0-dev")
+    monkeypatch.setattr(wrap_cli, "_LEGROOM_VERSION", "0.32.0-dev")
     monkeypatch.setattr(wrap_cli, "_find_persistent_manifest", lambda port: _Manifest())
-    monkeypatch.setattr("headroom.install.health.probe_ready", lambda url: True)
+    monkeypatch.setattr("legroom.install.health.probe_ready", lambda url: True)
     monkeypatch.setattr(wrap_cli, "_query_proxy_health", lambda port: health)
     monkeypatch.setattr(
         wrap_cli,
@@ -197,7 +197,7 @@ def test_ensure_proxy_leaves_active_stale_persistent_deployment_running(monkeypa
     }
 
     monkeypatch.setattr(wrap_cli, "_find_persistent_manifest", lambda port: _Manifest())
-    monkeypatch.setattr("headroom.install.health.probe_ready", lambda url: True)
+    monkeypatch.setattr("legroom.install.health.probe_ready", lambda url: True)
     monkeypatch.setattr(wrap_cli, "_query_proxy_health", lambda port: health)
     monkeypatch.setattr(
         wrap_cli,
@@ -225,7 +225,7 @@ def test_ensure_proxy_defers_persistent_restart_when_http_wrapper_attached(
     }
 
     monkeypatch.setattr(wrap_cli, "_find_persistent_manifest", lambda port: _Manifest())
-    monkeypatch.setattr("headroom.install.health.probe_ready", lambda url: True)
+    monkeypatch.setattr("legroom.install.health.probe_ready", lambda url: True)
     monkeypatch.setattr(wrap_cli, "_query_proxy_health", lambda port: health)
     monkeypatch.setattr(wrap_cli, "_live_proxy_clients", lambda *a, **kw: [999])
     monkeypatch.setattr(
@@ -259,7 +259,7 @@ def test_find_persistent_manifest_prefers_default_profile(monkeypatch) -> None:
         port = 8787
 
     monkeypatch.setattr(
-        "headroom.install.state.list_manifests",
+        "legroom.install.state.list_manifests",
         lambda: [OtherManifest(), DefaultManifest()],
     )
 
@@ -270,7 +270,7 @@ def test_find_persistent_manifest_prefers_default_profile(monkeypatch) -> None:
 
 def test_recover_persistent_proxy_reuses_healthy_deployment(monkeypatch) -> None:
     monkeypatch.setattr(wrap_cli, "_find_persistent_manifest", lambda port: _Manifest())
-    monkeypatch.setattr("headroom.install.health.probe_ready", lambda url: True)
+    monkeypatch.setattr("legroom.install.health.probe_ready", lambda url: True)
 
     assert wrap_cli._recover_persistent_proxy(8787) is True
 
@@ -280,7 +280,7 @@ def test_recover_persistent_proxy_warns_for_task_deployment(monkeypatch) -> None
         supervisor_kind = "task"
 
     monkeypatch.setattr(wrap_cli, "_find_persistent_manifest", lambda port: TaskManifest())
-    monkeypatch.setattr("headroom.install.health.probe_ready", lambda url: False)
+    monkeypatch.setattr("legroom.install.health.probe_ready", lambda url: False)
 
     assert wrap_cli._recover_persistent_proxy(8787) is False
 
@@ -317,7 +317,7 @@ def test_ensure_proxy_restarts_idle_stale_ephemeral_proxy(monkeypatch) -> None:
 
 
 def test_proxy_version_restart_ignores_non_release_source_labels(monkeypatch) -> None:
-    monkeypatch.setattr(wrap_cli, "_HEADROOM_VERSION", "0.29.0")
+    monkeypatch.setattr(wrap_cli, "_LEGROOM_VERSION", "0.29.0")
     assert wrap_cli._proxy_needs_version_restart({"version": "source-build+g6266a1d774b5"}) is False
     assert (
         wrap_cli._proxy_needs_version_restart({"version": "source-build+sha.abcdef123456"}) is False
@@ -325,17 +325,17 @@ def test_proxy_version_restart_ignores_non_release_source_labels(monkeypatch) ->
     assert wrap_cli._proxy_needs_version_restart({"version": "6266a1d"}) is False
     assert wrap_cli._proxy_needs_version_restart({"version": "0.29.0+gabcdef0"}) is False
 
-    monkeypatch.setattr(wrap_cli, "_HEADROOM_VERSION", "source-build+sha.abcdef123456")
+    monkeypatch.setattr(wrap_cli, "_LEGROOM_VERSION", "source-build+sha.abcdef123456")
     assert wrap_cli._proxy_needs_version_restart({"version": "0.29.0"}) is False
 
-    monkeypatch.setattr(wrap_cli, "_HEADROOM_VERSION", "0.29.1")
+    monkeypatch.setattr(wrap_cli, "_LEGROOM_VERSION", "0.29.1")
     assert wrap_cli._proxy_needs_version_restart({"version": "0.29.0"}) is True
 
 
 def test_ensure_proxy_restarts_ephemeral_proxy_for_openai_api_url_mismatch(monkeypatch) -> None:
     calls: list[object] = []
     health = {
-        "version": wrap_cli._HEADROOM_VERSION,
+        "version": wrap_cli._LEGROOM_VERSION,
         "runtime": {"websocket_sessions": {"active_sessions": 0, "active_relay_tasks": 0}},
         "config": {
             "pid": "12345",
@@ -424,7 +424,7 @@ def test_ensure_proxy_starts_isolated_ephemeral_proxy_when_subscription_seed_tar
 
     monkeypatch.setattr(wrap_cli, "_find_persistent_manifest", lambda port: _Manifest())
     monkeypatch.setattr(
-        "headroom.install.health.probe_ready",
+        "legroom.install.health.probe_ready",
         lambda url: (_ for _ in ()).throw(
             AssertionError("subscription-seeded session should skip persistent probing")
         ),
@@ -467,12 +467,12 @@ def test_ensure_proxy_starts_isolated_ephemeral_proxy_when_subscription_seed_tar
 
 def test_ensure_proxy_reuses_agent_proxy_without_savings_profile(monkeypatch) -> None:
     health = {
-        "version": wrap_cli._HEADROOM_VERSION,
+        "version": wrap_cli._LEGROOM_VERSION,
         "runtime": {"websocket_sessions": {"active_sessions": 0, "active_relay_tasks": 0}},
         "config": {"pid": "12345", "memory": False, "learn": False, "code_graph": False},
     }
 
-    monkeypatch.delenv("HEADROOM_SAVINGS_PROFILE", raising=False)
+    monkeypatch.delenv("LEGROOM_SAVINGS_PROFILE", raising=False)
     monkeypatch.setattr(wrap_cli, "_find_persistent_manifest", lambda port: None)
     monkeypatch.setattr(wrap_cli, "_check_proxy", lambda port: True)
     monkeypatch.setattr(wrap_cli, "_query_proxy_health", lambda port: health)
@@ -500,12 +500,12 @@ def test_ensure_proxy_reuses_agent_proxy_without_savings_profile(monkeypatch) ->
 def test_ensure_proxy_restarts_for_explicit_agent_savings_profile(monkeypatch) -> None:
     calls: list[object] = []
     health = {
-        "version": wrap_cli._HEADROOM_VERSION,
+        "version": wrap_cli._LEGROOM_VERSION,
         "runtime": {"websocket_sessions": {"active_sessions": 0, "active_relay_tasks": 0}},
         "config": {"pid": "12345", "memory": False, "learn": False, "code_graph": False},
     }
 
-    monkeypatch.setenv("HEADROOM_SAVINGS_PROFILE", "agent-90")
+    monkeypatch.setenv("LEGROOM_SAVINGS_PROFILE", "agent-90")
     monkeypatch.setattr(wrap_cli, "_find_persistent_manifest", lambda port: None)
     monkeypatch.setattr(wrap_cli, "_check_proxy", lambda port: len(calls) == 0)
     monkeypatch.setattr(wrap_cli, "_query_proxy_health", lambda port: health)
@@ -531,7 +531,7 @@ def test_ensure_proxy_restarts_for_explicit_agent_savings_profile(monkeypatch) -
 
 def test_ensure_proxy_reuses_agent_proxy_with_savings_profile(monkeypatch) -> None:
     health = {
-        "version": wrap_cli._HEADROOM_VERSION,
+        "version": wrap_cli._LEGROOM_VERSION,
         "runtime": {"websocket_sessions": {"active_sessions": 0, "active_relay_tasks": 0}},
         "config": {
             "pid": "12345",
@@ -551,7 +551,7 @@ def test_ensure_proxy_reuses_agent_proxy_with_savings_profile(monkeypatch) -> No
         },
     }
 
-    monkeypatch.setenv("HEADROOM_SAVINGS_PROFILE", "agent-90")
+    monkeypatch.setenv("LEGROOM_SAVINGS_PROFILE", "agent-90")
     monkeypatch.setattr(wrap_cli, "_find_persistent_manifest", lambda port: None)
     monkeypatch.setattr(wrap_cli, "_check_proxy", lambda port: True)
     monkeypatch.setattr(wrap_cli, "_query_proxy_health", lambda port: health)
@@ -647,7 +647,7 @@ def test_ensure_proxy_defers_flag_restart_when_other_wrapper_attached(monkeypatc
     """Requesting --memory must not restart the proxy out from under another
     attached wrapper; reuse the running proxy as-is instead."""
     health = {
-        "version": wrap_cli._HEADROOM_VERSION,  # same version → no version restart
+        "version": wrap_cli._LEGROOM_VERSION,  # same version → no version restart
         "runtime": {"websocket_sessions": {"active_sessions": 0, "active_relay_tasks": 0}},
         # Running proxy lacks `memory`; this session asks for it.
         "config": {"pid": "12345", "memory": False, "learn": False, "code_graph": False},
@@ -683,7 +683,7 @@ def test_ensure_proxy_restarts_for_flags_when_no_other_wrapper(monkeypatch) -> N
     happens — the guard must not block the single-client upgrade path."""
     calls: list[object] = []
     health = {
-        "version": wrap_cli._HEADROOM_VERSION,
+        "version": wrap_cli._LEGROOM_VERSION,
         "runtime": {"websocket_sessions": {"active_sessions": 0, "active_relay_tasks": 0}},
         "config": {"pid": "12345", "memory": False, "learn": False, "code_graph": False},
     }
@@ -716,7 +716,7 @@ def test_ensure_proxy_restarts_persistent_deployment_for_feature_mismatch(monkey
     """Persistent deployment should restart when requested features differ from running config."""
     calls: list[object] = []
     health = {
-        "version": wrap_cli._HEADROOM_VERSION,
+        "version": wrap_cli._LEGROOM_VERSION,
         "runtime": {"websocket_sessions": {"active_sessions": 0, "active_relay_tasks": 0}},
         "config": {
             "pid": 12345,
@@ -728,7 +728,7 @@ def test_ensure_proxy_restarts_persistent_deployment_for_feature_mismatch(monkey
     }
 
     monkeypatch.setattr(wrap_cli, "_find_persistent_manifest", lambda port: _Manifest())
-    monkeypatch.setattr("headroom.install.health.probe_ready", lambda url: True)
+    monkeypatch.setattr("legroom.install.health.probe_ready", lambda url: True)
     monkeypatch.setattr(wrap_cli, "_query_proxy_health", lambda port: health)
     # Persistent proxy is running, so _check_proxy returns True
     monkeypatch.setattr(wrap_cli, "_check_proxy", lambda port: True)
@@ -763,7 +763,7 @@ def test_ensure_proxy_restarts_persistent_deployment_for_memory_mismatch(monkeyp
     """Persistent deployment should restart when memory is requested but not enabled."""
     calls: list[object] = []
     health = {
-        "version": wrap_cli._HEADROOM_VERSION,
+        "version": wrap_cli._LEGROOM_VERSION,
         "runtime": {"websocket_sessions": {"active_sessions": 0, "active_relay_tasks": 0}},
         "config": {
             "pid": 12345,
@@ -775,7 +775,7 @@ def test_ensure_proxy_restarts_persistent_deployment_for_memory_mismatch(monkeyp
     }
 
     monkeypatch.setattr(wrap_cli, "_find_persistent_manifest", lambda port: _Manifest())
-    monkeypatch.setattr("headroom.install.health.probe_ready", lambda url: True)
+    monkeypatch.setattr("legroom.install.health.probe_ready", lambda url: True)
     monkeypatch.setattr(wrap_cli, "_query_proxy_health", lambda port: health)
     # Persistent proxy is running, so _check_proxy returns True
     monkeypatch.setattr(wrap_cli, "_check_proxy", lambda port: True)
@@ -807,7 +807,7 @@ def test_ensure_proxy_restarts_recovered_persistent_for_openai_api_url_mismatch(
 ) -> None:
     calls: list[object] = []
     health = {
-        "version": wrap_cli._HEADROOM_VERSION,
+        "version": wrap_cli._LEGROOM_VERSION,
         "runtime": {"websocket_sessions": {"active_sessions": 0, "active_relay_tasks": 0}},
         "config": {
             "pid": 12345,
@@ -819,7 +819,7 @@ def test_ensure_proxy_restarts_recovered_persistent_for_openai_api_url_mismatch(
     }
 
     monkeypatch.setattr(wrap_cli, "_find_persistent_manifest", lambda port: _Manifest())
-    monkeypatch.setattr("headroom.install.health.probe_ready", lambda url: False)
+    monkeypatch.setattr("legroom.install.health.probe_ready", lambda url: False)
     monkeypatch.setattr(wrap_cli, "_recover_persistent_proxy", lambda port: True)
     monkeypatch.setattr(wrap_cli, "_check_proxy", lambda port: True)
     monkeypatch.setattr(wrap_cli, "_query_proxy_health", lambda port: health)
@@ -851,7 +851,7 @@ def test_ensure_proxy_restarts_recovered_persistent_when_config_unavailable(monk
     calls: list[object] = []
 
     monkeypatch.setattr(wrap_cli, "_find_persistent_manifest", lambda port: _Manifest())
-    monkeypatch.setattr("headroom.install.health.probe_ready", lambda url: False)
+    monkeypatch.setattr("legroom.install.health.probe_ready", lambda url: False)
     monkeypatch.setattr(wrap_cli, "_recover_persistent_proxy", lambda port: True)
     monkeypatch.setattr(wrap_cli, "_check_proxy", lambda port: True)
     monkeypatch.setattr(wrap_cli, "_query_proxy_health", lambda port: {"version": "x"})
@@ -883,7 +883,7 @@ def test_ensure_proxy_restarts_recovered_persistent_when_config_unavailable(monk
 def test_ensure_proxy_reuses_persistent_deployment_when_features_match(monkeypatch) -> None:
     """Persistent deployment should be reused when all requested features match."""
     health = {
-        "version": wrap_cli._HEADROOM_VERSION,
+        "version": wrap_cli._LEGROOM_VERSION,
         "runtime": {"websocket_sessions": {"active_sessions": 0, "active_relay_tasks": 0}},
         "config": {
             "pid": 12345,
@@ -895,7 +895,7 @@ def test_ensure_proxy_reuses_persistent_deployment_when_features_match(monkeypat
     }
 
     monkeypatch.setattr(wrap_cli, "_find_persistent_manifest", lambda port: _Manifest())
-    monkeypatch.setattr("headroom.install.health.probe_ready", lambda url: True)
+    monkeypatch.setattr("legroom.install.health.probe_ready", lambda url: True)
     monkeypatch.setattr(wrap_cli, "_query_proxy_health", lambda port: health)
     monkeypatch.setattr(
         wrap_cli,
@@ -934,7 +934,7 @@ def test_ensure_proxy_recovered_persistent_deployment_checks_feature_mismatch(mo
 
     calls: list[object] = []
     health = {
-        "version": wrap_cli._HEADROOM_VERSION,
+        "version": wrap_cli._LEGROOM_VERSION,
         "runtime": {"websocket_sessions": {"active_sessions": 0, "active_relay_tasks": 0}},
         "config": {
             "pid": "12345",
@@ -946,7 +946,7 @@ def test_ensure_proxy_recovered_persistent_deployment_checks_feature_mismatch(mo
     }
 
     monkeypatch.setattr(wrap_cli, "_find_persistent_manifest", lambda port: _Manifest())
-    monkeypatch.setattr("headroom.install.health.probe_ready", lambda url: False)
+    monkeypatch.setattr("legroom.install.health.probe_ready", lambda url: False)
     monkeypatch.setattr(wrap_cli, "_recover_persistent_proxy", lambda port: True)
     monkeypatch.setattr(wrap_cli, "_check_proxy", lambda port: True)
     monkeypatch.setattr(wrap_cli, "_query_proxy_health", lambda port: health)

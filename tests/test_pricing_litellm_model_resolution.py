@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from headroom.pricing.litellm_model_resolution import (
+from legroom.pricing.litellm_model_resolution import (
     MODEL_ALIASES,
     LiteLLMModelPrefixRule,
     pricing_lookup_candidates,

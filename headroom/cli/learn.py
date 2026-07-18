@@ -1,4 +1,4 @@
-"""CLI commands for Headroom Learn — offline failure learning."""
+"""CLI commands for Legroom Learn — offline failure learning."""
 
 from __future__ import annotations
 
@@ -53,7 +53,7 @@ _AGENT_HELP = """Which coding agent to analyze. Auto-detects by default.
 
 \b
 Built-in: claude, codex, gemini, grok.
-External plugins register via 'headroom.learn_plugin' entry point.
+External plugins register via 'legroom.learn_plugin' entry point.
 Use 'auto' (default) to scan all detected agents."""
 
 
@@ -148,16 +148,16 @@ def learn(
 
     Supports multiple coding agents via a plugin architecture. Built-in
     support for Claude Code, Codex, and Gemini CLI. External plugins can
-    be installed via pip (entry point: headroom.learn_plugin).
+    be installed via pip (entry point: legroom.learn_plugin).
 
     \b
     Examples:
-        headroom learn                        # Auto-detect agent & model
-        headroom learn --apply                # Write recommendations
-        headroom learn --model gpt-4o         # Use GPT-4o for analysis
-        headroom learn --all                  # Analyze all projects
-        headroom learn --agent codex --all    # Analyze all Codex sessions
-        headroom learn --target CLAUDE.md     # Write to the team-shared file
+        legroom learn                        # Auto-detect agent & model
+        legroom learn --apply                # Write recommendations
+        legroom learn --model gpt-4o         # Use GPT-4o for analysis
+        legroom learn --all                  # Analyze all projects
+        legroom learn --agent codex --all    # Analyze all Codex sessions
+        legroom learn --target CLAUDE.md     # Write to the team-shared file
     """
     import os
 
@@ -262,7 +262,7 @@ def learn(
                         break
             if not targets and len(agent_configs) == 1:
                 click.echo(f"No {agent_name} project data found for {cwd}")
-                click.echo("Try: headroom learn --all  or  headroom learn --project <path>")
+                click.echo("Try: legroom learn --all  or  legroom learn --project <path>")
                 click.echo(f"\nAvailable {agent_name} projects:")
                 for proj_info in all_projects[:10]:
                     click.echo(f"  {proj_info.name:30s} {proj_info.project_path}")
@@ -326,7 +326,7 @@ def learn(
                 click.echo(f"\n  {'[WOULD WRITE]' if result.dry_run else '[WROTE]'} {file_path}")
                 click.echo(f"  {'─' * 50}")
                 for line in content.split("\n"):
-                    if line.startswith("<!-- headroom"):
+                    if line.startswith("<!-- legroom"):
                         continue
                     click.echo(f"  {line}")
                 click.echo(f"  {'─' * 50}")
@@ -396,7 +396,7 @@ def _activate_output_shaper(port: int | None = None) -> tuple[str, int]:
 
     Writing ``verbosity.json`` is inert on its own — the shaper is a live,
     off-by-default knob, so the learned level does nothing until
-    ``HEADROOM_OUTPUT_SHAPER`` is enabled in the proxy that serves traffic.
+    ``LEGROOM_OUTPUT_SHAPER`` is enabled in the proxy that serves traffic.
     When a proxy is already running locally we hot-enable it via
     ``/admin/runtime-env`` (no restart, the same channel ``wrap`` uses), so
     ``--apply`` actually takes effect. Returns ``(status, port)`` where status is
@@ -408,10 +408,10 @@ def _activate_output_shaper(port: int | None = None) -> tuple[str, int]:
     import urllib.error
     import urllib.request
 
-    resolved_port = port if port is not None else int(_os.environ.get("HEADROOM_PORT", "8787"))
+    resolved_port = port if port is not None else int(_os.environ.get("LEGROOM_PORT", "8787"))
     request = urllib.request.Request(
         f"http://127.0.0.1:{resolved_port}/admin/runtime-env",
-        data=_json.dumps({"HEADROOM_OUTPUT_SHAPER": "1"}).encode("utf-8"),
+        data=_json.dumps({"LEGROOM_OUTPUT_SHAPER": "1"}).encode("utf-8"),
         method="POST",
         headers={"Content-Type": "application/json"},
     )
@@ -552,11 +552,11 @@ def _run_verbosity(
         if status == "live":
             click.echo(
                 f"\n  ✓ Output shaper enabled on the running proxy (port {shaper_port}); "
-                f"level {best_profile.level} is live now (while HEADROOM_VERBOSITY_LEVEL is unset)."
+                f"level {best_profile.level} is live now (while LEGROOM_VERBOSITY_LEVEL is unset)."
             )
             click.echo(
-                "    To keep it on across restarts: export HEADROOM_OUTPUT_SHAPER=1 "
-                "before `headroom wrap ...` (wrap pushes it to the proxy)."
+                "    To keep it on across restarts: export LEGROOM_OUTPUT_SHAPER=1 "
+                "before `legroom wrap ...` (wrap pushes it to the proxy)."
             )
         else:
             click.echo(
@@ -564,9 +564,9 @@ def _run_verbosity(
                 "NOT shaping output yet."
             )
             click.echo(
-                "    Enable it: export HEADROOM_OUTPUT_SHAPER=1 then `headroom wrap ...` "
-                "(or start `headroom proxy` with it set). The learned level is then used "
-                "automatically while HEADROOM_VERBOSITY_LEVEL is unset."
+                "    Enable it: export LEGROOM_OUTPUT_SHAPER=1 then `legroom wrap ...` "
+                "(or start `legroom proxy` with it set). The learned level is then used "
+                "automatically while LEGROOM_VERBOSITY_LEVEL is unset."
             )
     else:
         click.echo("\n  Dry run — use --apply to persist the level and baseline.")

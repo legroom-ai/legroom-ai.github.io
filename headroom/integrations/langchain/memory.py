@@ -1,17 +1,17 @@
 """Memory integration for LangChain with automatic compression.
 
-This module provides HeadroomChatMessageHistory, a wrapper for any LangChain
+This module provides LegroomChatMessageHistory, a wrapper for any LangChain
 chat message history that automatically compresses conversation history
 when it exceeds a token threshold.
 
 Example:
     from langchain.memory import ConversationBufferMemory
     from langchain_community.chat_message_histories import ChatMessageHistory
-    from headroom.integrations import HeadroomChatMessageHistory
+    from legroom.integrations import LegroomChatMessageHistory
 
     # Wrap any chat message history
     base_history = ChatMessageHistory()
-    compressed_history = HeadroomChatMessageHistory(base_history)
+    compressed_history = LegroomChatMessageHistory(base_history)
 
     # Use with ConversationBufferMemory (zero code changes to chain)
     memory = ConversationBufferMemory(chat_memory=compressed_history)
@@ -23,7 +23,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from headroom.providers.base import Provider
+    from legroom.providers.base import Provider
 
 # LangChain imports - these are optional dependencies
 try:
@@ -41,9 +41,9 @@ except ImportError:
     LANGCHAIN_AVAILABLE = False
     BaseChatMessageHistory = object  # type: ignore[misc,assignment]
 
-from headroom import HeadroomConfig
-from headroom.providers import OpenAIProvider
-from headroom.transforms import TransformPipeline
+from legroom import LegroomConfig
+from legroom.providers import OpenAIProvider
+from legroom.transforms import TransformPipeline
 
 logger = logging.getLogger(__name__)
 
@@ -53,12 +53,12 @@ def _check_langchain_available() -> None:
     if not LANGCHAIN_AVAILABLE:
         raise ImportError(
             "LangChain is required for this integration. "
-            "Install with: pip install headroom[langchain] "
+            "Install with: pip install legroom[langchain] "
             "or: pip install langchain-core"
         )
 
 
-class HeadroomChatMessageHistory(BaseChatMessageHistory):
+class LegroomChatMessageHistory(BaseChatMessageHistory):
     """Wraps any LangChain chat message history with automatic compression.
 
     When conversation history exceeds the token threshold, automatically
@@ -75,11 +75,11 @@ class HeadroomChatMessageHistory(BaseChatMessageHistory):
     Example:
         from langchain.memory import ConversationBufferMemory
         from langchain_community.chat_message_histories import ChatMessageHistory
-        from headroom.integrations import HeadroomChatMessageHistory
+        from legroom.integrations import LegroomChatMessageHistory
 
         # Wrap base history
         base = ChatMessageHistory()
-        compressed = HeadroomChatMessageHistory(
+        compressed = LegroomChatMessageHistory(
             base,
             compress_threshold_tokens=4000,
             keep_recent_turns=5,
@@ -107,7 +107,7 @@ class HeadroomChatMessageHistory(BaseChatMessageHistory):
         model: str = "gpt-4o",
         provider: Provider | None = None,
     ):
-        """Initialize HeadroomChatMessageHistory.
+        """Initialize LegroomChatMessageHistory.
 
         Args:
             base_history: Any LangChain BaseChatMessageHistory to wrap
@@ -116,7 +116,7 @@ class HeadroomChatMessageHistory(BaseChatMessageHistory):
             keep_recent_turns: Minimum number of recent user/assistant turns
                 to always preserve during compression. Default 5.
             model: Model name for token counting. Default "gpt-4o".
-            provider: Headroom provider for token counting. Auto-uses
+            provider: Legroom provider for token counting. Auto-uses
                 OpenAIProvider if not specified.
         """
         _check_langchain_available()
@@ -157,7 +157,7 @@ class HeadroomChatMessageHistory(BaseChatMessageHistory):
         self._total_tokens_saved += token_count - tokens_after
 
         logger.info(
-            f"HeadroomChatMessageHistory compressed: {token_count} -> {tokens_after} tokens "
+            f"LegroomChatMessageHistory compressed: {token_count} -> {tokens_after} tokens "
             f"({len(raw_messages)} -> {len(compressed)} messages)"
         )
 
@@ -221,11 +221,11 @@ class HeadroomChatMessageHistory(BaseChatMessageHistory):
             Messages with their live-zone content compressed where
             applicable.
         """
-        # Convert to OpenAI format for Headroom transforms
+        # Convert to OpenAI format for Legroom transforms
         openai_messages = self._convert_to_openai(messages)
 
         # Use TransformPipeline which handles tokenizer setup
-        config = HeadroomConfig()
+        config = LegroomConfig()
         pipeline = TransformPipeline(config=config, provider=self._provider)
 
         # Apply compression via pipeline

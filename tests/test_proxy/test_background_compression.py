@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import asyncio
 
-from headroom.proxy.background_compression import BackgroundCompressor
+from legroom.proxy.background_compression import BackgroundCompressor
 
 
 async def _passthrough_executor(fn):

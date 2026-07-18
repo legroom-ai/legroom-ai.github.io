@@ -1,16 +1,16 @@
 # scripts/
 
-Utility scripts bundled with the Headroom repo. Most are one-off operator
+Utility scripts bundled with the Legroom repo. Most are one-off operator
 tools; a few are runnable as part of development workflows.
 
 ## Reproducing the reconnect storm
 
 `repro_codex_replay.py` reproduces the multi-agent Codex reconnect/retry storm
-against a local Headroom proxy (default `http://127.0.0.1:8787`). Use it to:
+against a local Legroom proxy (default `http://127.0.0.1:8787`). Use it to:
 
 - Regression-check that `/livez` stays responsive under a cold-start storm.
 - Empirically tune the Unit 4 pre-upstream semaphore default
-  (`HEADROOM_ANTHROPIC_PRE_UPSTREAM_CONCURRENCY`).
+  (`LEGROOM_ANTHROPIC_PRE_UPSTREAM_CONCURRENCY`).
 - Exercise the Codex WS lifecycle + Anthropic HTTP path simultaneously
   without needing to replay captured production traffic.
 
@@ -55,7 +55,7 @@ captured traffic to replay instead.
 
 - `/livez p99` under threshold means the event loop is not starved during the
   storm. If it rises with the semaphore unbounded
-  (`HEADROOM_ANTHROPIC_PRE_UPSTREAM_CONCURRENCY=10000`) and drops back under
+  (`LEGROOM_ANTHROPIC_PRE_UPSTREAM_CONCURRENCY=10000`) and drops back under
   the default, Unit 4's backpressure is working.
 - `Codex WS: opened` should equal `--ws-clients`. `response.completed`
   typically stays low when upstream auth isn't configured locally — the goal
@@ -110,8 +110,8 @@ node scripts/build_npm_release_assets.mjs <version> release-assets-local/smoke
 
 Expected tarballs:
 
-- `headroom-ai-<version>.tgz`
-- `headroom-openclaw-<version>.tgz`
+- `legroom-ai-<version>.tgz`
+- `legroom-openclaw-<version>.tgz`
 
 The script restores package metadata after it finishes so the source tree keeps
 the registry-installable development dependency range.
@@ -121,7 +121,7 @@ the registry-installable development dependency range.
 `build_python_release_smoke.py` locally reproduces the Python artifact smoke:
 it builds a wheel with `maturin`, builds an sdist, verifies the sdist
 `License-File` metadata against tarball contents, installs the wheel into a
-fresh `python -m venv` environment, and imports the native `headroom._core`
+fresh `python -m venv` environment, and imports the native `legroom._core`
 extension from that installed wheel.
 
 ```bash
@@ -138,8 +138,8 @@ python scripts/build_python_release_smoke.py --release --out release-assets-loca
 
 Expected artifacts:
 
-- `headroom_ai-<version>-*.whl`
-- `headroom_ai-<version>.tar.gz`
+- `legroom_ai-<version>-*.whl`
+- `legroom_ai-<version>.tar.gz`
 
 ## Full local release smoke
 

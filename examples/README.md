@@ -1,6 +1,6 @@
-# Headroom Examples
+# Legroom Examples
 
-This directory contains examples demonstrating Headroom's capabilities.
+This directory contains examples demonstrating Legroom's capabilities.
 
 ## Quick Start Examples
 
@@ -99,10 +99,10 @@ PYTHONPATH=. python -m examples.mcp_demo.run_agent_eval
 
 ### strands_bedrock_demo.py
 
-AWS Strands Agents + Bedrock integration demo. Showcases two Headroom integration patterns:
+AWS Strands Agents + Bedrock integration demo. Showcases two Legroom integration patterns:
 
-1. **HeadroomHookProvider** - Compresses tool outputs in real-time
-2. **HeadroomStrandsModel** - Optimizes entire conversation context
+1. **LegroomHookProvider** - Compresses tool outputs in real-time
+2. **LegroomStrandsModel** - Optimizes entire conversation context
 
 ```bash
 # Configure AWS credentials
@@ -133,7 +133,7 @@ and displays compression statistics with visual comparisons.
 **Requirements:**
 - AWS account with Bedrock enabled
 - Claude 3 Haiku model access in your region
-- `pip install strands-agents headroom-ai[strands]`
+- `pip install strands-agents legroom-ai[strands]`
 
 ## Running Examples
 
@@ -159,7 +159,7 @@ python examples/<example_name>.py
 
 ## Troubleshooting
 
-**ModuleNotFoundError: No module named 'headroom'**
+**ModuleNotFoundError: No module named 'legroom'**
 
 Run from the repository root with PYTHONPATH:
 

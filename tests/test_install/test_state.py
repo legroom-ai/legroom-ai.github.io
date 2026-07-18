@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from headroom.install.models import ArtifactRecord, DeploymentManifest, ManagedMutation
-from headroom.install.state import (
+from legroom.install.models import ArtifactRecord, DeploymentManifest, ManagedMutation
+from legroom.install.state import (
     ManifestError,
     delete_manifest,
     list_manifests,
@@ -27,7 +27,7 @@ def _manifest() -> DeploymentManifest:
         host="127.0.0.1",
         backend="anthropic",
         mutations=[ManagedMutation(target="env", kind="shell-block", path="x")],
-        artifacts=[ArtifactRecord(kind="script", path="run-headroom.sh")],
+        artifacts=[ArtifactRecord(kind="script", path="run-legroom.sh")],
     )
 
 
@@ -49,7 +49,7 @@ def test_load_manifest_raises_manifest_error_on_corrupt_payload(
 ) -> None:
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     # Simulate a crash mid-write: a truncated/garbage manifest left on disk.
-    profile_dir = tmp_path / ".headroom" / "deploy" / "default"
+    profile_dir = tmp_path / ".legroom" / "deploy" / "default"
     profile_dir.mkdir(parents=True)
     (profile_dir / "manifest.json").write_text("{not json", encoding="utf-8")
 
@@ -65,7 +65,7 @@ def test_save_manifest_writes_atomically(monkeypatch, tmp_path: Path) -> None:
     save_manifest(_manifest())
 
     # No leftover temp file from the atomic write; only the manifest itself.
-    profile_dir = tmp_path / ".headroom" / "deploy" / "default"
+    profile_dir = tmp_path / ".legroom" / "deploy" / "default"
     assert sorted(p.name for p in profile_dir.iterdir()) == ["manifest.json"]
     # And the persisted manifest still round-trips.
     assert load_manifest("default") is not None
@@ -76,7 +76,7 @@ def test_list_manifests_ignores_invalid_payloads(monkeypatch, tmp_path: Path) ->
     valid = _manifest()
     save_manifest(valid)
 
-    broken_dir = tmp_path / ".headroom" / "deploy" / "broken"
+    broken_dir = tmp_path / ".legroom" / "deploy" / "broken"
     broken_dir.mkdir(parents=True)
     (broken_dir / "manifest.json").write_text("{not json", encoding="utf-8")
 
@@ -89,7 +89,7 @@ def test_delete_manifest_removes_profile_root(monkeypatch, tmp_path: Path) -> No
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     manifest = _manifest()
     save_manifest(manifest)
-    extra_file = tmp_path / ".headroom" / "deploy" / "default" / "runner.log"
+    extra_file = tmp_path / ".legroom" / "deploy" / "default" / "runner.log"
     extra_file.write_text("log", encoding="utf-8")
 
     delete_manifest("default")

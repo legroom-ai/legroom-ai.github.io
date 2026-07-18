@@ -2,13 +2,13 @@
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use headroom_parity::{builtin_comparators, run_comparator};
+use legroom_parity::{builtin_comparators, run_comparator};
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 #[command(
     name = "parity-run",
-    about = "Run Headroom Rust-vs-Python parity checks"
+    about = "Run Legroom Rust-vs-Python parity checks"
 )]
 struct Cli {
     #[command(subcommand)]

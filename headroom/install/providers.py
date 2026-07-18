@@ -7,9 +7,9 @@ import re
 import subprocess
 from pathlib import Path
 
-from headroom import fsutil
-from headroom._subprocess import run
-from headroom.providers.install_registry import (
+from legroom import fsutil
+from legroom._subprocess import run
+from legroom.providers.install_registry import (
     apply_provider_scope_mutations,
     revert_provider_scope_mutation,
 )
@@ -20,8 +20,8 @@ from .paths import (
     unix_user_env_targets,
 )
 
-_ENV_MARKER_START = "# >>> headroom persistent env >>>"
-_ENV_MARKER_END = "# <<< headroom persistent env <<<"
+_ENV_MARKER_START = "# >>> legroom persistent env >>>"
+_ENV_MARKER_END = "# <<< legroom persistent env <<<"
 _ENV_PATTERN = re.compile(
     re.escape(_ENV_MARKER_START) + r".*?" + re.escape(_ENV_MARKER_END),
     re.DOTALL,
@@ -96,7 +96,7 @@ def _apply_windows_env_scope(manifest: DeploymentManifest) -> list[ManagedMutati
                 "-NoProfile",
                 "-Command",
                 f"$value = [Environment]::GetEnvironmentVariable({_powershell_literal(name)},{_powershell_literal(scope_name)}); "
-                "if ($null -eq $value) { '__HEADROOM_UNSET__' } else { $value }",
+                "if ($null -eq $value) { '__LEGROOM_UNSET__' } else { $value }",
             ],
             capture_output=True,
             text=True,
@@ -116,7 +116,7 @@ def _apply_windows_env_scope(manifest: DeploymentManifest) -> list[ManagedMutati
                 data={
                     "name": name,
                     "scope": scope_name,
-                    "previous": None if previous == "__HEADROOM_UNSET__" else previous,
+                    "previous": None if previous == "__LEGROOM_UNSET__" else previous,
                 },
             )
         )

@@ -1,4 +1,4 @@
-"""Base class for headroom learn plugins.
+"""Base class for legroom learn plugins.
 
 Each coding agent (Claude Code, Codex, Gemini, Cursor, etc.) implements
 a LearnPlugin that bundles scanning, writing, and detection into one unit.
@@ -36,8 +36,8 @@ class LearnPlugin(ABC):
     """A self-contained learn plugin for a single coding agent.
 
     Bundles identity, detection, scanning, and writer creation.
-    Plugins are discovered automatically from headroom.learn.plugins.*
-    or via ``headroom.learn_plugin`` entry points for external packages.
+    Plugins are discovered automatically from legroom.learn.plugins.*
+    or via ``legroom.learn_plugin`` entry points for external packages.
 
     Example::
 
@@ -62,7 +62,7 @@ class LearnPlugin(ABC):
             ) -> list[SessionData]: ...
 
             def create_writer(self) -> ContextWriter:
-                from headroom.learn.writer import GeminiWriter
+                from legroom.learn.writer import GeminiWriter
                 return GeminiWriter()  # or a custom writer
 
         # Module-level instance for auto-discovery

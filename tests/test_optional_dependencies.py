@@ -13,7 +13,7 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 fallback
 
 ROOT = Path(__file__).resolve().parents[1]
 ALL_EXTRA = "all"
-HEADROOM_PACKAGE_NAME = "headroom-ai"
+LEGROOM_PACKAGE_NAME = "legroom-ai"
 MACOS_X86_64_TORCH_GUARD = "sys_platform != 'darwin' or platform_machine != 'x86_64'"
 MACOS_X86_64_SYS_PLATFORM = "darwin"
 MACOS_X86_64_PLATFORM_MACHINE = "x86_64"
@@ -43,7 +43,7 @@ def _selected_dependency_names_for_extra(
         requirement = Requirement(dependency)
         if requirement.marker is not None and not requirement.marker.evaluate(environment):
             continue
-        if requirement.name == HEADROOM_PACKAGE_NAME:
+        if requirement.name == LEGROOM_PACKAGE_NAME:
             for nested_extra in requirement.extras:
                 selected.update(
                     _selected_dependency_names_for_extra(
@@ -68,7 +68,7 @@ def _locked_dependency_names(package_name: str) -> set[str]:
 
 
 def test_all_extra_does_not_require_torch_on_macos_x86_64() -> None:
-    """Keep `headroom-ai[all]` resolvable where PyTorch publishes no wheel."""
+    """Keep `legroom-ai[all]` resolvable where PyTorch publishes no wheel."""
 
     pyproject = tomllib.loads((ROOT / PYPROJECT_FILE).read_text(encoding="utf-8"))
     optional_deps = pyproject["project"]["optional-dependencies"]
@@ -108,7 +108,7 @@ def test_all_extra_does_not_require_torch_on_macos_x86_64() -> None:
 
 
 def test_proxy_extra_includes_orjson_for_litellm_backends() -> None:
-    """`headroom-ai[all]` must ship orjson for LiteLLM provider backends (GH #2056)."""
+    """`legroom-ai[all]` must ship orjson for LiteLLM provider backends (GH #2056)."""
 
     pyproject = tomllib.loads((ROOT / PYPROJECT_FILE).read_text(encoding="utf-8"))
     optional_deps = pyproject["project"]["optional-dependencies"]

@@ -8,20 +8,20 @@ This module provides intelligent, automatic compression that:
 
 Quick Start:
     # One-liner for simple use
-    from headroom.compression import compress
+    from legroom.compression import compress
     result = compress(content)
 
     # Or with configuration
-    from headroom.compression import UniversalCompressor, UniversalCompressorConfig
+    from legroom.compression import UniversalCompressor, UniversalCompressorConfig
 
     config = UniversalCompressorConfig(compression_ratio_target=0.5)
     compressor = UniversalCompressor(config=config)
     result = compressor.compress(content)
 """
 
-from headroom.compression.detector import ContentType, MagikaDetector
-from headroom.compression.masks import StructureMask
-from headroom.compression.universal import (
+from legroom.compression.detector import ContentType, MagikaDetector
+from legroom.compression.masks import StructureMask
+from legroom.compression.universal import (
     CompressionResult,
     UniversalCompressor,
     UniversalCompressorConfig,

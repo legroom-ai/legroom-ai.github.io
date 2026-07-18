@@ -16,7 +16,7 @@ WITHOUT the overlay the freeze forwards the agent's original bytes and busts eve
 turn; WITH it the prefix stays stable.
 """
 
-from headroom.cache.prefix_tracker import (
+from legroom.cache.prefix_tracker import (
     PrefixCacheTracker,
     PrefixFreezeConfig,
     overlay_cached_prefix,

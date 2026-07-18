@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from headroom.proxy.memory_query_policy import (
+from legroom.proxy.memory_query_policy import (
     extract_memory_query_sources,
     render_embedding_input,
 )

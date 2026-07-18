@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from headroom.proxy.beta_header_policy import (
+from legroom.proxy.beta_header_policy import (
     BETA_HEADER_STICKY_ENV,
     BETA_TRACKER_MAX_SESSIONS_DEFAULT,
     BETA_TRACKER_MAX_SESSIONS_ENV,

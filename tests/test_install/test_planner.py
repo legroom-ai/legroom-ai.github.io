@@ -3,12 +3,12 @@ from __future__ import annotations
 import click
 import pytest
 
-from headroom.install.models import ConfigScope, InstallPreset, ProviderSelectionMode, ToolTarget
-from headroom.install.planner import PROVIDER_SCOPE_TARGETS, build_manifest, resolve_targets
+from legroom.install.models import ConfigScope, InstallPreset, ProviderSelectionMode, ToolTarget
+from legroom.install.planner import PROVIDER_SCOPE_TARGETS, build_manifest, resolve_targets
 
 
 def test_resolve_targets_auto_falls_back_when_detection_empty(monkeypatch) -> None:
-    monkeypatch.setattr("headroom.install.planner.detect_targets", lambda: [])
+    monkeypatch.setattr("legroom.install.planner.detect_targets", lambda: [])
 
     targets = resolve_targets(ProviderSelectionMode.AUTO.value, [])
 
@@ -34,14 +34,14 @@ def test_build_manifest_for_persistent_docker_sets_expected_defaults() -> None:
         proxy_mode="token",
         memory_enabled=True,
         telemetry_enabled=False,
-        image="ghcr.io/headroomlabs-ai/headroom:latest",
+        image="ghcr.io/legroom-ai/legroom:latest",
     )
 
     assert manifest.supervisor_kind == "none"
     assert manifest.runtime_kind == "docker"
     assert manifest.health_url == "http://127.0.0.1:8787/readyz"
-    assert manifest.base_env["HEADROOM_PORT"] == "8787"
-    assert manifest.base_env["HEADROOM_TELEMETRY"] == "off"
+    assert manifest.base_env["LEGROOM_PORT"] == "8787"
+    assert manifest.base_env["LEGROOM_TELEMETRY"] == "off"
     assert "--no-telemetry" in manifest.proxy_args
     assert manifest.tool_envs["claude"]["ANTHROPIC_BASE_URL"] == "http://127.0.0.1:8787"
     assert manifest.tool_envs["copilot"]["COPILOT_PROVIDER_TYPE"] == "anthropic"
@@ -63,11 +63,11 @@ def test_build_manifest_uses_provider_slice_env_builders_for_all_supported_targe
         proxy_mode="token",
         memory_enabled=False,
         telemetry_enabled=True,
-        image="ghcr.io/headroomlabs-ai/headroom:latest",
+        image="ghcr.io/legroom-ai/legroom:latest",
     )
 
     # telemetry_enabled=True must write the explicit opt-in value + flag.
-    assert manifest.base_env["HEADROOM_TELEMETRY"] == "on"
+    assert manifest.base_env["LEGROOM_TELEMETRY"] == "on"
     assert "--telemetry" in manifest.proxy_args
     assert manifest.tool_envs["claude"]["ANTHROPIC_BASE_URL"] == "http://127.0.0.1:9999"
     assert manifest.tool_envs["codex"]["OPENAI_BASE_URL"] == "http://127.0.0.1:9999/v1"
@@ -87,7 +87,7 @@ def test_build_manifest_uses_provider_slice_env_builders_for_all_supported_targe
 
 
 def test_resolve_targets_provider_scope_auto_excludes_copilot(monkeypatch) -> None:
-    monkeypatch.setattr("headroom.install.planner.detect_targets", lambda: [])
+    monkeypatch.setattr("legroom.install.planner.detect_targets", lambda: [])
 
     targets = resolve_targets(
         ProviderSelectionMode.AUTO.value,
@@ -122,7 +122,7 @@ def test_build_manifest_omits_no_http2_by_default() -> None:
         proxy_mode="token",
         memory_enabled=False,
         telemetry_enabled=True,
-        image="ghcr.io/headroomlabs-ai/headroom:latest",
+        image="ghcr.io/legroom-ai/legroom:latest",
     )
 
     assert "--no-http2" not in manifest.proxy_args
@@ -143,12 +143,12 @@ def test_build_manifest_persists_no_http2_override() -> None:
         proxy_mode="token",
         memory_enabled=False,
         telemetry_enabled=True,
-        image="ghcr.io/headroomlabs-ai/headroom:latest",
+        image="ghcr.io/legroom-ai/legroom:latest",
         no_http2=True,
     )
 
     assert manifest.proxy_args.count("--no-http2") == 1
-    assert "HEADROOM_HTTP2" not in manifest.base_env
+    assert "LEGROOM_HTTP2" not in manifest.base_env
 
 
 def test_resolve_targets_provider_scope_all_ignores_unsupported_requested() -> None:
@@ -167,7 +167,7 @@ def test_resolve_targets_provider_scope_all_ignores_unsupported_requested() -> N
 def test_resolve_targets_provider_scope_auto_ignores_unsupported_requested(monkeypatch) -> None:
     """`auto` mode also ignores the requested list, so an unsupported entry
     must not raise."""
-    monkeypatch.setattr("headroom.install.planner.detect_targets", lambda: [])
+    monkeypatch.setattr("legroom.install.planner.detect_targets", lambda: [])
 
     targets = resolve_targets(
         ProviderSelectionMode.AUTO.value,
@@ -204,7 +204,7 @@ def _base_manifest_kwargs(**overrides):
         "proxy_mode": "token",
         "memory_enabled": False,
         "telemetry_enabled": False,
-        "image": "ghcr.io/ghaliba3/headroom:latest",
+        "image": "ghcr.io/ghaliba3/legroom:latest",
     }
     kwargs.update(overrides)
     return kwargs
@@ -256,15 +256,15 @@ def test_build_manifest_persists_bedrock_profile() -> None:
 
 def test_build_manifest_merges_extra_env_into_base_env() -> None:
     manifest = build_manifest(
-        **_base_manifest_kwargs(extra_env={"HEADROOM_WORKSPACE_DIR": "/custom/workspace"})
+        **_base_manifest_kwargs(extra_env={"LEGROOM_WORKSPACE_DIR": "/custom/workspace"})
     )
 
-    assert manifest.base_env["HEADROOM_WORKSPACE_DIR"] == "/custom/workspace"
+    assert manifest.base_env["LEGROOM_WORKSPACE_DIR"] == "/custom/workspace"
 
 
 def test_build_manifest_extra_env_overrides_derived_defaults() -> None:
-    manifest = build_manifest(**_base_manifest_kwargs(extra_env={"HEADROOM_TELEMETRY": "on"}))
+    manifest = build_manifest(**_base_manifest_kwargs(extra_env={"LEGROOM_TELEMETRY": "on"}))
 
     # telemetry_enabled=False in _base_manifest_kwargs would normally set "off";
     # an explicit --env must win.
-    assert manifest.base_env["HEADROOM_TELEMETRY"] == "on"
+    assert manifest.base_env["LEGROOM_TELEMETRY"] == "on"

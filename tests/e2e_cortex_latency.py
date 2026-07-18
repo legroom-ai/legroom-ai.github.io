@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-Latency benchmark: Snowflake Cortex  —  Standard vs Headroom
+Latency benchmark: Snowflake Cortex  —  Standard vs Legroom
 
 Measures per call (averaged over N runs):
   - TTFT   Time to First Token  (streaming)
   - E2E    End-to-End latency
-  - Compress overhead  (headroom local processing time)
+  - Compress overhead  (legroom local processing time)
   - Prompt token count  (from usage block in final SSE chunk)
 
-Because headroom reduces prompt length, prefill is shorter → lower TTFT.
+Because legroom reduces prompt length, prefill is shorter → lower TTFT.
 Multiple runs are averaged to smooth out shared-API latency variance.
 
 Usage:
@@ -30,11 +30,11 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-# ── Bootstrap headroom ────────────────────────────────────────────────────────
+# ── Bootstrap legroom ────────────────────────────────────────────────────────
 REPO_ROOT = Path(__file__).resolve().parent.parent
 _VENV_SITE = REPO_ROOT / ".venv" / "lib"
 try:
-    from headroom import compress as _hc_check  # noqa: F401
+    from legroom import compress as _hc_check  # noqa: F401
 except ImportError:
     sys.path.insert(0, str(REPO_ROOT))
     for _d in _VENV_SITE.glob("python*/site-packages"):
@@ -71,7 +71,7 @@ def _stream_call(messages: list[dict], token: str, host: str) -> tuple[float, fl
             "Authorization": f'Snowflake Token="{token}"',
             "Content-Type": "application/json",
             "Accept": "text/event-stream",
-            "User-Agent": "headroom-latency-bench/1.0",
+            "User-Agent": "legroom-latency-bench/1.0",
         },
     )
 
@@ -280,7 +280,7 @@ def run_benchmark(
     host: str,
     n_runs: int = 3,
 ) -> LatencyResult:
-    from headroom import compress
+    from legroom import compress
 
     print(f"\n   ┌─ {label}  (n={n_runs} runs each)")
 
@@ -371,7 +371,7 @@ def _show(r: LatencyResult) -> None:
 def main() -> int:
     print()
     print("╔═══════════════════════════════════════════════════════════════╗")
-    print("║  Cortex Code × Headroom  —  TTFT + Latency Benchmark         ║")
+    print("║  Cortex Code × Legroom  —  TTFT + Latency Benchmark         ║")
     print("║  Streaming API  │  Time to First Token  │  E2E latency        ║")
     print("╚═══════════════════════════════════════════════════════════════╝")
 

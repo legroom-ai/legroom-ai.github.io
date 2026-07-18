@@ -5,9 +5,9 @@ from __future__ import annotations
 import os
 from collections.abc import Mapping
 
-from headroom.providers.claude import proxy_base_url as claude_proxy_base_url
-from headroom.providers.codex import proxy_base_url as codex_proxy_base_url
-from headroom.proxy.project_context import with_project_prefix
+from legroom.providers.claude import proxy_base_url as claude_proxy_base_url
+from legroom.providers.codex import proxy_base_url as codex_proxy_base_url
+from legroom.proxy.project_context import with_project_prefix
 
 
 def build_launch_env(

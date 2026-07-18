@@ -9,7 +9,7 @@ from tests._dotenv import importorskip_no_env_leak
 
 importorskip_no_env_leak("litellm")
 
-from headroom.backends.litellm import LiteLLMBackend  # noqa: E402
+from legroom.backends.litellm import LiteLLMBackend  # noqa: E402
 
 
 class FakeAsyncStream:
@@ -28,7 +28,7 @@ class FakeAsyncStream:
 
 
 def make_backend() -> LiteLLMBackend:
-    with patch("headroom.backends.litellm._fetch_bedrock_inference_profiles", return_value={}):
+    with patch("legroom.backends.litellm._fetch_bedrock_inference_profiles", return_value={}):
         return LiteLLMBackend(provider="openrouter")
 
 
@@ -61,7 +61,7 @@ def request_body(**overrides):
 async def test_chat_template_kwargs_forwarded_buffered() -> None:
     backend = make_backend()
 
-    with patch("headroom.backends.litellm.acompletion", new_callable=AsyncMock) as mock_acomp:
+    with patch("legroom.backends.litellm.acompletion", new_callable=AsyncMock) as mock_acomp:
         mock_acomp.return_value = make_response()
 
         await backend.send_openai_message(
@@ -84,7 +84,7 @@ async def test_chat_template_kwargs_forwarded_streaming() -> None:
         ]
     )
 
-    with patch("headroom.backends.litellm.acompletion", new_callable=AsyncMock) as mock_acomp:
+    with patch("legroom.backends.litellm.acompletion", new_callable=AsyncMock) as mock_acomp:
         mock_acomp.return_value = stream
 
         chunks = [
@@ -109,7 +109,7 @@ async def test_chat_template_kwargs_forwarded_streaming() -> None:
 async def test_standard_only_body_has_no_extra_body() -> None:
     backend = make_backend()
 
-    with patch("headroom.backends.litellm.acompletion", new_callable=AsyncMock) as mock_acomp:
+    with patch("legroom.backends.litellm.acompletion", new_callable=AsyncMock) as mock_acomp:
         mock_acomp.return_value = make_response()
 
         await backend.send_openai_message(
@@ -125,7 +125,7 @@ async def test_standard_only_body_has_no_extra_body() -> None:
 async def test_standard_params_still_forwarded() -> None:
     backend = make_backend()
 
-    with patch("headroom.backends.litellm.acompletion", new_callable=AsyncMock) as mock_acomp:
+    with patch("legroom.backends.litellm.acompletion", new_callable=AsyncMock) as mock_acomp:
         mock_acomp.return_value = make_response()
 
         await backend.send_openai_message(

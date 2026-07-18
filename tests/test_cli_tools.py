@@ -7,9 +7,9 @@ from types import SimpleNamespace
 import pytest
 from click.testing import CliRunner
 
-from headroom import binaries
-from headroom.cli import tools as cli_tools
-from headroom.cli.main import main
+from legroom import binaries
+from legroom.cli import tools as cli_tools
+from legroom.cli.main import main
 
 
 @pytest.fixture
@@ -79,7 +79,7 @@ def test_exec_tool_windows_and_posix_paths(monkeypatch: pytest.MonkeyPatch) -> N
     ("error", "expected"),
     [
         (binaries.PlatformNotSupported("unsupported"), "error: unsupported"),
-        (binaries.OfflineError("offline"), "Hint: run `headroom tools install`"),
+        (binaries.OfflineError("offline"), "Hint: run `legroom tools install`"),
         (binaries.Sha256Mismatch("bad sha"), "error: bad sha"),
         (binaries.BinaryFetchError("fetch failed"), "error: fetch failed"),
     ],

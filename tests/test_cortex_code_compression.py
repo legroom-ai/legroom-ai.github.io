@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""End-to-end token-savings test for Cortex Code (CoCo) + Headroom.
+"""End-to-end token-savings test for Cortex Code (CoCo) + Legroom.
 
 Simulates a real Cortex Code session using JSON-format tool results —
 the format Snowflake's Python connector and most tool wrappers actually
-emit.  Headroom's SmartCrusher compresses JSON natively without any ML
+emit.  Legroom's SmartCrusher compresses JSON natively without any ML
 model, so this test works with the base install (no [ml] extra needed).
 
 No API key required. Compression runs fully local.
 
 Usage:
     # Benchmark (pretty-printed report):
-    cd headroom && uv run python tests/test_cortex_code_compression.py
+    cd legroom && uv run python tests/test_cortex_code_compression.py
 
     # Pytest (CI-friendly assertions):
-    cd headroom && uv run --with pytest pytest tests/test_cortex_code_compression.py -v -s
+    cd legroom && uv run --with pytest pytest tests/test_cortex_code_compression.py -v -s
 """
 
 from __future__ import annotations
@@ -417,9 +417,9 @@ def _table_row(label: str, before: int, after: int) -> str:
 # ── Pytest tests ──────────────────────────────────────────────────────────────
 
 
-def test_cortex_code_headroom_compression_saves_tokens() -> None:
-    """Headroom must compress a realistic multi-turn CoCo session."""
-    from headroom import compress
+def test_cortex_code_legroom_compression_saves_tokens() -> None:
+    """Legroom must compress a realistic multi-turn CoCo session."""
+    from legroom import compress
 
     messages = build_coco_session_messages()
 
@@ -442,7 +442,7 @@ def test_cortex_code_headroom_compression_saves_tokens() -> None:
 
 def test_cortex_code_tool_results_are_compressed_not_user_turns() -> None:
     """User turn content must be identical before and after compression."""
-    from headroom import compress
+    from legroom import compress
 
     messages = build_coco_session_messages()
     result = compress(messages, model=MODEL)
@@ -459,7 +459,7 @@ def test_cortex_code_tool_results_are_compressed_not_user_turns() -> None:
 
 def test_cortex_code_tables_json_compresses() -> None:
     """Large Snowflake INFORMATION_SCHEMA result (JSON) must compress."""
-    from headroom import compress
+    from legroom import compress
 
     messages = [
         {"role": "user", "content": "List all tables in ANALYTICS schema."},
@@ -493,7 +493,7 @@ def test_cortex_code_tables_json_compresses() -> None:
 
 def test_cortex_code_rag_search_json_compresses() -> None:
     """Cortex Search JSON results (repeated structure) must compress."""
-    from headroom import compress
+    from legroom import compress
 
     messages = [
         {"role": "user", "content": "Search for product_family migration guide."},
@@ -528,7 +528,7 @@ def test_cortex_code_rag_search_json_compresses() -> None:
 
 def test_cortex_code_compression_is_lossless_on_key_content() -> None:
     """Key answer tokens must survive compression (the model can still answer)."""
-    from headroom import compress
+    from legroom import compress
 
     messages = [
         {"role": "user", "content": "Search wiki for product_family rename."},
@@ -568,11 +568,11 @@ def test_cortex_code_compression_is_lossless_on_key_content() -> None:
 
 
 if __name__ == "__main__":
-    from headroom import compress
+    from legroom import compress
 
     print()
     print("=" * 65)
-    print("  Cortex Code × Headroom  —  token savings benchmark")
+    print("  Cortex Code × Legroom  —  token savings benchmark")
     print("  (No API key needed — compression is fully local)")
     print("=" * 65)
 
@@ -672,8 +672,8 @@ if __name__ == "__main__":
     print()
     if total_saved > 0:
         print(
-            f"  PASS  headroom saved {total_saved:,} tokens ({total_pct:.0f}%) across all CoCo payload types"
+            f"  PASS  legroom saved {total_saved:,} tokens ({total_pct:.0f}%) across all CoCo payload types"
         )
     else:
-        print("  FAIL  no compression — run: pip install 'headroom-ai[all]'")
+        print("  FAIL  no compression — run: pip install 'legroom-ai[all]'")
     print()

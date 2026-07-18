@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from headroom.proxy.persistent_metrics import PersistentMetricsState
+from legroom.proxy.persistent_metrics import PersistentMetricsState
 
 FIXED_NOW = datetime(2026, 7, 14, 8, 30, tzinfo=timezone.utc)
 

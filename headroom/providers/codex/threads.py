@@ -1,14 +1,14 @@
-"""Reconcile Codex thread provider tags across the Headroom proxy boundary.
+"""Reconcile Codex thread provider tags across the Legroom proxy boundary.
 
 Codex stamps every thread with the ``model_provider`` it ran under and filters
-its history/projects menu by the active provider set.  When Headroom rewrites
-Codex's config to route through the custom ``headroom`` provider (see
-:mod:`headroom.providers.codex.install`), threads created through Headroom are
-tagged ``headroom`` while native threads keep ``openai`` -- so the two sets never
-appear in the same menu, and connecting Headroom appears to "lose" history.
+its history/projects menu by the active provider set.  When Legroom rewrites
+Codex's config to route through the custom ``legroom`` provider (see
+:mod:`legroom.providers.codex.install`), threads created through Legroom are
+tagged ``legroom`` while native threads keep ``openai`` -- so the two sets never
+appear in the same menu, and connecting Legroom appears to "lose" history.
 
 To keep the menu whole we retag threads to match whichever provider is active:
-``openai -> headroom`` when Headroom is enabled, ``headroom -> openai`` when it is
+``openai -> legroom`` when Legroom is enabled, ``legroom -> openai`` when it is
 reverted.  Only rows whose ``model_provider`` equals the source value are
 touched, so third-party providers are left alone.
 
@@ -28,7 +28,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-HEADROOM_PROVIDER = "headroom"
+LEGROOM_PROVIDER = "legroom"
 NATIVE_PROVIDER = "openai"
 
 # Seconds to wait on a busy store before giving up (a running Codex only holds an
@@ -105,11 +105,11 @@ def retag_thread_providers(codex_home: Path, *, frm: str, to: str) -> None:
             logger.info("codex thread retag %s->%s: %d thread(s) in %s", frm, to, moved, path)
 
 
-def retag_to_headroom(codex_home: Path) -> None:
-    """Pull existing native threads into the headroom-provider menu (on enable)."""
-    retag_thread_providers(codex_home, frm=NATIVE_PROVIDER, to=HEADROOM_PROVIDER)
+def retag_to_legroom(codex_home: Path) -> None:
+    """Pull existing native threads into the legroom-provider menu (on enable)."""
+    retag_thread_providers(codex_home, frm=NATIVE_PROVIDER, to=LEGROOM_PROVIDER)
 
 
 def retag_to_native(codex_home: Path) -> None:
     """Hand threads back to the native-provider menu (on revert)."""
-    retag_thread_providers(codex_home, frm=HEADROOM_PROVIDER, to=NATIVE_PROVIDER)
+    retag_thread_providers(codex_home, frm=LEGROOM_PROVIDER, to=NATIVE_PROVIDER)

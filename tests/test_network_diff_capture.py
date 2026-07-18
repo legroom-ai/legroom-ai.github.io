@@ -6,12 +6,12 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from headroom.capture.network_diff import (
+from legroom.capture.network_diff import (
     compare_captures,
     load_capture_file,
     render_markdown_report,
 )
-from headroom.cli.main import main
+from legroom.cli.main import main
 
 
 def _write_jsonl(path: Path, records: list[dict[str, object]]) -> None:
@@ -24,7 +24,7 @@ def _body(payload: dict[str, object]) -> str:
 
 def test_network_diff_redacts_and_reports_body_json_deltas(tmp_path: Path) -> None:
     direct_path = tmp_path / "direct.jsonl"
-    headroom_path = tmp_path / "headroom.jsonl"
+    legroom_path = tmp_path / "legroom.jsonl"
     _write_jsonl(
         direct_path,
         [
@@ -45,16 +45,16 @@ def test_network_diff_redacts_and_reports_body_json_deltas(tmp_path: Path) -> No
         ],
     )
     _write_jsonl(
-        headroom_path,
+        legroom_path,
         [
             {
-                "lane": "headroom",
+                "lane": "legroom",
                 "method": "POST",
                 "url": "https://api.anthropic.com/v1/messages?api_key=secret",
                 "request_headers": {
                     "authorization": "Bearer other",
                     "anthropic-version": "2023-06-01",
-                    "x-headroom-mode": "optimize",
+                    "x-legroom-mode": "optimize",
                 },
                 "request_body_b64": _body(
                     {
@@ -70,20 +70,20 @@ def test_network_diff_redacts_and_reports_body_json_deltas(tmp_path: Path) -> No
     )
 
     direct = load_capture_file(direct_path, fallback_lane="direct")
-    headroom = load_capture_file(headroom_path, fallback_lane="headroom")
+    legroom = load_capture_file(legroom_path, fallback_lane="legroom")
 
     assert direct[0].url == "https://api.anthropic.com/v1/messages?api_key=%3Credacted%3E"
     assert direct[0].request_headers["authorization"] == "<redacted>"
 
-    diff = compare_captures(direct, headroom)
+    diff = compare_captures(direct, legroom)
     assert diff.direct_count == 1
-    assert diff.headroom_count == 1
+    assert diff.legroom_count == 1
     paired = diff.paired[0]
-    assert paired["headers"]["only_headroom"] == ["x-headroom-mode"]
-    assert "$.metadata" in paired["json"]["only_headroom"]
+    assert paired["headers"]["only_legroom"] == ["x-legroom-mode"]
+    assert "$.metadata" in paired["json"]["only_legroom"]
     assert "$.messages[0].content" in paired["json"]["changed"]
     assert paired["anthropic"]["direct"]["tools_count"] == 0
-    assert paired["anthropic"]["headroom"]["tools_count"] == 1
+    assert paired["anthropic"]["legroom"]["tools_count"] == 1
 
     markdown = render_markdown_report(diff)
     assert "Differential Network Capture Report" in markdown
@@ -93,7 +93,7 @@ def test_network_diff_redacts_and_reports_body_json_deltas(tmp_path: Path) -> No
 
 def test_network_diff_cli_writes_markdown_and_json(tmp_path: Path) -> None:
     direct_path = tmp_path / "direct.jsonl"
-    headroom_path = tmp_path / "headroom.jsonl"
+    legroom_path = tmp_path / "legroom.jsonl"
     markdown_path = tmp_path / "report.md"
     json_path = tmp_path / "report.json"
     record = {
@@ -104,7 +104,7 @@ def test_network_diff_cli_writes_markdown_and_json(tmp_path: Path) -> None:
         "response_status": 200,
     }
     _write_jsonl(direct_path, [record])
-    _write_jsonl(headroom_path, [record])
+    _write_jsonl(legroom_path, [record])
 
     result = CliRunner().invoke(
         main,
@@ -113,8 +113,8 @@ def test_network_diff_cli_writes_markdown_and_json(tmp_path: Path) -> None:
             "network-diff",
             "--direct",
             str(direct_path),
-            "--headroom",
-            str(headroom_path),
+            "--legroom",
+            str(legroom_path),
             "--output",
             str(markdown_path),
             "--json-output",
@@ -127,4 +127,4 @@ def test_network_diff_cli_writes_markdown_and_json(tmp_path: Path) -> None:
     assert "Differential Network Capture Report" in markdown_path.read_text(encoding="utf-8")
     payload = json.loads(json_path.read_text(encoding="utf-8"))
     assert payload["direct_count"] == 1
-    assert payload["headroom_count"] == 1
+    assert payload["legroom_count"] == 1

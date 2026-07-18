@@ -7,7 +7,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
 
-from headroom_oauth2 import (
+from legroom_oauth2 import (
     OAuth2ClientCredentials,
     OAuth2Error,
     OAuth2Middleware,
@@ -224,12 +224,12 @@ def test_parse_headers_rejects_control_chars():
 
 def test_provider_from_env_wires_knobs(idp):
     env = {
-        "HEADROOM_OAUTH2_TOKEN_URL": idp,
-        "HEADROOM_OAUTH2_CLIENT_ID": "c",
-        "HEADROOM_OAUTH2_CLIENT_SECRET": "s",
-        "HEADROOM_OAUTH2_RESOURCE": "https://api.example",
-        "HEADROOM_OAUTH2_TIMEOUT": "5",
-        "HEADROOM_OAUTH2_SKEW": "10",
+        "LEGROOM_OAUTH2_TOKEN_URL": idp,
+        "LEGROOM_OAUTH2_CLIENT_ID": "c",
+        "LEGROOM_OAUTH2_CLIENT_SECRET": "s",
+        "LEGROOM_OAUTH2_RESOURCE": "https://api.example",
+        "LEGROOM_OAUTH2_TIMEOUT": "5",
+        "LEGROOM_OAUTH2_SKEW": "10",
     }
     p = provider_from_env(env)
     assert p.extra_params == {"resource": "https://api.example"}
@@ -286,7 +286,7 @@ def test_middleware_502_on_mint_failure():
 
 # --- install() (entry point) ---------------------------------------------------
 def test_install_noop_when_unset(monkeypatch):
-    monkeypatch.delenv("HEADROOM_OAUTH2_TOKEN_URL", raising=False)
+    monkeypatch.delenv("LEGROOM_OAUTH2_TOKEN_URL", raising=False)
 
     class App:
         def add_middleware(self, *a, **k):
@@ -296,17 +296,17 @@ def test_install_noop_when_unset(monkeypatch):
 
 
 def test_install_fail_closed_on_bad_config(monkeypatch):
-    monkeypatch.setenv("HEADROOM_OAUTH2_TOKEN_URL", "https://idp.example.com/token")
-    monkeypatch.setenv("HEADROOM_OAUTH2_CLIENT_ID", "")  # missing -> ValueError -> RuntimeError
+    monkeypatch.setenv("LEGROOM_OAUTH2_TOKEN_URL", "https://idp.example.com/token")
+    monkeypatch.setenv("LEGROOM_OAUTH2_CLIENT_ID", "")  # missing -> ValueError -> RuntimeError
     with pytest.raises(RuntimeError):
         install(object(), _cfg("litellm-openai"))
 
 
 def test_install_warns_for_envauth_backend(monkeypatch, caplog):
-    monkeypatch.setenv("HEADROOM_OAUTH2_TOKEN_URL", "https://idp.example.com/token")
-    monkeypatch.setenv("HEADROOM_OAUTH2_CLIENT_ID", "c")
-    monkeypatch.setenv("HEADROOM_OAUTH2_CLIENT_SECRET", "s")
-    monkeypatch.delenv("HEADROOM_OAUTH2_HEADERS", raising=False)
+    monkeypatch.setenv("LEGROOM_OAUTH2_TOKEN_URL", "https://idp.example.com/token")
+    monkeypatch.setenv("LEGROOM_OAUTH2_CLIENT_ID", "c")
+    monkeypatch.setenv("LEGROOM_OAUTH2_CLIENT_SECRET", "s")
+    monkeypatch.delenv("LEGROOM_OAUTH2_HEADERS", raising=False)
     installed = []
 
     class App:
@@ -320,10 +320,10 @@ def test_install_warns_for_envauth_backend(monkeypatch, caplog):
 
 
 def test_install_fail_closed_on_bad_timeout(monkeypatch):
-    monkeypatch.setenv("HEADROOM_OAUTH2_TOKEN_URL", "https://idp.example.com/token")
-    monkeypatch.setenv("HEADROOM_OAUTH2_CLIENT_ID", "c")
-    monkeypatch.setenv("HEADROOM_OAUTH2_CLIENT_SECRET", "s")
-    monkeypatch.setenv("HEADROOM_OAUTH2_TIMEOUT", "not-a-number")  # invalid -> fail closed
+    monkeypatch.setenv("LEGROOM_OAUTH2_TOKEN_URL", "https://idp.example.com/token")
+    monkeypatch.setenv("LEGROOM_OAUTH2_CLIENT_ID", "c")
+    monkeypatch.setenv("LEGROOM_OAUTH2_CLIENT_SECRET", "s")
+    monkeypatch.setenv("LEGROOM_OAUTH2_TIMEOUT", "not-a-number")  # invalid -> fail closed
     with pytest.raises(RuntimeError):
         install(object(), _cfg("litellm-openai"))
 
@@ -384,10 +384,10 @@ def test_ipv6_loopback_allowed():
 def test_allow_insecure_env_permits_nonloopback_http():
     p = provider_from_env(
         {
-            "HEADROOM_OAUTH2_TOKEN_URL": "http://example.com/token",
-            "HEADROOM_OAUTH2_CLIENT_ID": "c",
-            "HEADROOM_OAUTH2_CLIENT_SECRET": "s",
-            "HEADROOM_OAUTH2_ALLOW_INSECURE": "1",
+            "LEGROOM_OAUTH2_TOKEN_URL": "http://example.com/token",
+            "LEGROOM_OAUTH2_CLIENT_ID": "c",
+            "LEGROOM_OAUTH2_CLIENT_SECRET": "s",
+            "LEGROOM_OAUTH2_ALLOW_INSECURE": "1",
         }
     )
     assert p.token_url == "http://example.com/token"
@@ -413,10 +413,10 @@ def test_extra_params_cannot_override_canonical(idp):
 def test_auth_style_basic_via_env(idp):
     p = provider_from_env(
         {
-            "HEADROOM_OAUTH2_TOKEN_URL": idp,
-            "HEADROOM_OAUTH2_CLIENT_ID": "cid",
-            "HEADROOM_OAUTH2_CLIENT_SECRET": "csec",
-            "HEADROOM_OAUTH2_AUTH_STYLE": "basic",
+            "LEGROOM_OAUTH2_TOKEN_URL": idp,
+            "LEGROOM_OAUTH2_CLIENT_ID": "cid",
+            "LEGROOM_OAUTH2_CLIENT_SECRET": "csec",
+            "LEGROOM_OAUTH2_AUTH_STYLE": "basic",
         }
     )
     assert p.auth_style == "basic"
@@ -427,10 +427,10 @@ def test_auth_style_basic_via_env(idp):
 def test_scopes_comma_separated_via_env(idp):
     p = provider_from_env(
         {
-            "HEADROOM_OAUTH2_TOKEN_URL": idp,
-            "HEADROOM_OAUTH2_CLIENT_ID": "c",
-            "HEADROOM_OAUTH2_CLIENT_SECRET": "s",
-            "HEADROOM_OAUTH2_SCOPES": "a, b ,c",
+            "LEGROOM_OAUTH2_TOKEN_URL": idp,
+            "LEGROOM_OAUTH2_CLIENT_ID": "c",
+            "LEGROOM_OAUTH2_CLIENT_SECRET": "s",
+            "LEGROOM_OAUTH2_SCOPES": "a, b ,c",
         }
     )
     assert p.scopes == ["a", "b", "c"]
@@ -481,10 +481,10 @@ def test_install_sets_static_headers(monkeypatch):
     fake = types.ModuleType("litellm")  # avoid importing the real (heavy) litellm
     fake.headers = {}
     monkeypatch.setitem(sys.modules, "litellm", fake)
-    monkeypatch.setenv("HEADROOM_OAUTH2_TOKEN_URL", "https://idp.example.com/token")
-    monkeypatch.setenv("HEADROOM_OAUTH2_CLIENT_ID", "c")
-    monkeypatch.setenv("HEADROOM_OAUTH2_CLIENT_SECRET", "s")
-    monkeypatch.setenv("HEADROOM_OAUTH2_HEADERS", "X-App=demo,Bad Key=x")
+    monkeypatch.setenv("LEGROOM_OAUTH2_TOKEN_URL", "https://idp.example.com/token")
+    monkeypatch.setenv("LEGROOM_OAUTH2_CLIENT_ID", "c")
+    monkeypatch.setenv("LEGROOM_OAUTH2_CLIENT_SECRET", "s")
+    monkeypatch.setenv("LEGROOM_OAUTH2_HEADERS", "X-App=demo,Bad Key=x")
 
     class App:
         def add_middleware(self, *a, **k):

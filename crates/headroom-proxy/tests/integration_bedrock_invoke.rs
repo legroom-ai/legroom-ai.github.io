@@ -148,7 +148,7 @@ fn test_credentials() -> Credentials {
 /// Bedrock route bypasses `forward_http`.
 async fn bedrock_proxy(
     upstream: &MockServer,
-    customize: impl FnOnce(&mut headroom_proxy::Config),
+    customize: impl FnOnce(&mut legroom_proxy::Config),
 ) -> common::ProxyHandle {
     let endpoint: Url = upstream.uri().parse().unwrap();
     start_proxy_with_state(
@@ -169,7 +169,7 @@ async fn native_envelope_round_trip_byte_equal() {
     let captured = mount_capture_invoke(&upstream, r#"{"id":"msg_x","content":[]}"#).await;
     let proxy = bedrock_proxy(&upstream, |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::Off;
+        c.compression_mode = legroom_proxy::config::CompressionMode::Off;
     })
     .await;
 
@@ -204,7 +204,7 @@ async fn sigv4_signed_correctly_after_compression() {
     let captured = mount_capture_invoke(&upstream, r#"{"id":"msg_x","content":[]}"#).await;
     let proxy = bedrock_proxy(&upstream, |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -260,7 +260,7 @@ async fn thinking_block_preserved_through_bedrock() {
     let upstream = MockServer::start().await;
     let captured = mount_capture_invoke(&upstream, r#"{"id":"msg_x","content":[]}"#).await;
     let proxy = bedrock_proxy(&upstream, |c| {
-        c.compression_mode = headroom_proxy::config::CompressionMode::Off;
+        c.compression_mode = legroom_proxy::config::CompressionMode::Off;
     })
     .await;
 
@@ -311,7 +311,7 @@ async fn redacted_thinking_preserved() {
     let upstream = MockServer::start().await;
     let captured = mount_capture_invoke(&upstream, r#"{"id":"msg_x","content":[]}"#).await;
     let proxy = bedrock_proxy(&upstream, |c| {
-        c.compression_mode = headroom_proxy::config::CompressionMode::Off;
+        c.compression_mode = legroom_proxy::config::CompressionMode::Off;
     })
     .await;
 
@@ -364,7 +364,7 @@ async fn document_block_preserved() {
     let upstream = MockServer::start().await;
     let captured = mount_capture_invoke(&upstream, r#"{"id":"msg_x","content":[]}"#).await;
     let proxy = bedrock_proxy(&upstream, |c| {
-        c.compression_mode = headroom_proxy::config::CompressionMode::Off;
+        c.compression_mode = legroom_proxy::config::CompressionMode::Off;
     })
     .await;
 
@@ -417,7 +417,7 @@ async fn tool_result_array_with_image_preserved() {
     let upstream = MockServer::start().await;
     let captured = mount_capture_invoke(&upstream, r#"{"id":"msg_x","content":[]}"#).await;
     let proxy = bedrock_proxy(&upstream, |c| {
-        c.compression_mode = headroom_proxy::config::CompressionMode::Off;
+        c.compression_mode = legroom_proxy::config::CompressionMode::Off;
     })
     .await;
 
@@ -488,7 +488,7 @@ async fn stop_sequence_null_only_when_present() {
     let response_no_stop_sequence = r#"{"id":"msg_a","type":"message","role":"assistant","model":"claude-3-haiku-20240307","content":[{"type":"text","text":"hi"}],"stop_reason":"end_turn","usage":{"input_tokens":3,"output_tokens":1}}"#;
     let _captured = mount_capture_invoke(&upstream, response_no_stop_sequence).await;
     let proxy = bedrock_proxy(&upstream, |c| {
-        c.compression_mode = headroom_proxy::config::CompressionMode::Off;
+        c.compression_mode = legroom_proxy::config::CompressionMode::Off;
     })
     .await;
 
@@ -526,7 +526,7 @@ async fn tool_use_input_byte_equal_preserves_key_order() {
     let upstream = MockServer::start().await;
     let captured = mount_capture_invoke(&upstream, r#"{"id":"msg_x","content":[]}"#).await;
     let proxy = bedrock_proxy(&upstream, |c| {
-        c.compression_mode = headroom_proxy::config::CompressionMode::Off;
+        c.compression_mode = legroom_proxy::config::CompressionMode::Off;
     })
     .await;
 

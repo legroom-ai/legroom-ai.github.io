@@ -84,7 +84,7 @@ async fn v4a_patch_byte_equal_through_proxy() {
     let captured = mount_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -131,7 +131,7 @@ async fn local_shell_call_command_argv_array_preserved() {
     let captured = mount_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -187,7 +187,7 @@ async fn codex_phase_commentary_preserved() {
     let captured = mount_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -233,7 +233,7 @@ async fn codex_phase_final_answer_preserved() {
     let captured = mount_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -279,7 +279,7 @@ async fn compaction_item_byte_equal() {
     let captured = mount_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -321,7 +321,7 @@ async fn reasoning_encrypted_content_byte_equal() {
     let captured = mount_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -361,7 +361,7 @@ async fn function_call_arguments_string_preserved() {
     let captured = mount_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -416,7 +416,7 @@ async fn call_id_referenced_not_id() {
     let captured = mount_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -474,7 +474,7 @@ async fn apply_patch_output_below_2kb_no_compression() {
     let captured = mount_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -520,7 +520,7 @@ async fn apply_patch_output_above_2kb_compressed() {
     let captured = mount_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -590,7 +590,7 @@ async fn local_shell_output_compressed() {
     let captured = mount_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -655,7 +655,7 @@ async fn mcp_tool_call_byte_equal() {
     let captured = mount_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -701,7 +701,7 @@ async fn computer_call_byte_equal() {
     let captured = mount_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -746,7 +746,7 @@ async fn image_generation_call_no_log_redaction_in_test_mode() {
     let captured = mount_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -801,7 +801,7 @@ async fn unknown_item_type_logged_warning_byte_equal() {
     let captured = mount_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -858,7 +858,7 @@ async fn representative_request_round_trip() {
     let captured = mount_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 

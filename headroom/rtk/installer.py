@@ -14,7 +14,7 @@ import zipfile
 from pathlib import Path
 from urllib.request import urlopen
 
-from headroom._subprocess import run
+from legroom._subprocess import run
 
 from . import RTK_BIN_DIR, RTK_BIN_PATH, RTK_VERSION
 
@@ -43,7 +43,7 @@ def _detect_runtime_target_triple() -> str:
 
 def _get_target_triple() -> str:
     """Return the requested rtk target triple, honoring explicit overrides."""
-    return os.environ.get("HEADROOM_RTK_TARGET", "").strip() or _detect_runtime_target_triple()
+    return os.environ.get("LEGROOM_RTK_TARGET", "").strip() or _detect_runtime_target_triple()
 
 
 def _binary_name_for_target(target: str) -> str:
@@ -161,7 +161,7 @@ def download_rtk(version: str | None = None) -> Path:
 
 
 # Agents rtk registers a *native* hook for via `rtk init --agent <name>`.
-# For these, headroom must not also inject the RTK_INSTRUCTIONS_BLOCK text
+# For these, legroom must not also inject the RTK_INSTRUCTIONS_BLOCK text
 # into a rules/instructions file — that duplicates guidance rtk's own hook
 # already provides silently (GH #756).
 RTK_NATIVE_HOOK_AGENTS = frozenset(

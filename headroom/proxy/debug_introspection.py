@@ -36,7 +36,7 @@ import time
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from headroom.proxy.ws_session_registry import WebSocketSessionRegistry
+    from legroom.proxy.ws_session_registry import WebSocketSessionRegistry
 
 __all__ = [
     "collect_tasks",
@@ -44,7 +44,7 @@ __all__ = [
 
 
 # Task-name prefixes emitted by the Codex WS handler for its relay tasks.
-# See ``headroom/proxy/handlers/openai.py`` ``handle_openai_responses_ws``.
+# See ``legroom/proxy/handlers/openai.py`` ``handle_openai_responses_ws``.
 _CODEX_WS_RELAY_PREFIXES: tuple[str, ...] = (
     "codex-ws-c2u-",
     "codex-ws-u2c-",

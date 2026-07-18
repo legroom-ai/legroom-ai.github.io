@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from headroom.proxy.project_context import with_project_prefix
+from legroom.proxy.project_context import with_project_prefix
 
 
 def proxy_base_url(port: int) -> str:
@@ -35,7 +35,7 @@ def render_setup_lines(port: int, project: str | None = None) -> list[str]:
     """Render Grok Build setup instructions for the local proxy."""
     target = build_proxy_targets(port, project)
     lines = [
-        "  Headroom proxy is running. Configure Grok Build:",
+        "  Legroom proxy is running. Configure Grok Build:",
         "",
         "  ~/.grok/config.toml has been updated with:",
         "    [model.grok-build]",

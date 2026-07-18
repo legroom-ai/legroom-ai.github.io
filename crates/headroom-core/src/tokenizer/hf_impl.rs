@@ -265,7 +265,7 @@ mod tests {
         // Round-trip via a temp file to cover the on-disk constructor.
         use std::io::Write;
         let dir = std::env::temp_dir().join(format!(
-            "headroom-hf-test-{}",
+            "legroom-hf-test-{}",
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
@@ -284,7 +284,7 @@ mod tests {
     }
 
     /// Network-dependent: hits HuggingFace Hub. Run with
-    /// `cargo test -p headroom-core -- --ignored from_pretrained_downloads_real_tokenizer`.
+    /// `cargo test -p legroom-core -- --ignored from_pretrained_downloads_real_tokenizer`.
     /// `gpt2` is a small public unauthenticated repo (~1.4 MB tokenizer.json).
     #[test]
     #[ignore = "network-dependent: hits HuggingFace Hub"]

@@ -5,9 +5,9 @@ during streaming responses from LangChain models.
 
 Example:
     from langchain_openai import ChatOpenAI
-    from headroom.integrations import HeadroomChatModel, StreamingMetricsTracker
+    from legroom.integrations import LegroomChatModel, StreamingMetricsTracker
 
-    llm = HeadroomChatModel(ChatOpenAI(model="gpt-4o"))
+    llm = LegroomChatModel(ChatOpenAI(model="gpt-4o"))
     tracker = StreamingMetricsTracker(model="gpt-4o")
 
     for chunk in llm.stream("Tell me a story"):
@@ -35,7 +35,7 @@ except ImportError:
     AIMessageChunk = object  # type: ignore[misc,assignment]
     ChatGenerationChunk = object  # type: ignore[misc,assignment]
 
-from headroom.providers import OpenAIProvider
+from legroom.providers import OpenAIProvider
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ def _check_langchain_available() -> None:
     if not LANGCHAIN_AVAILABLE:
         raise ImportError(
             "LangChain is required for this integration. "
-            "Install with: pip install headroom[langchain] "
+            "Install with: pip install legroom[langchain] "
             "or: pip install langchain-core"
         )
 
@@ -105,7 +105,7 @@ class StreamingMetricsTracker:
 
         Args:
             model: Model name for token counting. Default "gpt-4o".
-            provider: Headroom provider for token counting. Uses
+            provider: Legroom provider for token counting. Uses
                 OpenAIProvider if not specified.
         """
         _check_langchain_available()
@@ -250,7 +250,7 @@ class StreamingMetricsCallback:
 
         Args:
             model: Model name for token counting.
-            provider: Headroom provider for token counting.
+            provider: Legroom provider for token counting.
         """
         self._tracker = StreamingMetricsTracker(model=model, provider=provider)
         self._metrics: StreamingMetrics | None = None
@@ -287,7 +287,7 @@ def track_streaming_response(
     Args:
         stream: Iterable of streaming chunks.
         model: Model name for token counting.
-        provider: Headroom provider for token counting.
+        provider: Legroom provider for token counting.
 
     Returns:
         Tuple of (accumulated_content, metrics).
@@ -321,7 +321,7 @@ async def track_async_streaming_response(
     Args:
         stream: Async iterable of streaming chunks.
         model: Model name for token counting.
-        provider: Headroom provider for token counting.
+        provider: Legroom provider for token counting.
 
     Returns:
         Tuple of (accumulated_content, metrics).

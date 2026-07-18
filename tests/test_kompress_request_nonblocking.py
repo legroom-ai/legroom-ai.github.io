@@ -3,7 +3,7 @@
 Counterpart to ``test_kompress_preload_deferral.py`` (which covers the startup
 path). A first deep-path request used to resolve the 274MB ONNX artifact via an
 inline ``hf_hub_download`` on the request thread, where it raced the proxy's
-``HEADROOM_COMPRESSION_TIMEOUT_SECONDS`` budget (GH #946 / #1146): the fetch was
+``LEGROOM_COMPRESSION_TIMEOUT_SECONDS`` budget (GH #946 / #1146): the fetch was
 cancelled mid-transfer, nothing cached, and every request re-hung and failed
 open. The request path now resolves the model cache-only and pulls it down once
 in a background daemon thread instead.
@@ -13,9 +13,9 @@ from __future__ import annotations
 
 import threading
 
-from headroom.transforms import kompress_compressor as kc
-from headroom.transforms.content_router import ContentRouter, ContentRouterConfig
-from headroom.transforms.kompress_compressor import KompressCompressor
+from legroom.transforms import kompress_compressor as kc
+from legroom.transforms.content_router import ContentRouter, ContentRouterConfig
+from legroom.transforms.kompress_compressor import KompressCompressor
 
 
 def test_compress_cache_only_passes_through_without_network(monkeypatch):
@@ -168,7 +168,7 @@ def test_saturation_fail_open_does_not_hang_request(monkeypatch):
         "_load_kompress",
         lambda *args, **kwargs: (_FakeModel(), _FakeTokenizer(), "onnx"),
     )
-    monkeypatch.setenv("HEADROOM_KOMPRESS_EXECUTION_TIMEOUT_MS", "1")
+    monkeypatch.setenv("LEGROOM_KOMPRESS_EXECUTION_TIMEOUT_MS", "1")
 
     before = kc.get_kompress_execution_stats()["execution_timeout_skips_total"]
     text = " ".join(["word"] * 40)

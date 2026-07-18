@@ -1,4 +1,4 @@
-"""Tests for the simple Memory API (headroom.memory.easy).
+"""Tests for the simple Memory API (legroom.memory.easy).
 
 Tests cover:
 - MemoryResult dataclass
@@ -23,12 +23,12 @@ from pathlib import Path
 
 import pytest
 
-from headroom.memory.easy import Memory, MemoryResult
+from legroom.memory.easy import Memory, MemoryResult
 from tests._skip_helpers import external_model_skip_reason
 
 # Check if hnswlib is available (local backend requires it)
 try:
-    from headroom.memory.adapters.hnsw import _check_hnswlib_available
+    from legroom.memory.adapters.hnsw import _check_hnswlib_available
 
     HNSW_AVAILABLE = _check_hnswlib_available()
 except ImportError:

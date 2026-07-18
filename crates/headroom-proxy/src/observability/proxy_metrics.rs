@@ -284,8 +284,8 @@ pub fn record_response_status(status: &str, reason: Option<&str>, request_id: &s
 // and the wrap_rtk_invocations counter were originally registered
 // here but neither had a production emit site that crossed the
 // Python/Rust boundary. Both have moved Python-side
-// (`headroom.proxy.request_logger::redactions_total` and
-// `headroom.cli.wrap_rtk_metrics::rtk_invocation_counts`) and the
+// (`legroom.proxy.request_logger::redactions_total` and
+// `legroom.cli.wrap_rtk_metrics::rtk_invocation_counts`) and the
 // Python proxy's `/metrics` exporter surfaces them — see
 // `docs/observability.md` for the placement decision. Keeping a
 // dead Rust counter would (a) violate the "no dead metrics

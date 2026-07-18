@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from headroom.proxy.helpers import _extract_tool_name
-from headroom.proxy.tool_name_policy import extract_tool_name
+from legroom.proxy.helpers import _extract_tool_name
+from legroom.proxy.tool_name_policy import extract_tool_name
 
 
 def test_extracts_anthropic_custom_tool_name() -> None:
@@ -23,12 +23,12 @@ def test_prefers_explicit_name_over_function_and_type() -> None:
     assert (
         extract_tool_name(
             {
-                "name": "headroom_retrieve",
+                "name": "legroom_retrieve",
                 "type": "function",
                 "function": {"name": "memory_save"},
             }
         )
-        == "headroom_retrieve"
+        == "legroom_retrieve"
     )
 
 

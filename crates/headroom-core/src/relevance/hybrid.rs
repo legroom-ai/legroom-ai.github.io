@@ -1,6 +1,6 @@
 //! Hybrid BM25 + Embedding relevance scorer with adaptive alpha tuning.
 //!
-//! Direct port of `headroom/relevance/hybrid.py`. Combines keyword
+//! Direct port of `legroom/relevance/hybrid.py`. Combines keyword
 //! matching (BM25) with semantic similarity (embeddings) by weighted
 //! linear fusion:
 //!

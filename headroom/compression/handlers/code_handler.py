@@ -22,8 +22,8 @@ import threading
 from dataclasses import dataclass
 from typing import Any
 
-from headroom.compression.handlers.base import BaseStructureHandler, HandlerResult
-from headroom.compression.masks import StructureMask
+from legroom.compression.handlers.base import BaseStructureHandler, HandlerResult
+from legroom.compression.masks import StructureMask
 
 logger = logging.getLogger(__name__)
 

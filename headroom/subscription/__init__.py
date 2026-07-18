@@ -1,13 +1,13 @@
 """Subscription window tracking for Anthropic Claude Code accounts and Codex rate limits."""
 
-from headroom.subscription.base import (
+from legroom.subscription.base import (
     QuotaTracker,
     QuotaTrackerRegistry,
     get_quota_registry,
     reset_quota_registry,
 )
-from headroom.subscription.client import SubscriptionClient, read_cached_oauth_token
-from headroom.subscription.codex_rate_limits import (
+from legroom.subscription.client import SubscriptionClient, read_cached_oauth_token
+from legroom.subscription.codex_rate_limits import (
     CodexCreditsSnapshot,
     CodexRateLimitSnapshot,
     CodexRateLimitState,
@@ -15,7 +15,7 @@ from headroom.subscription.codex_rate_limits import (
     get_codex_rate_limit_state,
     parse_codex_rate_limits,
 )
-from headroom.subscription.copilot_quota import (
+from legroom.subscription.copilot_quota import (
     CopilotQuotaCategory,
     CopilotQuotaSnapshot,
     CopilotQuotaState,
@@ -23,16 +23,16 @@ from headroom.subscription.copilot_quota import (
     get_copilot_quota_tracker,
     parse_copilot_quota,
 )
-from headroom.subscription.models import (
+from legroom.subscription.models import (
     ExtraUsage,
-    HeadroomContribution,
+    LegroomContribution,
     RateLimitWindow,
     SubscriptionSnapshot,
     SubscriptionState,
     WindowDiscrepancy,
     WindowTokens,
 )
-from headroom.subscription.tracker import (
+from legroom.subscription.tracker import (
     SubscriptionTracker,
     configure_subscription_tracker,
     get_subscription_tracker,
@@ -48,7 +48,7 @@ __all__ = [
     "CopilotQuotaSnapshot",
     "CopilotQuotaState",
     "ExtraUsage",
-    "HeadroomContribution",
+    "LegroomContribution",
     "QuotaTracker",
     "QuotaTrackerRegistry",
     "RateLimitWindow",

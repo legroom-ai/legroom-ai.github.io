@@ -11,9 +11,9 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from headroom.memory.backends.mem0 import Mem0Backend, Mem0Config
-from headroom.memory.models import Memory
-from headroom.memory.ports import MemorySearchResult
+from legroom.memory.backends.mem0 import Mem0Backend, Mem0Config
+from legroom.memory.models import Memory
+from legroom.memory.ports import MemorySearchResult
 
 
 def _utcnow() -> datetime:
@@ -29,8 +29,8 @@ class Mem0SystemAdapter:
     memory_update, memory_delete) to work with Mem0's graph and vector capabilities.
 
     Usage:
-        from headroom.memory.backends.mem0_system_adapter import Mem0SystemAdapter, Mem0Config
-        from headroom.memory.system import MemorySystem
+        from legroom.memory.backends.mem0_system_adapter import Mem0SystemAdapter, Mem0Config
+        from legroom.memory.system import MemorySystem
 
         # Create adapter with Mem0 configuration
         config = Mem0Config(mode="local", enable_graph=True)

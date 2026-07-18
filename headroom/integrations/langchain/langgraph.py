@@ -1,4 +1,4 @@
-"""LangGraph integration for Headroom tool message compression.
+"""LangGraph integration for Legroom tool message compression.
 
 This module provides a compress_tool_messages utility and a LangGraph-compatible
 node factory for compressing ToolMessage content before it reaches the LLM,
@@ -11,7 +11,7 @@ Addresses:
 
 Example:
     from langgraph.graph import StateGraph, MessagesState
-    from headroom.integrations.langchain.langgraph import (
+    from legroom.integrations.langchain.langgraph import (
         compress_tool_messages,
         create_compress_tool_messages_node,
     )
@@ -47,7 +47,7 @@ except ImportError:
     BaseMessage = object  # type: ignore[misc,assignment]
     ToolMessage = object  # type: ignore[misc,assignment]
 
-from headroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
+from legroom.transforms.smart_crusher import SmartCrusher, SmartCrusherConfig
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ def _check_langchain_available() -> None:
     if not LANGCHAIN_AVAILABLE:
         raise ImportError(
             "LangChain is required for this integration. "
-            "Install with: pip install headroom[langchain] "
+            "Install with: pip install legroom[langchain] "
             "or: pip install langchain-core"
         )
 
@@ -200,7 +200,7 @@ def compress_tool_messages(
 
     Example:
         from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
-        from headroom.integrations.langchain.langgraph import compress_tool_messages
+        from legroom.integrations.langchain.langgraph import compress_tool_messages
 
         messages = [
             HumanMessage(content="Get sales data"),

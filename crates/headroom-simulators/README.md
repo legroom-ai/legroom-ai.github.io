@@ -1,10 +1,10 @@
-# Headroom Simulators
+# Legroom Simulators
 
-`headroom-simulators` is a local, deterministic upstream for Headroom proxy tests.
+`legroom-simulators` is a local, deterministic upstream for Legroom proxy tests.
 It serves provider-shaped responses without contacting real LLM APIs.
 
 ```bash
-cargo run -p headroom-simulators -- --listen 127.0.0.1:8789
+cargo run -p legroom-simulators -- --listen 127.0.0.1:8789
 ```
 
 Optional JSON config:

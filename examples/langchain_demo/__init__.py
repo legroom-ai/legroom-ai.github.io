@@ -1,6 +1,6 @@
-"""LangChain + Headroom Demo: Real-World Before/After Comparison.
+"""LangChain + Legroom Demo: Real-World Before/After Comparison.
 
-This package demonstrates the impact of Headroom optimization on real-world
+This package demonstrates the impact of Legroom optimization on real-world
 LangChain agent scenarios with large tool outputs.
 
 Run the demo:

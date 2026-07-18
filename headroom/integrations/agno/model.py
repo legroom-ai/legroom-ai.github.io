@@ -1,7 +1,7 @@
-"""Agno model wrapper for Headroom optimization.
+"""Agno model wrapper for Legroom optimization.
 
-This module provides HeadroomAgnoModel, which wraps any Agno model
-to apply Headroom context optimization before API calls.
+This module provides LegroomAgnoModel, which wraps any Agno model
+to apply Legroom context optimization before API calls.
 """
 
 from __future__ import annotations
@@ -29,12 +29,12 @@ except ImportError:
     Message = dict  # type: ignore[misc,assignment]
     ModelResponse = dict  # type: ignore[misc,assignment]
 
-from headroom import HeadroomConfig, HeadroomMode
-from headroom.parser import _coerce_tool_call_to_dict
-from headroom.providers import OpenAIProvider
-from headroom.transforms import TransformPipeline
+from legroom import LegroomConfig, LegroomMode
+from legroom.parser import _coerce_tool_call_to_dict
+from legroom.providers import OpenAIProvider
+from legroom.transforms import TransformPipeline
 
-from .providers import get_headroom_provider, get_model_name_from_agno
+from .providers import get_legroom_provider, get_model_name_from_agno
 
 logger = logging.getLogger(__name__)
 
@@ -65,8 +65,8 @@ class OptimizationMetrics:
 
 
 @dataclass
-class HeadroomAgnoModel(Model):  # type: ignore[misc]
-    """Agno model wrapper that applies Headroom optimizations.
+class LegroomAgnoModel(Model):  # type: ignore[misc]
+    """Agno model wrapper that applies Legroom optimizations.
 
     Extends agno.models.base.Model to be fully compatible with Agno Agent.
     Wraps any Agno Model and automatically optimizes the context
@@ -91,11 +91,11 @@ class HeadroomAgnoModel(Model):  # type: ignore[misc]
     Example:
         from agno.agent import Agent
         from agno.models.openai import OpenAIChat
-        from headroom.integrations.agno import HeadroomAgnoModel
+        from legroom.integrations.agno import LegroomAgnoModel
 
         # Basic usage
         model = OpenAIChat(id="gpt-4o")
-        optimized = HeadroomAgnoModel(wrapped_model=model)
+        optimized = LegroomAgnoModel(wrapped_model=model)
 
         # Use with agent
         agent = Agent(model=optimized)
@@ -105,13 +105,13 @@ class HeadroomAgnoModel(Model):  # type: ignore[misc]
         print(f"Saved {optimized.total_tokens_saved} tokens")
 
         # With custom config
-        from headroom import HeadroomConfig, HeadroomMode
-        config = HeadroomConfig(default_mode=HeadroomMode.OPTIMIZE)
-        optimized = HeadroomAgnoModel(wrapped_model=model, headroom_config=config)
+        from legroom import LegroomConfig, LegroomMode
+        config = LegroomConfig(default_mode=LegroomMode.OPTIMIZE)
+        optimized = LegroomAgnoModel(wrapped_model=model, legroom_config=config)
 
-        # Agno reasoning with HeadroomAgnoModel
+        # Agno reasoning with LegroomAgnoModel
         model = OpenAIChat(id="gpt-4o")
-        wrapped = HeadroomAgnoModel(wrapped_model=model)
+        wrapped = LegroomAgnoModel(wrapped_model=model)
         agent = Agent(
             model=wrapped,
             reasoning=True,
@@ -126,14 +126,14 @@ class HeadroomAgnoModel(Model):  # type: ignore[misc]
     """
 
     # Required by Model base class - we'll derive from wrapped model
-    id: str = field(default="headroom-wrapper")
+    id: str = field(default="legroom-wrapper")
     name: str | None = field(default=None)
     provider: str | None = field(default=None)
 
-    # HeadroomAgnoModel specific fields
+    # LegroomAgnoModel specific fields
     wrapped_model: Any = field(default=None)
-    headroom_config: HeadroomConfig | None = field(default=None)
-    headroom_mode: HeadroomMode | None = field(default=None)
+    legroom_config: LegroomConfig | None = field(default=None)
+    legroom_mode: LegroomMode | None = field(default=None)
     auto_detect_provider: bool = field(default=True)
 
     # Internal state (not part of dataclass comparison)
@@ -142,12 +142,12 @@ class HeadroomAgnoModel(Model):  # type: ignore[misc]
     )
     _total_tokens_saved: int = field(default=0, repr=False, compare=False)
     _pipeline: TransformPipeline | None = field(default=None, repr=False, compare=False)
-    _headroom_provider: Any = field(default=None, repr=False, compare=False)
+    _legroom_provider: Any = field(default=None, repr=False, compare=False)
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False, compare=False)
     _initialized: bool = field(default=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
-        """Initialize HeadroomAgnoModel after dataclass construction."""
+        """Initialize LegroomAgnoModel after dataclass construction."""
         _check_agno_available()
 
         if self.wrapped_model is None:
@@ -155,7 +155,7 @@ class HeadroomAgnoModel(Model):  # type: ignore[misc]
 
         # Set id from wrapped model
         if hasattr(self.wrapped_model, "id"):
-            self.id = f"headroom:{self.wrapped_model.id}"
+            self.id = f"legroom:{self.wrapped_model.id}"
 
         # Set name and provider from wrapped model for compatibility
         if self.name is None and hasattr(self.wrapped_model, "name"):
@@ -168,13 +168,13 @@ class HeadroomAgnoModel(Model):  # type: ignore[misc]
         self._forward_capability_attributes()
 
         # Initialize config
-        if self.headroom_config is None:
-            self.headroom_config = HeadroomConfig()
+        if self.legroom_config is None:
+            self.legroom_config = LegroomConfig()
 
         # Handle deprecated mode parameter
-        if self.headroom_mode is not None:
+        if self.legroom_mode is not None:
             warnings.warn(
-                "The 'headroom_mode' parameter is deprecated. Use HeadroomConfig(default_mode=...) instead.",
+                "The 'legroom_mode' parameter is deprecated. Use LegroomConfig(default_mode=...) instead.",
                 DeprecationWarning,
                 stacklevel=2,
             )
@@ -230,8 +230,8 @@ class HeadroomAgnoModel(Model):  # type: ignore[misc]
             raise AttributeError(f"'{type(self).__name__}' has no attribute '{name}'")
         if name in (
             "wrapped_model",
-            "headroom_config",
-            "headroom_mode",
+            "legroom_config",
+            "legroom_mode",
             "auto_detect_provider",
             "pipeline",
             "total_tokens_saved",
@@ -257,7 +257,7 @@ class HeadroomAgnoModel(Model):  # type: ignore[misc]
         this to access the actual model class.
 
         Example:
-            wrapped = HeadroomAgnoModel(wrapped_model=Claude(...))
+            wrapped = LegroomAgnoModel(wrapped_model=Claude(...))
             actual_class = wrapped.underlying_model.__class__.__name__  # "Claude"
         """
         return self.wrapped_model
@@ -274,15 +274,15 @@ class HeadroomAgnoModel(Model):  # type: ignore[misc]
                 # Double-check after acquiring lock
                 if self._pipeline is None:
                     if self.auto_detect_provider:
-                        self._headroom_provider = get_headroom_provider(self.wrapped_model)
+                        self._legroom_provider = get_legroom_provider(self.wrapped_model)
                         logger.debug(
-                            f"Auto-detected provider: {self._headroom_provider.__class__.__name__}"
+                            f"Auto-detected provider: {self._legroom_provider.__class__.__name__}"
                         )
                     else:
-                        self._headroom_provider = OpenAIProvider()
+                        self._legroom_provider = OpenAIProvider()
                     self._pipeline = TransformPipeline(
-                        config=self.headroom_config,
-                        provider=self._headroom_provider,
+                        config=self.legroom_config,
+                        provider=self._legroom_provider,
                     )
         return self._pipeline
 
@@ -297,7 +297,7 @@ class HeadroomAgnoModel(Model):  # type: ignore[misc]
         return self._metrics_history.copy()
 
     def _convert_messages_to_openai(self, messages: list[Any]) -> list[dict[str, Any]]:
-        """Convert Agno messages to OpenAI format for Headroom.
+        """Convert Agno messages to OpenAI format for Legroom.
 
         Preserves extended thinking content blocks (thinking, redacted_thinking)
         which must be passed through unchanged for Claude's extended thinking API.
@@ -324,7 +324,7 @@ class HeadroomAgnoModel(Model):  # type: ignore[misc]
                 # Handle tool calls. During streaming, Agno may surface
                 # tool_calls as raw provider SDK objects (OpenAI's
                 # `ChoiceDeltaToolCall`) rather than plain dicts. The
-                # Headroom pipeline + Agno's own re-serialization both call
+                # Legroom pipeline + Agno's own re-serialization both call
                 # `.get()` on each entry, which raises
                 # `'ChoiceDeltaToolCall' object has no attribute 'get'`
                 # (issue #1312). Normalize to OpenAI-format dicts here so
@@ -441,7 +441,7 @@ class HeadroomAgnoModel(Model):  # type: ignore[misc]
         return False
 
     def _optimize_messages(self, messages: list[Any]) -> tuple[list[Any], OptimizationMetrics]:
-        """Apply Headroom optimization to messages.
+        """Apply Legroom optimization to messages.
 
         Thread-safe with fallback on pipeline errors.
         Skips optimization for messages with extended thinking blocks to preserve
@@ -472,7 +472,7 @@ class HeadroomAgnoModel(Model):  # type: ignore[misc]
         # Skip optimization for messages with extended thinking blocks
         # Thinking blocks must be passed through unchanged for Claude's API
         if self._has_thinking_blocks(openai_messages):
-            logger.info("Skipping Headroom optimization: messages contain extended thinking blocks")
+            logger.info("Skipping Legroom optimization: messages contain extended thinking blocks")
             # Estimate token count (rough approximation)
             tokens_estimate = sum(len(str(m.get("content", ""))) // 4 for m in openai_messages)
             metrics = OptimizationMetrics(
@@ -494,11 +494,11 @@ class HeadroomAgnoModel(Model):  # type: ignore[misc]
 
         # Get model context limit
         model_limit = (
-            self._headroom_provider.get_context_limit(model) if self._headroom_provider else 128000
+            self._legroom_provider.get_context_limit(model) if self._legroom_provider else 128000
         )
 
         try:
-            # Apply Headroom transforms via pipeline
+            # Apply Legroom transforms via pipeline
             result = self.pipeline.apply(
                 messages=openai_messages,
                 model=model,
@@ -521,7 +521,7 @@ class HeadroomAgnoModel(Model):  # type: ignore[misc]
             # Fallback to original messages on pipeline error
             # Log at warning level (degraded behavior, not critical failure)
             logger.warning(
-                f"Headroom optimization failed, using original messages: {type(e).__name__}: {e}"
+                f"Legroom optimization failed, using original messages: {type(e).__name__}: {e}"
             )
             optimized = openai_messages
             # Estimate token count for unoptimized messages (rough approximation)
@@ -558,11 +558,11 @@ class HeadroomAgnoModel(Model):  # type: ignore[misc]
         return optimized_messages, metrics
 
     def response(self, messages: list[Any], **kwargs: Any) -> Any:  # type: ignore[override]
-        """Generate response with Headroom optimization.
+        """Generate response with Legroom optimization.
 
         This method lets the inherited Model.response() handle the tool loop,
         which will call self.invoke() for each API call. Our invoke() override
-        applies Headroom optimization before delegating to wrapped_model.invoke().
+        applies Legroom optimization before delegating to wrapped_model.invoke().
 
         This ensures tool outputs are compressed on subsequent API calls.
         """
@@ -573,7 +573,7 @@ class HeadroomAgnoModel(Model):  # type: ignore[misc]
         return super().response(messages, **kwargs)
 
     def response_stream(self, messages: list[Any], **kwargs: Any) -> Iterator[Any]:  # type: ignore[override]
-        """Stream response with Headroom optimization.
+        """Stream response with Legroom optimization.
 
         Like response(), delegates to inherited Model.response_stream() which
         calls self.invoke_stream() for each API call.
@@ -584,7 +584,7 @@ class HeadroomAgnoModel(Model):  # type: ignore[misc]
         yield from super().response_stream(messages, **kwargs)
 
     async def aresponse(self, messages: list[Any], **kwargs: Any) -> Any:  # type: ignore[override]
-        """Async generate response with Headroom optimization.
+        """Async generate response with Legroom optimization.
 
         Delegates to inherited Model.aresponse() which calls self.ainvoke()
         for each API call, ensuring tool outputs are optimized.
@@ -595,7 +595,7 @@ class HeadroomAgnoModel(Model):  # type: ignore[misc]
         return await super().aresponse(messages, **kwargs)
 
     async def aresponse_stream(self, messages: list[Any], **kwargs: Any) -> AsyncIterator[Any]:  # type: ignore[override]
-        """Async stream response with Headroom optimization.
+        """Async stream response with Legroom optimization.
 
         Delegates to inherited Model.aresponse_stream() which calls self.ainvoke_stream()
         for each API call, ensuring tool outputs are optimized.
@@ -636,7 +636,7 @@ class HeadroomAgnoModel(Model):  # type: ignore[misc]
 
     # =========================================================================
     # Abstract method implementations required by agno.models.base.Model
-    # These delegate to the wrapped model after applying Headroom optimization
+    # These delegate to the wrapped model after applying Legroom optimization
     # =========================================================================
 
     def invoke(self, messages: list[Any], **kwargs: Any) -> Any:
@@ -648,7 +648,7 @@ class HeadroomAgnoModel(Model):  # type: ignore[misc]
         optimized_messages, metrics = self._optimize_messages(messages)
 
         logger.info(
-            f"Headroom optimized (invoke): {metrics.tokens_before} -> {metrics.tokens_after} tokens "
+            f"Legroom optimized (invoke): {metrics.tokens_before} -> {metrics.tokens_after} tokens "
             f"({metrics.savings_percent:.1f}% saved)"
         )
 
@@ -667,7 +667,7 @@ class HeadroomAgnoModel(Model):  # type: ignore[misc]
         )
 
         logger.info(
-            f"Headroom optimized (ainvoke): {metrics.tokens_before} -> {metrics.tokens_after} tokens "
+            f"Legroom optimized (ainvoke): {metrics.tokens_before} -> {metrics.tokens_after} tokens "
             f"({metrics.savings_percent:.1f}% saved)"
         )
 
@@ -689,7 +689,7 @@ class HeadroomAgnoModel(Model):  # type: ignore[misc]
         optimized_messages, metrics = self._optimize_messages(messages)
 
         logger.info(
-            f"Headroom optimized (invoke_stream): {metrics.tokens_before} -> {metrics.tokens_after} tokens "
+            f"Legroom optimized (invoke_stream): {metrics.tokens_before} -> {metrics.tokens_after} tokens "
             f"({metrics.savings_percent:.1f}% saved)"
         )
 
@@ -708,7 +708,7 @@ class HeadroomAgnoModel(Model):  # type: ignore[misc]
         )
 
         logger.info(
-            f"Headroom optimized (ainvoke_stream): {metrics.tokens_before} -> {metrics.tokens_after} tokens "
+            f"Legroom optimized (ainvoke_stream): {metrics.tokens_before} -> {metrics.tokens_after} tokens "
             f"({metrics.savings_percent:.1f}% saved)"
         )
 
@@ -742,8 +742,8 @@ class HeadroomAgnoModel(Model):  # type: ignore[misc]
 
 def optimize_messages(
     messages: list[Any],
-    config: HeadroomConfig | None = None,
-    mode: HeadroomMode = HeadroomMode.OPTIMIZE,
+    config: LegroomConfig | None = None,
+    mode: LegroomMode = LegroomMode.OPTIMIZE,
     model: str = "gpt-4o",
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Standalone function to optimize Agno messages.
@@ -752,15 +752,15 @@ def optimize_messages(
 
     Args:
         messages: List of Agno Message objects or dicts
-        config: HeadroomConfig for optimization settings
-        mode: HeadroomMode (AUDIT, OPTIMIZE, or SIMULATE)
+        config: LegroomConfig for optimization settings
+        mode: LegroomMode (AUDIT, OPTIMIZE, or SIMULATE)
         model: Model name for token estimation
 
     Returns:
         Tuple of (optimized_messages, metrics_dict)
 
     Example:
-        from headroom.integrations.agno import optimize_messages
+        from legroom.integrations.agno import optimize_messages
 
         messages = [
             {"role": "system", "content": "You are helpful."},
@@ -772,7 +772,7 @@ def optimize_messages(
     """
     _check_agno_available()
 
-    config = config or HeadroomConfig()
+    config = config or LegroomConfig()
     provider = OpenAIProvider()
     pipeline = TransformPipeline(config=config, provider=provider)
 

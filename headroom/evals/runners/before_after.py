@@ -17,16 +17,16 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from headroom.evals.core import (
+from legroom.evals.core import (
     EvalCase,
     EvalMode,
     EvalResult,
     EvalSuite,
     EvalSuiteResult,
 )
-from headroom.evals.metrics import compute_semantic_similarity
-from headroom.transforms.content_router import ContentRouter, ContentRouterConfig
-from headroom.transforms.smart_crusher import SmartCrusherConfig
+from legroom.evals.metrics import compute_semantic_similarity
+from legroom.transforms.content_router import ContentRouter, ContentRouterConfig
+from legroom.transforms.smart_crusher import SmartCrusherConfig
 
 
 @dataclass
@@ -37,7 +37,7 @@ class LLMConfig:
     model: str = "claude-sonnet-4-20250514"
     temperature: float = 0.0  # Deterministic for reproducibility
     max_tokens: int = 1024
-    headroom_proxy_url: str | None = None  # e.g. "http://localhost:8787" for full-stack eval
+    legroom_proxy_url: str | None = None  # e.g. "http://localhost:8787" for full-stack eval
 
 
 class BeforeAfterRunner:
@@ -82,10 +82,10 @@ class BeforeAfterRunner:
         self._llm_client = self._init_llm_client()
 
         # If proxy URL is set, create a second client pointing at the proxy.
-        # This gives us the FULL Headroom stack (compression + CCR + cache alignment)
+        # This gives us the FULL Legroom stack (compression + CCR + cache alignment)
         # rather than just local ContentRouter compression.
         self._proxy_client: Any = None
-        if self.llm_config.headroom_proxy_url:
+        if self.llm_config.legroom_proxy_url:
             self._proxy_client = self._init_proxy_client()
 
         # ContentRouter is still used as fallback when no proxy is configured
@@ -127,16 +127,16 @@ class BeforeAfterRunner:
             raise ValueError(f"Unknown provider: {self.llm_config.provider}")
 
     def _init_proxy_client(self) -> Any:
-        """Initialize an OpenAI client pointing at the Headroom proxy."""
+        """Initialize an OpenAI client pointing at the Legroom proxy."""
         import openai
 
         return openai.OpenAI(
-            base_url=f"{self.llm_config.headroom_proxy_url}/v1",
+            base_url=f"{self.llm_config.legroom_proxy_url}/v1",
             api_key=os.environ.get("OPENAI_API_KEY", ""),
         )
 
     def _call_llm_via_proxy(self, context: str, query: str) -> str:
-        """Call LLM through Headroom proxy (full stack: compression + CCR)."""
+        """Call LLM through Legroom proxy (full stack: compression + CCR)."""
         prompt = f"""Based on the following context, answer the question.
 
 Context:
@@ -282,7 +282,7 @@ Answer:"""
                   the response against the known ground truth (half the API cost,
                   correct metric for tasks like BFCL where response style varies).
         """
-        from headroom.evals.metrics import compute_exact_match, compute_f1
+        from legroom.evals.metrics import compute_exact_match, compute_f1
 
         original_tokens = self._estimate_tokens(case.context)
 
@@ -307,7 +307,7 @@ Answer:"""
 
         # --- BEFORE_AFTER mode (default) ---
 
-        # Run LLM with ORIGINAL context (direct to API, no Headroom)
+        # Run LLM with ORIGINAL context (direct to API, no Legroom)
         start = time.time()
         try:
             response_original = self._call_llm(case.context, case.query)
@@ -315,7 +315,7 @@ Answer:"""
             response_original = f"ERROR: {e}"
         latency_original = (time.time() - start) * 1000
 
-        # Run LLM with Headroom context
+        # Run LLM with Legroom context
         # If proxy is configured: send ORIGINAL context through proxy (full stack:
         # compression + CCR + cache alignment — the real production path)
         # If no proxy: send locally-compressed context directly to LLM (legacy)
@@ -389,7 +389,7 @@ Answer:"""
         This is the right metric for tasks like BFCL where the correct answer
         can be expressed as a function call OR a direct computation.
         """
-        from headroom.evals.metrics import compute_f1
+        from legroom.evals.metrics import compute_f1
 
         # Only call LLM with compressed context (half the cost)
         start = time.time()
@@ -405,7 +405,7 @@ Answer:"""
         if case.ground_truth:
             try:
                 if self._judge_fn is None:
-                    from headroom.evals.memory.judge import create_openai_judge
+                    from legroom.evals.memory.judge import create_openai_judge
 
                     self._judge_fn = create_openai_judge(model="gpt-4o-mini")
                 judge_score, _reasoning = self._judge_fn(
@@ -514,7 +514,7 @@ def run_quick_eval(
     Returns:
         Evaluation results
     """
-    from headroom.evals.datasets import load_tool_output_samples
+    from legroom.evals.datasets import load_tool_output_samples
 
     suite = load_tool_output_samples()
     suite.cases = suite.cases[:n_samples]

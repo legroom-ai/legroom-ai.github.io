@@ -4,13 +4,13 @@ const mocked = vi.hoisted(() => ({
   ensureProxyUrl: vi.fn(async () => "http://127.0.0.1:8787"),
   ensureProxyStarted: vi.fn(),
   getProxyUrl: vi.fn(() => null as string | null),
-  createHeadroomRetrieveTool: vi.fn(({ proxyUrl }: { proxyUrl: string }) => ({ proxyUrl })),
+  createLegroomRetrieveTool: vi.fn(({ proxyUrl }: { proxyUrl: string }) => ({ proxyUrl })),
 }));
 
 const proxyReadyListeners: Array<(proxyUrl: string) => void | Promise<void>> = [];
 
 vi.mock("../src/engine.js", () => ({
-  HeadroomContextEngine: class {
+  LegroomContextEngine: class {
     ensureProxyUrl = mocked.ensureProxyUrl;
     ensureProxyStarted = mocked.ensureProxyStarted;
     getProxyUrl = mocked.getProxyUrl;
@@ -21,11 +21,11 @@ vi.mock("../src/engine.js", () => ({
   },
 }));
 
-vi.mock("../src/tools/headroom-retrieve.js", () => ({
-  createHeadroomRetrieveTool: mocked.createHeadroomRetrieveTool,
+vi.mock("../src/tools/legroom-retrieve.js", () => ({
+  createLegroomRetrieveTool: mocked.createLegroomRetrieveTool,
 }));
 
-import headroomExtension, { registerHeadroomPlugin } from "../src/plugin/index.js";
+import legroomExtension, { registerLegroomPlugin } from "../src/plugin/index.js";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -33,16 +33,16 @@ afterEach(() => {
   mocked.ensureProxyStarted.mockClear();
   mocked.getProxyUrl.mockReset();
   mocked.getProxyUrl.mockReturnValue(null);
-  mocked.createHeadroomRetrieveTool.mockClear();
+  mocked.createLegroomRetrieveTool.mockClear();
   proxyReadyListeners.length = 0;
 });
 
-describe("headroomPlugin runtime routing", () => {
+describe("legroomPlugin runtime routing", () => {
   it("exports the OpenClaw extension object with a register handler", () => {
-    expect(headroomExtension.register).toBe(registerHeadroomPlugin);
+    expect(legroomExtension.register).toBe(registerLegroomPlugin);
   });
 
-  function stubConfiguredProxyProbe(response: "headroom" | "non-headroom" | "down") {
+  function stubConfiguredProxyProbe(response: "legroom" | "non-legroom" | "down") {
     if (response === "down") {
       vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("ECONNREFUSED")));
       return;
@@ -56,17 +56,17 @@ describe("headroomPlugin runtime routing", () => {
         }
         if (url.endsWith("/v1/retrieve/stats")) {
           return Promise.resolve({
-            ok: response === "headroom",
-            status: response === "headroom" ? 200 : 404,
+            ok: response === "legroom",
+            status: response === "legroom" ? 200 : 404,
             text: () => Promise.resolve(""),
           });
         }
         if (url.endsWith("/stats")) {
           return Promise.resolve({
-            ok: response === "headroom",
-            status: response === "headroom" ? 200 : 200,
+            ok: response === "legroom",
+            status: response === "legroom" ? 200 : 200,
             text: () =>
-              Promise.resolve(response === "headroom" ? JSON.stringify({ proxy_inbound: { total: 1 } }) : "{}"),
+              Promise.resolve(response === "legroom" ? JSON.stringify({ proxy_inbound: { total: 1 } }) : "{}"),
           });
         }
         return Promise.resolve({ ok: false, status: 404, text: () => Promise.resolve("") });
@@ -91,7 +91,7 @@ describe("headroomPlugin runtime routing", () => {
       config: {
         plugins: {
           entries: {
-            headroom: {
+            legroom: {
               config: {
                 gatewayProviderIds: ["codex", "claude", "copilot", "gemini", "openrouter"],
               },
@@ -135,7 +135,7 @@ describe("headroomPlugin runtime routing", () => {
       },
     };
 
-    registerHeadroomPlugin(api);
+    registerLegroomPlugin(api);
     await Promise.resolve();
 
     // With no active or configured proxy URL, initial routing defers without
@@ -189,7 +189,7 @@ describe("headroomPlugin runtime routing", () => {
       config: {
         plugins: {
           entries: {
-            headroom: {
+            legroom: {
               config: { gatewayProviderIds: ["claude"] },
             },
           },
@@ -208,7 +208,7 @@ describe("headroomPlugin runtime routing", () => {
       }),
     };
 
-    registerHeadroomPlugin(api);
+    registerLegroomPlugin(api);
     await Promise.resolve();
 
     await gatewayHandlers.get("gateway_start")?.();
@@ -221,15 +221,15 @@ describe("headroomPlugin runtime routing", () => {
     });
   });
 
-  it("routes configured proxyUrl only after it probes as Headroom", async () => {
+  it("routes configured proxyUrl only after it probes as Legroom", async () => {
     const gatewayHandlers = new Map<string, () => Promise<void>>();
-    stubConfiguredProxyProbe("headroom");
+    stubConfiguredProxyProbe("legroom");
 
     const api: any = {
       config: {
         plugins: {
           entries: {
-            headroom: {
+            legroom: {
               config: {
                 proxyUrl: "http://127.0.0.1:8787",
                 gatewayProviderIds: ["claude"],
@@ -251,7 +251,7 @@ describe("headroomPlugin runtime routing", () => {
       }),
     };
 
-    registerHeadroomPlugin(api);
+    registerLegroomPlugin(api);
     await gatewayHandlers.get("gateway_start")?.();
 
     // Configured proxyUrl is probe-gated before provider mutation.
@@ -272,7 +272,7 @@ describe("headroomPlugin runtime routing", () => {
       config: {
         plugins: {
           entries: {
-            headroom: {
+            legroom: {
               config: {
                 proxyUrl: "http://127.0.0.1:8787",
                 gatewayProviderIds: ["claude"],
@@ -294,7 +294,7 @@ describe("headroomPlugin runtime routing", () => {
       }),
     };
 
-    registerHeadroomPlugin(api);
+    registerLegroomPlugin(api);
     await Promise.resolve();
     await Promise.resolve();
     await gatewayHandlers.get("gateway_start")?.();
@@ -312,13 +312,13 @@ describe("headroomPlugin runtime routing", () => {
 
   it("does not route configured proxyUrl when only generic liveness endpoints respond", async () => {
     const gatewayHandlers = new Map<string, () => Promise<void>>();
-    stubConfiguredProxyProbe("non-headroom");
+    stubConfiguredProxyProbe("non-legroom");
 
     const api: any = {
       config: {
         plugins: {
           entries: {
-            headroom: {
+            legroom: {
               config: {
                 proxyUrl: "http://127.0.0.1:8787",
                 gatewayProviderIds: ["claude"],
@@ -340,7 +340,7 @@ describe("headroomPlugin runtime routing", () => {
       }),
     };
 
-    registerHeadroomPlugin(api);
+    registerLegroomPlugin(api);
     await gatewayHandlers.get("gateway_start")?.();
 
     expect(api.config.models.providers.anthropic).toEqual({
@@ -348,7 +348,7 @@ describe("headroomPlugin runtime routing", () => {
       baseUrl: "https://api.anthropic.com",
     });
     expect(api.logger.warn).toHaveBeenCalledWith(
-      expect.stringContaining("configured proxyUrl is not a ready Headroom proxy"),
+      expect.stringContaining("configured proxyUrl is not a ready Legroom proxy"),
     );
   });
 
@@ -359,7 +359,7 @@ describe("headroomPlugin runtime routing", () => {
       config: {
         plugins: {
           entries: {
-            headroom: {
+            legroom: {
               config: {
                 proxyUrl: "http://127.0.0.1:8787",
                 gatewayProviderIds: ["codex"],
@@ -377,12 +377,12 @@ describe("headroomPlugin runtime routing", () => {
       on: vi.fn(),
     };
 
-    registerHeadroomPlugin(api);
+    registerLegroomPlugin(api);
     const [toolFactory] = api.registerTool.mock.calls[0];
     const tool = toolFactory({});
 
     expect(tool).toEqual({ proxyUrl: "http://127.0.0.1:8787" });
-    expect(mocked.createHeadroomRetrieveTool).toHaveBeenCalledWith({
+    expect(mocked.createLegroomRetrieveTool).toHaveBeenCalledWith({
       proxyUrl: "http://127.0.0.1:8787",
     });
   });

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from headroom.transforms.content_router import ContentRouter, ContentRouterConfig
+from legroom.transforms.content_router import ContentRouter, ContentRouterConfig
 
 
 class _Tokenizer:

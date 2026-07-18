@@ -1,4 +1,4 @@
-"""Grok CLI plugin for headroom learn.
+"""Grok CLI plugin for legroom learn.
 
 Reads session logs from ~/.grok/sessions/<workspace>/<session-id>/updates.jsonl.
 """

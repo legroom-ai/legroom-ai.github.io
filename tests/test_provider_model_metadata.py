@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
 from fastapi.testclient import TestClient
 
-from headroom.providers.model_metadata import (
+from legroom.providers.model_metadata import (
     MODEL_METADATA_LIST_ENDPOINT,
     ModelMetadataEndpoint,
     handle_model_metadata_endpoint,
@@ -32,7 +32,7 @@ def test_handle_model_metadata_endpoint_returns_chatgpt_response_when_present(mo
         return JSONResponse({"client": http_client, "upstream_path": upstream_path})
 
     monkeypatch.setattr(
-        "headroom.providers.model_metadata.handle_chatgpt_model_metadata",
+        "legroom.providers.model_metadata.handle_chatgpt_model_metadata",
         fake_chatgpt_metadata,
     )
     proxy = type("Proxy", (), {"http_client": "h2"})()
@@ -74,7 +74,7 @@ def test_handle_model_metadata_endpoint_falls_back_to_selected_provider(monkeypa
             return JSONResponse({"provider": provider_name, "sub_path": sub_path})
 
     monkeypatch.setattr(
-        "headroom.providers.model_metadata.handle_chatgpt_model_metadata",
+        "legroom.providers.model_metadata.handle_chatgpt_model_metadata",
         fake_chatgpt_metadata,
     )
     app = FastAPI()

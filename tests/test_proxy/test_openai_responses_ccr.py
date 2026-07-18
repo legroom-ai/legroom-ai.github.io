@@ -1,7 +1,7 @@
 """HTTP-level tests for CCR retrieve-tool interception on /v1/responses (#1877).
 
-`handle_openai_responses` previously had zero CCR/headroom_retrieve wiring:
-a `headroom_retrieve` function_call in a Responses API reply passed straight
+`handle_openai_responses` previously had zero CCR/legroom_retrieve wiring:
+a `legroom_retrieve` function_call in a Responses API reply passed straight
 through to the client, which typically can't resolve it (see issue #1877).
 These tests exercise the new interception mirrored from the chat-completions
 backend path (`handle_openai_chat` ~2775-2848) — see
@@ -21,10 +21,10 @@ from unittest.mock import AsyncMock, MagicMock  # noqa: E402
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from headroom.cache.compression_store import reset_compression_store  # noqa: E402
-from headroom.ccr.tool_injection import CCR_TOOL_NAME  # noqa: E402
-from headroom.proxy.loopback_guard import require_loopback  # noqa: E402
-from headroom.proxy.server import ProxyConfig, create_app  # noqa: E402
+from legroom.cache.compression_store import reset_compression_store  # noqa: E402
+from legroom.ccr.tool_injection import CCR_TOOL_NAME  # noqa: E402
+from legroom.proxy.loopback_guard import require_loopback  # noqa: E402
+from legroom.proxy.server import ProxyConfig, create_app  # noqa: E402
 
 _RETRIEVE_TOOL = {
     "type": "function",
@@ -100,7 +100,7 @@ def _final_response(url: str) -> httpx.Response:
 
 
 def _install_two_call_retry(app, hash_key: str = "abc123def456abc123def456"):
-    """First upstream call returns a headroom_retrieve function_call, second the resolved reply."""
+    """First upstream call returns a legroom_retrieve function_call, second the resolved reply."""
     server = app.state.proxy
     calls: list[dict] = []
 
@@ -115,7 +115,7 @@ def _install_two_call_retry(app, hash_key: str = "abc123def456abc123def456"):
 
 
 def test_non_streaming_ccr_tool_call_is_intercepted_and_resolved():
-    """A headroom_retrieve function_call in a non-streaming reply is resolved server-side."""
+    """A legroom_retrieve function_call in a non-streaming reply is resolved server-side."""
     app = _make_app()
     with TestClient(app) as client:
         server = app.state.proxy
@@ -193,7 +193,7 @@ def test_ccr_intercept_exception_is_reraised_not_swallowed():
 
 
 def test_streaming_request_with_retrieve_tool_buffers_upstream_and_streams_final_result():
-    """stream:true + headroom_retrieve in tools -> forced buffered stream:false upstream."""
+    """stream:true + legroom_retrieve in tools -> forced buffered stream:false upstream."""
     app = _make_app()
     with TestClient(app) as client:
         server = app.state.proxy
@@ -201,7 +201,7 @@ def test_streaming_request_with_retrieve_tool_buffers_upstream_and_streams_final
 
         async def _unexpected_stream_response(*args, **kwargs):
             raise AssertionError(
-                "_stream_response should not be called when headroom_retrieve "
+                "_stream_response should not be called when legroom_retrieve "
                 "forces the buffered CCR path"
             )
 
@@ -230,7 +230,7 @@ def test_streaming_request_with_retrieve_tool_buffers_upstream_and_streams_final
 
 
 def test_streaming_request_without_retrieve_tool_uses_normal_stream_path():
-    """No headroom_retrieve in tools -> unaffected, still goes through _stream_response."""
+    """No legroom_retrieve in tools -> unaffected, still goes through _stream_response."""
     app = _make_app()
     with TestClient(app) as client:
         server = app.state.proxy

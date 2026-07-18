@@ -12,7 +12,7 @@ import asyncio
 
 import httpx
 
-from headroom.proxy.server import ProxyConfig, create_app
+from legroom.proxy.server import ProxyConfig, create_app
 
 
 class _RateLimitTransport(httpx.AsyncBaseTransport):
@@ -110,7 +110,7 @@ def test_retry_request_honors_retry_after(monkeypatch) -> None:
         return False
 
     monkeypatch.setattr(
-        "headroom.proxy.server.HeadroomProxy._wait_for_retry_delay_or_shutdown", _fake_wait
+        "legroom.proxy.server.LegroomProxy._wait_for_retry_delay_or_shutdown", _fake_wait
     )
     transport = _RateLimitTransport(fail_status=429, fail_times=1, retry_after="2")
     proxy = _proxy_with(transport)
@@ -194,7 +194,7 @@ def test_retry_request_honors_retry_after_on_529(monkeypatch) -> None:
         return False
 
     monkeypatch.setattr(
-        "headroom.proxy.server.HeadroomProxy._wait_for_retry_delay_or_shutdown", _fake_wait
+        "legroom.proxy.server.LegroomProxy._wait_for_retry_delay_or_shutdown", _fake_wait
     )
     transport = _RateLimitTransport(fail_status=529, fail_times=1, retry_after="2")
     proxy = _proxy_with(transport)

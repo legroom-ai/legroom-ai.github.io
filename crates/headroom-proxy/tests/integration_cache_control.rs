@@ -1,15 +1,15 @@
 //! Integration tests for the proxy-side cache_control resolver
 //! (PR-A4).
 //!
-//! The core walker `headroom_core::compute_frozen_count` is unit-
-//! tested in `crates/headroom-core/tests/cache_control.rs`. This file
+//! The core walker `legroom_core::compute_frozen_count` is unit-
+//! tested in `crates/legroom-core/tests/cache_control.rs`. This file
 //! exercises the proxy wrapper [`resolve_frozen_count`] which adds
-//! the configurability gate (`HEADROOM_PROXY_CACHE_CONTROL_AUTO_FROZEN`)
+//! the configurability gate (`LEGROOM_PROXY_CACHE_CONTROL_AUTO_FROZEN`)
 //! and the structured-log emission tested via in-memory tracing
 //! capture.
 
-use headroom_proxy::compression::resolve_frozen_count;
-use headroom_proxy::config::CacheControlAutoFrozen;
+use legroom_proxy::compression::resolve_frozen_count;
+use legroom_proxy::config::CacheControlAutoFrozen;
 use serde_json::json;
 
 #[test]
@@ -130,7 +130,7 @@ fn cache_control_disabled_via_config_returns_zero_even_with_markers() {
     // The disabled path returns 0 regardless of marker placement.
     // This is the bypass the operator opts into via
     // `--cache-control-auto-frozen=disabled` /
-    // `HEADROOM_PROXY_CACHE_CONTROL_AUTO_FROZEN=disabled`.
+    // `LEGROOM_PROXY_CACHE_CONTROL_AUTO_FROZEN=disabled`.
     let body = json!({
         "messages": [
             {"role": "user", "content": [

@@ -11,7 +11,7 @@ from concurrent.futures import ProcessPoolExecutor, TimeoutError
 from concurrent.futures.process import BrokenProcessPool
 from typing import Any
 
-logger = logging.getLogger("headroom.proxy")
+logger = logging.getLogger("legroom.proxy")
 
 _IMAGE_POOL_LOCK = threading.Lock()
 _IMAGE_POOL: ProcessPoolExecutor | None = None
@@ -21,7 +21,7 @@ def _compress_messages_worker(
     messages: list[dict[str, Any]],
     provider: str,
 ) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
-    from headroom.image import ImageCompressor
+    from legroom.image import ImageCompressor
 
     compressor = ImageCompressor()
     try:

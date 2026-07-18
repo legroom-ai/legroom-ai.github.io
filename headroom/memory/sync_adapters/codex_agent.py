@@ -1,6 +1,6 @@
 """Codex CLI memory sync adapter.
 
-Syncs memories to/from a headroom-managed section in AGENTS.md.
+Syncs memories to/from a legroom-managed section in AGENTS.md.
 Codex reads AGENTS.md automatically before every task.
 
 Note: Codex primarily uses the MCP server for memory (memory_search/save).
@@ -8,11 +8,11 @@ This adapter provides supplementary context injection via AGENTS.md so
 Codex has key memories even without explicit tool calls.
 
 Format in AGENTS.md:
-    <!-- headroom:memory:start -->
-    ## Headroom Shared Memory
+    <!-- legroom:memory:start -->
+    ## Legroom Shared Memory
     - fact 1
     - fact 2
-    <!-- headroom:memory:end -->
+    <!-- legroom:memory:end -->
 """
 
 from __future__ import annotations
@@ -22,10 +22,10 @@ import re
 from pathlib import Path
 from typing import Any
 
-from headroom.memory.sync import AgentMemory, AgentMemoryAdapter
+from legroom.memory.sync import AgentMemory, AgentMemoryAdapter
 
-_MARKER_START = "<!-- headroom:memory:start -->"
-_MARKER_END = "<!-- headroom:memory:end -->"
+_MARKER_START = "<!-- legroom:memory:start -->"
+_MARKER_END = "<!-- legroom:memory:end -->"
 _MARKER_PATTERN = re.compile(
     re.escape(_MARKER_START) + r"(.*?)" + re.escape(_MARKER_END),
     re.DOTALL,
@@ -41,7 +41,7 @@ class CodexAdapter(AgentMemoryAdapter):
         self._path = Path(agents_md_path) if agents_md_path else Path.cwd() / "AGENTS.md"
 
     async def read_memories(self) -> list[AgentMemory]:
-        """Read memories from the headroom section of AGENTS.md."""
+        """Read memories from the legroom section of AGENTS.md."""
         if not self._path.exists():
             return []
 
@@ -68,7 +68,7 @@ class CodexAdapter(AgentMemoryAdapter):
         return memories
 
     async def write_memories(self, memories: list[dict[str, Any]]) -> int:
-        """Merge memories into the headroom section of AGENTS.md.
+        """Merge memories into the legroom section of AGENTS.md.
 
         ``sync_export`` hands this adapter only the *delta* — memories the
         agent doesn't already have (see ``AgentMemoryAdapter`` contract; the
@@ -104,7 +104,7 @@ class CodexAdapter(AgentMemoryAdapter):
                 facts.append(fact)
                 added += 1
 
-        lines = ["## Headroom Shared Memory", ""]
+        lines = ["## Legroom Shared Memory", ""]
         lines.extend(f"- {fact}" for fact in facts)
         lines.append("")
         section = f"{_MARKER_START}\n" + "\n".join(lines) + f"{_MARKER_END}"

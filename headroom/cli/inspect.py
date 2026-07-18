@@ -1,6 +1,6 @@
-"""`headroom inspect` — view original vs compressed message content.
+"""`legroom inspect` — view original vs compressed message content.
 
-Headroom already exposes *quantitative* telemetry (token counts, ratios) but no
+Legroom already exposes *quantitative* telemetry (token counts, ratios) but no
 way to *see* what the compressor changed. This command reads the proxy's
 loopback ``/transformations/feed`` endpoint — which carries the pre/post
 message snapshots when the proxy runs with ``--log-messages`` — and renders, per
@@ -117,8 +117,8 @@ def _render_request(transformation: dict[str, Any], *, full: bool) -> None:
     "-p",
     default=None,
     type=click.IntRange(1, 65535),
-    envvar="HEADROOM_PORT",
-    help="Proxy port to query (default: 8787, env: HEADROOM_PORT)",
+    envvar="LEGROOM_PORT",
+    help="Proxy port to query (default: 8787, env: LEGROOM_PORT)",
 )
 @click.option(
     "--last",
@@ -147,26 +147,26 @@ def inspect_cmd(port: int | None, last: int, output_format: str, full: bool) -> 
 
     \b
     Examples:
-        headroom inspect                 Inspect the most recent request
-        headroom inspect --last 5        Inspect the 5 most recent requests
-        headroom inspect --full          Include unchanged messages
-        headroom inspect --format json   Raw feed for piping into another tool
+        legroom inspect                 Inspect the most recent request
+        legroom inspect --last 5        Inspect the 5 most recent requests
+        legroom inspect --full          Include unchanged messages
+        legroom inspect --format json   Raw feed for piping into another tool
     """
-    from headroom.install.health import probe_json
+    from legroom.install.health import probe_json
 
-    resolved_port = port if port is not None else int(os.environ.get("HEADROOM_PORT", "8787"))
+    resolved_port = port if port is not None else int(os.environ.get("LEGROOM_PORT", "8787"))
     base_url = f"http://127.0.0.1:{resolved_port}"
     payload = probe_json(f"{base_url}/transformations/feed?limit={last}", timeout=5.0)
 
     if payload is None:
         raise click.ClickException(
-            f"No reachable proxy on {base_url}. Start one with `headroom proxy` "
+            f"No reachable proxy on {base_url}. Start one with `legroom proxy` "
             "(or pass --port to point at a running instance)."
         )
     if not payload.get("log_full_messages"):
         raise click.ClickException(
             "The proxy isn't capturing message content, so there's nothing to diff. "
-            "Restart it with `headroom proxy --log-messages`."
+            "Restart it with `legroom proxy --log-messages`."
         )
 
     transformations = payload.get("transformations") or []

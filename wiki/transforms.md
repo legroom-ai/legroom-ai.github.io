@@ -1,6 +1,6 @@
 # Transform Reference
 
-Headroom provides several transforms that work together to optimize LLM context.
+Legroom provides several transforms that work together to optimize LLM context.
 
 ## SmartCrusher
 
@@ -19,7 +19,7 @@ SmartCrusher analyzes JSON arrays and selectively keeps important items:
 ### Configuration
 
 ```python
-from headroom import SmartCrusherConfig
+from legroom import SmartCrusherConfig
 
 config = SmartCrusherConfig(
     min_tokens_to_crush=200,      # Only compress if > 200 tokens
@@ -35,7 +35,7 @@ config = SmartCrusherConfig(
 ### Example
 
 ```python
-from headroom import SmartCrusher
+from legroom import SmartCrusher
 
 crusher = SmartCrusher(config)
 
@@ -76,7 +76,7 @@ LLM providers cache request prefixes. But dynamic content breaks caching:
 CacheAligner extracts dynamic content to stabilize the prefix:
 
 ```python
-from headroom import CacheAligner
+from legroom import CacheAligner
 
 aligner = CacheAligner()
 result = aligner.align(messages)
@@ -91,7 +91,7 @@ result = aligner.align(messages)
 ### Configuration
 
 ```python
-from headroom import CacheAlignerConfig
+from legroom import CacheAlignerConfig
 
 config = CacheAlignerConfig(
     extract_dates=True,           # Move dates to dynamic section
@@ -113,7 +113,7 @@ config = CacheAlignerConfig(
 ## Context management
 
 Context management is handled automatically inside the pipeline
-(live-zone-only compression). Headroom **never** drops messages from the
+(live-zone-only compression). Legroom **never** drops messages from the
 conversation history and does not do position-based or score-based context
 management. It compresses only the newest content blocks (the latest user
 message and the latest tool result / tool output), type-aware and reversible
@@ -122,7 +122,7 @@ mutated, which preserves provider prompt caching.
 
 > The earlier position-based `RollingWindow` and score-based
 > `IntelligentContextManager` transforms have been removed and are no longer
-> part of Headroom.
+> part of Legroom.
 
 ---
 
@@ -130,9 +130,9 @@ mutated, which preserves provider prompt caching.
 
 The earlier LLMLingua-2 integration (`LLMLinguaCompressor`,
 `LLMLinguaConfig`, `is_llmlingua_model_loaded`, `unload_llmlingua_model`,
-the `headroom-ai[llmlingua]` extra, and the `--llmlingua` proxy flag)
+the `legroom-ai[llmlingua]` extra, and the `--llmlingua` proxy flag)
 was retired in 0.9.x and replaced by **Kompress** (ModernBERT).
-`pip install 'headroom-ai[llmlingua]'` no longer resolves; use the
+`pip install 'legroom-ai[llmlingua]'` no longer resolves; use the
 `[ml]` extra instead. The Kompress transform shipped with the proxy
 runs as Transform 4 in the live-zone pipeline (see
 [ARCHITECTURE.md](ARCHITECTURE.md)).
@@ -161,13 +161,13 @@ AST-based compression for source code using tree-sitter.
 ### Installation
 
 ```bash
-pip install "headroom-ai[code]"  # Adds tree-sitter-language-pack
+pip install "legroom-ai[code]"  # Adds tree-sitter-language-pack
 ```
 
 ### Configuration
 
 ```python
-from headroom.transforms import CodeAwareCompressor, CodeCompressorConfig, DocstringMode
+from legroom.transforms import CodeAwareCompressor, CodeCompressorConfig, DocstringMode
 
 config = CodeCompressorConfig(
     preserve_imports=True,              # Always keep imports
@@ -188,7 +188,7 @@ compressor = CodeAwareCompressor(config)
 ### Example
 
 ```python
-from headroom.transforms import CodeAwareCompressor
+from legroom.transforms import CodeAwareCompressor
 
 compressor = CodeAwareCompressor()
 
@@ -233,7 +233,7 @@ print(f"Syntax valid: {result.syntax_valid}")  # True
 ### Memory Management
 
 ```python
-from headroom.transforms import is_tree_sitter_available, unload_tree_sitter
+from legroom.transforms import is_tree_sitter_available, unload_tree_sitter
 
 # Check if tree-sitter is installed
 print(is_tree_sitter_available())  # True/False
@@ -260,7 +260,7 @@ ContentRouter analyzes content and selects the best compression strategy:
 ### Configuration
 
 ```python
-from headroom.transforms import ContentRouter, ContentRouterConfig, CompressionStrategy
+from legroom.transforms import ContentRouter, ContentRouterConfig, CompressionStrategy
 
 config = ContentRouterConfig(
     min_section_tokens=100,             # Minimum tokens to compress
@@ -276,7 +276,7 @@ router = ContentRouter(config)
 ### Example
 
 ```python
-from headroom.transforms import ContentRouter
+from legroom.transforms import ContentRouter
 
 router = ContentRouter()
 
@@ -329,7 +329,7 @@ This enables the feedback loop where compression decisions improve based on actu
 Combine transforms for optimal results.
 
 ```python
-from headroom import TransformPipeline, SmartCrusher, CacheAligner
+from legroom import TransformPipeline, SmartCrusher, CacheAligner
 
 pipeline = TransformPipeline([
     SmartCrusher(),      # First: compress tool outputs

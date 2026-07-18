@@ -1,10 +1,10 @@
 """Git diff output compressor — Rust-backed via PyO3.
 
 The Python implementation has been retired (Stage 3b, 2026-04-25). All
-diff compression now goes through `headroom._core.DiffCompressor` (built
-from `crates/headroom-py`). The byte-equality of the two implementations
+diff compression now goes through `legroom._core.DiffCompressor` (built
+from `crates/legroom-py`). The byte-equality of the two implementations
 was verified against 27 recorded fixtures before the Python source was
-removed; the Rust crate has its own test coverage in `crates/headroom-core/`.
+removed; the Rust crate has its own test coverage in `crates/legroom-core/`.
 
 This module retains the public surface — `DiffCompressorConfig`,
 `DiffCompressionResult`, `DiffCompressor` — so existing call sites
@@ -13,7 +13,7 @@ working unchanged. The dataclasses are still pure-Python because they
 appear in dataclass-aware code paths (`asdict()`, `__dict__`, dataclass
 matching). Only the `DiffCompressor` class delegates to Rust.
 
-The `headroom._core` extension is a hard import: there is no Python
+The `legroom._core` extension is a hard import: there is no Python
 fallback. Build it locally with `scripts/build_rust_extension.sh`
 (wraps `maturin develop`) or install a prebuilt wheel.
 """
@@ -68,7 +68,7 @@ class DiffCompressionResult:
 
 
 class DiffCompressor:
-    """Rust-backed `DiffCompressor` (via PyO3 / `headroom._core`).
+    """Rust-backed `DiffCompressor` (via PyO3 / `legroom._core`).
 
     Same `__init__` and `compress` shape as the retired Python class —
     drop-in replacement. Returns Python `DiffCompressionResult` dataclass
@@ -81,10 +81,10 @@ class DiffCompressor:
         # must build it (scripts/build_rust_extension.sh) or install a
         # prebuilt one. Failing loudly here is better than silently
         # degrading; see feedback memory `feedback_no_silent_fallbacks.md`.
-        from headroom._core import (
+        from legroom._core import (
             DiffCompressor as _RustDiffCompressor,
         )
-        from headroom._core import (
+        from legroom._core import (
             DiffCompressorConfig as _RustDiffCompressorConfig,
         )
 

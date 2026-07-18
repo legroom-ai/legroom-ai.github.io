@@ -11,7 +11,7 @@ from fastapi import Request
 from fastapi.responses import Response
 from starlette.requests import ClientDisconnect
 
-logger = logging.getLogger("headroom.providers.openai.responses")
+logger = logging.getLogger("legroom.providers.openai.responses")
 
 
 def _sanitize_for_log(value: str) -> str:

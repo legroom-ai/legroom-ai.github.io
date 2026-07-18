@@ -7,7 +7,7 @@
 //! on `path == "/v1/messages"` (see `compression::is_compressible_path`).
 //! OpenAI Chat Completions, OpenAI Responses, and Google Gemini
 //! each get their own sibling module in Phase C — they share
-//! [`headroom_core::transforms::LiveZoneOutcome`] and the
+//! [`legroom_core::transforms::LiveZoneOutcome`] and the
 //! per-content-type compressor backend, but the walkers are
 //! provider-specific because the request shapes diverge.
 //!
@@ -19,7 +19,7 @@
 //!    the body is parsed at all — when disabled, floor=0 without
 //!    inspection.
 //! 2. Hand the buffered body bytes to
-//!    [`headroom_core::transforms::compress_anthropic_live_zone`].
+//!    [`legroom_core::transforms::compress_anthropic_live_zone`].
 //!    The dispatcher inspects the live zone (latest user message),
 //!    detects per-block content type, dispatches each block to the
 //!    matching compressor (SmartCrusher / LogCompressor /
@@ -35,13 +35,13 @@
 //!
 //! Bytes outside the rewritten block round-trip byte-equal. The
 //! `byte_fidelity_outside_compressed_block` integration test in
-//! `crates/headroom-core/tests/live_zone_dispatch.rs` pins the
+//! `crates/legroom-core/tests/live_zone_dispatch.rs` pins the
 //! SHA-256 prefix-and-suffix invariant in CI.
 
 use bytes::Bytes;
-use headroom_core::auth_mode::AuthMode as RequestAuthMode;
-use headroom_core::transforms::live_zone::DEFAULT_MODEL;
-use headroom_core::transforms::{
+use legroom_core::auth_mode::AuthMode as RequestAuthMode;
+use legroom_core::transforms::live_zone::DEFAULT_MODEL;
+use legroom_core::transforms::{
     compress_anthropic_live_zone, BlockAction, ExclusionReason, LiveZoneError, LiveZoneOutcome,
 };
 use serde_json::Value;

@@ -1,4 +1,4 @@
-"""Tests that the ``/v1/messages`` route honors ``x-headroom-base-url``.
+"""Tests that the ``/v1/messages`` route honors ``x-legroom-base-url``.
 
 The Anthropic Messages route must forward the per-request upstream
 override header to ``handle_anthropic_messages`` so clients that speak
@@ -24,7 +24,7 @@ fastapi = pytest.importorskip("fastapi")
 from fastapi.responses import JSONResponse  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
-from headroom.proxy.server import ProxyConfig, create_app  # noqa: E402
+from legroom.proxy.server import ProxyConfig, create_app  # noqa: E402
 
 MESSAGES = "/v1/messages"
 BODY = {"model": "glm-5.2", "max_tokens": 16, "messages": [{"role": "user", "content": "hi"}]}
@@ -60,7 +60,7 @@ def test_header_passed_as_upstream_base_url():
         resp = client.post(
             MESSAGES,
             json=BODY,
-            headers={"x-headroom-base-url": "https://opencode.ai/zen/go"},
+            headers={"x-legroom-base-url": "https://opencode.ai/zen/go"},
         )
 
     assert resp.status_code == 200
@@ -82,7 +82,7 @@ def test_empty_or_whitespace_header_leaves_upstream_unset():
         app = create_app(_make_config())
         with TestClient(app) as client:
             spy = _install_handler_spy(client.app.state.proxy)
-            resp = client.post(MESSAGES, json=BODY, headers={"x-headroom-base-url": value})
+            resp = client.post(MESSAGES, json=BODY, headers={"x-legroom-base-url": value})
 
         assert resp.status_code == 200
         assert _base_url_kwarg(spy) is None
@@ -95,7 +95,7 @@ def test_header_value_is_trimmed_and_trailing_slash_stripped():
         resp = client.post(
             MESSAGES,
             json=BODY,
-            headers={"x-headroom-base-url": "  https://opencode.ai/zen/go/  "},
+            headers={"x-legroom-base-url": "  https://opencode.ai/zen/go/  "},
         )
 
     assert resp.status_code == 200

@@ -13,8 +13,8 @@ from __future__ import annotations
 
 import pytest
 
-from headroom.config import ReadMaturationConfig
-from headroom.transforms.read_maturation import (
+from legroom.config import ReadMaturationConfig
+from legroom.transforms.read_maturation import (
     ReadMaturationManager,
     relocate_cache_breakpoint,
 )
@@ -238,8 +238,8 @@ class TestActivityDecision:
 
 class TestCcrIntegration:
     def test_original_stored_and_retrievable(self):
-        from headroom.cache.backends.memory import InMemoryBackend
-        from headroom.cache.compression_store import CompressionStore
+        from legroom.cache.backends.memory import InMemoryBackend
+        from legroom.cache.compression_store import CompressionStore
 
         store = CompressionStore(backend=InMemoryBackend())
         m = ReadMaturationManager(
@@ -257,7 +257,7 @@ class TestCcrIntegration:
 
 class TestProxyWiring:
     def test_proxy_config_flag_default_off(self):
-        from headroom.proxy.models import ProxyConfig
+        from legroom.proxy.models import ProxyConfig
 
         assert ProxyConfig().read_maturation is False
         assert ProxyConfig(read_maturation=True).read_maturation is True
@@ -265,9 +265,9 @@ class TestProxyWiring:
     def test_session_state_rides_on_prefix_tracker(self):
         """The handler's session-state flow: a manager attached to the
         tracker carries matured markers across requests."""
-        from headroom.cache.prefix_tracker import PrefixCacheTracker
-        from headroom.config import ReadMaturationConfig
-        from headroom.transforms.read_maturation import (
+        from legroom.cache.prefix_tracker import PrefixCacheTracker
+        from legroom.config import ReadMaturationConfig
+        from legroom.transforms.read_maturation import (
             ReadMaturationManager,
             relocate_cache_breakpoint,
         )

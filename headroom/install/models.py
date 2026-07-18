@@ -17,7 +17,7 @@ class InstallPreset(str, Enum):
 
 
 class RuntimeKind(str, Enum):
-    """Runtime used to execute Headroom."""
+    """Runtime used to execute Legroom."""
 
     PYTHON = "python"
     DOCKER = "docker"
@@ -69,7 +69,7 @@ def iso_utc_now() -> str:
 
 @dataclass
 class ManagedMutation:
-    """A reversible change applied by `headroom install`."""
+    """A reversible change applied by `legroom install`."""
 
     target: str
     kind: str
@@ -106,9 +106,9 @@ class DeploymentManifest:
     memory_enabled: bool = False
     memory_db_path: str = ""
     telemetry_enabled: bool = True
-    image: str = "ghcr.io/headroomlabs-ai/headroom:latest"
-    service_name: str = "headroom"
-    container_name: str = "headroom-persistent"
+    image: str = "ghcr.io/legroom-ai/legroom:latest"
+    service_name: str = "legroom"
+    container_name: str = "legroom-persistent"
     health_url: str = "http://127.0.0.1:8787/readyz"
     base_env: dict[str, str] = field(default_factory=dict)
     tool_envs: dict[str, dict[str, str]] = field(default_factory=dict)

@@ -35,12 +35,12 @@ def _default_db_path() -> str:
     """Resolve the memory DB the proxy/install actually use.
 
     Prefer the project-scoped store the proxy writes when run inside a project
-    (``./.headroom/memory.db``); otherwise fall back to the global workspace
-    store (``~/.headroom/memory.db``). The previous bare ``headroom_memory.db``
-    default pointed at neither, so ``headroom memory list`` silently read an
+    (``./.legroom/memory.db``); otherwise fall back to the global workspace
+    store (``~/.legroom/memory.db``). The previous bare ``legroom_memory.db``
+    default pointed at neither, so ``legroom memory list`` silently read an
     empty/legacy DB.
     """
-    project_db = Path.cwd() / ".headroom" / "memory.db"
+    project_db = Path.cwd() / ".legroom" / "memory.db"
     if project_db.exists():
         return str(project_db)
     from ..paths import memory_db_path
@@ -55,8 +55,8 @@ def db_path_option(fn: Any) -> Any:
         type=click.Path(),
         default=_default_db_path,
         help="Path to the memory database file. Defaults to the project store "
-        "(./.headroom/memory.db) if present, else the global store "
-        "(~/.headroom/memory.db).",
+        "(./.legroom/memory.db) if present, else the global store "
+        "(~/.legroom/memory.db).",
         show_default="project store if present, else global store",
     )(fn)
 
@@ -281,23 +281,23 @@ def _import_memories(store: SQLiteMemoryStore, memories: list[dict[str, Any]]) -
 @main.group()
 @click.pass_context
 def memory(ctx: click.Context) -> None:
-    """Manage memories stored in Headroom.
+    """Manage memories stored in Legroom.
 
     \b
     Examples:
-        headroom memory list                     List all stored memories
-        headroom memory list --limit 10          List the 10 most recent memories
-        headroom memory list --scope USER        List only USER-level memories
-        headroom memory list --since 7d          List memories from the last 7 days
-        headroom memory show <id>                Show full details of a memory
-        headroom memory stats                    Show memory statistics
-        headroom memory edit <id> --content ...  Edit a memory's content
-        headroom memory delete <id>              Delete a memory
-        headroom memory repair-supersession <old-id> <new-id>  Repair one lineage edge
-        headroom memory prune --older-than 30d   Delete memories older than 30 days
-        headroom memory purge --confirm          Delete ALL memories
-        headroom memory export --output file.json  Export all memories to JSON
-        headroom memory import file.json         Import memories from JSON
+        legroom memory list                     List all stored memories
+        legroom memory list --limit 10          List the 10 most recent memories
+        legroom memory list --scope USER        List only USER-level memories
+        legroom memory list --since 7d          List memories from the last 7 days
+        legroom memory show <id>                Show full details of a memory
+        legroom memory stats                    Show memory statistics
+        legroom memory edit <id> --content ...  Edit a memory's content
+        legroom memory delete <id>              Delete a memory
+        legroom memory repair-supersession <old-id> <new-id>  Repair one lineage edge
+        legroom memory prune --older-than 30d   Delete memories older than 30 days
+        legroom memory purge --confirm          Delete ALL memories
+        legroom memory export --output file.json  Export all memories to JSON
+        legroom memory import file.json         Import memories from JSON
     """
     pass
 
@@ -338,11 +338,11 @@ def list_memories(
 
     \b
     Examples:
-        headroom memory list                  List most recent memories
-        headroom memory list --limit 10       Show only 10 memories
-        headroom memory list --scope USER     Show only USER-level memories
-        headroom memory list --since 7d       Show memories from the last 7 days
-        headroom memory list --search "api"   Search for memories containing "api"
+        legroom memory list                  List most recent memories
+        legroom memory list --limit 10       Show only 10 memories
+        legroom memory list --scope USER     Show only USER-level memories
+        legroom memory list --since 7d       Show memories from the last 7 days
+        legroom memory list --search "api"   Search for memories containing "api"
     """
     store = get_store(db_path)
 
@@ -442,8 +442,8 @@ def show_memory(
 
     \b
     Examples:
-        headroom memory show abc123            Show memory details
-        headroom memory show abc123 --json     Output as raw JSON
+        legroom memory show abc123            Show memory details
+        legroom memory show abc123 --json     Output as raw JSON
     """
     store = get_store(db_path)
 
@@ -562,7 +562,7 @@ def show_stats(ctx: click.Context, db_path: str) -> None:
         if old_count > 0:
             console.print(
                 f"\n[dim]Tip: You have {old_count} memories older than 30 days. "
-                f"Consider running: headroom memory prune --older-than 30d[/dim]"
+                f"Consider running: legroom memory prune --older-than 30d[/dim]"
             )
 
     except Exception as e:
@@ -587,9 +587,9 @@ def edit_memory(
 
     \b
     Examples:
-        headroom memory edit abc123 --content "Updated content"
-        headroom memory edit abc123 --importance 0.8
-        headroom memory edit abc123 -c "New content" -i 0.9
+        legroom memory edit abc123 --content "Updated content"
+        legroom memory edit abc123 --importance 0.8
+        legroom memory edit abc123 -c "New content" -i 0.9
     """
     if content is None and importance is None:
         print_error("At least one of --content or --importance must be provided.")
@@ -659,8 +659,8 @@ def repair_supersession(
 
     \b
     Examples:
-        headroom memory repair-supersession OLD_ID NEW_ID
-        headroom memory repair-supersession OLD_ID NEW_ID --apply
+        legroom memory repair-supersession OLD_ID NEW_ID
+        legroom memory repair-supersession OLD_ID NEW_ID --apply
     """
     _ = ctx
     store = get_store(db_path)
@@ -724,9 +724,9 @@ def delete_memories(
 
     \b
     Examples:
-        headroom memory delete abc123           Delete one memory
-        headroom memory delete abc123 def456    Delete multiple memories
-        headroom memory delete abc123 --force   Skip confirmation
+        legroom memory delete abc123           Delete one memory
+        legroom memory delete abc123 def456    Delete multiple memories
+        legroom memory delete abc123 --force   Skip confirmation
     """
     store = get_store(db_path)
 
@@ -826,11 +826,11 @@ def prune_memories(
 
     \b
     Examples:
-        headroom memory prune --older-than 30d              Delete memories older than 30 days
-        headroom memory prune --scope TURN                  Delete all TURN-level memories
-        headroom memory prune --low-importance 0.3          Delete low-importance memories
-        headroom memory prune --older-than 7d --scope TURN  Combine filters
-        headroom memory prune --older-than 30d --dry-run    Preview what would be deleted
+        legroom memory prune --older-than 30d              Delete memories older than 30 days
+        legroom memory prune --scope TURN                  Delete all TURN-level memories
+        legroom memory prune --low-importance 0.3          Delete low-importance memories
+        legroom memory prune --older-than 7d --scope TURN  Combine filters
+        legroom memory prune --older-than 30d --dry-run    Preview what would be deleted
     """
     if older_than is None and scope is None and low_importance is None:
         print_error(
@@ -927,7 +927,7 @@ def purge_memories(ctx: click.Context, db_path: str, confirm_flag: bool) -> None
 
     \b
     Example:
-        headroom memory purge --confirm
+        legroom memory purge --confirm
     """
     if not confirm_flag:
         print_error("This will delete ALL memories. Use --confirm to proceed.")
@@ -976,9 +976,9 @@ def export_memories(ctx: click.Context, db_path: str, output: str | None) -> Non
 
     \b
     Examples:
-        headroom memory export                       Output to stdout
-        headroom memory export --output backup.json  Save to file
-        headroom memory export -o backup.json        Save to file (short form)
+        legroom memory export                       Output to stdout
+        legroom memory export --output backup.json  Save to file
+        legroom memory export -o backup.json        Save to file (short form)
     """
     store = get_store(db_path)
 
@@ -1012,8 +1012,8 @@ def import_memories(ctx: click.Context, db_path: str, file: str, force: bool) ->
 
     \b
     Examples:
-        headroom memory import backup.json          Import from file
-        headroom memory import backup.json --force  Skip confirmation
+        legroom memory import backup.json          Import from file
+        legroom memory import backup.json --force  Skip confirmation
     """
     file_path = Path(file)
 

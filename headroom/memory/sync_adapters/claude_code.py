@@ -12,7 +12,7 @@ Each .md file has:
     name: <title>
     description: <one-line summary>
     type: <user|project|reference|feedback>
-    headroom_id: <uuid>          (added by sync for cross-reference)
+    legroom_id: <uuid>          (added by sync for cross-reference)
     source_agent: <agent name>   (added by sync for lineage)
     ---
     <body content>
@@ -25,7 +25,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from headroom.memory.sync import AgentMemory, AgentMemoryAdapter
+from legroom.memory.sync import AgentMemory, AgentMemoryAdapter
 
 
 def _sanitize_for_filename(text: str) -> str:
@@ -119,7 +119,7 @@ class ClaudeCodeAdapter(AgentMemoryAdapter):
                     metadata={
                         "name": fm.get("name", ""),
                         "description": fm.get("description", ""),
-                        "headroom_id": fm.get("headroom_id", ""),
+                        "legroom_id": fm.get("legroom_id", ""),
                         "source_agent": fm.get("source_agent", "claude"),
                     },
                 )
@@ -143,7 +143,7 @@ class ClaudeCodeAdapter(AgentMemoryAdapter):
         for mem in memories:
             content = mem["content"]
             category = mem.get("category", "project")
-            headroom_id = mem.get("headroom_id", "")
+            legroom_id = mem.get("legroom_id", "")
             source_agent = mem.get("source_agent", "unknown")
             content_hash = mem.get("content_hash", "")
 
@@ -155,7 +155,7 @@ class ClaudeCodeAdapter(AgentMemoryAdapter):
             # forever.
             first_line = content.split("\n")[0][:60].strip()
             slug = _sanitize_for_filename(first_line)
-            filename = f"headroom_{slug}.md"
+            filename = f"legroom_{slug}.md"
 
             # Skip if file already exists with same content
             target = self._memory_dir / filename
@@ -165,14 +165,14 @@ class ClaudeCodeAdapter(AgentMemoryAdapter):
                 if existing_hash == content_hash:
                     continue
                 # Same slug, different content. If the file on disk belongs to a
-                # *different* memory (distinct headroom_id), disambiguate with a
+                # *different* memory (distinct legroom_id), disambiguate with a
                 # content-hash suffix so we don't clobber it. A matching id is an
                 # update of the same memory, so the plain slug is rewritten as
                 # before (keeps existing filenames stable — no migration churn).
-                existing_id = existing_fm.get("headroom_id", "")
-                if headroom_id and existing_id and existing_id != headroom_id:
+                existing_id = existing_fm.get("legroom_id", "")
+                if legroom_id and existing_id and existing_id != legroom_id:
                     suffix = (content_hash or hashlib.sha256(content.encode()).hexdigest()[:16])[:8]
-                    filename = f"headroom_{slug}_{suffix}.md"
+                    filename = f"legroom_{slug}_{suffix}.md"
                     target = self._memory_dir / filename
                     if target.exists():
                         _, dis_body = _parse_frontmatter(target.read_text(encoding="utf-8"))
@@ -189,7 +189,7 @@ class ClaudeCodeAdapter(AgentMemoryAdapter):
                     "name": first_line[:60],
                     "description": description,
                     "type": category or "project",
-                    "headroom_id": headroom_id,
+                    "legroom_id": legroom_id,
                     "source_agent": source_agent,
                 }
             )
@@ -206,10 +206,10 @@ class ClaudeCodeAdapter(AgentMemoryAdapter):
         return written
 
     def _update_memory_md_index(self, new_entries: list[str]) -> None:
-        """Append new entries to MEMORY.md under a Headroom section."""
+        """Append new entries to MEMORY.md under a Legroom section."""
         memory_md = self._memory_dir / "MEMORY.md"
 
-        section_marker = "## Headroom Shared Memory"
+        section_marker = "## Legroom Shared Memory"
         new_section = f"\n{section_marker}\n" + "\n".join(new_entries) + "\n"
 
         if memory_md.exists():

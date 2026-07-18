@@ -9,8 +9,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from headroom.dashboard import get_dashboard_html
-from headroom.proxy import helpers as proxy_helpers
+from legroom.dashboard import get_dashboard_html
+from legroom.proxy import helpers as proxy_helpers
 
 
 class _StatsStub:
@@ -31,9 +31,9 @@ class _ToinStub:
 
 @pytest.fixture(autouse=True)
 def _reset_rtk_stats_cache(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
-    monkeypatch.delenv("HEADROOM_RTK_GAIN_SCOPE", raising=False)
-    monkeypatch.setenv("HEADROOM_REQUIRE_RUST_CORE", "false")
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_RTK_GAIN_SCOPE", raising=False)
+    monkeypatch.setenv("LEGROOM_REQUIRE_RUST_CORE", "false")
     proxy_helpers._rtk_stats_cache.update(
         {"expires_at": 0.0, "has_value": False, "tool": None, "value": None}
     )
@@ -52,7 +52,7 @@ def _reset_rtk_stats_cache(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_get_rtk_stats_memoizes_subprocess_calls(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
     now = {"value": 100.0}
     calls = {"run": 0}
     totals = [
@@ -178,7 +178,7 @@ def test_get_rtk_stats_can_read_project_scoped_gain(monkeypatch: pytest.MonkeyPa
             ),
         )
 
-    monkeypatch.setenv("HEADROOM_RTK_GAIN_SCOPE", "project")
+    monkeypatch.setenv("LEGROOM_RTK_GAIN_SCOPE", "project")
     monkeypatch.setattr(shutil, "which", lambda name: "/usr/bin/rtk")
     monkeypatch.setattr(subprocess, "run", _fake_run)
 
@@ -207,7 +207,7 @@ def test_get_rtk_stats_invalid_scope_defaults_to_global(
         return SimpleNamespace(returncode=0, stdout=json.dumps({"summary": {}}))
 
     mock_warning = MagicMock()
-    monkeypatch.setenv("HEADROOM_RTK_GAIN_SCOPE", "workspace")
+    monkeypatch.setenv("LEGROOM_RTK_GAIN_SCOPE", "workspace")
     monkeypatch.setattr(proxy_helpers.logger, "warning", mock_warning)
     monkeypatch.setattr(shutil, "which", lambda name: "/usr/bin/rtk")
     monkeypatch.setattr(subprocess, "run", _fake_run)
@@ -222,7 +222,7 @@ def test_get_rtk_stats_invalid_scope_defaults_to_global(
 
 
 def test_get_context_tool_stats_reads_lean_ctx_gain(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("HEADROOM_CONTEXT_TOOL", "lean-ctx")
+    monkeypatch.setenv("LEGROOM_CONTEXT_TOOL", "lean-ctx")
     now = {"value": 100.0}
     calls = {"run": 0}
     totals = [
@@ -254,7 +254,7 @@ def test_get_context_tool_stats_reads_lean_ctx_gain(monkeypatch: pytest.MonkeyPa
 
     monkeypatch.setattr(proxy_helpers.time, "monotonic", lambda: now["value"])
     monkeypatch.setattr(
-        "headroom.lean_ctx.get_lean_ctx_path",
+        "legroom.lean_ctx.get_lean_ctx_path",
         lambda: Path("/usr/bin/lean-ctx"),
     )
     monkeypatch.setattr(subprocess, "run", _fake_run)
@@ -299,8 +299,8 @@ def test_stats_cached_query_reuses_short_ttl_snapshot(monkeypatch: pytest.Monkey
     pytest.importorskip("fastapi")
     from fastapi.testclient import TestClient
 
-    import headroom.proxy.server as server
-    from headroom.proxy.server import ProxyConfig, create_app
+    import legroom.proxy.server as server
+    from legroom.proxy.server import ProxyConfig, create_app
 
     calls = {"store": 0, "telemetry": 0, "feedback": 0, "context_tool": 0}
     now = {"value": 100.0}
@@ -386,8 +386,8 @@ def test_stats_reports_lean_ctx_as_selected_cli_filter(monkeypatch: pytest.Monke
     pytest.importorskip("fastapi")
     from fastapi.testclient import TestClient
 
-    import headroom.proxy.server as server
-    from headroom.proxy.server import ProxyConfig, create_app
+    import legroom.proxy.server as server
+    from legroom.proxy.server import ProxyConfig, create_app
 
     monkeypatch.setattr(
         server,
@@ -455,8 +455,8 @@ def test_stats_cli_filtering_available_false_when_not_installed(
     pytest.importorskip("fastapi")
     from fastapi.testclient import TestClient
 
-    import headroom.proxy.server as server
-    from headroom.proxy.server import ProxyConfig, create_app
+    import legroom.proxy.server as server
+    from legroom.proxy.server import ProxyConfig, create_app
 
     monkeypatch.setattr(
         server,
@@ -522,8 +522,8 @@ def test_stats_cli_filtering_available_true_at_boundary_zero_tokens_saved(
     pytest.importorskip("fastapi")
     from fastapi.testclient import TestClient
 
-    import headroom.proxy.server as server
-    from headroom.proxy.server import ProxyConfig, create_app
+    import legroom.proxy.server as server
+    from legroom.proxy.server import ProxyConfig, create_app
 
     monkeypatch.setattr(
         server,
@@ -578,7 +578,7 @@ def test_stats_cli_filtering_available_true_at_boundary_zero_tokens_saved(
 
 
 def test_cost_merge_uses_generic_cli_filtering_name() -> None:
-    from headroom.proxy.cost import merge_cost_stats
+    from legroom.proxy.cost import merge_cost_stats
 
     payload = merge_cost_stats(
         {"savings_usd": 1.23456, "other": "kept"},
@@ -596,14 +596,14 @@ def test_cost_merge_uses_generic_cli_filtering_name() -> None:
 
 
 def test_session_summary_uses_generic_cli_filtering_keys() -> None:
-    from headroom.proxy.cost import build_session_summary
+    from legroom.proxy.cost import build_session_summary
 
     proxy = SimpleNamespace(
         config=SimpleNamespace(mode="token"),
         logger=SimpleNamespace(_logs=[]),
         cost_tracker=SimpleNamespace(
             stats=lambda: {
-                "cost_with_headroom_usd": 2.0,
+                "cost_with_legroom_usd": 2.0,
                 "savings_usd": 0.5,
             }
         ),
@@ -632,7 +632,7 @@ def test_session_summary_uses_generic_cli_filtering_keys() -> None:
 
 
 def test_session_summary_surfaces_codex_ws_counters() -> None:
-    from headroom.proxy.cost import build_session_summary
+    from legroom.proxy.cost import build_session_summary
 
     proxy = SimpleNamespace(
         config=SimpleNamespace(mode="token"),
@@ -666,9 +666,9 @@ def test_stats_reset_clears_runtime_proxy_counters(monkeypatch: pytest.MonkeyPat
     pytest.importorskip("fastapi")
     from fastapi.testclient import TestClient
 
-    import headroom.proxy.server as server
-    from headroom.proxy.loopback_guard import require_loopback
-    from headroom.proxy.server import ProxyConfig, create_app
+    import legroom.proxy.server as server
+    from legroom.proxy.loopback_guard import require_loopback
+    from legroom.proxy.server import ProxyConfig, create_app
 
     monkeypatch.setattr(
         server,
@@ -749,7 +749,7 @@ def test_dashboard_session_metrics_do_not_repeat_proxy_tokens_without_new_contex
     html = get_dashboard_html()
 
     assert "proxy tokens removed" not in html
-    assert '<span class="text-sm text-gray-400">Headroom Overhead</span>' not in html
+    assert '<span class="text-sm text-gray-400">Legroom Overhead</span>' not in html
     assert '<span class="text-sm text-gray-400">TTFB (upstream)</span>' not in html
     assert "Overhead Range" in html
     assert "TTFB Range" in html
@@ -760,27 +760,27 @@ def test_proxy_throughput_in_stats_endpoint(monkeypatch: pytest.MonkeyPatch) -> 
     """Verify that the /stats endpoint includes a 'throughput' key in the response.
 
     The server's _compute_throughput closure does a fresh
-    `from headroom.perf.analyzer import ...` on every call, so we patch the
-    names directly on the `headroom.perf.analyzer` module so the local import
+    `from legroom.perf.analyzer import ...` on every call, so we patch the
+    names directly on the `legroom.perf.analyzer` module so the local import
     inside the closure picks up our fakes.
 
-    Skipped locally when headroom._core (Rust extension) is not compiled.
+    Skipped locally when legroom._core (Rust extension) is not compiled.
     """
     pytest.importorskip("fastapi")
     from fastapi.testclient import TestClient
 
-    import headroom.perf.analyzer as _analyzer_mod
+    import legroom.perf.analyzer as _analyzer_mod
 
     try:
-        from headroom.proxy.server import (
+        from legroom.proxy.server import (
             _throughput_cache,
             create_app,
             require_loopback,
         )
     except (ImportError, ModuleNotFoundError) as exc:
-        pytest.skip(f"headroom._core not available (Rust extension not compiled): {exc}")
+        pytest.skip(f"legroom._core not available (Rust extension not compiled): {exc}")
 
-    from headroom.config import ProxyConfig
+    from legroom.config import ProxyConfig
 
     # Reset the module-level cache so CI doesn't reuse a stale value
     _throughput_cache.update({"expires_at": 0.0, "value": None})

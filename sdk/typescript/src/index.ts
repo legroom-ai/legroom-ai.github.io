@@ -1,7 +1,7 @@
 // --- Core ---
 export { compress } from "./compress.js";
-export { HeadroomClient } from "./client.js";
-export type { ExtendedClientOptions, HeadroomParams } from "./client.js";
+export { LegroomClient } from "./client.js";
+export type { ExtendedClientOptions, LegroomParams } from "./client.js";
 export { simulate } from "./simulate.js";
 export type { SimulateOptions } from "./simulate.js";
 
@@ -28,16 +28,16 @@ export type {
   OpenAIMessage,
   CompressOptions,
   CompressResult,
-  HeadroomClientOptions,
-  HeadroomClientInterface,
+  LegroomClientOptions,
+  LegroomClientInterface,
 } from "./types.js";
 
 // --- Errors (full hierarchy) ---
 export {
-  HeadroomError,
-  HeadroomConnectionError,
-  HeadroomAuthError,
-  HeadroomCompressError,
+  LegroomError,
+  LegroomConnectionError,
+  LegroomAuthError,
+  LegroomCompressError,
   ConfigurationError,
   ProviderError,
   StorageError,
@@ -50,7 +50,7 @@ export {
 
 // --- Config types ---
 export type {
-  HeadroomMode,
+  LegroomMode,
   RelevanceTier,
   ContentType,
   BlockKind,
@@ -67,7 +67,7 @@ export type {
   PrefixFreezeConfig,
   ReadLifecycleConfig,
   CompressionProfile,
-  HeadroomConfig,
+  LegroomConfig,
 } from "./types/config.js";
 
 // --- Data models ---
@@ -109,13 +109,13 @@ export type {
   SharedContextOptions,
 } from "./shared-context.js";
 
-// --- Filesystem contract (parity shell with headroom.paths) ---
+// --- Filesystem contract (parity shell with legroom.paths) ---
 export {
-  HEADROOM_CONFIG_DIR_ENV,
-  HEADROOM_WORKSPACE_DIR_ENV,
-  HEADROOM_SAVINGS_PATH_ENV,
-  HEADROOM_TOIN_PATH_ENV,
-  HEADROOM_SUBSCRIPTION_STATE_PATH_ENV,
+  LEGROOM_CONFIG_DIR_ENV,
+  LEGROOM_WORKSPACE_DIR_ENV,
+  LEGROOM_SAVINGS_PATH_ENV,
+  LEGROOM_TOIN_PATH_ENV,
+  LEGROOM_SUBSCRIPTION_STATE_PATH_ENV,
   configDir,
   workspaceDir,
   savingsPath,

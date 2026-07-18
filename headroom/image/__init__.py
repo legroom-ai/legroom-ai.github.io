@@ -1,10 +1,10 @@
-"""Image token compression for Headroom.
+"""Image token compression for Legroom.
 
 Automatically compress images in LLM requests to save 40-90% tokens
 while maintaining answer accuracy.
 
 Usage:
-    from headroom.image import ImageCompressor
+    from legroom.image import ImageCompressor
 
     compressor = ImageCompressor()
 
@@ -15,7 +15,7 @@ Usage:
         print(f"Saved {compressor.last_savings:.0f}% tokens")
 
 Or use the convenience function:
-    from headroom.image import compress_images
+    from legroom.image import compress_images
 
     messages = compress_images(messages, provider="openai")
 

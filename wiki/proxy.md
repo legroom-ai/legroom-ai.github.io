@@ -1,6 +1,6 @@
 # Proxy Server Documentation
 
-The Headroom proxy server is a production-ready HTTP server that applies context optimization to all requests passing through it.
+The Legroom proxy server is a production-ready HTTP server that applies context optimization to all requests passing through it.
 
 > **New:** The proxy now supports the [TypeScript SDK](typescript-sdk.md) via the `POST /v1/compress` endpoint, enabling compression-as-a-service for any HTTP client without calling an LLM.
 
@@ -8,16 +8,16 @@ The Headroom proxy server is a production-ready HTTP server that applies context
 
 ```bash
 # Basic usage
-headroom proxy
+legroom proxy
 
 # Custom port
-headroom proxy --port 8080
+legroom proxy --port 8080
 
 # With all options
-headroom proxy \
+legroom proxy \
   --host 0.0.0.0 \
   --port 8787 \
-  --log-file /var/log/headroom.jsonl \
+  --log-file /var/log/legroom.jsonl \
   --budget 100.0
 ```
 
@@ -28,37 +28,37 @@ headroom proxy \
 ANTHROPIC_BASE_URL=http://localhost:8787 claude
 
 # GitHub Copilot CLI
-headroom wrap copilot -- --model claude-sonnet-4-20250514
+legroom wrap copilot -- --model claude-sonnet-4-20250514
 
 # OpenAI-compatible clients
 OPENAI_BASE_URL=http://localhost:8787/v1 your-app
 ```
 
-`headroom wrap copilot` uses Copilot CLI's BYOK provider settings under the hood. In `provider-type=auto`, it chooses Headroom's Anthropic route for the default proxy backend and the OpenAI-compatible `/v1` route for translated backends such as `anyllm` and LiteLLM.
+`legroom wrap copilot` uses Copilot CLI's BYOK provider settings under the hood. In `provider-type=auto`, it chooses Legroom's Anthropic route for the default proxy backend and the OpenAI-compatible `/v1` route for translated backends such as `anyllm` and LiteLLM.
 
-Anonymous aggregate telemetry is **off by default** (opt-in). Opt in with `HEADROOM_TELEMETRY=on` or `headroom proxy --telemetry`. Downstream apps can set `HEADROOM_SDK=headroom-app` to override the anonymous telemetry `sdk` label; the default remains `proxy`.
+Anonymous aggregate telemetry is **off by default** (opt-in). Opt in with `LEGROOM_TELEMETRY=on` or `legroom proxy --telemetry`. Downstream apps can set `LEGROOM_SDK=legroom-app` to override the anonymous telemetry `sdk` label; the default remains `proxy`.
 
-Operational OTEL metrics are configured separately and are **off by default**. Install `headroom-ai[proxy,otel]` and set:
+Operational OTEL metrics are configured separately and are **off by default**. Install `legroom-ai[proxy,otel]` and set:
 
 ```bash
-HEADROOM_OTEL_METRICS_ENABLED=1
-HEADROOM_OTEL_METRICS_EXPORTER=otlp_http
-HEADROOM_OTEL_METRICS_ENDPOINT=http://127.0.0.1:4318/v1/metrics
-HEADROOM_OTEL_SERVICE_NAME=headroom-proxy
+LEGROOM_OTEL_METRICS_ENABLED=1
+LEGROOM_OTEL_METRICS_EXPORTER=otlp_http
+LEGROOM_OTEL_METRICS_ENDPOINT=http://127.0.0.1:4318/v1/metrics
+LEGROOM_OTEL_SERVICE_NAME=legroom-proxy
 ```
 
-Use `HEADROOM_OTEL_METRICS_EXPORTER=console` for local smoke testing. `HEADROOM_TELEMETRY` controls the anonymous data-flywheel beacon only; it does not disable or enable OTEL export.
+Use `LEGROOM_OTEL_METRICS_EXPORTER=console` for local smoke testing. `LEGROOM_TELEMETRY` controls the anonymous data-flywheel beacon only; it does not disable or enable OTEL export.
 
-Langfuse can be enabled alongside this OTEL path for **trace ingestion**. Langfuse does **not** ingest OTEL metrics, so Headroom keeps metrics and Langfuse traces as complementary signals:
+Langfuse can be enabled alongside this OTEL path for **trace ingestion**. Langfuse does **not** ingest OTEL metrics, so Legroom keeps metrics and Langfuse traces as complementary signals:
 
 ```bash
-HEADROOM_LANGFUSE_ENABLED=1
+LEGROOM_LANGFUSE_ENABLED=1
 LANGFUSE_PUBLIC_KEY=pk-lf-...
 LANGFUSE_SECRET_KEY=sk-lf-...
 LANGFUSE_BASE_URL=https://cloud.langfuse.com
 ```
 
-When configured, Headroom emits OTLP traces for the shared compression pipeline to Langfuse while continuing to expose metrics through `/metrics` and OTEL metric exporters.
+When configured, Legroom emits OTLP traces for the shared compression pipeline to Langfuse while continuing to expose metrics through `/metrics` and OTEL metric exporters.
 
 ## Command Line Options
 
@@ -74,7 +74,7 @@ When configured, Headroom emits OTLP traces for the shared compression pipeline 
 | `--no-rate-limit` | `false` | Disable rate limiting |
 | `--log-file` | None | Path to JSONL log file |
 | `--budget` | None | Daily budget limit in USD |
-| `--code-aware` / `--no-code-aware` | disabled | Enable or disable AST-based code compression. Requires `headroom-ai[code]` (env: HEADROOM_CODE_AWARE_ENABLED=1 to enable) |
+| `--code-aware` / `--no-code-aware` | disabled | Enable or disable AST-based code compression. Requires `legroom-ai[code]` (env: LEGROOM_CODE_AWARE_ENABLED=1 to enable) |
 | `--anthropic-api-url` | `https://api.anthropic.com` | Custom Anthropic API URL endpoint |
 | `--openai-api-url` | `https://api.openai.com` | Custom OpenAI API URL endpoint |
 | `--anthropic-extra-headers` | unset | JSON object of extra headers merged into (and overriding) forwarded Anthropic requests, e.g. `'{"Api-Key": "..."}'` |
@@ -82,7 +82,7 @@ When configured, Headroom emits OTLP traces for the shared compression pipeline 
 
 ### Run Modes
 
-Headroom proxy has two explicit run modes:
+Legroom proxy has two explicit run modes:
 
 - `token` mode: prioritize token reduction. Prior history may be rewritten when that improves compression.
 - `cache` mode: prioritize provider prefix cache stability. Prior turns are frozen; only the newest turn is mutable.
@@ -90,8 +90,8 @@ Headroom proxy has two explicit run modes:
 Set via CLI or env:
 
 ```bash
-headroom proxy --mode token
-HEADROOM_MODE=cache headroom proxy
+legroom proxy --mode token
+LEGROOM_MODE=cache legroom proxy
 ```
 
 When to pick each:
@@ -99,7 +99,7 @@ When to pick each:
 - `token`: best for maximizing immediate compression savings.
 - `cache`: best for long conversations where preserving prior-turn bytes improves prefix-cache reuse.
 
-Legacy values (`token_headroom`, `cost_savings`) are still accepted as aliases.
+Legacy values (`token_legroom`, `cost_savings`) are still accepted as aliases.
 
 ### Context Management Options
 
@@ -109,14 +109,14 @@ Key CCR-related proxy flags:
 
 | Option | Description |
 |--------|-------------|
-| `--no-ccr` | Disable CCR entirely — no retrieval markers in compressed output and no injected `headroom_retrieve` tool (lossy, no recovery path) |
+| `--no-ccr` | Disable CCR entirely — no retrieval markers in compressed output and no injected `legroom_retrieve` tool (lossy, no recovery path) |
 | `--no-ccr-proactive-expansion` | Disable proactive context expansion before the LLM asks |
 
 ### ML Compression — RETIRED `--llmlingua` flag
 
 The `--llmlingua` / `--llmlingua-device` / `--llmlingua-rate` flags and
-the `headroom-ai[llmlingua]` extra were retired and replaced by Kompress
-(ModernBERT). For the current opt-in path, install `headroom-ai[ml]`
+the `legroom-ai[llmlingua]` extra were retired and replaced by Kompress
+(ModernBERT). For the current opt-in path, install `legroom-ai[ml]`
 and see [transforms.md](transforms.md) and [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## API Endpoints
@@ -130,7 +130,7 @@ curl http://localhost:8787/livez
 Response:
 ```json
 {
-  "service": "headroom-proxy",
+  "service": "legroom-proxy",
   "status": "healthy",
   "alive": true,
   "version": "0.5.21",
@@ -148,7 +148,7 @@ curl http://localhost:8787/readyz
 Response:
 ```json
 {
-  "service": "headroom-proxy",
+  "service": "legroom-proxy",
   "status": "healthy",
   "ready": true,
   "version": "0.5.21",
@@ -164,7 +164,7 @@ Response:
 }
 ```
 
-`/readyz` returns HTTP 503 when Headroom has not completed startup or a required enabled subsystem is unavailable. This is the endpoint used by the container health checks.
+`/readyz` returns HTTP 503 when Legroom has not completed startup or a required enabled subsystem is unavailable. This is the endpoint used by the container health checks.
 
 ### Aggregate Health
 
@@ -219,7 +219,7 @@ curl http://localhost:8787/stats-history
 ```
 
 `/stats-history` exposes durable proxy compression history for dashboards and
-other Headroom frontends. It returns:
+other Legroom frontends. It returns:
 
 - lifetime proxy compression totals
 - compact checkpoint history by default, with `history_mode=full` available for
@@ -229,10 +229,10 @@ other Headroom frontends. It returns:
 - UTC timestamps throughout
 
 By default the proxy stores this history at
-`${HEADROOM_WORKSPACE_DIR}/proxy_savings.json` (i.e.
-`~/.headroom/proxy_savings.json` when `HEADROOM_WORKSPACE_DIR` is unset).
-Set `HEADROOM_SAVINGS_PATH` to override the location directly, or set
-`HEADROOM_WORKSPACE_DIR` to relocate the full state root. See the
+`${LEGROOM_WORKSPACE_DIR}/proxy_savings.json` (i.e.
+`~/.legroom/proxy_savings.json` when `LEGROOM_WORKSPACE_DIR` is unset).
+Set `LEGROOM_SAVINGS_PATH` to override the location directly, or set
+`LEGROOM_WORKSPACE_DIR` to relocate the full state root. See the
 [Filesystem Contract](filesystem-contract.md).
 
 `/dashboard` uses this endpoint directly for its historical view, including the
@@ -290,7 +290,7 @@ Compression-only endpoint. Compresses messages without calling any LLM. Used by 
 ```
 
 **Headers:**
-- `x-headroom-bypass: true` — skip compression, return messages as-is
+- `x-legroom-bypass: true` — skip compression, return messages as-is
 
 **Error responses:** 400 (missing fields), 401 (bad API key), 503 (compression failed)
 
@@ -298,7 +298,7 @@ Compression-only endpoint. Compresses messages without calling any LLM. Used by 
 
 ```bash
 # Start proxy
-headroom proxy --port 8787
+legroom proxy --port 8787
 
 # In another terminal
 ANTHROPIC_BASE_URL=http://localhost:8787 claude
@@ -306,7 +306,7 @@ ANTHROPIC_BASE_URL=http://localhost:8787 claude
 
 ## Using with Cursor
 
-1. Start the proxy: `headroom proxy`
+1. Start the proxy: `legroom proxy`
 2. In Cursor settings, set the base URL to `http://localhost:8787`
 
 ## Using with OpenAI SDK
@@ -326,9 +326,9 @@ client = OpenAI(
 
 > The earlier LLMLingua-2 integration documented in this section
 > (`--llmlingua`, `--llmlingua-device`, `--llmlingua-rate`,
-> `headroom-ai[llmlingua]`, `LLMLinguaCompressor`) was retired and
+> `legroom-ai[llmlingua]`, `LLMLinguaCompressor`) was retired and
 > replaced by **Kompress** (ModernBERT). Install with `pip install
-> 'headroom-ai[ml]'`. See [transforms.md](transforms.md) and
+> 'legroom-ai[ml]'`. See [transforms.md](transforms.md) and
 > [ARCHITECTURE.md](ARCHITECTURE.md) for current configuration.
 
 ### Semantic Caching
@@ -360,18 +360,18 @@ Track spending and enforce budgets:
 Export metrics for monitoring:
 
 ```
-headroom_requests_total
-headroom_tokens_saved_total
-headroom_cost_usd_total
-headroom_latency_ms_sum
+legroom_requests_total
+legroom_tokens_saved_total
+legroom_cost_usd_total
+legroom_latency_ms_sum
 ```
 
 ## Configuration via Environment
 
 ```bash
-export HEADROOM_HOST=0.0.0.0
-export HEADROOM_PORT=8787
-export HEADROOM_BUDGET=100.0
+export LEGROOM_HOST=0.0.0.0
+export LEGROOM_PORT=8787
+export LEGROOM_BUDGET=100.0
 
 # Route OpenAI passthrough requests to a custom endpoint
 export OPENAI_TARGET_API_URL=https://custom.openai.endpoint.com
@@ -379,7 +379,7 @@ export OPENAI_TARGET_API_URL=https://custom.openai.endpoint.com
 # Route Anthropic passthrough requests to a custom endpoint
 export ANTHROPIC_TARGET_API_URL=https://litellm.company.internal
 
-headroom proxy
+legroom proxy
 ```
 
 ## Running in Production
@@ -391,7 +391,7 @@ For production deployments:
 pip install gunicorn
 
 # Run with gunicorn
-gunicorn headroom.proxy.server:app \
+gunicorn legroom.proxy.server:app \
   --workers 4 \
   --bind 0.0.0.0:8787 \
   --worker-class uvicorn.workers.UvicornWorker
@@ -402,11 +402,11 @@ Or with Docker:
 ```dockerfile
 FROM python:3.11-slim
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential \
-    && pip install "headroom-ai[proxy]" \
+    && pip install "legroom-ai[proxy]" \
     && apt-get purge -y build-essential && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
 EXPOSE 8787
-CMD ["headroom", "proxy", "--host", "0.0.0.0"]
+CMD ["legroom", "proxy", "--host", "0.0.0.0"]
 ```
 
-> **Note:** `build-essential` is required at install time because `headroom-ai` includes `hnswlib`, a C++ extension that must be compiled from source. It is removed after installation to keep the image slim.
+> **Note:** `build-essential` is required at install time because `legroom-ai` includes `hnswlib`, a C++ extension that must be compiled from source. It is removed after installation to keep the image slim.

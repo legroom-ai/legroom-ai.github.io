@@ -4,7 +4,7 @@
 //!
 //! 1. A well-formed `recommendations.toml` parses into a populated
 //!    [`RecommendationStore`] with byte-for-byte the same fields the
-//!    Python `headroom.cli.toin_publish` CLI emits.
+//!    Python `legroom.cli.toin_publish` CLI emits.
 //! 2. A missing file degrades to an empty store with no panic — the
 //!    proxy must boot even if the publish pipeline is broken.
 //! 3. A malformed file likewise degrades to an empty store, and the
@@ -13,12 +13,12 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use headroom_core::transforms::recommendations::{
+use legroom_core::transforms::recommendations::{
     AuthMode, RecommendationStore, RecommendationsError,
 };
 
 /// Minimal tempdir helper. Project convention is to avoid a
-/// dev-dependency on `tempfile` (see `crates/headroom-parity` for the
+/// dev-dependency on `tempfile` (see `crates/legroom-parity` for the
 /// matching helper). Cleanup happens on drop.
 struct TempDir(PathBuf);
 
@@ -41,7 +41,7 @@ fn tempdir() -> TempDir {
         .unwrap()
         .as_nanos();
     let p = std::env::temp_dir().join(format!(
-        "headroom-recommendations-{nanos}-{:?}",
+        "legroom-recommendations-{nanos}-{:?}",
         std::thread::current().id()
     ));
     fs::create_dir_all(&p).unwrap();

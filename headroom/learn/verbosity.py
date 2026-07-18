@@ -17,7 +17,7 @@ This module:
 3. Recommends a verbosity level (heuristic prior; an optional LLM judgment pass
    can override it — see ``analyze``).
 4. Builds the per-stratum output-token baseline that
-   :mod:`headroom.proxy.output_savings` uses as its synthetic control — so the
+   :mod:`legroom.proxy.output_savings` uses as its synthetic control — so the
    same pass that picks the level also establishes how to measure its effect.
 
 The structural signals are *inputs* to the decision, not the decision itself —

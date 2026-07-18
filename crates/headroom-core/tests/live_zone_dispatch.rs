@@ -12,8 +12,8 @@
 //! Plus the cache-safety invariant: bytes outside the rewritten
 //! block are byte-identical to the input (SHA-256 prefix + suffix).
 
-use headroom_core::transforms::live_zone::DEFAULT_MODEL;
-use headroom_core::transforms::{
+use legroom_core::transforms::live_zone::DEFAULT_MODEL;
+use legroom_core::transforms::{
     compress_anthropic_live_zone, AuthMode, BlockAction, LiveZoneOutcome,
 };
 use serde_json::{json, Value};

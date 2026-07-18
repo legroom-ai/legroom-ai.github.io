@@ -59,7 +59,7 @@ async fn payg_body_without_markers_gets_marker_on_last_tool() {
     let captured = mount_anthropic_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -145,7 +145,7 @@ async fn payg_body_with_existing_marker_passes_through_byte_equal() {
     let captured = mount_anthropic_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -199,7 +199,7 @@ async fn oauth_body_passes_through_byte_equal() {
     let captured = mount_anthropic_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -255,7 +255,7 @@ async fn subscription_body_passes_through_byte_equal() {
     let captured = mount_anthropic_capture(&upstream).await;
     let proxy = start_proxy_with(&upstream.uri(), |c| {
         c.compression = true;
-        c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+        c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
     })
     .await;
 
@@ -356,7 +356,7 @@ mod tracing_capture {
         let _captured = mount_anthropic_capture(&upstream).await;
         let proxy = start_proxy_with(&upstream.uri(), |c| {
             c.compression = true;
-            c.compression_mode = headroom_proxy::config::CompressionMode::LiveZone;
+            c.compression_mode = legroom_proxy::config::CompressionMode::LiveZone;
             c.log_level = "info".into();
         })
         .await;

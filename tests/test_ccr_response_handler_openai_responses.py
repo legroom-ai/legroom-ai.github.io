@@ -15,12 +15,12 @@ import json
 
 import pytest
 
-from headroom.cache.compression_store import (
+from legroom.cache.compression_store import (
     get_compression_store,
     reset_compression_store,
 )
-from headroom.ccr.response_handler import CCRResponseHandler, CCRToolResult
-from headroom.ccr.tool_injection import CCR_TOOL_NAME, parse_tool_call
+from legroom.ccr.response_handler import CCRResponseHandler, CCRToolResult
+from legroom.ccr.tool_injection import CCR_TOOL_NAME, parse_tool_call
 
 
 @pytest.fixture(autouse=True)

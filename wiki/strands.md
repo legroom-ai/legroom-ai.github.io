@@ -1,13 +1,13 @@
 # Strands Integration
 
-Headroom integrates with [Strands Agents](https://github.com/strands-agents/sdk-python) to provide automatic context optimization. Two integration patterns: wrap the model, or hook into tool calls.
+Legroom integrates with [Strands Agents](https://github.com/strands-agents/sdk-python) to provide automatic context optimization. Two integration patterns: wrap the model, or hook into tool calls.
 
 ---
 
 ## Installation
 
 ```bash
-pip install headroom-ai strands-agents
+pip install legroom-ai strands-agents
 ```
 
 ---
@@ -17,11 +17,11 @@ pip install headroom-ai strands-agents
 ```python
 from strands import Agent
 from strands.models.bedrock import BedrockModel
-from headroom.integrations.strands import HeadroomStrandsModel
+from legroom.integrations.strands import LegroomStrandsModel
 
 # Wrap your model
 model = BedrockModel(model_id="us.anthropic.claude-sonnet-4-20250514-v1:0")
-optimized = HeadroomStrandsModel(wrapped_model=model)
+optimized = LegroomStrandsModel(wrapped_model=model)
 
 # Create agent as usual
 agent = Agent(model=optimized)
@@ -43,10 +43,10 @@ Wraps the Strands `Model` interface. Every call to `stream()` compresses the mes
 
 ```python
 from strands.models.bedrock import BedrockModel
-from headroom.integrations.strands import HeadroomStrandsModel
+from legroom.integrations.strands import LegroomStrandsModel
 
 model = BedrockModel(model_id="us.anthropic.claude-sonnet-4-20250514-v1:0")
-optimized = HeadroomStrandsModel(wrapped_model=model)
+optimized = LegroomStrandsModel(wrapped_model=model)
 
 # Streaming works identically
 agent = Agent(model=optimized)
@@ -56,10 +56,10 @@ response = agent("Analyze these logs")
 With custom config:
 
 ```python
-from headroom import HeadroomConfig
+from legroom import LegroomConfig
 
-config = HeadroomConfig()
-optimized = HeadroomStrandsModel(wrapped_model=model, config=config)
+config = LegroomConfig()
+optimized = LegroomStrandsModel(wrapped_model=model, config=config)
 ```
 
 ### 2. Hook Provider (Tool Output Compression)
@@ -69,10 +69,10 @@ Compresses tool call results via Strands' hook system. Uses SmartCrusher on JSON
 ```python
 from strands import Agent
 from strands.models.bedrock import BedrockModel
-from headroom.integrations.strands import HeadroomHookProvider
+from legroom.integrations.strands import LegroomHookProvider
 
 model = BedrockModel(model_id="us.anthropic.claude-sonnet-4-20250514-v1:0")
-hooks = HeadroomHookProvider(
+hooks = LegroomHookProvider(
     compress_tool_outputs=True,
     min_tokens_to_compress=200,
     preserve_errors=True,
@@ -97,10 +97,10 @@ The hook preserves:
 Model wrapping compresses conversation history. Hooks compress individual tool results. Use both for maximum savings.
 
 ```python
-from headroom.integrations.strands import HeadroomStrandsModel, HeadroomHookProvider
+from legroom.integrations.strands import LegroomStrandsModel, LegroomHookProvider
 
-optimized = HeadroomStrandsModel(wrapped_model=model)
-hooks = HeadroomHookProvider(compress_tool_outputs=True)
+optimized = LegroomStrandsModel(wrapped_model=model)
+hooks = LegroomHookProvider(compress_tool_outputs=True)
 
 agent = Agent(model=optimized, hooks=[hooks])
 ```
@@ -109,7 +109,7 @@ agent = Agent(model=optimized, hooks=[hooks])
 
 ## Structured Output
 
-HeadroomStrandsModel supports Strands' structured output feature:
+LegroomStrandsModel supports Strands' structured output feature:
 
 ```python
 from pydantic import BaseModel
@@ -146,27 +146,27 @@ Agent decides to call tool
 Tool executes, returns result
     │
     ▼
-HeadroomHookProvider (optional)
+LegroomHookProvider (optional)
     compresses tool result JSON
     │
     ▼
 Agent builds next API request
     │
     ▼
-HeadroomStrandsModel.stream()
+LegroomStrandsModel.stream()
     compresses full message list
     │
     ▼
 Provider API (Bedrock, etc.)
 ```
 
-The model wrapper uses Headroom's full pipeline (CacheAligner → ContentRouter). The hook provider uses SmartCrusher directly for fast JSON compression of individual tool results.
+The model wrapper uses Legroom's full pipeline (CacheAligner → ContentRouter). The hook provider uses SmartCrusher directly for fast JSON compression of individual tool results.
 
 ---
 
 ## Supported Providers
 
-HeadroomStrandsModel auto-detects the provider from the wrapped model:
+LegroomStrandsModel auto-detects the provider from the wrapped model:
 
 | Strands Model | Provider Detected |
 |--------------|-------------------|

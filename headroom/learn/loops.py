@@ -1,6 +1,6 @@
-"""Loop detection for Headroom Learn — find repeated tool-call patterns.
+"""Loop detection for Legroom Learn — find repeated tool-call patterns.
 
-A *loop* is the single highest-value pattern for `headroom learn` to catch,
+A *loop* is the single highest-value pattern for `legroom learn` to catch,
 because its token waste scales with the number of repetitions rather than
 being a one-time cost. Two loop shapes matter:
 

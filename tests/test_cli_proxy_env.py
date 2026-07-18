@@ -1,9 +1,9 @@
 """Tests for CLI proxy env variable handling and backend validation.
 
 Verifies that:
-1. Provider target URL env vars are read by `headroom proxy`
+1. Provider target URL env vars are read by `legroom proxy`
 2. litellm-* backends are accepted by both CLI and argparse paths
-3. HEADROOM_WRAP_PROXY_TIMEOUT controls `headroom wrap` proxy readiness waits
+3. LEGROOM_WRAP_PROXY_TIMEOUT controls `legroom wrap` proxy readiness waits
 """
 
 import os
@@ -16,8 +16,8 @@ pytest.importorskip("fastapi")
 
 from click.testing import CliRunner  # noqa: E402
 
-from headroom.cli import wrap as wrap_mod  # noqa: E402
-from headroom.cli.main import main  # noqa: E402
+from legroom.cli import wrap as wrap_mod  # noqa: E402
+from legroom.cli.main import main  # noqa: E402
 
 
 @pytest.fixture
@@ -233,73 +233,73 @@ class TestCLIWrapProxyTimeout:
 class TestCLIProxyEnvVars:
     """Test that the CLI proxy command reads API URL env vars."""
 
-    def test_headroom_host_from_env(self, runner):
-        """HEADROOM_HOST env var should be passed to ProxyConfig."""
+    def test_legroom_host_from_env(self, runner):
+        """LEGROOM_HOST env var should be passed to ProxyConfig."""
         captured_config = {}
 
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy"],
-                env={"HEADROOM_HOST": "0.0.0.0"},
+                env={"LEGROOM_HOST": "0.0.0.0"},
                 catch_exceptions=False,
             )
 
         assert result.exit_code == 0, result.output
         assert captured_config["config"].host == "0.0.0.0"
 
-    def test_headroom_port_from_env(self, runner):
-        """HEADROOM_PORT env var should be passed to ProxyConfig."""
+    def test_legroom_port_from_env(self, runner):
+        """LEGROOM_PORT env var should be passed to ProxyConfig."""
         captured_config = {}
 
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy"],
-                env={"HEADROOM_PORT": "9797"},
+                env={"LEGROOM_PORT": "9797"},
                 catch_exceptions=False,
             )
 
         assert result.exit_code == 0, result.output
         assert captured_config["config"].port == 9797
 
-    def test_headroom_min_tokens_from_env(self, runner):
-        """HEADROOM_MIN_TOKENS env var should be passed to ProxyConfig."""
+    def test_legroom_min_tokens_from_env(self, runner):
+        """LEGROOM_MIN_TOKENS env var should be passed to ProxyConfig."""
         captured_config = {}
 
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy"],
-                env={"HEADROOM_MIN_TOKENS": "120"},
+                env={"LEGROOM_MIN_TOKENS": "120"},
                 catch_exceptions=False,
             )
 
         assert result.exit_code == 0, result.output
         assert captured_config["config"].min_tokens_to_crush == 120
 
-    def test_headroom_min_tokens_zero_is_preserved(self, runner):
-        """HEADROOM_MIN_TOKENS=0 is a legitimate value ("crush everything") and
+    def test_legroom_min_tokens_zero_is_preserved(self, runner):
+        """LEGROOM_MIN_TOKENS=0 is a legitimate value ("crush everything") and
         must not be discarded by an `or 500` fallback (regression)."""
         captured_config = {}
 
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy"],
-                env={"HEADROOM_MIN_TOKENS": "0", "HEADROOM_MAX_ITEMS": "0"},
+                env={"LEGROOM_MIN_TOKENS": "0", "LEGROOM_MAX_ITEMS": "0"},
                 catch_exceptions=False,
             )
 
@@ -307,18 +307,18 @@ class TestCLIProxyEnvVars:
         assert captured_config["config"].min_tokens_to_crush == 0
         assert captured_config["config"].max_items_after_crush == 0
 
-    def test_headroom_budget_from_env(self, runner):
-        """HEADROOM_BUDGET env var should be passed to ProxyConfig."""
+    def test_legroom_budget_from_env(self, runner):
+        """LEGROOM_BUDGET env var should be passed to ProxyConfig."""
         captured_config = {}
 
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy"],
-                env={"HEADROOM_BUDGET": "100.5"},
+                env={"LEGROOM_BUDGET": "100.5"},
                 catch_exceptions=False,
             )
 
@@ -326,13 +326,13 @@ class TestCLIProxyEnvVars:
         assert captured_config["config"].budget_limit_usd == 100.5
 
     def test_budget_period_flag_and_env(self, runner):
-        """--budget-period and HEADROOM_BUDGET_PERIOD should reach ProxyConfig."""
+        """--budget-period and LEGROOM_BUDGET_PERIOD should reach ProxyConfig."""
         captured_config = {}
 
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy", "--budget", "50", "--budget-period", "monthly"],
@@ -342,11 +342,11 @@ class TestCLIProxyEnvVars:
         assert result.exit_code == 0, result.output
         assert captured_config["config"].budget_period == "monthly"
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy"],
-                env={"HEADROOM_BUDGET_PERIOD": "hourly"},
+                env={"LEGROOM_BUDGET_PERIOD": "hourly"},
                 catch_exceptions=False,
             )
 
@@ -354,17 +354,17 @@ class TestCLIProxyEnvVars:
         assert captured_config["config"].budget_period == "hourly"
 
     def test_code_aware_enabled_from_env(self, runner):
-        """HEADROOM_CODE_AWARE_ENABLED env var should be passed to ProxyConfig."""
+        """LEGROOM_CODE_AWARE_ENABLED env var should be passed to ProxyConfig."""
         captured_config = {}
 
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy"],
-                env={"HEADROOM_CODE_AWARE_ENABLED": "true"},
+                env={"LEGROOM_CODE_AWARE_ENABLED": "true"},
                 catch_exceptions=False,
             )
 
@@ -372,7 +372,7 @@ class TestCLIProxyEnvVars:
         assert captured_config["config"].code_aware_enabled is True
 
     def test_code_aware_enabled_defaults_true(self, runner):
-        """Without HEADROOM_CODE_AWARE_ENABLED, code-aware defaults ON (coding
+        """Without LEGROOM_CODE_AWARE_ENABLED, code-aware defaults ON (coding
         posture; consistent with the argparse server path). It degrades to a no-op
         when tree-sitter isn't installed, so defaulting it on is safe."""
         captured_config = {}
@@ -380,10 +380,10 @@ class TestCLIProxyEnvVars:
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        env = {k: v for k, v in os.environ.items() if k != "HEADROOM_CODE_AWARE_ENABLED"}
+        env = {k: v for k, v in os.environ.items() if k != "LEGROOM_CODE_AWARE_ENABLED"}
 
         with (
-            patch("headroom.proxy.server.run_server", mock_run_server),
+            patch("legroom.proxy.server.run_server", mock_run_server),
             patch.dict(os.environ, env, clear=True),
         ):
             result = runner.invoke(
@@ -402,24 +402,24 @@ class TestCLIProxyEnvVars:
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(main, ["proxy", "--code-aware"], catch_exceptions=False)
 
         assert result.exit_code == 0, result.output
         assert captured_config["config"].code_aware_enabled is True
 
     def test_disable_kompress_from_env(self, runner):
-        """HEADROOM_DISABLE_KOMPRESS should be passed to ProxyConfig."""
+        """LEGROOM_DISABLE_KOMPRESS should be passed to ProxyConfig."""
         captured_config = {}
 
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy"],
-                env={"HEADROOM_DISABLE_KOMPRESS": "1"},
+                env={"LEGROOM_DISABLE_KOMPRESS": "1"},
                 catch_exceptions=False,
             )
 
@@ -433,7 +433,7 @@ class TestCLIProxyEnvVars:
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy", "--disable-kompress"],
@@ -444,17 +444,17 @@ class TestCLIProxyEnvVars:
         assert captured_config["config"].disable_kompress is True
 
     def test_code_aware_flag_overrides_env_var(self, runner):
-        """--code-aware should win over HEADROOM_CODE_AWARE_ENABLED=false."""
+        """--code-aware should win over LEGROOM_CODE_AWARE_ENABLED=false."""
         captured_config = {}
 
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy", "--code-aware"],
-                env={"HEADROOM_CODE_AWARE_ENABLED": "false"},
+                env={"LEGROOM_CODE_AWARE_ENABLED": "false"},
                 catch_exceptions=False,
             )
 
@@ -468,7 +468,7 @@ class TestCLIProxyEnvVars:
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy"],
@@ -486,7 +486,7 @@ class TestCLIProxyEnvVars:
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy"],
@@ -504,7 +504,7 @@ class TestCLIProxyEnvVars:
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy"],
@@ -525,7 +525,7 @@ class TestCLIProxyEnvVars:
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy", "--openai-api-url", "http://from-cli:4000"],
@@ -542,7 +542,7 @@ class TestCLIProxyEnvVars:
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy", "--vertex-api-url", "https://us-east5-aiplatform.googleapis.com"],
@@ -561,7 +561,7 @@ class TestCLIProxyEnvVars:
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy", "--openai-api-url", "http://from-cli:4000"],
@@ -583,7 +583,7 @@ class TestCLIProxyEnvVars:
         env = {k: v for k, v in os.environ.items() if k != "OPENAI_TARGET_API_URL"}
 
         with (
-            patch("headroom.proxy.server.run_server", mock_run_server),
+            patch("legroom.proxy.server.run_server", mock_run_server),
             patch.dict(os.environ, env, clear=True),
         ):
             result = runner.invoke(
@@ -602,7 +602,7 @@ class TestCLIProxyEnvVars:
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy"],
@@ -625,7 +625,7 @@ class TestCLIProxyEnvVars:
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy", "--request-timeout-seconds", f"{timeout}"],
@@ -641,17 +641,17 @@ class TestCLIProxyEnvVars:
 
     @pytest.mark.parametrize("timeout", [-1, 0, 1, 10000])
     def test_request_timeout_from_env(self, runner, timeout):
-        """HEADROOM_REQUEST_TIMEOUT env var should be passed to ProxyConfig."""
+        """LEGROOM_REQUEST_TIMEOUT env var should be passed to ProxyConfig."""
         captured_config = {}
 
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy"],
-                env={"HEADROOM_REQUEST_TIMEOUT": f"{timeout}"},
+                env={"LEGROOM_REQUEST_TIMEOUT": f"{timeout}"},
                 catch_exceptions=False,
             )
 
@@ -669,7 +669,7 @@ class TestCLIProxyEnvVars:
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 [
@@ -693,15 +693,15 @@ class TestCLIProxyEnvVars:
             captured["config"] = config
             captured["kwargs"] = kwargs
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy"],
                 env={
-                    "HEADROOM_WORKERS": "4",
-                    "HEADROOM_LIMIT_CONCURRENCY": "250",
-                    "HEADROOM_MAX_CONNECTIONS": "200",
-                    "HEADROOM_MAX_KEEPALIVE": "50",
+                    "LEGROOM_WORKERS": "4",
+                    "LEGROOM_LIMIT_CONCURRENCY": "250",
+                    "LEGROOM_MAX_CONNECTIONS": "200",
+                    "LEGROOM_MAX_KEEPALIVE": "50",
                 },
                 catch_exceptions=False,
             )
@@ -723,11 +723,11 @@ class TestCLIProxyEnvVars:
             captured["config"] = config
             captured["kwargs"] = kwargs
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy"],
-                env={"HEADROOM_KEEPALIVE_EXPIRY": "45"},
+                env={"LEGROOM_KEEPALIVE_EXPIRY": "45"},
                 catch_exceptions=False,
             )
 
@@ -741,7 +741,7 @@ class TestCLIProxyEnvVars:
             captured["config"] = config
             captured["kwargs"] = kwargs
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 [
@@ -756,10 +756,10 @@ class TestCLIProxyEnvVars:
                     "25",
                 ],
                 env={
-                    "HEADROOM_WORKERS": "4",
-                    "HEADROOM_LIMIT_CONCURRENCY": "250",
-                    "HEADROOM_MAX_CONNECTIONS": "200",
-                    "HEADROOM_MAX_KEEPALIVE": "50",
+                    "LEGROOM_WORKERS": "4",
+                    "LEGROOM_LIMIT_CONCURRENCY": "250",
+                    "LEGROOM_MAX_CONNECTIONS": "200",
+                    "LEGROOM_MAX_KEEPALIVE": "50",
                 },
                 catch_exceptions=False,
             )
@@ -784,7 +784,7 @@ class TestCLIProxyBackend:
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy", "--backend", "litellm-hosted_vllm"],
@@ -801,7 +801,7 @@ class TestCLIProxyBackend:
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy", "--backend", "litellm-vertex"],
@@ -818,7 +818,7 @@ class TestCLIProxyBackend:
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 [
@@ -837,20 +837,20 @@ class TestCLIProxyBackend:
 
 
 class TestCLIAnyllmProviderEnv:
-    """Test that HEADROOM_ANYLLM_PROVIDER env var is read by the CLI."""
+    """Test that LEGROOM_ANYLLM_PROVIDER env var is read by the CLI."""
 
     def test_anyllm_provider_from_env(self, runner):
-        """HEADROOM_ANYLLM_PROVIDER env var should override the default."""
+        """LEGROOM_ANYLLM_PROVIDER env var should override the default."""
         captured_config = {}
 
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy", "--backend", "anyllm"],
-                env={"HEADROOM_ANYLLM_PROVIDER": "llamacpp"},
+                env={"LEGROOM_ANYLLM_PROVIDER": "llamacpp"},
                 catch_exceptions=False,
             )
 
@@ -864,7 +864,7 @@ class TestCLIAnyllmProviderEnv:
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy", "--backend", "anyllm", "--anyllm-provider", "groq"],
@@ -879,7 +879,7 @@ class TestCLICompressionOnlyFlags:
     """The CCR opt-out flags must flip the corresponding ProxyConfig fields.
 
     These enable a compression-only deployment for streaming / non-MCP clients
-    that can't resolve the injected headroom_retrieve tool (issue #645).
+    that can't resolve the injected legroom_retrieve tool (issue #645).
     """
 
     def test_ccr_defaults_on(self, runner):
@@ -889,7 +889,7 @@ class TestCLICompressionOnlyFlags:
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(main, ["proxy"], catch_exceptions=False)
 
         assert result.exit_code == 0, result.output
@@ -905,7 +905,7 @@ class TestCLICompressionOnlyFlags:
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(main, ["proxy", "--no-ccr"], catch_exceptions=False)
 
         assert result.exit_code == 0, result.output
@@ -922,7 +922,7 @@ class TestCLICompressionOnlyFlags:
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 [
@@ -940,17 +940,17 @@ class TestCLICompressionOnlyFlags:
         assert cfg.ccr_proactive_expansion is False
 
     def test_no_ccr_from_env(self, runner):
-        """HEADROOM_NO_CCR env var disables both markers and tool injection."""
+        """LEGROOM_NO_CCR env var disables both markers and tool injection."""
         captured_config = {}
 
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy"],
-                env={"HEADROOM_NO_CCR": "1"},
+                env={"LEGROOM_NO_CCR": "1"},
                 catch_exceptions=False,
             )
 
@@ -969,7 +969,7 @@ class TestNoCcrMarkerCompressors:
         when ccr_inject_marker=False. Before the fix, only SmartCrusher
         received the flag — Search/Log/Diff compressors always got
         enable_ccr=True (the default)."""
-        from headroom.transforms.content_router import (
+        from legroom.transforms.content_router import (
             ContentRouter,
             ContentRouterConfig,
         )
@@ -1004,7 +1004,7 @@ class TestNoCcrMarkerCompressors:
 
     def test_content_router_default_ccr_inject_marker_true(self):
         """Default config (ccr_inject_marker=True) should give enable_ccr=True."""
-        from headroom.transforms.content_router import (
+        from legroom.transforms.content_router import (
             ContentRouter,
             ContentRouterConfig,
         )
@@ -1021,7 +1021,7 @@ class TestNoCcrMarkerCompressors:
 
     def test_search_compressor_suppresses_markers_with_enable_ccr_false(self):
         """SearchCompressor with enable_ccr=False must not emit <<ccr: markers."""
-        from headroom.transforms.search_compressor import (
+        from legroom.transforms.search_compressor import (
             SearchCompressor,
             SearchCompressorConfig,
         )
@@ -1045,7 +1045,7 @@ class TestNoCcrMarkerCompressors:
 
     def test_log_compressor_suppresses_markers_with_enable_ccr_false(self):
         """LogCompressor with enable_ccr=False must not emit <<ccr: markers."""
-        from headroom.transforms.log_compressor import (
+        from legroom.transforms.log_compressor import (
             LogCompressor,
             LogCompressorConfig,
         )
@@ -1060,7 +1060,7 @@ class TestNoCcrMarkerCompressors:
 
     def test_diff_compressor_suppresses_markers_with_enable_ccr_false(self):
         """DiffCompressor with enable_ccr=False must not emit <<ccr: markers."""
-        from headroom.transforms.diff_compressor import (
+        from legroom.transforms.diff_compressor import (
             DiffCompressor,
             DiffCompressorConfig,
         )
@@ -1083,7 +1083,7 @@ class TestNoCcrMarkerCompressors:
     def test_code_compressor_suppresses_markers_with_enable_ccr_false(self):
         """CodeAwareCompressor with enable_ccr=False must not emit <<ccr:
         markers when tree-sitter is available (#1022 coverage gap)."""
-        from headroom.transforms.code_compressor import (
+        from legroom.transforms.code_compressor import (
             CodeAwareCompressor,
             CodeCompressorConfig,
             _check_tree_sitter_available,
@@ -1113,7 +1113,7 @@ class TestNoCcrMarkerCompressors:
 
 
 class TestArgparseBackendValidation:
-    """Test that the argparse path (python -m headroom.proxy.server) accepts litellm-* backends."""
+    """Test that the argparse path (python -m legroom.proxy.server) accepts litellm-* backends."""
 
     def test_argparse_accepts_litellm_backend(self):
         """The argparse --backend should accept litellm-hosted_vllm (no choices restriction)."""
@@ -1127,27 +1127,27 @@ class TestArgparseBackendValidation:
         assert args.backend == "litellm-hosted_vllm"
 
     def test_proxy_config_from_env_reads_disable_kompress(self):
-        """The direct server env path should honor HEADROOM_DISABLE_KOMPRESS."""
-        from headroom.proxy.server import _proxy_config_from_env
+        """The direct server env path should honor LEGROOM_DISABLE_KOMPRESS."""
+        from legroom.proxy.server import _proxy_config_from_env
 
-        with patch.dict(os.environ, {"HEADROOM_DISABLE_KOMPRESS": "1"}):
+        with patch.dict(os.environ, {"LEGROOM_DISABLE_KOMPRESS": "1"}):
             config = _proxy_config_from_env()
 
         assert config.disable_kompress is True
 
     def test_proxy_config_from_env_reads_disable_kompress_fallback(self):
-        """The direct server env path should honor HEADROOM_DISABLE_KOMPRESS_FALLBACK."""
-        from headroom.proxy.server import _proxy_config_from_env
+        """The direct server env path should honor LEGROOM_DISABLE_KOMPRESS_FALLBACK."""
+        from legroom.proxy.server import _proxy_config_from_env
 
-        with patch.dict(os.environ, {"HEADROOM_DISABLE_KOMPRESS_FALLBACK": "1"}):
+        with patch.dict(os.environ, {"LEGROOM_DISABLE_KOMPRESS_FALLBACK": "1"}):
             config = _proxy_config_from_env()
 
         assert config.disable_kompress_fallback is True
 
     def test_argparse_registers_keepalive_expiry_flag(self):
-        """The argparse path (python -m headroom.proxy.server) must register
+        """The argparse path (python -m legroom.proxy.server) must register
         --keepalive-expiry as a float flag, so it can override the
-        HEADROOM_KEEPALIVE_EXPIRY fallback. A bad value makes argparse exit
+        LEGROOM_KEEPALIVE_EXPIRY fallback. A bad value makes argparse exit
         before the server boots, which both proves the flag exists and keeps
         the test fast.
         """
@@ -1155,7 +1155,7 @@ class TestArgparseBackendValidation:
         import sys
 
         result = subprocess.run(
-            [sys.executable, "-m", "headroom.proxy.server", "--keepalive-expiry", "notafloat"],
+            [sys.executable, "-m", "legroom.proxy.server", "--keepalive-expiry", "notafloat"],
             capture_output=True,
             text=True,
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
@@ -1169,26 +1169,26 @@ class TestArgparseBackendValidation:
 
 
 class TestCLIProxyExcludeToolsEnvVar:
-    """HEADROOM_EXCLUDE_TOOLS and HEADROOM_TOOL_PROFILES must reach ProxyConfig via the Click path.
+    """LEGROOM_EXCLUDE_TOOLS and LEGROOM_TOOL_PROFILES must reach ProxyConfig via the Click path.
 
-    Regression coverage for issue #825: the Click entrypoint (headroom/cli/proxy.py)
+    Regression coverage for issue #825: the Click entrypoint (legroom/cli/proxy.py)
     previously built ProxyConfig without calling _parse_exclude_tools or
     _parse_tool_profiles, so those env vars were silently ignored for all
-    shared/deployed services that launch via `headroom proxy`.
+    shared/deployed services that launch via `legroom proxy`.
     """
 
     def test_exclude_tools_single_name_from_env(self, runner):
-        """HEADROOM_EXCLUDE_TOOLS=WebSearch propagates to ProxyConfig.exclude_tools."""
+        """LEGROOM_EXCLUDE_TOOLS=WebSearch propagates to ProxyConfig.exclude_tools."""
         captured_config = {}
 
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy"],
-                env={"HEADROOM_EXCLUDE_TOOLS": "WebSearch"},
+                env={"LEGROOM_EXCLUDE_TOOLS": "WebSearch"},
                 catch_exceptions=False,
             )
 
@@ -1198,17 +1198,17 @@ class TestCLIProxyExcludeToolsEnvVar:
         assert "WebSearch" in cfg.exclude_tools
 
     def test_exclude_tools_multi_name_from_env(self, runner):
-        """HEADROOM_EXCLUDE_TOOLS=WebSearch,WebFetch yields both names (and lowercased) in result."""
+        """LEGROOM_EXCLUDE_TOOLS=WebSearch,WebFetch yields both names (and lowercased) in result."""
         captured_config = {}
 
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy"],
-                env={"HEADROOM_EXCLUDE_TOOLS": "WebSearch,WebFetch"},
+                env={"LEGROOM_EXCLUDE_TOOLS": "WebSearch,WebFetch"},
                 catch_exceptions=False,
             )
 
@@ -1221,16 +1221,16 @@ class TestCLIProxyExcludeToolsEnvVar:
         assert "webfetch" in cfg.exclude_tools
 
     def test_exclude_tools_unset_leaves_none(self, runner):
-        """Without HEADROOM_EXCLUDE_TOOLS, exclude_tools stays None (DEFAULT_EXCLUDE_TOOLS used)."""
+        """Without LEGROOM_EXCLUDE_TOOLS, exclude_tools stays None (DEFAULT_EXCLUDE_TOOLS used)."""
         captured_config = {}
 
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        env = {k: v for k, v in os.environ.items() if k != "HEADROOM_EXCLUDE_TOOLS"}
+        env = {k: v for k, v in os.environ.items() if k != "LEGROOM_EXCLUDE_TOOLS"}
 
         with (
-            patch("headroom.proxy.server.run_server", mock_run_server),
+            patch("legroom.proxy.server.run_server", mock_run_server),
             patch.dict(os.environ, env, clear=True),
         ):
             result = runner.invoke(
@@ -1243,17 +1243,17 @@ class TestCLIProxyExcludeToolsEnvVar:
         assert captured_config["config"].exclude_tools is None
 
     def test_tool_profiles_from_env(self, runner):
-        """HEADROOM_TOOL_PROFILES=Grep:conservative propagates to ProxyConfig.tool_profiles."""
+        """LEGROOM_TOOL_PROFILES=Grep:conservative propagates to ProxyConfig.tool_profiles."""
         captured_config = {}
 
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy"],
-                env={"HEADROOM_TOOL_PROFILES": "Grep:conservative"},
+                env={"LEGROOM_TOOL_PROFILES": "Grep:conservative"},
                 catch_exceptions=False,
             )
 
@@ -1263,16 +1263,16 @@ class TestCLIProxyExcludeToolsEnvVar:
         assert "Grep" in cfg.tool_profiles
 
     def test_tool_profiles_unset_leaves_none(self, runner):
-        """Without HEADROOM_TOOL_PROFILES, tool_profiles stays None."""
+        """Without LEGROOM_TOOL_PROFILES, tool_profiles stays None."""
         captured_config = {}
 
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        env = {k: v for k, v in os.environ.items() if k != "HEADROOM_TOOL_PROFILES"}
+        env = {k: v for k, v in os.environ.items() if k != "LEGROOM_TOOL_PROFILES"}
 
         with (
-            patch("headroom.proxy.server.run_server", mock_run_server),
+            patch("legroom.proxy.server.run_server", mock_run_server),
             patch.dict(os.environ, env, clear=True),
         ):
             result = runner.invoke(
@@ -1286,7 +1286,7 @@ class TestCLIProxyExcludeToolsEnvVar:
 
 
 class TestCLIProxyRpmTpm:
-    """--rpm/--tpm flags and HEADROOM_RPM/HEADROOM_TPM env vars must reach ProxyConfig."""
+    """--rpm/--tpm flags and LEGROOM_RPM/LEGROOM_TPM env vars must reach ProxyConfig."""
 
     def test_rpm_default(self, runner):
         """Without --rpm, rate_limit_requests_per_minute defaults to 60."""
@@ -1295,7 +1295,7 @@ class TestCLIProxyRpmTpm:
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(main, ["proxy"], catch_exceptions=False)
 
         assert result.exit_code == 0, result.output
@@ -1308,24 +1308,24 @@ class TestCLIProxyRpmTpm:
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(main, ["proxy", "--rpm", "30"], catch_exceptions=False)
 
         assert result.exit_code == 0, result.output
         assert captured_config["config"].rate_limit_requests_per_minute == 30
 
     def test_rpm_env_var(self, runner):
-        """HEADROOM_RPM=20 should set rate_limit_requests_per_minute to 20."""
+        """LEGROOM_RPM=20 should set rate_limit_requests_per_minute to 20."""
         captured_config = {}
 
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy"],
-                env={"HEADROOM_RPM": "20"},
+                env={"LEGROOM_RPM": "20"},
                 catch_exceptions=False,
             )
 
@@ -1339,7 +1339,7 @@ class TestCLIProxyRpmTpm:
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(main, ["proxy"], catch_exceptions=False)
 
         assert result.exit_code == 0, result.output
@@ -1352,24 +1352,24 @@ class TestCLIProxyRpmTpm:
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(main, ["proxy", "--tpm", "50000"], catch_exceptions=False)
 
         assert result.exit_code == 0, result.output
         assert captured_config["config"].rate_limit_tokens_per_minute == 50000
 
     def test_tpm_env_var(self, runner):
-        """HEADROOM_TPM=80000 should set rate_limit_tokens_per_minute to 80000."""
+        """LEGROOM_TPM=80000 should set rate_limit_tokens_per_minute to 80000."""
         captured_config = {}
 
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy"],
-                env={"HEADROOM_TPM": "80000"},
+                env={"LEGROOM_TPM": "80000"},
                 catch_exceptions=False,
             )
 
@@ -1380,8 +1380,8 @@ class TestCLIProxyRpmTpm:
 class TestSettingsFileToEnv:
     """settings.json is applied to os.environ before Click parses envvar options.
 
-    Proves the file reaches both a parse-time ``envvar=`` option (HEADROOM_PORT)
-    and a body-resolved env read (HEADROOM_CODE_AWARE_ENABLED, which has no
+    Proves the file reaches both a parse-time ``envvar=`` option (LEGROOM_PORT)
+    and a body-resolved env read (LEGROOM_CODE_AWARE_ENABLED, which has no
     Click ``envvar=``), and that an explicit shell export still wins.
     """
 
@@ -1394,15 +1394,15 @@ class TestSettingsFileToEnv:
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy"],
                 env={
-                    "HEADROOM_WORKSPACE_DIR": str(tmp_path),
+                    "LEGROOM_WORKSPACE_DIR": str(tmp_path),
                     # Ensure nothing ambient shadows the file-applied values.
-                    "HEADROOM_PORT": None,
-                    "HEADROOM_CODE_AWARE_ENABLED": None,
+                    "LEGROOM_PORT": None,
+                    "LEGROOM_CODE_AWARE_ENABLED": None,
                 },
                 catch_exceptions=False,
             )
@@ -1418,13 +1418,13 @@ class TestSettingsFileToEnv:
         def mock_run_server(config, **kwargs):
             captured_config["config"] = config
 
-        with patch("headroom.proxy.server.run_server", mock_run_server):
+        with patch("legroom.proxy.server.run_server", mock_run_server):
             result = runner.invoke(
                 main,
                 ["proxy"],
                 env={
-                    "HEADROOM_WORKSPACE_DIR": str(tmp_path),
-                    "HEADROOM_PORT": "7777",
+                    "LEGROOM_WORKSPACE_DIR": str(tmp_path),
+                    "LEGROOM_PORT": "7777",
                 },
                 catch_exceptions=False,
             )

@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from headroom.proxy import prometheus_metrics
+from legroom.proxy import prometheus_metrics
 
 
 class _FakeSavingsTracker:

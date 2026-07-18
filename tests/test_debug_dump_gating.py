@@ -14,7 +14,7 @@ import pytest
 
 pytest.importorskip("fastapi")
 
-from headroom.proxy.handlers._debug_dump import _debug_dump_mode, _redact_debug_value
+from legroom.proxy.handlers._debug_dump import _debug_dump_mode, _redact_debug_value
 
 
 def _config(stateless: bool = False) -> SimpleNamespace:
@@ -22,30 +22,30 @@ def _config(stateless: bool = False) -> SimpleNamespace:
 
 
 def test_debug_dump_off_by_default(monkeypatch):
-    monkeypatch.delenv("HEADROOM_DEBUG_DUMP", raising=False)
+    monkeypatch.delenv("LEGROOM_DEBUG_DUMP", raising=False)
     assert _debug_dump_mode(_config()) == "off"
 
 
 @pytest.mark.parametrize("value", ["1", "true", "yes", "on", "redacted", "REDACTED"])
 def test_debug_dump_opt_in_redacted(monkeypatch, value):
-    monkeypatch.setenv("HEADROOM_DEBUG_DUMP", value)
+    monkeypatch.setenv("LEGROOM_DEBUG_DUMP", value)
     assert _debug_dump_mode(_config()) == "redacted"
 
 
 @pytest.mark.parametrize("value", ["full", "all", "content"])
 def test_debug_dump_opt_in_full(monkeypatch, value):
-    monkeypatch.setenv("HEADROOM_DEBUG_DUMP", value)
+    monkeypatch.setenv("LEGROOM_DEBUG_DUMP", value)
     assert _debug_dump_mode(_config()) == "full"
 
 
 def test_debug_dump_unknown_value_is_off(monkeypatch):
-    monkeypatch.setenv("HEADROOM_DEBUG_DUMP", "maybe")
+    monkeypatch.setenv("LEGROOM_DEBUG_DUMP", "maybe")
     assert _debug_dump_mode(_config()) == "off"
 
 
 def test_stateless_forces_dump_off_even_when_opted_in(monkeypatch):
     # Stateless mode must win over any opt-in: no filesystem writes, period.
-    monkeypatch.setenv("HEADROOM_DEBUG_DUMP", "full")
+    monkeypatch.setenv("LEGROOM_DEBUG_DUMP", "full")
     assert _debug_dump_mode(_config(stateless=True)) == "off"
 
 
@@ -85,7 +85,7 @@ def test_both_handlers_gate_the_dump(module_name):
     that writes cleartext prompts to disk."""
     import importlib
 
-    module = importlib.import_module(f"headroom.proxy.handlers.{module_name}")
+    module = importlib.import_module(f"legroom.proxy.handlers.{module_name}")
     src = inspect.getsource(module)
     if "debug_400_dir(" in src:
         assert "_debug_dump_mode(self.config)" in src, (

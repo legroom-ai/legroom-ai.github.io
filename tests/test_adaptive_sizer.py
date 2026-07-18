@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from headroom.transforms.adaptive_sizer import (
+from legroom.transforms.adaptive_sizer import (
     compute_optimal_k,
     compute_unique_bigram_curve,
 )

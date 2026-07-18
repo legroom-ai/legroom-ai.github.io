@@ -13,8 +13,8 @@ pytest.importorskip("fastapi")
 
 from fastapi.testclient import TestClient
 
-from headroom.cache.compression_store import get_compression_store, reset_compression_store
-from headroom.proxy.server import ProxyConfig, create_app
+from legroom.cache.compression_store import get_compression_store, reset_compression_store
+from legroom.proxy.server import ProxyConfig, create_app
 
 
 @pytest.fixture
@@ -73,10 +73,10 @@ class TestCCRRetrieveEndpoint:
     def test_retrieve_expired_hash_reports_expiration_detail(self, client):
         """Expired entries report expiration separately from missing hashes."""
         store = get_compression_store(default_ttl=1)
-        with patch("headroom.cache.compression_store.time.time", return_value=1000.0):
+        with patch("legroom.cache.compression_store.time.time", return_value=1000.0):
             hash_key = store.store(original="payload", compressed="payload")
 
-        with patch("headroom.cache.compression_store.time.time", return_value=1002.0):
+        with patch("legroom.cache.compression_store.time.time", return_value=1002.0):
             response = client.post("/v1/retrieve", json={"hash": hash_key})
 
         assert response.status_code == 404
@@ -173,7 +173,7 @@ class TestCCRStatsEndpoint:
     def test_stats_exposes_env_configured_ttl(self, client, monkeypatch):
         """Stats expose the effective CCR TTL configured through env."""
         reset_compression_store()
-        monkeypatch.setenv("HEADROOM_CCR_TTL_SECONDS", "7200")
+        monkeypatch.setenv("LEGROOM_CCR_TTL_SECONDS", "7200")
 
         response = client.get("/v1/retrieve/stats")
 
@@ -314,7 +314,7 @@ class TestEndToEndTOINIntegration:
         import tempfile
         from pathlib import Path
 
-        from headroom.telemetry.toin import (
+        from legroom.telemetry.toin import (
             TOINConfig,
             get_toin,
             reset_toin,
@@ -358,10 +358,10 @@ class TestEndToEndTOINIntegration:
         2. SmartCrusher compresses it
         3. TOIN records the compression event
         """
-        from headroom.config import CCRConfig, SmartCrusherConfig
-        from headroom.providers import AnthropicProvider
-        from headroom.telemetry import ToolSignature
-        from headroom.transforms import SmartCrusher, TransformPipeline
+        from legroom.config import CCRConfig, SmartCrusherConfig
+        from legroom.providers import AnthropicProvider
+        from legroom.telemetry import ToolSignature
+        from legroom.transforms import SmartCrusher, TransformPipeline
 
         # Create tool output with 100 items that will trigger compression
         # Key: score field with varying values signals sortable data
@@ -479,7 +479,7 @@ class TestEndToEndTOINIntegration:
         2. Retrieve through proxy endpoint
         3. Verify TOIN learned field semantics from retrieved items
         """
-        from headroom.telemetry import ToolSignature
+        from legroom.telemetry import ToolSignature
 
         # Create items with distinctive field types
         items = [
@@ -532,7 +532,7 @@ class TestEndToEndTOINIntegration:
         # PR-B5: pattern key is now `(auth_mode, model_family, sig_hash)`.
         # Callers that don't supply auth/model land on the
         # `("unknown", "unknown", sig_hash)` slot.
-        from headroom.telemetry.toin import _make_pattern_key
+        from legroom.telemetry.toin import _make_pattern_key
 
         pattern = fresh_toin._patterns.get(_make_pattern_key(None, None, signature.structure_hash))
         assert pattern is not None, "Pattern should exist after compression and retrieval"
@@ -558,7 +558,7 @@ class TestEndToEndTOINIntegration:
         2. Retrieval happens and TOIN learns from it
         3. Future recommendations reflect the learning
         """
-        from headroom.telemetry import ToolSignature
+        from legroom.telemetry import ToolSignature
 
         # Create items for the full feedback loop test
         items = [
@@ -610,7 +610,7 @@ class TestEndToEndTOINIntegration:
         # PR-B5: pattern key is now `(auth_mode, model_family, sig_hash)`.
         # Callers that don't supply auth/model land on the
         # `("unknown", "unknown", sig_hash)` slot.
-        from headroom.telemetry.toin import _make_pattern_key
+        from legroom.telemetry.toin import _make_pattern_key
 
         pattern = fresh_toin._patterns.get(_make_pattern_key(None, None, signature.structure_hash))
         assert pattern is not None, "Pattern should exist"

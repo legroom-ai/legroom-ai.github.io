@@ -1,4 +1,4 @@
-"""Tests for the `headroom update` command + install-method detection."""
+"""Tests for the `legroom update` command + install-method detection."""
 
 from __future__ import annotations
 
@@ -7,13 +7,13 @@ import sys
 import pytest
 from click.testing import CliRunner
 
-from headroom.cli import update as up
-from headroom.cli.main import main
+from legroom.cli import update as up
+from legroom.cli.main import main
 
 
 @pytest.fixture(autouse=True)
 def _clean_env(tmp_path, monkeypatch):
-    monkeypatch.setenv("HEADROOM_WORKSPACE_DIR", str(tmp_path))
+    monkeypatch.setenv("LEGROOM_WORKSPACE_DIR", str(tmp_path))
     monkeypatch.delenv("PIPX_HOME", raising=False)
     monkeypatch.delenv("UV_TOOL_DIR", raising=False)
     monkeypatch.delenv("CONDA_PREFIX", raising=False)
@@ -46,21 +46,21 @@ def test_detect_docker(monkeypatch):
 
 
 def test_detect_pipx_by_path(monkeypatch):
-    monkeypatch.setattr(up.sys, "prefix", "/home/u/.local/pipx/venvs/headroom-ai")
+    monkeypatch.setattr(up.sys, "prefix", "/home/u/.local/pipx/venvs/legroom-ai")
     m = up.detect_install_method()
-    assert m.kind == "pipx" and m.argv == ["pipx", "upgrade", "headroom-ai"]
+    assert m.kind == "pipx" and m.argv == ["pipx", "upgrade", "legroom-ai"]
 
 
 def test_detect_pipx_windows_path(monkeypatch):
-    monkeypatch.setattr(up.sys, "prefix", r"C:\\Users\\u\\pipx\\venvs\\headroom-ai")
+    monkeypatch.setattr(up.sys, "prefix", r"C:\\Users\\u\\pipx\\venvs\\legroom-ai")
     m = up.detect_install_method()
     assert m.kind == "pipx"
 
 
 def test_detect_uv_tool(monkeypatch):
-    monkeypatch.setattr(up.sys, "prefix", "/home/u/.local/share/uv/tools/headroom-ai")
+    monkeypatch.setattr(up.sys, "prefix", "/home/u/.local/share/uv/tools/legroom-ai")
     m = up.detect_install_method()
-    assert m.kind == "uv-tool" and m.argv == ["uv", "tool", "upgrade", "headroom-ai"]
+    assert m.kind == "uv-tool" and m.argv == ["uv", "tool", "upgrade", "legroom-ai"]
 
 
 def test_detect_venv_uses_current_interpreter(monkeypatch):
@@ -68,13 +68,13 @@ def test_detect_venv_uses_current_interpreter(monkeypatch):
     m = up.detect_install_method()
     assert m.kind == "pip"
     assert m.argv[:4] == [sys.executable, "-m", "pip", "install"]
-    assert "-U" in m.argv and "headroom-ai" in m.argv
+    assert "-U" in m.argv and "legroom-ai" in m.argv
 
 
 def test_detect_venv_with_extras(monkeypatch):
     monkeypatch.setattr(up, "_in_virtualenv", lambda: True)
     m = up.detect_install_method(extras="all")
-    assert "headroom-ai[all]" in m.argv
+    assert "legroom-ai[all]" in m.argv
 
 
 def test_detect_user_site(monkeypatch):
@@ -95,7 +95,7 @@ def test_detect_externally_managed_refuses(monkeypatch):
 
 
 # --------------------------------------------------------------------------- #
-# `headroom update` command
+# `legroom update` command
 # --------------------------------------------------------------------------- #
 def test_update_already_current(monkeypatch):
     monkeypatch.setattr(up, "installed_version", lambda: "0.26.0")
@@ -161,7 +161,7 @@ def test_update_windows_pip_handoff_uses_popen(monkeypatch):
                 "pip",
                 "install",
                 "-U",
-                "headroom-ai[foo&calc]",
+                "legroom-ai[foo&calc]",
             ],
         )
 
@@ -186,9 +186,9 @@ def test_update_windows_pip_handoff_uses_popen(monkeypatch):
         "pip",
         "install",
         "-U",
-        "headroom-ai[foo&calc]",
+        "legroom-ai[foo&calc]",
     ]
-    assert "headroom.exe" in res.output
+    assert "legroom.exe" in res.output
 
 
 def test_update_windows_non_pip_path_stays_synchronous(monkeypatch):
@@ -203,7 +203,7 @@ def test_update_windows_non_pip_path_stays_synchronous(monkeypatch):
         lambda extras=None: up.InstallMethod(
             kind="pipx",
             can_self_update=True,
-            argv=["pipx", "upgrade", "headroom-ai"],
+            argv=["pipx", "upgrade", "legroom-ai"],
         ),
     )
 
@@ -214,7 +214,7 @@ def test_update_windows_non_pip_path_stays_synchronous(monkeypatch):
     monkeypatch.setattr(up.subprocess, "Popen", _popen)
     res = CliRunner().invoke(main, ["update", "--yes"])
     assert res.exit_code == 0
-    assert calls["safe_update"] == ["pipx", "upgrade", "headroom-ai"]
+    assert calls["safe_update"] == ["pipx", "upgrade", "legroom-ai"]
 
 
 def test_update_refuses_in_checkout(monkeypatch):
@@ -267,7 +267,7 @@ def test_safe_update_success(monkeypatch):
     monkeypatch.setattr(up, "_find_core_pyd", lambda: None)
     monkeypatch.setattr(up.subprocess, "run", lambda *a, **k: _Result())
 
-    result = up.safe_update([sys.executable, "-m", "pip", "install", "-U", "headroom-ai"])
+    result = up.safe_update([sys.executable, "-m", "pip", "install", "-U", "legroom-ai"])
     assert result == 0
 
 
@@ -280,7 +280,7 @@ def test_safe_update_handles_missing_pyd(monkeypatch):
     monkeypatch.setattr(up, "_find_core_pyd", lambda: None)
     monkeypatch.setattr(up.subprocess, "run", lambda *a, **k: _Result())
 
-    result = up.safe_update([sys.executable, "-m", "pip", "install", "-U", "headroom-ai"])
+    result = up.safe_update([sys.executable, "-m", "pip", "install", "-U", "legroom-ai"])
     assert result == 0
 
 
@@ -293,7 +293,7 @@ def test_safe_update_passes_through_failure(monkeypatch):
     monkeypatch.setattr(up, "_find_core_pyd", lambda: None)
     monkeypatch.setattr(up.subprocess, "run", lambda *a, **k: _Result())
 
-    result = up.safe_update([sys.executable, "-m", "pip", "install", "-U", "headroom-ai"])
+    result = up.safe_update([sys.executable, "-m", "pip", "install", "-U", "legroom-ai"])
     assert result == 1
 
 
@@ -311,7 +311,7 @@ def test_safe_update_warns_but_no_backup_when_locked(monkeypatch, tmp_path):
 
     monkeypatch.setattr(up.subprocess, "run", lambda *a, **k: _Result())
 
-    result = up.safe_update([sys.executable, "-m", "pip", "install", "-U", "headroom-ai"])
+    result = up.safe_update([sys.executable, "-m", "pip", "install", "-U", "legroom-ai"])
 
     assert result == 1
     # Backup should never be created — file is locked, pip fails without corruption
@@ -336,7 +336,7 @@ def test_safe_update_backup_and_restore_on_integrity_failure(monkeypatch, tmp_pa
     monkeypatch.setattr(up.subprocess, "run", lambda *a, **k: _Result())
     monkeypatch.setattr(up, "_test_core_integrity", lambda: False)
 
-    result = up.safe_update([sys.executable, "-m", "pip", "install", "-U", "headroom-ai"])
+    result = up.safe_update([sys.executable, "-m", "pip", "install", "-U", "legroom-ai"])
 
     # Should return error due to integrity failure
     assert result == 1

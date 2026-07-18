@@ -1,4 +1,4 @@
-"""Contract tests for the Headroom Streamable HTTP MCP transport."""
+"""Contract tests for the Legroom Streamable HTTP MCP transport."""
 
 from __future__ import annotations
 
@@ -10,11 +10,11 @@ pytest.importorskip("mcp")
 from mcp.client.session import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 
-from headroom.ccr.mcp_http import (
+from legroom.ccr.mcp_http import (
     create_streamable_http_app,
     create_streamable_http_session_manager,
 )
-from headroom.ccr.mcp_server import create_ccr_mcp_server
+from legroom.ccr.mcp_server import create_ccr_mcp_server
 
 pytestmark = pytest.mark.anyio
 
@@ -46,6 +46,6 @@ async def test_streamable_http_initialize_and_list_tools() -> None:
     tool_names = [tool.name for tool in list_tools_result.tools]
     assert initialize_result.protocolVersion
     assert get_session_id() is not None
-    assert "headroom_compress" in tool_names
-    assert "headroom_retrieve" in tool_names
-    assert "headroom_stats" in tool_names
+    assert "legroom_compress" in tool_names
+    assert "legroom_retrieve" in tool_names
+    assert "legroom_stats" in tool_names

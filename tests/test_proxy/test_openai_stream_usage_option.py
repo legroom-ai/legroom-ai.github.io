@@ -15,7 +15,7 @@ import pytest
 
 fastapi = pytest.importorskip("fastapi")
 
-from headroom.proxy.handlers.openai import _apply_stream_usage_option  # noqa: E402
+from legroom.proxy.handlers.openai import _apply_stream_usage_option  # noqa: E402
 
 
 def test_respects_explicit_include_usage_false():

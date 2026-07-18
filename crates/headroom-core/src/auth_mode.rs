@@ -16,7 +16,7 @@
 //!   (Claude Code, ChatGPT Plus, Cursor, Copilot, Antigravity).
 //!   Provider rate-limits by request count; programmatic-fingerprint
 //!   detection means we MUST look like the upstream agent (preserve
-//!   `User-Agent`, never inject `X-Headroom-*`, never strip
+//!   `User-Agent`, never inject `X-Legroom-*`, never strip
 //!   `accept-encoding`).
 //!
 //! See `~/.claude/projects/.../memory/project_auth_mode_compression_nuances.md`
@@ -31,7 +31,7 @@
 
 use http::HeaderMap;
 
-/// Three auth-mode classes Headroom routes compression policy through.
+/// Three auth-mode classes Legroom routes compression policy through.
 ///
 /// `Copy` because the value is passed through dozens of compression
 /// decisions per request; cloning a 1-byte enum is cheaper than holding
@@ -47,7 +47,7 @@ pub enum AuthMode {
     OAuth,
     /// Subscription-bound CLI / IDE. Stealth: same as OAuth +
     /// preserve `accept-encoding`, never strip; never inject
-    /// `X-Headroom-*`; never mutate `User-Agent`.
+    /// `X-Legroom-*`; never mutate `User-Agent`.
     Subscription,
 }
 
@@ -117,7 +117,7 @@ const SUBSCRIPTION_UA_PREFIXES: &[&str] = &[
 /// One owned `String` allocation for the lowercase UA copy. All other
 /// matches are zero-allocation `str::starts_with` / `str::contains` /
 /// `str::split('.').count()`. Bench at
-/// `crates/headroom-core/benches/auth_mode.rs` asserts <10us / call.
+/// `crates/legroom-core/benches/auth_mode.rs` asserts <10us / call.
 pub fn classify(headers: &HeaderMap) -> AuthMode {
     // ── User-Agent ───────────────────────────────────────────────
     // Subscription clients identify by UA prefix; this is the most
@@ -212,9 +212,9 @@ pub fn classify(headers: &HeaderMap) -> AuthMode {
 #[cfg(test)]
 mod inline_tests {
     //! Smoke tests inlined alongside the function so `cargo test -p
-    //! headroom-core --lib` exercises the helper without pulling in
+    //! legroom-core --lib` exercises the helper without pulling in
     //! the integration-test binary. The exhaustive test matrix lives
-    //! in `crates/headroom-core/tests/auth_mode.rs`.
+    //! in `crates/legroom-core/tests/auth_mode.rs`.
 
     use super::*;
     use http::HeaderValue;

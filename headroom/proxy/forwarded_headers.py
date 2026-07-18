@@ -12,7 +12,7 @@ Configuration
 
 Single env var, comma-separated CIDR blocks::
 
-    HEADROOM_PROXY_TRUSTED_GATEWAY_CIDRS=10.0.0.0/8,172.16.0.0/12,fd00::/8
+    LEGROOM_PROXY_TRUSTED_GATEWAY_CIDRS=10.0.0.0/8,172.16.0.0/12,fd00::/8
 
 Whitespace around the commas is tolerated. Empty / unset is the
 **default** and the **most secure** setting — it means *no gateway is
@@ -57,7 +57,7 @@ import logging
 import os
 from typing import TYPE_CHECKING, Any
 
-from headroom.proxy.forwarded_policy import (
+from legroom.proxy.forwarded_policy import (
     ForwardedHeaderInputs,
     header_first,
     normalize_ip,
@@ -83,8 +83,8 @@ __all__ = [
 
 
 #: Environment variable that holds the comma-separated CIDR allow-list.
-TRUSTED_GATEWAY_CIDRS_ENV = "HEADROOM_PROXY_TRUSTED_GATEWAY_CIDRS"
-TRUSTED_DASHBOARD_CLIENT_CIDRS_ENV = "HEADROOM_PROXY_TRUSTED_DASHBOARD_CLIENT_CIDRS"
+TRUSTED_GATEWAY_CIDRS_ENV = "LEGROOM_PROXY_TRUSTED_GATEWAY_CIDRS"
+TRUSTED_DASHBOARD_CLIENT_CIDRS_ENV = "LEGROOM_PROXY_TRUSTED_DASHBOARD_CLIENT_CIDRS"
 
 
 def _parse_cidr_list(

@@ -1,4 +1,4 @@
-"""Base transform interface for Headroom SDK."""
+"""Base transform interface for Legroom SDK."""
 
 from __future__ import annotations
 

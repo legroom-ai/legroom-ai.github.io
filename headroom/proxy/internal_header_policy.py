@@ -5,8 +5,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Literal, cast
 
-INTERNAL_HEADER_PREFIX = "x-headroom-"
-STRIP_INTERNAL_HEADERS_ENV = "HEADROOM_STRIP_INTERNAL_HEADERS"
+INTERNAL_HEADER_PREFIX = "x-legroom-"
+STRIP_INTERNAL_HEADERS_ENV = "LEGROOM_STRIP_INTERNAL_HEADERS"
 StripInternalHeadersMode = Literal["enabled", "disabled"]
 STRIP_INTERNAL_HEADERS_DEFAULT: StripInternalHeadersMode = "enabled"
 
@@ -29,7 +29,7 @@ def strip_internal_headers(
     *,
     mode: StripInternalHeadersMode,
 ) -> dict[str, str]:
-    """Return a copy of headers with internal x-headroom-* request headers removed."""
+    """Return a copy of headers with internal x-legroom-* request headers removed."""
 
     if mode == "disabled":
         return dict(headers)

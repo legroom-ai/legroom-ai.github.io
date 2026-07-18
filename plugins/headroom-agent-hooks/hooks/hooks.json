@@ -1,5 +1,5 @@
 {
-  "description": "Headroom plugin hooks — ensure the local Headroom runtime is available for initialized agents.",
+  "description": "Legroom plugin hooks — ensure the local Legroom runtime is available for initialized agents.",
   "hooks": {
     "SessionStart": [
       {
@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "headroom init hook ensure",
+            "command": "legroom init hook ensure",
             "timeout": 15
           }
         ]
@@ -19,7 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "headroom init hook ensure",
+            "command": "legroom init hook ensure",
             "timeout": 15
           }
         ]

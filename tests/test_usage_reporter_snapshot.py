@@ -9,7 +9,7 @@ from types import SimpleNamespace
 
 import anyio
 
-from headroom.telemetry.reporter import UsageReporter
+from legroom.telemetry.reporter import UsageReporter
 
 
 class _Resp:

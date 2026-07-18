@@ -97,7 +97,7 @@ class CostTracker:
         n_samples: int,
         avg_input_tokens: int = 500,
         avg_output_tokens: int = 100,
-        multiplier: int = 2,  # baseline + headroom = 2x calls
+        multiplier: int = 2,  # baseline + legroom = 2x calls
     ) -> float:
         """Estimate cost for a benchmark run before executing it."""
         total_input = n_samples * avg_input_tokens * multiplier

@@ -5,7 +5,7 @@ thread the proxy savings-profile kwargs (``proxy_pipeline_kwargs(config)``) into
 
 Before the fix the three Gemini/Vertex ``openai_pipeline.apply(...)`` call sites
 passed only ``messages``/``model``/``model_limit``/``context``/``waste_messages``,
-so ``HEADROOM_SAVINGS_PROFILE`` and the ProxyConfig compression knobs
+so ``LEGROOM_SAVINGS_PROFILE`` and the ProxyConfig compression knobs
 (``target_ratio``/``min_tokens_to_compress``/``protect_recent``/...) were
 silently dropped on the Gemini path.
 """
@@ -22,7 +22,7 @@ pytest.importorskip("httpx")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from headroom.proxy.server import ProxyConfig, create_app  # noqa: E402
+from legroom.proxy.server import ProxyConfig, create_app  # noqa: E402
 
 
 def _make_fake_gemini_response() -> MagicMock:
@@ -39,7 +39,7 @@ def _make_fake_gemini_response() -> MagicMock:
 
 
 def test_gemini_generate_content_threads_savings_profile_kwargs_into_apply():
-    """With HEADROOM_SAVINGS_PROFILE=agent-90, the native Gemini path must pass
+    """With LEGROOM_SAVINGS_PROFILE=agent-90, the native Gemini path must pass
     the profile knobs (compress_user_messages, target_ratio, ...) to apply()."""
     config = ProxyConfig(
         optimize=True,

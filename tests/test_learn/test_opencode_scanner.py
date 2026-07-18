@@ -6,10 +6,10 @@ import json
 import sqlite3
 from pathlib import Path
 
-from headroom.learn.models import ErrorCategory
-from headroom.learn.plugins.opencode import OpenCodePlugin
-from headroom.learn.registry import get_registry, reset_registry
-from headroom.learn.writer import CodexWriter
+from legroom.learn.models import ErrorCategory
+from legroom.learn.plugins.opencode import OpenCodePlugin
+from legroom.learn.registry import get_registry, reset_registry
+from legroom.learn.writer import CodexWriter
 
 
 def _create_opencode_db(db_path: Path, project_path: Path) -> None:
@@ -41,7 +41,7 @@ def _create_opencode_db(db_path: Path, project_path: Path) -> None:
         )
         conn.execute(
             "INSERT INTO project (id, name, worktree) VALUES (?, ?, ?)",
-            ("project-1", "Headroom", str(project_path)),
+            ("project-1", "Legroom", str(project_path)),
         )
         conn.execute(
             "INSERT INTO session (id, project_id, time_created) VALUES (?, ?, ?)",
@@ -87,7 +87,7 @@ def test_opencode_plugin_discovers_projects_and_scans_tool_failures(tmp_path: Pa
 
     projects = plugin.discover_projects()
     assert len(projects) == 1
-    assert projects[0].name == "Headroom"
+    assert projects[0].name == "Legroom"
     assert projects[0].project_path == project_path
     assert projects[0].context_file == project_path / "AGENTS.md"
 

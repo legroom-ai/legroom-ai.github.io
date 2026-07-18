@@ -11,7 +11,7 @@
 ## PR-A1 — Make `/v1/messages` compression a passthrough
 
 **Branch:** `realign-A1-icm-passthrough`
-**Worktree:** `~/claude-projects/headroom-worktrees/realign-A1-icm-passthrough`
+**Worktree:** `~/claude-projects/legroom-worktrees/realign-A1-icm-passthrough`
 **Risk:** **LOW** (deletion + tests; no new logic)
 **LOC:** -180 / +30
 
@@ -21,15 +21,15 @@ Stop calling ICM from the Rust proxy on `/v1/messages`. The proxy becomes a pure
 ### Files
 
 **Delete:**
-- `crates/headroom-proxy/src/compression/icm.rs`
+- `crates/legroom-proxy/src/compression/icm.rs`
 
 **Modify:**
-- `crates/headroom-proxy/src/compression/mod.rs` — remove `pub mod icm;`, remove ICM dispatch in `maybe_compress`. The `is_compressible_path` check still matches `/v1/messages` but `compress_anthropic_request` becomes a no-op stub returning `Outcome::NoCompression`.
-- `crates/headroom-proxy/src/compression/anthropic.rs` — replace function body with `Ok(Outcome::NoCompression)`. Keep the function signature so callers compile; subsequent PRs in Phase B replace this with the live-zone block dispatcher.
-- `crates/headroom-proxy/src/proxy.rs` — confirm the `Outcome::NoCompression` branch forwards original bytes (already does at line 296-298; just verify with the new test).
+- `crates/legroom-proxy/src/compression/mod.rs` — remove `pub mod icm;`, remove ICM dispatch in `maybe_compress`. The `is_compressible_path` check still matches `/v1/messages` but `compress_anthropic_request` becomes a no-op stub returning `Outcome::NoCompression`.
+- `crates/legroom-proxy/src/compression/anthropic.rs` — replace function body with `Ok(Outcome::NoCompression)`. Keep the function signature so callers compile; subsequent PRs in Phase B replace this with the live-zone block dispatcher.
+- `crates/legroom-proxy/src/proxy.rs` — confirm the `Outcome::NoCompression` branch forwards original bytes (already does at line 296-298; just verify with the new test).
 
 **Tests added:**
-- `crates/headroom-proxy/tests/integration_compression.rs::compression_on_message_passes_body_unchanged_sha256` — record a real Anthropic request body to a fixture; send through proxy; assert SHA-256 of upstream-received body equals SHA-256 of inbound body.
+- `crates/legroom-proxy/tests/integration_compression.rs::compression_on_message_passes_body_unchanged_sha256` — record a real Anthropic request body to a fixture; send through proxy; assert SHA-256 of upstream-received body equals SHA-256 of inbound body.
 
 **Tests deleted/updated:**
 - Update `compression_on_short_body_passes_through` to assert SHA-256 byte-equality (not just `len()`).
@@ -37,7 +37,7 @@ Stop calling ICM from the Rust proxy on `/v1/messages`. The proxy becomes a pure
 
 ### Acceptance criteria
 
-- `cargo test -p headroom-proxy` green.
+- `cargo test -p legroom-proxy` green.
 - New SHA-256 round-trip test passes.
 - The proxy still starts and serves `/healthz`.
 - `make ci-precheck` green.
@@ -58,14 +58,14 @@ All Phase B PRs (which delete the surrounding code).
 ### Notes
 
 - The `compress_anthropic_request` function stays as a stub so Phase B has a single rewrite target.
-- This PR does NOT delete ICM the module yet — `crates/headroom-core/src/context/manager.rs` still compiles. PR-B1 deletes the modules. Splitting keeps the diff scoped.
+- This PR does NOT delete ICM the module yet — `crates/legroom-core/src/context/manager.rs` still compiles. PR-B1 deletes the modules. Splitting keeps the diff scoped.
 
 ---
 
 ## PR-A2 — Stop mutating the system prompt; route memory context to live zone
 
 **Branch:** `realign-A2-system-prompt-immutable`
-**Worktree:** `~/claude-projects/headroom-worktrees/realign-A2-system-prompt-immutable`
+**Worktree:** `~/claude-projects/legroom-worktrees/realign-A2-system-prompt-immutable`
 **Risk:** **MEDIUM** (touches memory feature behavior)
 **LOC:** -150 / +80
 
@@ -75,10 +75,10 @@ Eliminate P0-1 and P2-23. The system prompt is never mutated; memory context is 
 ### Files
 
 **Modify:**
-- `headroom/proxy/server.py:1026-1071` — delete `_inject_system_context`. Memory context handling routes exclusively through `_append_context_to_latest_non_frozen_user_turn` (already exists at `handlers/anthropic.py:1117-1135` for cache mode; promote to default).
-- `headroom/proxy/handlers/openai.py:1212` — same: delete `body["instructions"] = f"{existing_instructions}\n\n{memory_context}"`. Replace with append-to-latest-user-message-tail.
-- `headroom/transforms/cache_aligner.py` — delete the rewrite path (lines 160-262). Keep the volatile-content detector and the `cache_aligner_warnings` callback that surfaces detected dynamic content (UUIDs, dates, tokens) to a customer-visible log line.
-- `headroom/proxy/server.py:299` — `cache_aligner.enabled` flag stays default-False; document that turning it on now only affects warnings.
+- `legroom/proxy/server.py:1026-1071` — delete `_inject_system_context`. Memory context handling routes exclusively through `_append_context_to_latest_non_frozen_user_turn` (already exists at `handlers/anthropic.py:1117-1135` for cache mode; promote to default).
+- `legroom/proxy/handlers/openai.py:1212` — same: delete `body["instructions"] = f"{existing_instructions}\n\n{memory_context}"`. Replace with append-to-latest-user-message-tail.
+- `legroom/transforms/cache_aligner.py` — delete the rewrite path (lines 160-262). Keep the volatile-content detector and the `cache_aligner_warnings` callback that surfaces detected dynamic content (UUIDs, dates, tokens) to a customer-visible log line.
+- `legroom/proxy/server.py:299` — `cache_aligner.enabled` flag stays default-False; document that turning it on now only affects warnings.
 
 **Tests added:**
 - `tests/test_proxy_system_prompt_immutable.py::test_memory_enabled_does_not_mutate_system` — request with memory enabled; assert outbound system bytes equal inbound system bytes.
@@ -111,7 +111,7 @@ PR-B6 (memory subsystem refactor, which builds on this).
 ## PR-A3 — Switch Python forwarders to byte-faithful body forwarding
 
 **Branch:** `realign-A3-byte-faithful-forwarders`
-**Worktree:** `~/claude-projects/headroom-worktrees/realign-A3-byte-faithful-forwarders`
+**Worktree:** `~/claude-projects/legroom-worktrees/realign-A3-byte-faithful-forwarders`
 **Risk:** **HIGH** (touches every outbound HTTP call in Python)
 **LOC:** -200 / +250
 
@@ -121,11 +121,11 @@ Eliminate P0-2 universally. Every Python forwarder switches from `httpx ... json
 ### Files
 
 **Modify:**
-- `headroom/proxy/server.py:1073-1124` — `_retry_request`: track whether body was mutated; if not, forward `original_body_bytes`; if yes, re-serialize with the canonical settings. Switch `await self.http_client.post(url, json=body)` to `await self.http_client.post(url, content=outbound_bytes, headers={**headers, "content-type": "application/json"})`.
-- `headroom/proxy/handlers/streaming.py:617-660` — same pattern in `_send_streaming_request`.
-- `headroom/proxy/handlers/openai.py:2392-2410` — WS→HTTP fallback: same pattern.
-- `headroom/proxy/handlers/batch.py:340-360` — batch endpoint: same pattern.
-- `headroom/proxy/helpers.py` — add `serialize_body_canonical(body: dict) -> bytes` helper using `json.dumps(body, separators=(",", ":"), ensure_ascii=False).encode("utf-8")`.
+- `legroom/proxy/server.py:1073-1124` — `_retry_request`: track whether body was mutated; if not, forward `original_body_bytes`; if yes, re-serialize with the canonical settings. Switch `await self.http_client.post(url, json=body)` to `await self.http_client.post(url, content=outbound_bytes, headers={**headers, "content-type": "application/json"})`.
+- `legroom/proxy/handlers/streaming.py:617-660` — same pattern in `_send_streaming_request`.
+- `legroom/proxy/handlers/openai.py:2392-2410` — WS→HTTP fallback: same pattern.
+- `legroom/proxy/handlers/batch.py:340-360` — batch endpoint: same pattern.
+- `legroom/proxy/helpers.py` — add `serialize_body_canonical(body: dict) -> bytes` helper using `json.dumps(body, separators=(",", ":"), ensure_ascii=False).encode("utf-8")`.
 
 **Tests added:**
 - `tests/test_proxy_byte_faithful_forwarding.py::test_passthrough_no_mutation_byte_equal` — request with no compression / memory / transforms; assert SHA-256 of upstream-received body equals SHA-256 of client-sent body.
@@ -161,7 +161,7 @@ PR-A6 (memory tool injection refactor relies on the new mutation-tracking helper
 ## PR-A4 — Honor customer `cache_control` markers in Rust; enable `arbitrary_precision`+`raw_value`
 
 **Branch:** `realign-A4-honor-cache-control`
-**Worktree:** `~/claude-projects/headroom-worktrees/realign-A4-honor-cache-control`
+**Worktree:** `~/claude-projects/legroom-worktrees/realign-A4-honor-cache-control`
 **Risk:** **MEDIUM** (Rust-only; tightly scoped)
 **LOC:** -30 / +200
 
@@ -172,19 +172,19 @@ Eliminate P0-3 and P0-5 directly. In Rust, walk customer-set `cache_control` mar
 
 **Modify:**
 - `Cargo.toml:34` — add features: `serde_json = { version = "1", features = ["preserve_order", "arbitrary_precision", "raw_value"] }`. Run `cargo update -p serde_json`.
-- `crates/headroom-proxy/src/compression/anthropic.rs` — add `pub fn compute_frozen_count(parsed: &serde_json::Value) -> usize` that walks `messages[*].content[*].cache_control`, `system[*].cache_control`, `tools[*].cache_control` and returns the highest message index whose content contains a marker. (Used by Phase B; currently called only by tests.)
-- `crates/headroom-core/src/lib.rs` — re-export `compute_frozen_count` for use in Phase B.
+- `crates/legroom-proxy/src/compression/anthropic.rs` — add `pub fn compute_frozen_count(parsed: &serde_json::Value) -> usize` that walks `messages[*].content[*].cache_control`, `system[*].cache_control`, `tools[*].cache_control` and returns the highest message index whose content contains a marker. (Used by Phase B; currently called only by tests.)
+- `crates/legroom-core/src/lib.rs` — re-export `compute_frozen_count` for use in Phase B.
 
 **Add:**
-- `crates/headroom-proxy/tests/integration_cache_control.rs::cache_control_marker_at_message_3_yields_frozen_count_3`
-- `crates/headroom-proxy/tests/integration_cache_control.rs::cache_control_in_system_blocks_yields_frozen_count_full_history`
-- `crates/headroom-proxy/tests/integration_cache_control.rs::cache_control_ttl_1h_before_5m_passes`
-- `crates/headroom-proxy/tests/integration_cache_control.rs::cache_control_ttl_5m_before_1h_warns_and_passes` (we don't reject, but log per §2.19 ordering rule)
+- `crates/legroom-proxy/tests/integration_cache_control.rs::cache_control_marker_at_message_3_yields_frozen_count_3`
+- `crates/legroom-proxy/tests/integration_cache_control.rs::cache_control_in_system_blocks_yields_frozen_count_full_history`
+- `crates/legroom-proxy/tests/integration_cache_control.rs::cache_control_ttl_1h_before_5m_passes`
+- `crates/legroom-proxy/tests/integration_cache_control.rs::cache_control_ttl_5m_before_1h_warns_and_passes` (we don't reject, but log per §2.19 ordering rule)
 
 ### Acceptance criteria
 
-- `cargo build -p headroom-proxy` works with new features.
-- `cargo test -p headroom-proxy` green.
+- `cargo build -p legroom-proxy` works with new features.
+- `cargo test -p legroom-proxy` green.
 - The `compute_frozen_count` returns 0 for a request with zero markers; returns N for a request with a marker on `messages[N]`.
 
 ### Blocked by
@@ -206,10 +206,10 @@ PR-B2 (live-zone block dispatcher uses `compute_frozen_count`).
 
 ---
 
-## PR-A5 — Strip `x-headroom-*` from upstream-bound headers
+## PR-A5 — Strip `x-legroom-*` from upstream-bound headers
 
-**Branch:** `realign-A5-strip-headroom-headers`
-**Worktree:** `~/claude-projects/headroom-worktrees/realign-A5-strip-headroom-headers`
+**Branch:** `realign-A5-strip-legroom-headers`
+**Worktree:** `~/claude-projects/legroom-worktrees/realign-A5-strip-legroom-headers`
 **Risk:** **LOW**
 **LOC:** -10 / +50
 
@@ -219,25 +219,25 @@ Eliminate P5-49. `dict(request.headers.items())` is captured unmodified and forw
 ### Files
 
 **Modify:**
-- `headroom/proxy/handlers/anthropic.py:526` — wrap `dict(request.headers.items())` with `_strip_internal_headers(headers)` (new helper).
-- `headroom/proxy/handlers/openai.py:232-264` — same.
-- `headroom/proxy/handlers/streaming.py:617` — same.
-- `headroom/proxy/handlers/batch.py:340` — same.
-- `headroom/proxy/handlers/gemini.py:31` — same.
-- `headroom/proxy/helpers.py` — add `_strip_internal_headers` helper. Default strip list: `x-headroom-*` (case-insensitive prefix), plus a hardcoded set of internal flags.
-- `crates/headroom-proxy/src/headers.rs` — add `strip_internal_headers` to the request-side filter. Document that response-side `X-Headroom-*` injection (which is fine) is unrelated.
+- `legroom/proxy/handlers/anthropic.py:526` — wrap `dict(request.headers.items())` with `_strip_internal_headers(headers)` (new helper).
+- `legroom/proxy/handlers/openai.py:232-264` — same.
+- `legroom/proxy/handlers/streaming.py:617` — same.
+- `legroom/proxy/handlers/batch.py:340` — same.
+- `legroom/proxy/handlers/gemini.py:31` — same.
+- `legroom/proxy/helpers.py` — add `_strip_internal_headers` helper. Default strip list: `x-legroom-*` (case-insensitive prefix), plus a hardcoded set of internal flags.
+- `crates/legroom-proxy/src/headers.rs` — add `strip_internal_headers` to the request-side filter. Document that response-side `X-Legroom-*` injection (which is fine) is unrelated.
 
 **Tests added:**
-- `tests/test_header_isolation.py::test_x_headroom_bypass_not_forwarded`
-- `tests/test_header_isolation.py::test_x_headroom_mode_not_forwarded`
-- `tests/test_header_isolation.py::test_x_headroom_user_id_not_forwarded`
-- `crates/headroom-proxy/tests/integration_headers.rs::x_headroom_request_headers_stripped`
+- `tests/test_header_isolation.py::test_x_legroom_bypass_not_forwarded`
+- `tests/test_header_isolation.py::test_x_legroom_mode_not_forwarded`
+- `tests/test_header_isolation.py::test_x_legroom_user_id_not_forwarded`
+- `crates/legroom-proxy/tests/integration_headers.rs::x_legroom_request_headers_stripped`
 
 ### Acceptance criteria
 
 - New tests pass.
-- Existing client-driven `x-headroom-bypass: true` flow still works (proxy reads it; just doesn't forward).
-- No legitimate header is stripped (whitelist `x-request-id`, `x-trace-id`, etc. by default — though they aren't `x-headroom-*` so they're untouched).
+- Existing client-driven `x-legroom-bypass: true` flow still works (proxy reads it; just doesn't forward).
+- No legitimate header is stripped (whitelist `x-request-id`, `x-trace-id`, etc. by default — though they aren't `x-legroom-*` so they're untouched).
 
 ### Blocked by
 
@@ -256,7 +256,7 @@ PR-F2 (auth-mode policy uses this helper).
 ## PR-A6 — Pin `anthropic-beta` order; session-stickiness skeleton
 
 **Branch:** `realign-A6-anthropic-beta-stable`
-**Worktree:** `~/claude-projects/headroom-worktrees/realign-A6-anthropic-beta-stable`
+**Worktree:** `~/claude-projects/legroom-worktrees/realign-A6-anthropic-beta-stable`
 **Risk:** **MEDIUM** (touches memory injection beta-mutation)
 **LOC:** -40 / +180
 
@@ -266,9 +266,9 @@ Eliminate P5-50 and start P5-51. When the proxy mutates `anthropic-beta` (memory
 ### Files
 
 **Modify:**
-- `headroom/proxy/handlers/anthropic.py:1162-1168` — replace the ad-hoc concat with a helper `merge_anthropic_beta(client: str, headroom: list[str]) -> str` that splits client's value on `,`, lowercases each token, deduplicates, appends Headroom-required tokens (sorted within the appended group), and rejoins.
-- `headroom/proxy/server.py` — extend `session_state` (already exists for memory) to track `betas_seen: set[str]` per session. Update on every request; merge into outbound `anthropic-beta` for follow-up requests.
-- `headroom/proxy/helpers.py` — add `betas_seen_lock` and `update_session_betas` helpers.
+- `legroom/proxy/handlers/anthropic.py:1162-1168` — replace the ad-hoc concat with a helper `merge_anthropic_beta(client: str, legroom: list[str]) -> str` that splits client's value on `,`, lowercases each token, deduplicates, appends Legroom-required tokens (sorted within the appended group), and rejoins.
+- `legroom/proxy/server.py` — extend `session_state` (already exists for memory) to track `betas_seen: set[str]` per session. Update on every request; merge into outbound `anthropic-beta` for follow-up requests.
+- `legroom/proxy/helpers.py` — add `betas_seen_lock` and `update_session_betas` helpers.
 
 **Tests added:**
 - `tests/test_anthropic_beta_session_sticky.py::test_beta_seen_turn_1_present_in_turn_2_even_if_client_drops`
@@ -278,7 +278,7 @@ Eliminate P5-50 and start P5-51. When the proxy mutates `anthropic-beta` (memory
 ### Acceptance criteria
 
 - New tests pass.
-- Session ID is keyed off the existing session detection (per `headroom/proxy/handlers/anthropic.py:1417`).
+- Session ID is keyed off the existing session detection (per `legroom/proxy/handlers/anthropic.py:1417`).
 - The "betas seen" set is bounded (LRU eviction at 1000 sessions).
 
 ### Blocked by
@@ -298,7 +298,7 @@ PR-A7 (memory tool session-stickiness uses the same session-state plumbing).
 ## PR-A7 — Memory tool injection session-sticky
 
 **Branch:** `realign-A7-memory-tool-sticky`
-**Worktree:** `~/claude-projects/headroom-worktrees/realign-A7-memory-tool-sticky`
+**Worktree:** `~/claude-projects/legroom-worktrees/realign-A7-memory-tool-sticky`
 **Risk:** **MEDIUM**
 **LOC:** -30 / +150
 
@@ -308,9 +308,9 @@ Eliminate the rest of P0-6. Once memory injects a tool into `body["tools"]` for 
 ### Files
 
 **Modify:**
-- `headroom/proxy/memory_tool_adapter.py:625-657` — make injection session-state-aware. The session-state object grows a `memory_tools_injected: bool` and `memory_tools_definition_bytes: bytes` (golden form). On every request: if previously injected, inject again with byte-equal definition.
-- `headroom/proxy/memory_handler.py:389-398` — same: native-tool path becomes session-sticky.
-- `headroom/proxy/handlers/anthropic.py:1147-1171` — read session state; either inject all (if previously injected or memory enabled this turn) or none.
+- `legroom/proxy/memory_tool_adapter.py:625-657` — make injection session-state-aware. The session-state object grows a `memory_tools_injected: bool` and `memory_tools_definition_bytes: bytes` (golden form). On every request: if previously injected, inject again with byte-equal definition.
+- `legroom/proxy/memory_handler.py:389-398` — same: native-tool path becomes session-sticky.
+- `legroom/proxy/handlers/anthropic.py:1147-1171` — read session state; either inject all (if previously injected or memory enabled this turn) or none.
 
 **Tests added:**
 - `tests/test_memory_tool_session_sticky.py::test_injection_in_turn_1_repeats_in_turn_2`
@@ -339,7 +339,7 @@ PR-B6 (memory subsystem refactor).
 ## PR-A8 — Hotfix Python wire-format bugs; add SHA-256 round-trip test
 
 **Branch:** `realign-A8-python-wire-hotfix`
-**Worktree:** `~/claude-projects/headroom-worktrees/realign-A8-python-wire-hotfix`
+**Worktree:** `~/claude-projects/legroom-worktrees/realign-A8-python-wire-hotfix`
 **Risk:** **MEDIUM**
 **LOC:** -100 / +400
 
@@ -355,13 +355,13 @@ Catch-all for the Python wire-format bugs that should be fixed before Phase H de
 ### Files
 
 **Modify:**
-- `headroom/proxy/handlers/streaming.py:213-298` — rewrite `_parse_sse_to_response` to handle all delta types per guide §5.1. Add index-keyed block map. Bytes-level SSE buffer.
-- `headroom/proxy/handlers/streaming.py:58, 772` — switch `chunk.decode("utf-8", errors="ignore")` to a bytes-buffer + decode-after-`\n\n` pattern.
-- `headroom/ccr/response_handler.py:665-686` — same pattern.
-- `headroom/proxy/responses_converter.py:94, 235` — preserve `phase` explicitly. Fix multi-text-part rebuild: rebuild parts by index, replacing each part's text in place.
-- `headroom/proxy/responses_converter.py:99` — add `logger.warning(f"unknown responses item type: {item.get('type')}")`.
-- `crates/headroom-proxy/src/proxy.rs:355-358` — capture upstream `request-id` (Anthropic) and `x-request-id` (OpenAI) into the tracing field.
-- `crates/headroom-proxy/src/proxy.rs:243-263` — return 413 on body-too-large; return 400 only on actual parse error.
+- `legroom/proxy/handlers/streaming.py:213-298` — rewrite `_parse_sse_to_response` to handle all delta types per guide §5.1. Add index-keyed block map. Bytes-level SSE buffer.
+- `legroom/proxy/handlers/streaming.py:58, 772` — switch `chunk.decode("utf-8", errors="ignore")` to a bytes-buffer + decode-after-`\n\n` pattern.
+- `legroom/ccr/response_handler.py:665-686` — same pattern.
+- `legroom/proxy/responses_converter.py:94, 235` — preserve `phase` explicitly. Fix multi-text-part rebuild: rebuild parts by index, replacing each part's text in place.
+- `legroom/proxy/responses_converter.py:99` — add `logger.warning(f"unknown responses item type: {item.get('type')}")`.
+- `crates/legroom-proxy/src/proxy.rs:355-358` — capture upstream `request-id` (Anthropic) and `x-request-id` (OpenAI) into the tracing field.
+- `crates/legroom-proxy/src/proxy.rs:243-263` — return 413 on body-too-large; return 400 only on actual parse error.
 
 **Add:**
 - `tests/fixtures/anthropic_messages_request_real.json` — recorded production-shaped payload (sanitized).
@@ -372,7 +372,7 @@ Catch-all for the Python wire-format bugs that should be fixed before Phase H de
 - `tests/test_sse_thinking_blocks.py::test_signature_delta_preserved`
 - `tests/test_sse_thinking_blocks.py::test_citations_delta_accumulated`
 - `tests/test_sse_utf8_split.py::test_emoji_split_across_chunks_preserved`
-- `crates/headroom-proxy/tests/integration_request_id.rs::upstream_request_id_captured`
+- `crates/legroom-proxy/tests/integration_request_id.rs::upstream_request_id_captured`
 
 ### Acceptance criteria
 
@@ -410,7 +410,7 @@ After all 8 PRs land:
 - ✅ Memory tool injection session-sticky
 - ✅ `anthropic-beta` mutation deterministic + session-sticky
 - ✅ Python forwarders byte-faithful
-- ✅ `x-headroom-*` stripped from upstream
+- ✅ `x-legroom-*` stripped from upstream
 - ✅ Numeric precision preserved (RawValue + arbitrary_precision)
 - ✅ SSE thinking/signature/citations deltas handled
 - ✅ Codex `phase` preserved

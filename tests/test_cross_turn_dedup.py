@@ -2,7 +2,7 @@
 
 import re
 
-from headroom.transforms.cross_turn_dedup import (
+from legroom.transforms.cross_turn_dedup import (
     DedupBlock,
     _num_and_key,
     dedup_blocks,
@@ -133,8 +133,8 @@ def test_info_preserving_reconstruction_multiref():
 # Integration: full router.apply() path (content-block tool_result format)
 # --------------------------------------------------------------------------
 def _mk_tok():
-    from headroom.providers import OpenAIProvider
-    from headroom.tokenizer import Tokenizer
+    from legroom.providers import OpenAIProvider
+    from legroom.tokenizer import Tokenizer
 
     return Tokenizer(OpenAIProvider().get_token_counter("gpt-4o"), "gpt-4o")
 
@@ -151,7 +151,7 @@ def _apply_fresh(messages):
     # not cross-call cache state.
     import copy
 
-    from headroom.transforms.content_router import ContentRouter, ContentRouterConfig
+    from legroom.transforms.content_router import ContentRouter, ContentRouterConfig
 
     r = ContentRouter(ContentRouterConfig(lossless=True, enable_cross_turn_dedup=True))
     return r.apply(copy.deepcopy(messages), _mk_tok()).messages
@@ -197,7 +197,7 @@ def test_apply_no_dedup_when_flag_off():
     span = "\n".join(f"    v_{i} = f({i})" for i in range(12))
     import copy
 
-    from headroom.transforms.content_router import ContentRouter, ContentRouterConfig
+    from legroom.transforms.content_router import ContentRouter, ContentRouterConfig
 
     msgs = [
         _toolmsg(f"a\n{span}", "t1"),
@@ -215,7 +215,7 @@ def test_apply_dedup_runs_in_ccr_mode_too():
     span = "\n".join(f"    total_{i} = reconcile(entry_id={i}, ledger=book_{i})" for i in range(12))
     import copy
 
-    from headroom.transforms.content_router import ContentRouter, ContentRouterConfig
+    from legroom.transforms.content_router import ContentRouter, ContentRouterConfig
 
     msgs = [
         _toolmsg(f"$ cat ledger.py\n{span}\n# eof", "t1"),
@@ -256,7 +256,7 @@ def test_no_fold_when_original_absent_fallback():
 def _dedup_only(messages):
     """Run ONLY the cross-turn dedup pass (no per-block compression) on a raw
     message array, isolating extraction + fold across message shapes."""
-    from headroom.transforms.content_router import ContentRouter, ContentRouterConfig
+    from legroom.transforms.content_router import ContentRouter, ContentRouterConfig
 
     r = ContentRouter(ContentRouterConfig(lossless=True, enable_cross_turn_dedup=True))
     return r._cross_turn_dedup_messages(messages, 0, [], None)

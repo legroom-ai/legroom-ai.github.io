@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from headroom.proxy.output_savings_policy import (
+from legroom.proxy.output_savings_policy import (
     assign_arm,
     conversation_key_from_body,
     input_bucket,

@@ -5,12 +5,12 @@ from __future__ import annotations
 
 import asyncio
 
-from headroom.transforms import content_router as cr
+from legroom.transforms import content_router as cr
 
-# Patch the native detector via its string target ("headroom._core.detect_content_type")
+# Patch the native detector via its string target ("legroom._core.detect_content_type")
 # rather than a module alias captured at import time. content_router._detect_content does a
-# fresh `from headroom._core import detect_content_type` on every call, and other tests pop
-# headroom._core out of sys.modules (e.g. test_rust_core_smoke), which rebuilds the module
+# fresh `from legroom._core import detect_content_type` on every call, and other tests pop
+# legroom._core out of sys.modules (e.g. test_rust_core_smoke), which rebuilds the module
 # object. A captured alias would then go stale and the patch would miss the live module —
 # the control-flow tests would silently run the real detector and never see the exception.
 
@@ -21,8 +21,8 @@ def test_falls_back_on_rust_exception(monkeypatch):
     def _boom(_content):
         raise RuntimeError("simulated native failure")
 
-    monkeypatch.setenv("HEADROOM_DETECT_BACKEND", "rust")
-    monkeypatch.setattr("headroom._core.detect_content_type", _boom)
+    monkeypatch.setenv("LEGROOM_DETECT_BACKEND", "rust")
+    monkeypatch.setattr("legroom._core.detect_content_type", _boom)
     monkeypatch.setattr(cr, "_detect_panic_warned", False, raising=False)
 
     # Must not raise; returns a usable detection result from the regex path.
@@ -40,8 +40,8 @@ def test_falls_back_on_baseexception_panic(monkeypatch):
     def _panic(_content):
         raise FakePanic("simulated pyo3 panic")
 
-    monkeypatch.setenv("HEADROOM_DETECT_BACKEND", "rust")
-    monkeypatch.setattr("headroom._core.detect_content_type", _panic)
+    monkeypatch.setenv("LEGROOM_DETECT_BACKEND", "rust")
+    monkeypatch.setattr("legroom._core.detect_content_type", _panic)
     monkeypatch.setattr(cr, "_detect_panic_warned", False, raising=False)
 
     result = cr._detect_content("some plain text content here")
@@ -54,8 +54,8 @@ def test_control_flow_exceptions_propagate(monkeypatch):
     def _interrupt(_content):
         raise KeyboardInterrupt
 
-    monkeypatch.setenv("HEADROOM_DETECT_BACKEND", "rust")
-    monkeypatch.setattr("headroom._core.detect_content_type", _interrupt)
+    monkeypatch.setenv("LEGROOM_DETECT_BACKEND", "rust")
+    monkeypatch.setattr("legroom._core.detect_content_type", _interrupt)
     monkeypatch.setattr(cr, "_detect_panic_warned", False, raising=False)
 
     import pytest
@@ -70,8 +70,8 @@ def test_cancelled_error_propagates(monkeypatch):
     def _cancel(_content):
         raise asyncio.CancelledError()
 
-    monkeypatch.setenv("HEADROOM_DETECT_BACKEND", "rust")
-    monkeypatch.setattr("headroom._core.detect_content_type", _cancel)
+    monkeypatch.setenv("LEGROOM_DETECT_BACKEND", "rust")
+    monkeypatch.setattr("legroom._core.detect_content_type", _cancel)
     monkeypatch.setattr(cr, "_detect_panic_warned", False, raising=False)
 
     import pytest

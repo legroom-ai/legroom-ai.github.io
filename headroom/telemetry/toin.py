@@ -5,7 +5,7 @@
 TOIN observes; it never mutates request-time compression decisions. The
 request path is deterministic: SmartCrusher and the live-zone dispatcher
 read their static configuration only. TOIN's role is to record what
-happened so an offline aggregator (`headroom.cli.toin_publish`) can emit
+happened so an offline aggregator (`legroom.cli.toin_publish`) can emit
 a `recommendations.toml` file the deploy pipeline ships to the proxy at
 the next restart.
 
@@ -41,7 +41,7 @@ detection).
   learning without sharing actual data.
 
 # Usage
-    from headroom.telemetry.toin import get_toin
+    from legroom.telemetry.toin import get_toin
 
     # Record a compression event (the only request-time TOIN call).
     get_toin().record_compression(
@@ -54,7 +54,7 @@ detection).
     )
 
     # Aggregated recommendations are produced offline:
-    #   python -m headroom.cli.toin_publish --output recommendations.toml
+    #   python -m legroom.cli.toin_publish --output recommendations.toml
     # The Rust proxy loads that file at startup; no per-request hint API.
 """
 
@@ -76,10 +76,10 @@ from .models import FieldSemantics, ToolSignature
 logger = logging.getLogger(__name__)
 
 # Environment variable for custom TOIN storage path
-TOIN_PATH_ENV_VAR = "HEADROOM_TOIN_PATH"
+TOIN_PATH_ENV_VAR = "LEGROOM_TOIN_PATH"
 
 # Default TOIN storage directory and file
-DEFAULT_TOIN_DIR = ".headroom"
+DEFAULT_TOIN_DIR = ".legroom"
 DEFAULT_TOIN_FILE = "toin.json"
 
 # ── Aggregation-key defaults ────────────────────────────────────────────
@@ -152,14 +152,14 @@ def _deserialize_pattern_key(serialized: str) -> PatternKey:
 def get_default_toin_storage_path() -> str:
     """Get the default TOIN storage path.
 
-    Checks for the HEADROOM_TOIN_PATH environment variable first.
-    Falls back to ``${HEADROOM_WORKSPACE_DIR}/toin.json`` (which defaults
-    to ``~/.headroom/toin.json``) when unset.
+    Checks for the LEGROOM_TOIN_PATH environment variable first.
+    Falls back to ``${LEGROOM_WORKSPACE_DIR}/toin.json`` (which defaults
+    to ``~/.legroom/toin.json``) when unset.
 
     Returns:
         The path string for TOIN storage.
     """
-    # Preserve legacy behavior: when HEADROOM_TOIN_PATH is set we return the
+    # Preserve legacy behavior: when LEGROOM_TOIN_PATH is set we return the
     # raw string exactly as the user supplied it (no tilde expansion, no
     # path-separator normalization). This matches what existing tests and
     # users have relied on since the env var was introduced.
@@ -167,7 +167,7 @@ def get_default_toin_storage_path() -> str:
     if env_path:
         return env_path
 
-    from headroom import paths as _paths
+    from legroom import paths as _paths
 
     return str(_paths.toin_path())
 
@@ -388,7 +388,7 @@ class TOINConfig:
     enabled: bool = True
 
     # Storage
-    # Default path is ~/.headroom/toin.json (or HEADROOM_TOIN_PATH env var)
+    # Default path is ~/.legroom/toin.json (or LEGROOM_TOIN_PATH env var)
     storage_path: str = field(default_factory=get_default_toin_storage_path)
     auto_save_interval: int = 600  # Auto-save every 10 minutes
 
@@ -412,13 +412,13 @@ class TOINConfig:
 
 
 class ToolIntelligenceNetwork:
-    """Aggregates tool patterns across all Headroom users (observation-only).
+    """Aggregates tool patterns across all Legroom users (observation-only).
 
     This is the offline brain of TOIN. It maintains a database of learned
     patterns for different `(auth_mode, model_family, tool_signature)`
     slices. The `record_compression` / `record_retrieval` calls are the
     only request-time API; aggregated recommendations are emitted by
-    `headroom.cli.toin_publish` and consumed by the Rust proxy at startup.
+    `legroom.cli.toin_publish` and consumed by the Rust proxy at startup.
 
     Thread-safe for concurrent access.
     """
@@ -960,7 +960,7 @@ class ToolIntelligenceNetwork:
         """**Deprecated.** Returns `None`. PR-B5 retired the request-time hint API.
 
         TOIN is observation-only; recommendations are emitted by the
-        offline `headroom.cli.toin_publish` CLI into `recommendations.toml`
+        offline `legroom.cli.toin_publish` CLI into `recommendations.toml`
         and loaded by the Rust proxy at startup. New code must not call
         this method. Existing call sites should migrate to reading the
         TOML file directly.
@@ -979,7 +979,7 @@ class ToolIntelligenceNetwork:
                 "ToolIntelligenceNetwork.get_recommendation() is deprecated "
                 "and now returns None. PR-B5 retired the request-time hint "
                 "API; recommendations come from recommendations.toml at "
-                "startup. See headroom/telemetry/toin.py module docstring.",
+                "startup. See legroom/telemetry/toin.py module docstring.",
                 DeprecationWarning,
                 stacklevel=2,
             )
@@ -1166,7 +1166,7 @@ class ToolIntelligenceNetwork:
     def iter_patterns(self) -> list[tuple[PatternKey, ToolPattern]]:
         """Snapshot of `(key, pattern)` pairs for offline aggregation.
 
-        Used by `headroom.cli.toin_publish` to walk every aggregated
+        Used by `legroom.cli.toin_publish` to walk every aggregated
         slice without exposing the live `_patterns` dict to external
         callers (deep-copies each pattern to prevent mutation).
         """
@@ -1197,7 +1197,7 @@ class ToolIntelligenceNetwork:
         """Import patterns from another source.
 
         Used for federated learning: aggregate patterns from multiple
-        Headroom instances without sharing actual data.
+        Legroom instances without sharing actual data.
 
         Backward-compatible with v1.0 dumps that keyed patterns by bare
         structure_hash: those are promoted to the
@@ -1517,13 +1517,13 @@ _toin_instance: ToolIntelligenceNetwork | None = None
 _toin_lock = threading.Lock()
 
 # Environment variable for custom TOIN backend
-TOIN_BACKEND_ENV_VAR = "HEADROOM_TOIN_BACKEND"
+TOIN_BACKEND_ENV_VAR = "LEGROOM_TOIN_BACKEND"
 
 
 def _create_default_toin_backend() -> Any:
-    """Create a TOIN backend from env (e.g. HEADROOM_TOIN_BACKEND=redis).
+    """Create a TOIN backend from env (e.g. LEGROOM_TOIN_BACKEND=redis).
 
-    Loads adapters via setuptools entry point 'headroom.toin_backend'.
+    Loads adapters via setuptools entry point 'legroom.toin_backend'.
     Returns None to use default FileSystemTOINBackend.
     """
     backend_type = (os.environ.get(TOIN_BACKEND_ENV_VAR) or "").strip().lower()
@@ -1534,11 +1534,11 @@ def _create_default_toin_backend() -> Any:
     try:
         from importlib.metadata import entry_points
 
-        all_eps = entry_points(group="headroom.toin_backend")
+        all_eps = entry_points(group="legroom.toin_backend")
         ep = next((e for e in all_eps if e.name == backend_type), None)
         if ep is None:
             logger.warning(
-                "HEADROOM_TOIN_BACKEND=%s but no entry point headroom.toin_backend[%s]",
+                "LEGROOM_TOIN_BACKEND=%s but no entry point legroom.toin_backend[%s]",
                 backend_type,
                 backend_type,
             )
@@ -1551,8 +1551,8 @@ def _create_default_toin_backend() -> Any:
         # `model_family`, so `tenant_prefix` is now functionally redundant
         # for *learning* — it only matters for storage layout. Keep it.
         kwargs = {
-            "url": os.environ.get("HEADROOM_TOIN_URL", ""),
-            "tenant_prefix": os.environ.get("HEADROOM_TOIN_TENANT_PREFIX", ""),
+            "url": os.environ.get("LEGROOM_TOIN_URL", ""),
+            "tenant_prefix": os.environ.get("LEGROOM_TOIN_TENANT_PREFIX", ""),
         }
         return fn(**kwargs)
     except Exception as e:
@@ -1566,8 +1566,8 @@ def get_toin(config: TOINConfig | None = None) -> ToolIntelligenceNetwork:
     Thread-safe singleton pattern. Always acquires lock to avoid subtle
     race conditions in double-checked locking on non-CPython implementations.
 
-    On first call, checks HEADROOM_TOIN_BACKEND env var. If set, loads the
-    backend via setuptools entry point 'headroom.toin_backend'. Otherwise
+    On first call, checks LEGROOM_TOIN_BACKEND env var. If set, loads the
+    backend via setuptools entry point 'legroom.toin_backend'. Otherwise
     uses the default FileSystemTOINBackend.
 
     Args:

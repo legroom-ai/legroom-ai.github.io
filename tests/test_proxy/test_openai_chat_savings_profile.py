@@ -5,7 +5,7 @@ savings-profile kwargs (``proxy_pipeline_kwargs(config)``) into
 ``openai_pipeline.apply`` — the same way ``handlers/anthropic.py`` and the
 dedicated OpenAI compress endpoint do. Before the fix the chat path only passed
 ``model_limit``/``context``/``frozen_message_count``/``biases``/
-``compression_policy``, so ``HEADROOM_SAVINGS_PROFILE=agent-90`` (and other
+``compression_policy``, so ``LEGROOM_SAVINGS_PROFILE=agent-90`` (and other
 profile knobs) were silently dropped on the real chat path.
 """
 
@@ -21,8 +21,8 @@ pytest.importorskip("httpx")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from headroom.backends.base import BackendResponse  # noqa: E402
-from headroom.proxy.server import ProxyConfig, create_app  # noqa: E402
+from legroom.backends.base import BackendResponse  # noqa: E402
+from legroom.proxy.server import ProxyConfig, create_app  # noqa: E402
 
 
 def _make_mock_backend() -> MagicMock:
@@ -51,7 +51,7 @@ def _make_mock_backend() -> MagicMock:
 
 
 def test_chat_completions_threads_savings_profile_kwargs_into_apply():
-    """With HEADROOM_SAVINGS_PROFILE=agent-90, the chat path must pass the
+    """With LEGROOM_SAVINGS_PROFILE=agent-90, the chat path must pass the
     profile knobs (compress_user_messages, target_ratio, ...) to apply()."""
     config = ProxyConfig(
         optimize=True,
@@ -80,7 +80,7 @@ def test_chat_completions_threads_savings_profile_kwargs_into_apply():
     big = "word " * 4000
 
     mock_backend = _make_mock_backend()
-    with patch("headroom.proxy.server.AnyLLMBackend", return_value=mock_backend):
+    with patch("legroom.proxy.server.AnyLLMBackend", return_value=mock_backend):
         app = create_app(config)
         with TestClient(app) as client:
             proxy = client.app.state.proxy

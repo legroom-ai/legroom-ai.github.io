@@ -8,9 +8,9 @@ from typing import Any
 import pytest
 from click.testing import CliRunner
 
-from headroom.cli import wrap as wrap_mod
-from headroom.cli.main import main
-from headroom.providers.registry import DEFAULT_VERTEX_API_URL
+from legroom.cli import wrap as wrap_mod
+from legroom.cli.main import main
+from legroom.providers.registry import DEFAULT_VERTEX_API_URL
 
 
 class _Completed:
@@ -155,7 +155,7 @@ def test_wrap_claude_sibling_note_accurate_under_1m_and_tool_search_optouts(
         extra_args=("--1m", "--tool-search", "false"),
     )
     assert "already restored via --1m" in output
-    assert "restore with `headroom wrap claude --1m`" not in output
+    assert "restore with `legroom wrap claude --1m`" not in output
     assert "OFF for this session" in output
     assert "DISABLED per your setting" in output
     assert "kept on" not in output
@@ -376,7 +376,7 @@ def test_ensure_proxy_restarts_idle_proxy_for_vertex_api_url_mismatch(
 ) -> None:
     calls: list[object] = []
     health = {
-        "version": wrap_mod._HEADROOM_VERSION,
+        "version": wrap_mod._LEGROOM_VERSION,
         "runtime": {"websocket_sessions": {"active_sessions": 0, "active_relay_tasks": 0}},
         "config": {
             "pid": "12345",
@@ -421,7 +421,7 @@ def test_ensure_proxy_restarts_idle_proxy_to_clear_vertex_api_url(
 ) -> None:
     calls: list[object] = []
     health = {
-        "version": wrap_mod._HEADROOM_VERSION,
+        "version": wrap_mod._LEGROOM_VERSION,
         "runtime": {"websocket_sessions": {"active_sessions": 0, "active_relay_tasks": 0}},
         "config": {
             "pid": "12345",

@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from headroom.subscription import session_tracking
+from legroom.subscription import session_tracking
 
 
 def test_compute_window_tokens_reads_recent_entries_from_large_transcript(

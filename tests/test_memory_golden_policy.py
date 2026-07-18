@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from headroom.proxy.helpers import serialize_tool_definition_canonical
-from headroom.proxy.memory_golden_policy import (
+from legroom.proxy.helpers import serialize_tool_definition_canonical
+from legroom.proxy.memory_golden_policy import (
     replay_golden_memory_tool_definition,
     serialize_memory_tool_definition_canonical,
 )

@@ -12,7 +12,7 @@ PR-A3 makes every forwarder byte-faithful:
     (compact separators, ``ensure_ascii=False``).
 
 The legacy behavior is still reachable via
-``HEADROOM_PROXY_PYTHON_FORWARDER_MODE=legacy_json_kwarg`` for emergency
+``LEGROOM_PROXY_PYTHON_FORWARDER_MODE=legacy_json_kwarg`` for emergency
 rollback (operator opt-in, not a fallback).
 """
 
@@ -29,8 +29,8 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from headroom.pipeline import PipelineStage
-from headroom.proxy.body_forwarding import (
+from legroom.pipeline import PipelineStage
+from legroom.proxy.body_forwarding import (
     BodyMutationTracker,
     OutboundBody,
     get_python_forwarder_mode,
@@ -38,22 +38,22 @@ from headroom.proxy.body_forwarding import (
     select_outbound_body,
     serialize_body_canonical,
 )
-from headroom.proxy.helpers import (
+from legroom.proxy.helpers import (
     _reset_session_beta_tracker_for_test,
     append_text_to_latest_user_chat_message,
     get_session_beta_tracker,
     log_outbound_request,
 )
-from headroom.proxy.server import ProxyConfig, create_app
+from legroom.proxy.server import ProxyConfig, create_app
 
 pytest.importorskip("fastapi")
 
 
 @pytest.fixture(autouse=True)
 def _disable_output_shaper(monkeypatch: pytest.MonkeyPatch) -> None:
-    # Isolate this suite from the opt-in HEADROOM_OUTPUT_SHAPER a developer shell
+    # Isolate this suite from the opt-in LEGROOM_OUTPUT_SHAPER a developer shell
     # may export, which otherwise perturbs the byte-faithful assertions.
-    monkeypatch.delenv("HEADROOM_OUTPUT_SHAPER", raising=False)
+    monkeypatch.delenv("LEGROOM_OUTPUT_SHAPER", raising=False)
 
 
 # ---------------------------------------------------------------------------
@@ -153,7 +153,7 @@ def test_select_outbound_body_returns_value_object() -> None:
 
 
 def test_helpers_preserve_body_forwarding_compatibility_exports() -> None:
-    from headroom.proxy import helpers
+    from legroom.proxy import helpers
 
     assert helpers.BodyMutationTracker is BodyMutationTracker
     assert helpers.get_python_forwarder_mode is get_python_forwarder_mode
@@ -203,22 +203,22 @@ def test_legacy_json_kwarg_mode_falls_back() -> None:
 def test_python_forwarder_mode_default_is_byte_faithful(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.delenv("HEADROOM_PROXY_PYTHON_FORWARDER_MODE", raising=False)
+    monkeypatch.delenv("LEGROOM_PROXY_PYTHON_FORWARDER_MODE", raising=False)
     assert get_python_forwarder_mode() == "byte_faithful"
 
 
 def test_python_forwarder_mode_invalid_raises(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("HEADROOM_PROXY_PYTHON_FORWARDER_MODE", "garbage")
-    with pytest.raises(ValueError, match="HEADROOM_PROXY_PYTHON_FORWARDER_MODE"):
+    monkeypatch.setenv("LEGROOM_PROXY_PYTHON_FORWARDER_MODE", "garbage")
+    with pytest.raises(ValueError, match="LEGROOM_PROXY_PYTHON_FORWARDER_MODE"):
         get_python_forwarder_mode()
 
 
 def test_python_forwarder_mode_legacy_value_accepted(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("HEADROOM_PROXY_PYTHON_FORWARDER_MODE", "legacy_json_kwarg")
+    monkeypatch.setenv("LEGROOM_PROXY_PYTHON_FORWARDER_MODE", "legacy_json_kwarg")
     assert get_python_forwarder_mode() == "legacy_json_kwarg"
 
 
@@ -236,7 +236,7 @@ def test_log_outbound_request_emits_structured_fields() -> None:
     """
     import logging
 
-    proxy_logger = logging.getLogger("headroom.proxy")
+    proxy_logger = logging.getLogger("legroom.proxy")
     records: list[logging.LogRecord] = []
 
     class _ListHandler(logging.Handler):
@@ -413,7 +413,7 @@ def _start_proxy_log_capture() -> tuple[
     int,
     list[logging.LogRecord],
 ]:
-    proxy_logger = logging.getLogger("headroom.proxy")
+    proxy_logger = logging.getLogger("legroom.proxy")
     records: list[logging.LogRecord] = []
 
     class _ListHandler(logging.Handler):
@@ -730,7 +730,7 @@ def test_legacy_json_kwarg_mode_yields_drifted_bytes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Operator opt-in produces the OLD drifted bytes (rollback validation)."""
-    monkeypatch.setenv("HEADROOM_PROXY_PYTHON_FORWARDER_MODE", "legacy_json_kwarg")
+    monkeypatch.setenv("LEGROOM_PROXY_PYTHON_FORWARDER_MODE", "legacy_json_kwarg")
     client, transport = _make_no_optimize_app()
 
     inbound_dict = {
@@ -852,7 +852,7 @@ def test_openai_chat_memory_routes_to_user_tail_not_system() -> None:
         "/v1/chat/completions",
         headers={
             "authorization": "Bearer sk-test",
-            "x-headroom-user-id": "u1",
+            "x-legroom-user-id": "u1",
         },
         json={
             "model": "gpt-4o",
@@ -882,7 +882,7 @@ def test_openai_chat_memory_routes_to_user_tail_not_system() -> None:
 def test_openai_chat_memory_disabled_mode_no_op(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("HEADROOM_MEMORY_INJECTION_MODE", "disabled")
+    monkeypatch.setenv("LEGROOM_MEMORY_INJECTION_MODE", "disabled")
     config = ProxyConfig(
         optimize=False,
         cache_enabled=False,
@@ -929,7 +929,7 @@ def test_openai_chat_memory_disabled_mode_no_op(
         "/v1/chat/completions",
         headers={
             "authorization": "Bearer sk-test",
-            "x-headroom-user-id": "u1",
+            "x-legroom-user-id": "u1",
         },
         json={
             "model": "gpt-4o",
@@ -1050,7 +1050,7 @@ def test_vertex_stream_rawpredict_preserves_client_beta_header_on_passthrough() 
             "claude-sonnet-4-6:streamRawPredict",
             headers={
                 "x-api-key": "test-key",
-                "x-headroom-session-id": "vertex-stream-beta-1",
+                "x-legroom-session-id": "vertex-stream-beta-1",
                 "anthropic-version": "2023-06-01",
                 "anthropic-beta": client_beta,
                 "content-type": "application/json",
@@ -1114,7 +1114,7 @@ def test_messages_custom_upstream_stream_preserves_client_beta_header() -> None:
             "/v1/messages",
             headers={
                 "x-api-key": "test-key",
-                "x-headroom-session-id": "custom-stream-beta-1",
+                "x-legroom-session-id": "custom-stream-beta-1",
                 "anthropic-version": "2023-06-01",
                 "anthropic-beta": client_beta,
                 "content-type": "application/json",
@@ -1152,7 +1152,7 @@ def test_vertex_rawpredict_keeps_sticky_beta_union_on_non_stream_passthrough() -
             "claude-sonnet-4-6:rawPredict",
             headers={
                 "x-api-key": "test-key",
-                "x-headroom-session-id": "vertex-raw-beta-1",
+                "x-legroom-session-id": "vertex-raw-beta-1",
                 "anthropic-version": "2023-06-01",
                 "anthropic-beta": client_beta,
                 "content-type": "application/json",

@@ -8,41 +8,41 @@ from typing import Any
 
 from fastapi import FastAPI, Request, WebSocket
 
-from headroom.providers.cloudcode import normalize_cloudcode_passthrough_path
-from headroom.providers.codex.responses import handle_chatgpt_codex_responses_subpath
-from headroom.providers.model_metadata import (
+from legroom.providers.cloudcode import normalize_cloudcode_passthrough_path
+from legroom.providers.codex.responses import handle_chatgpt_codex_responses_subpath
+from legroom.providers.model_metadata import (
     MODEL_METADATA_LIST_ENDPOINT,
     handle_model_metadata_endpoint,
     model_metadata_get_endpoint,
 )
-from headroom.providers.openai_images import (
+from legroom.providers.openai_images import (
     OPENAI_IMAGE_ENDPOINTS,
     OpenAIImageEndpoint,
     handle_openai_image_endpoint,
 )
-from headroom.providers.openai_responses import (
+from legroom.providers.openai_responses import (
     OPENAI_RESPONSES_ROOT_PATHS,
     OPENAI_RESPONSES_SUBPATH_ROUTES,
     OPENAI_RESPONSES_WEBSOCKET_PATHS,
     OpenAIResponsesSubpathRoute,
     handle_openai_responses_subpath,
 )
-from headroom.providers.proxy_targets import (
+from legroom.providers.proxy_targets import (
     api_target as _api_target,
 )
-from headroom.providers.proxy_targets import (
+from legroom.providers.proxy_targets import (
     select_passthrough_base_url as _select_passthrough_base_url,
 )
-from headroom.providers.proxy_targets import (
+from legroom.providers.proxy_targets import (
     vertex_target_for_location as _vertex_target_for_location,
 )
-from headroom.providers.route_specs import (
+from legroom.providers.route_specs import (
     PROVIDER_HANDLER_ROUTES,
     PROVIDER_PASSTHROUGH_ROUTES,
     ProviderHandlerRoute,
     ProviderPassthroughRoute,
 )
-from headroom.providers.vertex import (
+from legroom.providers.vertex import (
     VERTEX_ANTHROPIC_PROVIDER_NAME,
     VERTEX_COUNT_TOKENS,
     VERTEX_GENERATE_CONTENT,
@@ -55,12 +55,12 @@ from headroom.providers.vertex import (
     vertex_anthropic_target,
     vertex_publisher_provider_name,
 )
-from headroom.proxy.passthrough import (
+from legroom.proxy.passthrough import (
     custom_base_passthrough_telemetry as _custom_base_passthrough_telemetry,
 )
-from headroom.proxy.request_scope import normalize_request_path
+from legroom.proxy.request_scope import normalize_request_path
 
-logger = logging.getLogger("headroom.proxy.routes")
+logger = logging.getLogger("legroom.proxy.routes")
 
 
 def _register_provider_passthrough_route(
@@ -210,7 +210,7 @@ def register_provider_routes(app: FastAPI, proxy: Any) -> None:
         # Anthropic Messages wire format but authenticate against a
         # non-Anthropic gateway route correctly, consistent with the
         # OpenAI-compatible and generic passthrough routes.
-        custom_base = request.headers.get("x-headroom-base-url", "").strip()
+        custom_base = request.headers.get("x-legroom-base-url", "").strip()
         if custom_base:
             return await proxy.handle_anthropic_messages(
                 request, upstream_base_url=custom_base.rstrip("/")
@@ -228,7 +228,7 @@ def register_provider_routes(app: FastAPI, proxy: Any) -> None:
     # signature-intact) so existing behavior is unchanged. The `{model_id:path}`
     # converter captures inference-profile ids that contain dots, colons and
     # slashes (e.g. `us.anthropic.claude-sonnet-4-5-20250929-v1:0`). See
-    # headroom/proxy/handlers/bedrock.py for the SigV4 caveat.
+    # legroom/proxy/handlers/bedrock.py for the SigV4 caveat.
     if getattr(proxy.config, "bedrock_api_url", None):
 
         @app.post("/model/{model_id:path}/invoke")
@@ -438,7 +438,7 @@ def register_provider_routes(app: FastAPI, proxy: Any) -> None:
 
     @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "HEAD"])
     async def passthrough(request: Request, path: str):
-        custom_base = request.headers.get("x-headroom-base-url")
+        custom_base = request.headers.get("x-legroom-base-url")
         if custom_base:
             base_url = custom_base.rstrip("/")
             endpoint_name, provider_name = _custom_base_passthrough_telemetry(

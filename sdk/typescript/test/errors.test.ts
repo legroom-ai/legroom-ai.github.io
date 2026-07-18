@@ -3,10 +3,10 @@
  */
 import { describe, it, expect } from "vitest";
 import {
-  HeadroomError,
-  HeadroomConnectionError,
-  HeadroomAuthError,
-  HeadroomCompressError,
+  LegroomError,
+  LegroomConnectionError,
+  LegroomAuthError,
+  LegroomCompressError,
   ConfigurationError,
   ProviderError,
   StorageError,
@@ -17,47 +17,47 @@ import {
   mapProxyError,
 } from "../src/errors.js";
 
-describe("HeadroomError", () => {
+describe("LegroomError", () => {
   it("has correct name and message", () => {
-    const err = new HeadroomError("test error");
-    expect(err.name).toBe("HeadroomError");
+    const err = new LegroomError("test error");
+    expect(err.name).toBe("LegroomError");
     expect(err.message).toBe("test error");
     expect(err).toBeInstanceOf(Error);
   });
 
   it("supports details", () => {
-    const err = new HeadroomError("test", { key: "value" });
+    const err = new LegroomError("test", { key: "value" });
     expect(err.details).toEqual({ key: "value" });
   });
 
   it("details are optional", () => {
-    const err = new HeadroomError("test");
+    const err = new LegroomError("test");
     expect(err.details).toBeUndefined();
   });
 });
 
-describe("HeadroomConnectionError", () => {
-  it("inherits from HeadroomError", () => {
-    const err = new HeadroomConnectionError("connection failed");
-    expect(err).toBeInstanceOf(HeadroomError);
+describe("LegroomConnectionError", () => {
+  it("inherits from LegroomError", () => {
+    const err = new LegroomConnectionError("connection failed");
+    expect(err).toBeInstanceOf(LegroomError);
     expect(err).toBeInstanceOf(Error);
-    expect(err.name).toBe("HeadroomConnectionError");
+    expect(err.name).toBe("LegroomConnectionError");
   });
 });
 
-describe("HeadroomAuthError", () => {
-  it("inherits from HeadroomError", () => {
-    const err = new HeadroomAuthError("unauthorized");
-    expect(err).toBeInstanceOf(HeadroomError);
-    expect(err.name).toBe("HeadroomAuthError");
+describe("LegroomAuthError", () => {
+  it("inherits from LegroomError", () => {
+    const err = new LegroomAuthError("unauthorized");
+    expect(err).toBeInstanceOf(LegroomError);
+    expect(err.name).toBe("LegroomAuthError");
   });
 });
 
-describe("HeadroomCompressError", () => {
+describe("LegroomCompressError", () => {
   it("includes statusCode and errorType", () => {
-    const err = new HeadroomCompressError(500, "compression_error", "failed");
-    expect(err).toBeInstanceOf(HeadroomError);
-    expect(err.name).toBe("HeadroomCompressError");
+    const err = new LegroomCompressError(500, "compression_error", "failed");
+    expect(err).toBeInstanceOf(LegroomError);
+    expect(err.name).toBe("LegroomCompressError");
     expect(err.statusCode).toBe(500);
     expect(err.errorType).toBe("compression_error");
     expect(err.message).toBe("failed");
@@ -65,65 +65,65 @@ describe("HeadroomCompressError", () => {
 });
 
 describe("ConfigurationError", () => {
-  it("inherits from HeadroomError", () => {
+  it("inherits from LegroomError", () => {
     const err = new ConfigurationError("bad config");
-    expect(err).toBeInstanceOf(HeadroomError);
+    expect(err).toBeInstanceOf(LegroomError);
     expect(err.name).toBe("ConfigurationError");
   });
 });
 
 describe("ProviderError", () => {
-  it("inherits from HeadroomError", () => {
+  it("inherits from LegroomError", () => {
     const err = new ProviderError("provider failed");
-    expect(err).toBeInstanceOf(HeadroomError);
+    expect(err).toBeInstanceOf(LegroomError);
     expect(err.name).toBe("ProviderError");
   });
 });
 
 describe("StorageError", () => {
-  it("inherits from HeadroomError", () => {
+  it("inherits from LegroomError", () => {
     const err = new StorageError("db error");
-    expect(err).toBeInstanceOf(HeadroomError);
+    expect(err).toBeInstanceOf(LegroomError);
     expect(err.name).toBe("StorageError");
   });
 });
 
 describe("TokenizationError", () => {
-  it("inherits from HeadroomError", () => {
+  it("inherits from LegroomError", () => {
     const err = new TokenizationError("token count failed");
-    expect(err).toBeInstanceOf(HeadroomError);
+    expect(err).toBeInstanceOf(LegroomError);
     expect(err.name).toBe("TokenizationError");
   });
 });
 
 describe("CacheError", () => {
-  it("inherits from HeadroomError", () => {
+  it("inherits from LegroomError", () => {
     const err = new CacheError("cache miss");
-    expect(err).toBeInstanceOf(HeadroomError);
+    expect(err).toBeInstanceOf(LegroomError);
     expect(err.name).toBe("CacheError");
   });
 });
 
 describe("ValidationError", () => {
-  it("inherits from HeadroomError", () => {
+  it("inherits from LegroomError", () => {
     const err = new ValidationError("invalid setup");
-    expect(err).toBeInstanceOf(HeadroomError);
+    expect(err).toBeInstanceOf(LegroomError);
     expect(err.name).toBe("ValidationError");
   });
 });
 
 describe("TransformError", () => {
-  it("inherits from HeadroomError", () => {
+  it("inherits from LegroomError", () => {
     const err = new TransformError("transform failed");
-    expect(err).toBeInstanceOf(HeadroomError);
+    expect(err).toBeInstanceOf(LegroomError);
     expect(err.name).toBe("TransformError");
   });
 });
 
 describe("mapProxyError", () => {
-  it("maps 401 to HeadroomAuthError", () => {
+  it("maps 401 to LegroomAuthError", () => {
     const err = mapProxyError(401, "auth_error", "unauthorized");
-    expect(err).toBeInstanceOf(HeadroomAuthError);
+    expect(err).toBeInstanceOf(LegroomAuthError);
     expect(err.message).toBe("unauthorized");
   });
 
@@ -162,8 +162,8 @@ describe("mapProxyError", () => {
     expect(err).toBeInstanceOf(TransformError);
   });
 
-  it("falls back to HeadroomCompressError for unknown types", () => {
+  it("falls back to LegroomCompressError for unknown types", () => {
     const err = mapProxyError(500, "unknown_error", "something broke");
-    expect(err).toBeInstanceOf(HeadroomCompressError);
+    expect(err).toBeInstanceOf(LegroomCompressError);
   });
 });

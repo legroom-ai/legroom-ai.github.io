@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from headroom.proxy.ccr_session_tracker import SessionCcrTracker
+from legroom.proxy.ccr_session_tracker import SessionCcrTracker
 
 
 def test_tracker_reports_unknown_session_as_not_done() -> None:

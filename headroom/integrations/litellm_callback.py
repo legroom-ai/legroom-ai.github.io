@@ -1,13 +1,13 @@
-"""LiteLLM callback — add Headroom compression to LiteLLM with one line.
+"""LiteLLM callback — add Legroom compression to LiteLLM with one line.
 
     # Local mode (compression runs in-process):
     import litellm
-    from headroom.integrations.litellm_callback import HeadroomCallback
+    from legroom.integrations.litellm_callback import LegroomCallback
 
-    litellm.callbacks = [HeadroomCallback()]
+    litellm.callbacks = [LegroomCallback()]
 
-    # Cloud mode (managed CCR, TOIN, analytics via Headroom Cloud):
-    litellm.callbacks = [HeadroomCallback(api_key="hdr_xxx")]
+    # Cloud mode (managed CCR, TOIN, analytics via Legroom Cloud):
+    litellm.callbacks = [LegroomCallback(api_key="hdr_xxx")]
 
 Works with LiteLLM's completion(), acompletion(), and proxy modes.
 Cloud mode requires httpx: pip install httpx
@@ -21,7 +21,7 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_CLOUD_URL = "https://api.headroomlabs.ai"
+_DEFAULT_CLOUD_URL = "https://api.legroom.ai"
 
 
 try:
@@ -30,7 +30,7 @@ except ImportError:  # litellm not installed — fall back to plain object
     _CustomLogger = object  # type: ignore[assignment,misc]
 
 
-class HeadroomCallback(_CustomLogger):
+class LegroomCallback(_CustomLogger):
     """LiteLLM callback that compresses messages before each API call.
 
     Inherits from litellm.integrations.custom_logger.CustomLogger so that
@@ -38,22 +38,22 @@ class HeadroomCallback(_CustomLogger):
     added in 1.89.x) has a no-op default and won't raise AttributeError (#1114).
 
     Two modes:
-    - Local (default): Compresses in-process using headroom.compress().
-    - Cloud (api_key set): Calls Headroom Cloud API for managed compression
+    - Local (default): Compresses in-process using legroom.compress().
+    - Cloud (api_key set): Calls Legroom Cloud API for managed compression
       with org-scoped CCR, TOIN learning, and analytics dashboards.
 
     Usage (local):
-        litellm.callbacks = [HeadroomCallback()]
+        litellm.callbacks = [LegroomCallback()]
 
     Usage (cloud):
-        litellm.callbacks = [HeadroomCallback(api_key="hdr_xxx")]
+        litellm.callbacks = [LegroomCallback(api_key="hdr_xxx")]
 
     Usage (cloud with LiteLLM proxy config):
         # litellm_config.yaml
         litellm_settings:
-          callbacks: [headroom.integrations.litellm_callback.HeadroomCallback]
+          callbacks: [legroom.integrations.litellm_callback.LegroomCallback]
         environment_variables:
-          HEADROOM_API_KEY: "hdr_xxx"
+          LEGROOM_API_KEY: "hdr_xxx"
     """
 
     def __init__(
@@ -70,13 +70,13 @@ class HeadroomCallback(_CustomLogger):
         self._hooks = hooks
         self._total_saved = 0
 
-        # Cloud mode: if api_key is set, compress via Headroom Cloud API
-        # Falls back to HEADROOM_API_KEY env var
+        # Cloud mode: if api_key is set, compress via Legroom Cloud API
+        # Falls back to LEGROOM_API_KEY env var
         import os
 
-        self._api_key = api_key or os.environ.get("HEADROOM_API_KEY", "").strip() or None
+        self._api_key = api_key or os.environ.get("LEGROOM_API_KEY", "").strip() or None
         self._api_url = (
-            api_url or os.environ.get("HEADROOM_API_URL", "").strip() or _DEFAULT_CLOUD_URL
+            api_url or os.environ.get("LEGROOM_API_URL", "").strip() or _DEFAULT_CLOUD_URL
         ).rstrip("/")
         self._client: Any = None  # Lazy-initialized httpx.AsyncClient
 
@@ -125,7 +125,7 @@ class HeadroomCallback(_CustomLogger):
                 data["messages"] = result["messages"]
                 self._total_saved += result["tokens_saved"]
                 logger.info(
-                    "Headroom%s: %d→%d tokens (saved %d, %.0f%%) [total saved: %d]",
+                    "Legroom%s: %d→%d tokens (saved %d, %.0f%%) [total saved: %d]",
                     " Cloud" if self._api_key else "",
                     result["tokens_before"],
                     result["tokens_after"],
@@ -135,13 +135,13 @@ class HeadroomCallback(_CustomLogger):
                 )
 
         except Exception as e:
-            logger.warning("Headroom compression failed, using original messages: %s", e)
+            logger.warning("Legroom compression failed, using original messages: %s", e)
 
         return data
 
     def _local_compress(self, messages: list[dict], model: str) -> dict[str, Any] | None:
-        """Compress locally using headroom.compress()."""
-        from headroom.compress import compress
+        """Compress locally using legroom.compress()."""
+        from legroom.compress import compress
 
         result = compress(
             messages=messages,
@@ -158,13 +158,13 @@ class HeadroomCallback(_CustomLogger):
         }
 
     async def _cloud_compress(self, messages: list[dict], model: str) -> dict[str, Any] | None:
-        """Compress via Headroom Cloud API (managed CCR, TOIN, analytics)."""
+        """Compress via Legroom Cloud API (managed CCR, TOIN, analytics)."""
         if self._client is None:
             try:
                 import httpx
             except ImportError as e:
                 raise ImportError(
-                    "httpx is required for Headroom Cloud mode: pip install httpx"
+                    "httpx is required for Legroom Cloud mode: pip install httpx"
                 ) from e
             self._client = httpx.AsyncClient(timeout=30.0)
 
@@ -173,7 +173,7 @@ class HeadroomCallback(_CustomLogger):
         resp = await client.post(
             f"{self._api_url}/v1/saas/compress",
             headers={
-                "X-Headroom-Key": self._api_key,
+                "X-Legroom-Key": self._api_key,
                 "Content-Type": "application/json",
             },
             content=json.dumps(
@@ -186,7 +186,7 @@ class HeadroomCallback(_CustomLogger):
         )
 
         if resp.status_code != 200:
-            logger.warning("Headroom Cloud API error: %d %s", resp.status_code, resp.text[:200])
+            logger.warning("Legroom Cloud API error: %d %s", resp.status_code, resp.text[:200])
             return None
 
         result: dict[str, Any] = resp.json()

@@ -3,7 +3,7 @@
 //! # Why a separate module?
 //!
 //! The Python proxy currently routes Anthropic-on-Bedrock through the
-//! `litellm` shim (`headroom/backends/litellm.py`). That shim
+//! `litellm` shim (`legroom/backends/litellm.py`). That shim
 //! lossy-converts every request and response between Anthropic and
 //! OpenAI shapes, dropping `thinking`, `redacted_thinking`,
 //! `document`, `search_result`, `image`, `server_tool_use`, and

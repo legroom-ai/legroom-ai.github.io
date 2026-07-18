@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 
-from headroom.dashboard import get_dashboard_html
+from legroom.dashboard import get_dashboard_html
 
 
 def _getter_body(html: str, name: str) -> str:

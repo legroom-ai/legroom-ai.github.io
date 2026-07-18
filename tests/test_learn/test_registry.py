@@ -7,15 +7,15 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from headroom.learn.base import LearnPlugin
-from headroom.learn.registry import (
+from legroom.learn.base import LearnPlugin
+from legroom.learn.registry import (
     auto_detect_plugins,
     available_agent_names,
     get_plugin,
     get_registry,
     reset_registry,
 )
-from headroom.learn.scanner import ConversationScanner
+from legroom.learn.scanner import ConversationScanner
 
 
 @pytest.fixture(autouse=True)
@@ -121,7 +121,7 @@ class TestResetRegistry:
 
 class TestPluginCreateWriter:
     def test_all_plugins_create_valid_writers(self):
-        from headroom.learn.writer import ContextWriter
+        from legroom.learn.writer import ContextWriter
 
         for name, plugin in get_registry().items():
             writer = plugin.create_writer()

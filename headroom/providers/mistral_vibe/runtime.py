@@ -6,8 +6,8 @@ import json
 import os
 from collections.abc import Mapping
 
-from headroom.providers.codex import proxy_base_url as codex_proxy_base_url
-from headroom.proxy.project_context import with_project_prefix
+from legroom.providers.codex import proxy_base_url as codex_proxy_base_url
+from legroom.proxy.project_context import with_project_prefix
 
 
 def build_launch_env(
@@ -19,7 +19,7 @@ def build_launch_env(
 
     Mistral Vibe uses a provider configuration system with `api_base` field.
     It supports overriding providers via the `VIBE_PROVIDERS` environment variable
-    as a JSON array. When routing through Headroom, we set the mistral provider's
+    as a JSON array. When routing through Legroom, we set the mistral provider's
     `api_base` to the local proxy URL. The proxy will then forward requests to
     the actual Mistral API.
 
@@ -28,14 +28,14 @@ def build_launch_env(
     strips it and attributes savings per project.
     """
     env = dict(environ or os.environ)
-    # NOTE: With a persistent Headroom deployment (`headroom install`), the proxy
+    # NOTE: With a persistent Legroom deployment (`legroom install`), the proxy
     # process captures its environment at startup. Vibe reads `MISTRAL_API_KEY`
     # from its own process environment (via `api_key_env_var` below), so if the
     # token changes you may need to restart the Vibe process (and, for persistent
     # installs, the proxy) to pick up the new value.
     base_url = with_project_prefix(codex_proxy_base_url(port), project)
 
-    # Build the providers JSON with mistral provider pointing to Headroom proxy
+    # Build the providers JSON with mistral provider pointing to Legroom proxy
     # We need to override the default mistral provider's api_base
     providers = [
         {

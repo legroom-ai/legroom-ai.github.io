@@ -1,14 +1,14 @@
 """Abstract base for per-agent MCP registrars.
 
-The MCP protocol itself is universal, and the headroom MCP server
-(``headroom mcp serve``) is a single stdio binary that any compliant client
+The MCP protocol itself is universal, and the legroom MCP server
+(``legroom mcp serve``) is a single stdio binary that any compliant client
 can launch. What differs between agents (Claude Code, Cursor, Codex, ...) is
 how each one *learns* that a server exists: each invented its own config
 file, format, and registration mechanism.
 
 Subclasses of :class:`MCPRegistrar` own one agent's registration mechanism.
-The orchestrator in :mod:`headroom.mcp_registry.install` calls a fleet of
-registrars to install headroom across every detected agent.
+The orchestrator in :mod:`legroom.mcp_registry.install` calls a fleet of
+registrars to install legroom across every detected agent.
 """
 
 from __future__ import annotations

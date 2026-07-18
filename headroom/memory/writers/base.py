@@ -1,6 +1,6 @@
 """Base class and shared utilities for agent-native memory writers.
 
-Writers convert Headroom memory entries into agent-specific file formats.
+Writers convert Legroom memory entries into agent-specific file formats.
 The base class handles token budgeting, deduplication, marker management,
 and priority ranking. Subclasses implement format-specific rendering.
 """
@@ -15,9 +15,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-# Marker delimiters for Headroom-managed sections (matches learn/writer.py)
-MARKER_START = "<!-- headroom:memory:start -->"
-MARKER_END = "<!-- headroom:memory:end -->"
+# Marker delimiters for Legroom-managed sections (matches learn/writer.py)
+MARKER_START = "<!-- legroom:memory:start -->"
+MARKER_END = "<!-- legroom:memory:end -->"
 MARKER_PATTERN = re.compile(
     re.escape(MARKER_START) + r".*?" + re.escape(MARKER_END),
     re.DOTALL,

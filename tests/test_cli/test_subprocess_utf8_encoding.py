@@ -5,7 +5,7 @@ On Windows, text-mode ``subprocess`` defaults to the locale codec (cp1252) when
 symbol names with ``↔``/``—``) then raises ``UnicodeDecodeError: 'charmap'`` in the
 reader thread and aborts startup.
 
-The fix is a shared wrapper at ``headroom._subprocess`` that automatically sets
+The fix is a shared wrapper at ``legroom._subprocess`` that automatically sets
 ``encoding="utf-8", errors="replace"`` when ``text=True`` or
 ``universal_newlines=True``.  This test asserts that no raw ``subprocess.run`` /
 ``subprocess.Popen`` (or similar) call with ``text=True`` exists in the shipped
@@ -17,7 +17,7 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-_PACKAGE = Path(__file__).resolve().parents[2] / "headroom"
+_PACKAGE = Path(__file__).resolve().parents[2] / "legroom"
 _SKIP = {"_subprocess.py"}
 _SUBPROCESS_FUNCS = {"run", "Popen", "check_output", "check_call", "call"}
 
@@ -58,7 +58,7 @@ def _offenders() -> list[str]:
 def test_text_mode_subprocess_calls_use_wrapper() -> None:
     offenders = _offenders()
     assert not offenders, (
-        "raw subprocess calls with text=True found (use headroom._subprocess wrapper):\n"
+        "raw subprocess calls with text=True found (use legroom._subprocess wrapper):\n"
         + "\n".join(offenders)
     )
 

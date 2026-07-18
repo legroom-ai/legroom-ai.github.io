@@ -2,10 +2,10 @@
 
 Holds references to preloaded heavy assets (ML compressors, content detectors,
 memory backends, embedders) that are eagerly initialized during
-``HeadroomProxy.startup`` so that request-time use shares one in-process
+``LegroomProxy.startup`` so that request-time use shares one in-process
 singleton and concurrent first-use callers do not trigger N parallel loads.
 
-The registry is populated by ``HeadroomProxy.startup`` and exposed as
+The registry is populated by ``LegroomProxy.startup`` and exposed as
 ``proxy.warmup``. Unit 5's ``/debug/warmup`` endpoint serializes this state.
 
 Slot status semantics
@@ -86,9 +86,9 @@ class WarmupSlot:
 
 @dataclass
 class WarmupRegistry:
-    """Shared preloaded asset registry populated by ``HeadroomProxy.startup``.
+    """Shared preloaded asset registry populated by ``LegroomProxy.startup``.
 
-    One instance per ``HeadroomProxy``. All writes happen on the startup
+    One instance per ``LegroomProxy``. All writes happen on the startup
     task; reads may come from request handlers or ``/debug/warmup``. Python
     dict/dataclass attribute access is thread-safe enough for our read
     patterns (single-writer on startup, readers never mutate).

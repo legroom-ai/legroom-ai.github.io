@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class ProviderPassthroughRoute:
-    """A direct provider passthrough route handled by ``HeadroomProxy.handle_passthrough``."""
+    """A direct provider passthrough route handled by ``LegroomProxy.handle_passthrough``."""
 
     method: str
     path: str

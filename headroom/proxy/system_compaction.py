@@ -1,11 +1,11 @@
-"""System-prompt compaction for Headroom proxy handlers.
+"""System-prompt compaction for Legroom proxy handlers.
 
 Compresses the ``system`` field in Anthropic Messages API requests
 using the existing ContentRouter (CCR), reducing the token cost of
 static context blocks (CLAUDE.md, rules, hooks, MCP instructions)
 without removing them entirely.
 
-Opt-in via ``HEADROOM_SYSTEM_COMPACT=1`` (default disabled).
+Opt-in via ``LEGROOM_SYSTEM_COMPACT=1`` (default disabled).
 """
 
 from __future__ import annotations
@@ -23,14 +23,14 @@ _SYSTEM_COMPACT_MIN_CHARS = 500
 
 def system_compact_enabled() -> bool:
     """Return whether system-prompt compaction is enabled via env var."""
-    return os.environ.get("HEADROOM_SYSTEM_COMPACT", "").strip() in ("1", "true")
+    return os.environ.get("LEGROOM_SYSTEM_COMPACT", "").strip() in ("1", "true")
 
 
 def system_compact_min_chars() -> int:
     """Return the minimum block length for compression (env-configurable)."""
     try:
         return int(
-            os.environ.get("HEADROOM_SYSTEM_COMPACT_MIN_CHARS", str(_SYSTEM_COMPACT_MIN_CHARS))
+            os.environ.get("LEGROOM_SYSTEM_COMPACT_MIN_CHARS", str(_SYSTEM_COMPACT_MIN_CHARS))
         )
     except ValueError:
         return _SYSTEM_COMPACT_MIN_CHARS

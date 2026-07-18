@@ -1,6 +1,6 @@
 """Output token shaping for proxied Anthropic and OpenAI Responses requests.
 
-Headroom's transforms compress what goes INTO the model. This module is the
+Legroom's transforms compress what goes INTO the model. This module is the
 first request-side lever on what comes OUT of it. The proxy never generates
 output tokens, so every lever here works by reshaping the request:
 
@@ -46,25 +46,25 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 
-from headroom.proxy import runtime_env
-from headroom.proxy.output_effort_policy import (
+from legroom.proxy import runtime_env
+from legroom.proxy.output_effort_policy import (
     EFFORT_RANK as _EFFORT_RANK,
 )
-from headroom.proxy.output_effort_policy import (
+from legroom.proxy.output_effort_policy import (
     LEGACY_THINKING_FLOOR,
     can_create_openai_text_verbosity,
     clamp_legacy_thinking_budget,
     lower_effort_value,
     lower_text_verbosity_value,
 )
-from headroom.proxy.output_steering import (
+from legroom.proxy.output_steering import (
     apply_openai_chat_verbosity_steering,
     apply_openai_responses_verbosity_steering,
     apply_verbosity_steering,
     replace_or_append_steering_block,
     steering_text,
 )
-from headroom.proxy.output_turn_policy import (
+from legroom.proxy.output_turn_policy import (
     TurnKind,
     classify_openai_responses_input,
     classify_turn,
@@ -99,7 +99,7 @@ _replace_or_append_steering_block = replace_or_append_steering_block
 class OutputShaperSettings:
     """Runtime settings, resolved once per request from the environment.
 
-    Env-driven (like HEADROOM_INTERCEPT_ENABLED) so the proxy picks it up
+    Env-driven (like LEGROOM_INTERCEPT_ENABLED) so the proxy picks it up
     without config plumbing through the server. Off by default.
     """
 
@@ -110,22 +110,22 @@ class OutputShaperSettings:
 
     @classmethod
     def from_env(cls) -> OutputShaperSettings:
-        enabled = runtime_env.getenv("HEADROOM_OUTPUT_SHAPER", "").lower() in (
+        enabled = runtime_env.getenv("LEGROOM_OUTPUT_SHAPER", "").lower() in (
             "1",
             "true",
             "yes",
         )
         try:
-            level = int(runtime_env.getenv("HEADROOM_VERBOSITY_LEVEL", "2"))
+            level = int(runtime_env.getenv("LEGROOM_VERBOSITY_LEVEL", "2"))
         except ValueError:
             level = 2
         level = max(0, min(4, level))
-        router = runtime_env.getenv("HEADROOM_EFFORT_ROUTER", "1").lower() not in (
+        router = runtime_env.getenv("LEGROOM_EFFORT_ROUTER", "1").lower() not in (
             "0",
             "false",
             "no",
         )
-        mech = runtime_env.getenv("HEADROOM_MECHANICAL_EFFORT", "low")
+        mech = runtime_env.getenv("LEGROOM_MECHANICAL_EFFORT", "low")
         if mech not in _EFFORT_RANK:
             mech = "low"
         return cls(
@@ -140,15 +140,15 @@ def resolve_verbosity_level(settings: OutputShaperSettings) -> tuple[int, str]:
     """Resolve the live verbosity level and its source.
 
     Precedence:
-      1. ``HEADROOM_VERBOSITY_LEVEL`` set explicitly → manual override.
-      2. AIMD controller state (when ``HEADROOM_VERBOSITY_AUTOTUNE`` is on).
+      1. ``LEGROOM_VERBOSITY_LEVEL`` set explicitly → manual override.
+      2. AIMD controller state (when ``LEGROOM_VERBOSITY_AUTOTUNE`` is on).
       3. Learned ``verbosity.json`` from ``learn --verbosity``.
       4. The settings default.
 
     Returns ``(level, source)``. Kept separate from :func:`shape_request` so the
     body-mutating core stays a pure function of an explicit level.
     """
-    if runtime_env.getenv("HEADROOM_VERBOSITY_LEVEL"):
+    if runtime_env.getenv("LEGROOM_VERBOSITY_LEVEL"):
         return settings.verbosity_level, "env"
 
     try:
@@ -158,7 +158,7 @@ def resolve_verbosity_level(settings: OutputShaperSettings) -> tuple[int, str]:
     except Exception:
         return settings.verbosity_level, "default"
 
-    autotune = runtime_env.getenv("HEADROOM_VERBOSITY_AUTOTUNE", "").lower() in ("1", "true", "yes")
+    autotune = runtime_env.getenv("LEGROOM_VERBOSITY_AUTOTUNE", "").lower() in ("1", "true", "yes")
     if autotune:
         ctrl_path = ws / "verbosity_controller.json"
         if ctrl_path.exists():

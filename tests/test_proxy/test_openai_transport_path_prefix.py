@@ -9,7 +9,7 @@ pytest.importorskip("fastapi")
 
 from fastapi.testclient import TestClient
 
-from headroom.proxy.server import ProxyConfig, create_app
+from legroom.proxy.server import ProxyConfig, create_app
 
 _OPENAI_CHAT_PATH = "/v1/chat/completions"
 _OPENAI_RESPONSES_PATH = "/v1/responses"
@@ -94,13 +94,13 @@ def test_chat_upstream_reconstruction_base_fails_head_passes() -> None:
     for headers in [
         {
             "Authorization": "Bearer sk-test",
-            "x-headroom-base-url": base_fail,
-            "x-headroom-original-path": "/chat/completions",
+            "x-legroom-base-url": base_fail,
+            "x-legroom-original-path": "/chat/completions",
         },
         {
             "Authorization": "Bearer sk-test",
-            "x-headroom-base-url": "https://api.deepseek.com",
-            "x-headroom-original-path": "/chat/completions",
+            "x-legroom-base-url": "https://api.deepseek.com",
+            "x-legroom-original-path": "/chat/completions",
         },
     ]:
         client, captured = _build_openai_client()
@@ -108,7 +108,7 @@ def test_chat_upstream_reconstruction_base_fails_head_passes() -> None:
         assert response.status_code == 200, response.text
 
         assert captured["method"] == "POST"
-        if headers["x-headroom-base-url"] == base_fail:
+        if headers["x-legroom-base-url"] == base_fail:
             _assert_path(captured, "/v1/chat/completions")
         else:
             _assert_origin(captured, "https://api.deepseek.com")
@@ -123,13 +123,13 @@ def test_responses_upstream_reconstruction_base_fails_head_passes() -> None:
     for headers in [
         {
             "Authorization": "Bearer sk-test",
-            "x-headroom-base-url": base_fail,
-            "x-headroom-original-path": "/responses",
+            "x-legroom-base-url": base_fail,
+            "x-legroom-original-path": "/responses",
         },
         {
             "Authorization": "Bearer sk-test",
-            "x-headroom-base-url": "https://api.deepseek.com",
-            "x-headroom-original-path": "/responses",
+            "x-legroom-base-url": "https://api.deepseek.com",
+            "x-legroom-original-path": "/responses",
         },
     ]:
         client, captured = _build_openai_client()
@@ -137,7 +137,7 @@ def test_responses_upstream_reconstruction_base_fails_head_passes() -> None:
         assert response.status_code == 200, response.text
 
         assert captured["method"] == "POST"
-        if headers["x-headroom-base-url"] == base_fail:
+        if headers["x-legroom-base-url"] == base_fail:
             _assert_path(captured, "/v1/responses")
         else:
             _assert_origin(captured, "https://api.deepseek.com")
@@ -177,8 +177,8 @@ def test_query_string_is_preserved_for_reconstructed_upstream_paths() -> None:
             {"model": "gpt-4o", "messages": [{"role": "user", "content": "hi"}]},
             {
                 "Authorization": "Bearer sk-test",
-                "x-headroom-base-url": "https://api.deepseek.com",
-                "x-headroom-original-path": "/base/chat/completions",
+                "x-legroom-base-url": "https://api.deepseek.com",
+                "x-legroom-original-path": "/base/chat/completions",
             },
             "/base/chat/completions?foo=1",
         ),
@@ -187,8 +187,8 @@ def test_query_string_is_preserved_for_reconstructed_upstream_paths() -> None:
             {"model": "gpt-4o", "input": "hi"},
             {
                 "Authorization": "Bearer sk-test",
-                "x-headroom-base-url": "https://api.deepseek.com",
-                "x-headroom-original-path": "/base/responses",
+                "x-legroom-base-url": "https://api.deepseek.com",
+                "x-legroom-original-path": "/base/responses",
             },
             "/base/responses?foo=1",
         ),
@@ -206,8 +206,8 @@ def test_query_string_is_preserved_for_reconstructed_upstream_paths() -> None:
 def test_opencode_zen_reconstructed_chat_path_records_zen_provider() -> None:
     headers = {
         "Authorization": "Bearer sk-test",
-        "x-headroom-base-url": "https://opencode.ai",
-        "x-headroom-original-path": "/zen/v1/chat/completions",
+        "x-legroom-base-url": "https://opencode.ai",
+        "x-legroom-original-path": "/zen/v1/chat/completions",
     }
     body = {"model": "zen-model", "messages": [{"role": "user", "content": "hi"}]}
 
@@ -230,8 +230,8 @@ def test_non_http_base_url_falls_back_to_v1() -> None:
             {"model": "gpt-4o", "messages": [{"role": "user", "content": "hi"}]},
             {
                 "Authorization": "Bearer sk-test",
-                "x-headroom-base-url": "ws://api.deepseek.com",
-                "x-headroom-original-path": "/chat/completions",
+                "x-legroom-base-url": "ws://api.deepseek.com",
+                "x-legroom-original-path": "/chat/completions",
             },
             "/v1/chat/completions",
         ),
@@ -240,8 +240,8 @@ def test_non_http_base_url_falls_back_to_v1() -> None:
             {"model": "gpt-4o", "input": "hi"},
             {
                 "Authorization": "Bearer sk-test",
-                "x-headroom-base-url": "wss://api.deepseek.com",
-                "x-headroom-original-path": "/responses",
+                "x-legroom-base-url": "wss://api.deepseek.com",
+                "x-legroom-original-path": "/responses",
             },
             "/v1/responses",
         ),
@@ -262,8 +262,8 @@ def test_invalid_original_path_falls_back_to_v1() -> None:
             {"model": "gpt-4o", "messages": [{"role": "user", "content": "hi"}]},
             {
                 "Authorization": "Bearer sk-test",
-                "x-headroom-base-url": "https://api.deepseek.com",
-                "x-headroom-original-path": "https://evil.example/chat/completions",
+                "x-legroom-base-url": "https://api.deepseek.com",
+                "x-legroom-original-path": "https://evil.example/chat/completions",
             },
             "/v1/chat/completions",
         ),
@@ -272,8 +272,8 @@ def test_invalid_original_path_falls_back_to_v1() -> None:
             {"model": "gpt-4o", "input": "hi"},
             {
                 "Authorization": "Bearer sk-test",
-                "x-headroom-base-url": "https://api.deepseek.com",
-                "x-headroom-original-path": "/x/responses?bad",
+                "x-legroom-base-url": "https://api.deepseek.com",
+                "x-legroom-original-path": "/x/responses?bad",
             },
             "/v1/responses",
         ),
@@ -290,8 +290,8 @@ def test_invalid_original_path_falls_back_to_v1() -> None:
 def test_original_path_header_is_not_forwarded_upstream() -> None:
     headers = {
         "Authorization": "Bearer sk-test",
-        "x-headroom-base-url": "https://api.deepseek.com",
-        "x-headroom-original-path": "/chat/completions",
+        "x-legroom-base-url": "https://api.deepseek.com",
+        "x-legroom-original-path": "/chat/completions",
     }
     body = {"model": "gpt-4o", "messages": [{"role": "user", "content": "hi"}]}
 
@@ -299,5 +299,5 @@ def test_original_path_header_is_not_forwarded_upstream() -> None:
     response = client.post(_OPENAI_CHAT_PATH, headers=headers, json=body)
     assert response.status_code == 200, response.text
 
-    _assert_internal_header_absent(captured, "x-headroom-original-path")
-    _assert_internal_header_absent(captured, "x-headroom-base-url")
+    _assert_internal_header_absent(captured, "x-legroom-original-path")
+    _assert_internal_header_absent(captured, "x-legroom-base-url")

@@ -1,15 +1,15 @@
 {
-  "name": "headroom",
+  "name": "legroom",
   "version": "0.31.0",
-  "description": "Headroom startup hooks for Claude Code and GitHub Copilot CLI.",
+  "description": "Legroom startup hooks for Claude Code and GitHub Copilot CLI.",
   "author": {
-    "name": "Headroom Contributors",
-    "url": "https://github.com/ghaliba3/headroom"
+    "name": "Legroom Contributors",
+    "url": "https://github.com/legroom-ai/legroom-ai.github.io"
   },
-  "homepage": "https://github.com/ghaliba3/headroom",
-  "repository": "https://github.com/ghaliba3/headroom",
+  "homepage": "https://github.com/legroom-ai/legroom-ai.github.io",
+  "repository": "https://github.com/legroom-ai/legroom-ai.github.io",
   "keywords": [
-    "headroom",
+    "legroom",
     "hooks",
     "claude-code",
     "copilot-cli"

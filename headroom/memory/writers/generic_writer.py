@@ -11,7 +11,7 @@ from __future__ import annotations
 from collections import defaultdict
 from pathlib import Path
 
-from headroom.memory.writers.base import AgentWriter, MemoryEntry
+from legroom.memory.writers.base import AgentWriter, MemoryEntry
 
 
 class GenericMemoryWriter(AgentWriter):
@@ -24,7 +24,7 @@ class GenericMemoryWriter(AgentWriter):
         self,
         project_path: Path | None = None,
         token_budget: int | None = None,
-        filename: str = "HEADROOM_MEMORY.md",
+        filename: str = "LEGROOM_MEMORY.md",
     ) -> None:
         super().__init__(project_path, token_budget)
         self._filename = filename
@@ -32,8 +32,8 @@ class GenericMemoryWriter(AgentWriter):
     def format_memories(self, memories: list[MemoryEntry]) -> str:
         """Format as clean markdown."""
         lines = [
-            "## Headroom Learned Context",
-            "*Auto-maintained by Headroom proxy — do not edit manually*",
+            "## Legroom Learned Context",
+            "*Auto-maintained by Legroom proxy — do not edit manually*",
             "",
         ]
 
@@ -52,5 +52,5 @@ class GenericMemoryWriter(AgentWriter):
         return "\n".join(lines)
 
     def default_path(self) -> Path:
-        """Default: HEADROOM_MEMORY.md in project root."""
+        """Default: LEGROOM_MEMORY.md in project root."""
         return self._project_path / self._filename

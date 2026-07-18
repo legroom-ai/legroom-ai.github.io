@@ -1,4 +1,4 @@
-"""Shared hint-file agent tests for `headroom wrap {cline,goose}` (PR-G1).
+"""Shared hint-file agent tests for `legroom wrap {cline,goose}` (PR-G1).
 
 Cline and Goose are different wrap patterns (cline is proxy-only watcher,
 goose launches a child binary) but both inject the RTK guidance into a
@@ -21,8 +21,8 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner
 
-from headroom.cli import wrap as wrap_mod
-from headroom.cli.main import main
+from legroom.cli import wrap as wrap_mod
+from legroom.cli.main import main
 
 # (subcommand, hint-file basename) — used by every test below.
 HINTFILE_AGENTS = [
@@ -34,7 +34,7 @@ HINTFILE_AGENTS = [
 @pytest.fixture(autouse=True)
 def _enable_rtk(monkeypatch: pytest.MonkeyPatch) -> None:
     # RTK is opt-in (off by default); these tests exercise the RTK-on injection path.
-    monkeypatch.setenv("HEADROOM_RTK", "1")
+    monkeypatch.setenv("LEGROOM_RTK", "1")
 
 
 @pytest.fixture
@@ -52,7 +52,7 @@ def test_prepare_only_injects_rtk_into_hintfile(
 ) -> None:
     """`wrap <agent> --prepare-only` writes the RTK block to the hint file at cwd."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
 
     with patch.object(wrap_mod, "_ensure_rtk_binary", return_value=Path("/tmp/rtk")):
         result = runner.invoke(main, ["wrap", agent, "--prepare-only"])
@@ -75,7 +75,7 @@ def test_prepare_only_idempotent_no_duplicate_block(
 ) -> None:
     """Running prepare-only twice must not duplicate the RTK block in the hint file."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
 
     with patch.object(wrap_mod, "_ensure_rtk_binary", return_value=Path("/tmp/rtk")):
         runner.invoke(main, ["wrap", agent, "--prepare-only"])
@@ -114,7 +114,7 @@ def test_preserves_existing_hintfile_content(
 ) -> None:
     """Pre-existing hint-file content must be preserved when RTK is appended."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
     marker_path = tmp_path / hintfile
     original = "# Project conventions\n\nAlways use Python 3.12.\n"
     marker_path.write_text(original, encoding="utf-8")
@@ -144,7 +144,7 @@ def test_keyboardinterrupt_during_prelude_emits_clear_message(
 ) -> None:
     """Ctrl-C after marker injection but before proxy startup must report clearly."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
 
     def raise_kbd(*args, **kwargs):  # noqa: ANN002, ANN003
         # Simulate the user hitting Ctrl-C right after the prelude wrote the
@@ -174,7 +174,7 @@ def test_inject_rtk_handles_utf8_content(
 ) -> None:
     """Existing hint files with non-ASCII UTF-8 content must not crash (#1126)."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("HEADROOM_CONTEXT_TOOL", raising=False)
+    monkeypatch.delenv("LEGROOM_CONTEXT_TOOL", raising=False)
     marker_path = tmp_path / hintfile
     original = "# Instructions\n\nUse “smart quotes” and an em dash — here.\n"
     marker_path.write_text(original, encoding="utf-8")

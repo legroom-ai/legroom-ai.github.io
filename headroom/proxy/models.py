@@ -1,4 +1,4 @@
-"""Data models for the Headroom proxy.
+"""Data models for the Legroom proxy.
 
 Contains configuration and data classes used across the proxy modules.
 Extracted from server.py to keep the codebase maintainable.
@@ -11,28 +11,28 @@ from dataclasses import InitVar, dataclass, field
 from datetime import datetime
 from typing import Any, Literal
 
-from headroom.memory import qdrant_env
-from headroom.providers.registry import ProviderApiOverrides
-from headroom.proxy.model_router import ModelRouterConfig
+from legroom.memory import qdrant_env
+from legroom.providers.registry import ProviderApiOverrides
+from legroom.proxy.model_router import ModelRouterConfig
 
 logger = logging.getLogger(__name__)
 
 
 def _qdrant_env_port_or_default() -> int:
-    """Resolve ``HEADROOM_QDRANT_PORT``, falling back to the default on a bad value.
+    """Resolve ``LEGROOM_QDRANT_PORT``, falling back to the default on a bad value.
 
     ``qdrant_env.qdrant_env_port`` raises on an invalid port (intended for
     explicit qdrant setup). As a ``ProxyConfig`` field ``default_factory`` it
     runs on EVERY ``ProxyConfig()`` construction, regardless of whether
     memory/qdrant is enabled (both off by default), so a stray or typo'd
-    ``HEADROOM_QDRANT_PORT`` would crash proxy startup for an unrelated,
+    ``LEGROOM_QDRANT_PORT`` would crash proxy startup for an unrelated,
     off-by-default subsystem. Fail soft here so config construction never raises.
     """
     try:
         return qdrant_env.qdrant_env_port()
     except ValueError:
         logger.warning(
-            "Ignoring invalid HEADROOM_QDRANT_PORT; using default %d. "
+            "Ignoring invalid LEGROOM_QDRANT_PORT; using default %d. "
             "Set a valid 1-65535 port to override.",
             qdrant_env.DEFAULT_QDRANT_PORT,
         )
@@ -83,7 +83,7 @@ class RequestLog:
     error: str | None = None
 
     # Groups every agent-loop API call from one user prompt into a single turn.
-    # See ``headroom.proxy.helpers.compute_turn_id`` for the derivation. None
+    # See ``legroom.proxy.helpers.compute_turn_id`` for the derivation. None
     # when no user-text message is present in the request.
     turn_id: str | None = None
 
@@ -191,14 +191,14 @@ class ProxyConfig:
 
     # Disable Kompress ML compression while keeping structural compressors
     # such as SmartCrusher, log/search/diff, and schema compaction enabled.
-    # CLI: --disable-kompress; env: HEADROOM_DISABLE_KOMPRESS=1.
+    # CLI: --disable-kompress; env: LEGROOM_DISABLE_KOMPRESS=1.
     disable_kompress: bool = False
 
     # With disable_kompress, route fall-through content to PASSTHROUGH instead
     # of the default KOMPRESS fallback strategy. Restores the legacy
     # --disable-kompress behaviour for callers that relied on it. No effect
     # unless disable_kompress is also set.
-    # CLI: --disable-kompress-fallback; env: HEADROOM_DISABLE_KOMPRESS_FALLBACK=1.
+    # CLI: --disable-kompress-fallback; env: LEGROOM_DISABLE_KOMPRESS_FALLBACK=1.
     disable_kompress_fallback: bool = False
 
     # Per-provider overrides for `disable_kompress`. None inherits the global
@@ -206,7 +206,7 @@ class ProxyConfig:
     # pipeline only (other compressors and all routing/exclusion are unaffected).
     # Lets e.g. Anthropic run without lossy text compression while OpenAI/Codex
     # keeps it. CLI: --disable-kompress-anthropic / --enable-kompress-anthropic
-    # (and -openai); env: HEADROOM_DISABLE_KOMPRESS_ANTHROPIC / _OPENAI
+    # (and -openai); env: LEGROOM_DISABLE_KOMPRESS_ANTHROPIC / _OPENAI
     # (1 = disable, 0 = enable).
     disable_kompress_anthropic: bool | None = None
     disable_kompress_openai: bool | None = None
@@ -217,10 +217,10 @@ class ProxyConfig:
     # tools (Read/Glob/Grep/...) and reversibility-gated tool output are never
     # touched. Off by default; opt-in for systems that want one uniform
     # compressor at the cost of per-type structural fidelity.
-    # CLI: --force-kompress-all; env: HEADROOM_FORCE_KOMPRESS_ALL=1.
+    # CLI: --force-kompress-all; env: LEGROOM_FORCE_KOMPRESS_ALL=1.
     force_kompress_all: bool = False
 
-    lossless: bool = False  # CLI: --lossless; env: HEADROOM_LOSSLESS=1. No-CCR mode: compress without any retrieval marker.
+    lossless: bool = False  # CLI: --lossless; env: LEGROOM_LOSSLESS=1. No-CCR mode: compress without any retrieval marker.
 
     # Compress requests that fall through to the catch-all passthrough handler
     # (custom proxy paths that don't match a built-in API route, e.g.
@@ -229,7 +229,7 @@ class ProxyConfig:
     # wrapper-proxy architectures that need coding-agent traffic compressed.
     # Currently applies to OpenAI Responses-shaped bodies (paths ending in
     # `/responses`). CLI: --compress-passthrough; env:
-    # HEADROOM_COMPRESS_PASSTHROUGH=1.
+    # LEGROOM_COMPRESS_PASSTHROUGH=1.
     compress_passthrough: bool = False
 
     # Code graph live watcher (triggers incremental reindex on file changes)
@@ -243,10 +243,10 @@ class ProxyConfig:
     # prefix-cache zone. Enable for OpenAI/Azure chat workloads where the bulk
     # of input lives in user messages (pasted code/text, RAG context) and the
     # router would otherwise have nothing eligible to compress.
-    # CLI: --compress-user-messages; env: HEADROOM_COMPRESS_USER_MESSAGES=1.
+    # CLI: --compress-user-messages; env: LEGROOM_COMPRESS_USER_MESSAGES=1.
     compress_user_messages: bool = False
     # Named savings policy shared across Claude/Codex/Cursor proxy handlers.
-    # CLI/env: HEADROOM_SAVINGS_PROFILE=agent-90.
+    # CLI/env: LEGROOM_SAVINGS_PROFILE=agent-90.
     savings_profile: str | None = None
     target_ratio: float | None = None
     compress_system_messages: bool | None = None
@@ -256,12 +256,12 @@ class ProxyConfig:
 
     # Extra tool names whose outputs are never compressed, merged with the
     # built-in DEFAULT_EXCLUDE_TOOLS. None means built-in defaults only.
-    # CLI: --exclude-tools <name1,name2>; env: HEADROOM_EXCLUDE_TOOLS=<name1,name2>
+    # CLI: --exclude-tools <name1,name2>; env: LEGROOM_EXCLUDE_TOOLS=<name1,name2>
     exclude_tools: set[str] | None = None
 
     # Tool names whose results must never be lossy-compressed (e.g. Bash, WebFetch).
     # Merged into exclude_tools before ContentRouter processes the conversation.
-    # CLI: --protect-tool-results <name1,name2>; env: HEADROOM_PROTECT_TOOL_RESULTS=<name1,name2>
+    # CLI: --protect-tool-results <name1,name2>; env: LEGROOM_PROTECT_TOOL_RESULTS=<name1,name2>
     protect_tool_results: frozenset[str] = field(default_factory=frozenset)
 
     # Read lifecycle management
@@ -270,12 +270,12 @@ class ProxyConfig:
     # Mechanism B: activity-based read maturation (hold fresh Reads out of
     # the provider prefix cache; compress once their file quiesces).
     # Experimental — default off. CLI: --read-maturation;
-    # env: HEADROOM_READ_MATURATION=1
+    # env: LEGROOM_READ_MATURATION=1
     read_maturation: bool = False
     # Read-maturation tuning (only meaningful when read_maturation=True).
     # Defaults mirror ReadMaturationConfig. CLI: --read-maturation-quiesce-turns,
     # --read-maturation-max-hold-turns, --read-maturation-min-size-bytes;
-    # env: HEADROOM_READ_MATURATION_QUIESCE_TURNS / _MAX_HOLD_TURNS / _MIN_SIZE_BYTES.
+    # env: LEGROOM_READ_MATURATION_QUIESCE_TURNS / _MAX_HOLD_TURNS / _MIN_SIZE_BYTES.
     read_maturation_quiesce_turns: int = 5
     read_maturation_max_hold_turns: int = 25
     read_maturation_min_size_bytes: int = 2048
@@ -316,9 +316,9 @@ class ProxyConfig:
     log_full_messages: bool = False
 
     # Third-party proxy extensions (opt-in only). List of entry-point names
-    # to enable from the `headroom.proxy_extension` group, or `["*"]` for
+    # to enable from the `legroom.proxy_extension` group, or `["*"]` for
     # wildcard. Empty/None means no extensions run, even if installed.
-    # CLI: --proxy-extension <name1,name2>; env: HEADROOM_PROXY_EXTENSIONS.
+    # CLI: --proxy-extension <name1,name2>; env: LEGROOM_PROXY_EXTENSIONS.
     proxy_extensions: list[str] | None = None
 
     # Fallback
@@ -342,11 +342,11 @@ class ProxyConfig:
     # Memory System
     memory_enabled: bool = False
     memory_backend: Literal["local", "qdrant-neo4j"] = "local"
-    memory_db_path: str = ""  # Empty = auto: {cwd}/.headroom/memory.db
+    memory_db_path: str = ""  # Empty = auto: {cwd}/.legroom/memory.db
     # Per-project memory routing (GH #462). ``project`` (the new default)
     # gives each resolved workspace its own SQLite DB so cross-project
     # bleed becomes structurally impossible. ``user`` partitions by
-    # x-headroom-user-id only. ``global`` keeps the pre-fix single-DB
+    # x-legroom-user-id only. ``global`` keeps the pre-fix single-DB
     # behaviour (existing memories remain reachable here).
     memory_storage_mode: Literal["project", "user", "global"] = "project"
     memory_project_root_override: str = ""
@@ -366,7 +366,7 @@ class ProxyConfig:
     # ``memory_search`` to retrieve. See REALIGNMENT/04-phase-B-live-zone.md
     # PR-B6.
     memory_mode: Literal["auto_tail", "tool"] = "auto_tail"
-    # Qdrant connection (defaults resolve from HEADROOM_QDRANT_* env vars)
+    # Qdrant connection (defaults resolve from LEGROOM_QDRANT_* env vars)
     memory_qdrant_url: str | None = field(default_factory=qdrant_env.qdrant_env_url)
     memory_qdrant_host: str = field(default_factory=qdrant_env.qdrant_env_host)
     memory_qdrant_port: int = field(default_factory=_qdrant_env_port_or_default)
@@ -382,7 +382,7 @@ class ProxyConfig:
 
     # License / Usage Reporting
     license_key: str | None = None
-    license_cloud_url: str = "https://app.headroomlabs.ai"
+    license_cloud_url: str = "https://app.legroom.ai"
     license_report_interval: int = 300
 
     # Compression Hooks
@@ -398,7 +398,7 @@ class ProxyConfig:
     # Periodic TOIN stats logging. Enabled by default for observability, but
     # operators of long-lived proxies can disable it if TOIN stats collection
     # causes avoidable memory pressure on their platform.
-    # Env: HEADROOM_PERIODIC_TOIN_STATS=0.
+    # Env: LEGROOM_PERIODIC_TOIN_STATS=0.
     periodic_toin_stats_enabled: bool = True
 
     # Stateless mode — disable all filesystem writes for read-only / container deployments
@@ -406,14 +406,14 @@ class ProxyConfig:
 
     # Optional inbound auth. When set, non-loopback requests to the data-plane
     # routes must present this token (``Authorization: Bearer <token>`` or the
-    # ``X-Headroom-Proxy-Token`` header). Loopback callers are exempt. Closes the
+    # ``X-Legroom-Proxy-Token`` header). Loopback callers are exempt. Closes the
     # gap where a container bound to 0.0.0.0 exposes unauthenticated /v1/* routes
-    # to the pod network. Env: HEADROOM_PROXY_TOKEN.
+    # to the pod network. Env: LEGROOM_PROXY_TOKEN.
     proxy_token: str | None = None
 
     # Air-gap master switch — hard-disable ALL outbound network egress
     # (telemetry beacon, update check, license/usage reporter, HuggingFace model
-    # downloads) for fully offline / regulated deployments. Env: HEADROOM_OFFLINE=1.
+    # downloads) for fully offline / regulated deployments. Env: LEGROOM_OFFLINE=1.
     offline: bool = False
 
     # Unit 4: Bounded pre-upstream concurrency for Anthropic replay storms.
@@ -431,7 +431,7 @@ class ProxyConfig:
     # original starvation. Any positive integer is honored verbatim.
     #
     # CLI: ``--anthropic-pre-upstream-concurrency``.
-    # Env: ``HEADROOM_ANTHROPIC_PRE_UPSTREAM_CONCURRENCY``.
+    # Env: ``LEGROOM_ANTHROPIC_PRE_UPSTREAM_CONCURRENCY``.
     # Precedence: CLI > env > auto-compute.
     anthropic_pre_upstream_concurrency: int | None = None
     # Upper bound for waiting on the Anthropic pre-upstream semaphore
@@ -450,7 +450,7 @@ class ProxyConfig:
     # compression work does not oversubscribe hosts by default. Lower the cap
     # to tighten resource use on multi-tenant hosts; raise it to handle larger
     # bursts. CLI: ``--compression-max-workers``. Env:
-    # ``HEADROOM_COMPRESSION_MAX_WORKERS``.
+    # ``LEGROOM_COMPRESSION_MAX_WORKERS``.
     #
     # Background: ``asyncio.wait_for`` cancellation does NOT propagate into
     # the threadpool worker that's running Rust code — once the worker has
@@ -459,7 +459,7 @@ class ProxyConfig:
     # observe the worst case (max queue depth, "leaked" threads that
     # finished post-deadline) and fail fast under contention rather than
     # piling unboundedly on the default executor. See
-    # ``HeadroomProxy._run_compression_in_executor``.
+    # ``LegroomProxy._run_compression_in_executor``.
     compression_max_workers: int | None = None
 
     def __post_init__(self, smart_routing: bool | None = None) -> None:

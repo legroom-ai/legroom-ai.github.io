@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from headroom.proxy.project_name_policy import PROJECT_NAME_MAX_LENGTH, sanitize_project_name
-from headroom.proxy.savings_tracker import sanitize_project_name as savings_sanitize_project_name
+from legroom.proxy.project_name_policy import PROJECT_NAME_MAX_LENGTH, sanitize_project_name
+from legroom.proxy.savings_tracker import sanitize_project_name as savings_sanitize_project_name
 
 
 def test_project_name_policy_normalizes_and_caps() -> None:

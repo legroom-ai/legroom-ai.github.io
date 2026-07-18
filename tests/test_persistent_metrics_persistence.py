@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from headroom.proxy.savings_tracker import SavingsTracker
+from legroom.proxy.savings_tracker import SavingsTracker
 
 
 def test_savings_tracker_migrates_v4_lifetime_to_v5_metrics_and_preserves_legacy_state(tmp_path):

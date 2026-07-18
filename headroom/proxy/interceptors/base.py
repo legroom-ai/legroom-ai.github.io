@@ -8,14 +8,14 @@ import threading
 from dataclasses import dataclass
 from typing import Any, Protocol, runtime_checkable
 
-from headroom.cache.compression_cache import (
+from legroom.cache.compression_cache import (
     _extract_tool_result_content,
     _is_tool_result_message,
     _swap_tool_result_content,
 )
-from headroom.config import TransformResult
-from headroom.tokenizer import Tokenizer
-from headroom.transforms.base import Transform
+from legroom.config import TransformResult
+from legroom.tokenizer import Tokenizer
+from legroom.transforms.base import Transform
 
 logger = logging.getLogger(__name__)
 

@@ -1,4 +1,4 @@
-"""Tests for TOIN feedback loop: headroom_retrieve calls flow back to TOIN."""
+"""Tests for TOIN feedback loop: legroom_retrieve calls flow back to TOIN."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from headroom.cache.compression_store import get_compression_store, reset_compression_store
-from headroom.telemetry import (
+from legroom.cache.compression_store import get_compression_store, reset_compression_store
+from legroom.telemetry import (
     TOINConfig,
     ToolIntelligenceNetwork,
     ToolPattern,
@@ -15,14 +15,14 @@ from headroom.telemetry import (
     get_toin,
     reset_toin,
 )
-from headroom.transforms.kompress_compressor import KompressCompressor
+from legroom.transforms.kompress_compressor import KompressCompressor
 
 
 @pytest.fixture(autouse=True)
 def reset_globals(monkeypatch, tmp_path):
     """Reset global state before each test."""
     temp_toin_path = str(tmp_path / "toin_test.json")
-    monkeypatch.setenv("HEADROOM_TOIN_PATH", temp_toin_path)
+    monkeypatch.setenv("LEGROOM_TOIN_PATH", temp_toin_path)
     reset_toin()
     reset_compression_store()
     yield
@@ -54,12 +54,12 @@ def test_kompress_ccr_retrieval_updates_toin():
     """Kompress CCR entries should be first-class TOIN patterns."""
     original = "\n".join(
         [
-            "HEADROOM_MODE=debug PATH=/tmp/headroom",
+            "LEGROOM_MODE=debug PATH=/tmp/legroom",
             "ordinary line without the target token",
             "another ordinary line",
         ]
     )
-    compressed = "HEADROOM_MODE=debug"
+    compressed = "LEGROOM_MODE=debug"
 
     compressor = KompressCompressor()
     hash_key = compressor._store_in_ccr(
@@ -74,7 +74,7 @@ def test_kompress_ccr_retrieval_updates_toin():
     assert entry is not None
     assert entry.tool_signature_hash is not None
     # Retrieval is by hash and returns the full original content.
-    assert "HEADROOM" in entry.original_content
+    assert "LEGROOM" in entry.original_content
 
     stats = get_toin().get_stats()
     assert stats["total_compressions"] == 1
@@ -206,17 +206,17 @@ class TestRecordRetrievalPopulatesFields:
 
 
 class TestCCRFeedbackExtraction:
-    """Bug 2: _record_ccr_feedback_from_response extracts headroom_retrieve calls."""
+    """Bug 2: _record_ccr_feedback_from_response extracts legroom_retrieve calls."""
 
-    def test_extract_headroom_retrieve_from_response(self):
-        """Should detect headroom_retrieve tool_use blocks in response content."""
+    def test_extract_legroom_retrieve_from_response(self):
+        """Should detect legroom_retrieve tool_use blocks in response content."""
         response = {
             "content": [
                 {"type": "text", "text": "Let me retrieve that."},
                 {
                     "type": "tool_use",
                     "id": "toolu_123",
-                    "name": "headroom_retrieve",
+                    "name": "legroom_retrieve",
                     "input": {"hash": "abc123def456"},
                 },
             ]
@@ -228,7 +228,7 @@ class TestCCRFeedbackExtraction:
         for block in content:
             if not isinstance(block, dict):
                 continue
-            if block.get("type") == "tool_use" and block.get("name") == "headroom_retrieve":
+            if block.get("type") == "tool_use" and block.get("name") == "legroom_retrieve":
                 input_data = block.get("input", {})
                 if input_data.get("hash"):
                     retrieve_calls.append(input_data)
@@ -237,7 +237,7 @@ class TestCCRFeedbackExtraction:
         assert retrieve_calls[0]["hash"] == "abc123def456"
 
     def test_ignore_non_retrieve_tool_calls(self):
-        """Should ignore tool_use blocks that are not headroom_retrieve."""
+        """Should ignore tool_use blocks that are not legroom_retrieve."""
         response = {
             "content": [
                 {
@@ -249,7 +249,7 @@ class TestCCRFeedbackExtraction:
                 {
                     "type": "tool_use",
                     "id": "toolu_789",
-                    "name": "headroom_retrieve",
+                    "name": "legroom_retrieve",
                     "input": {"hash": "xyz789"},
                 },
             ]
@@ -260,7 +260,7 @@ class TestCCRFeedbackExtraction:
         for block in content:
             if not isinstance(block, dict):
                 continue
-            if block.get("type") == "tool_use" and block.get("name") == "headroom_retrieve":
+            if block.get("type") == "tool_use" and block.get("name") == "legroom_retrieve":
                 input_data = block.get("input", {})
                 if input_data.get("hash"):
                     retrieve_calls.append(input_data)
@@ -283,13 +283,13 @@ class TestCCRFeedbackExtraction:
                 pass
 
     def test_missing_hash_skipped(self):
-        """Should skip headroom_retrieve calls without a hash."""
+        """Should skip legroom_retrieve calls without a hash."""
         response = {
             "content": [
                 {
                     "type": "tool_use",
                     "id": "toolu_000",
-                    "name": "headroom_retrieve",
+                    "name": "legroom_retrieve",
                     "input": {"query": "some query"},  # No hash
                 },
             ]
@@ -300,7 +300,7 @@ class TestCCRFeedbackExtraction:
         for block in content:
             if not isinstance(block, dict):
                 continue
-            if block.get("type") == "tool_use" and block.get("name") == "headroom_retrieve":
+            if block.get("type") == "tool_use" and block.get("name") == "legroom_retrieve":
                 input_data = block.get("input", {})
                 if input_data.get("hash"):
                     retrieve_calls.append(input_data)
@@ -309,7 +309,7 @@ class TestCCRFeedbackExtraction:
 
 
 class TestStreamingFeedbackIntegration:
-    """Bug 2: Full feedback loop — streaming headroom_retrieve reaches TOIN."""
+    """Bug 2: Full feedback loop — streaming legroom_retrieve reaches TOIN."""
 
     def test_record_ccr_feedback_calls_store_retrieve(self):
         """_record_ccr_feedback_from_response calls store.retrieve by hash.
@@ -317,14 +317,14 @@ class TestStreamingFeedbackIntegration:
         Retrieval is by hash only — any legacy ``query`` in the tool input is
         ignored, and the full content is fetched for the feedback side effect.
         """
-        from headroom.proxy.server import HeadroomProxy
+        from legroom.proxy.server import LegroomProxy
 
         response = {
             "content": [
                 {
                     "type": "tool_use",
                     "id": "toolu_001",
-                    "name": "headroom_retrieve",
+                    "name": "legroom_retrieve",
                     "input": {"hash": "feedbackhash1", "query": "error details"},
                 },
             ]
@@ -332,11 +332,11 @@ class TestStreamingFeedbackIntegration:
 
         mock_store = MagicMock()
         with patch(
-            "headroom.cache.compression_store.get_compression_store",
+            "legroom.cache.compression_store.get_compression_store",
             return_value=mock_store,
         ):
             # Create a minimal proxy to test the method
-            proxy = HeadroomProxy.__new__(HeadroomProxy)
+            proxy = LegroomProxy.__new__(LegroomProxy)
             proxy.config = MagicMock()
             proxy.config.ccr_inject_tool = True
 
@@ -347,14 +347,14 @@ class TestStreamingFeedbackIntegration:
 
     def test_record_ccr_feedback_calls_store_retrieve_no_query(self):
         """_record_ccr_feedback_from_response calls store.retrieve by hash."""
-        from headroom.proxy.server import HeadroomProxy
+        from legroom.proxy.server import LegroomProxy
 
         response = {
             "content": [
                 {
                     "type": "tool_use",
                     "id": "toolu_002",
-                    "name": "headroom_retrieve",
+                    "name": "legroom_retrieve",
                     "input": {"hash": "feedbackhash2"},
                 },
             ]
@@ -362,10 +362,10 @@ class TestStreamingFeedbackIntegration:
 
         mock_store = MagicMock()
         with patch(
-            "headroom.cache.compression_store.get_compression_store",
+            "legroom.cache.compression_store.get_compression_store",
             return_value=mock_store,
         ):
-            proxy = HeadroomProxy.__new__(HeadroomProxy)
+            proxy = LegroomProxy.__new__(LegroomProxy)
             proxy.config = MagicMock()
             proxy.config.ccr_inject_tool = True
 
@@ -375,14 +375,14 @@ class TestStreamingFeedbackIntegration:
 
     def test_record_ccr_feedback_handles_store_exception(self):
         """_record_ccr_feedback_from_response should not raise on store errors."""
-        from headroom.proxy.server import HeadroomProxy
+        from legroom.proxy.server import LegroomProxy
 
         response = {
             "content": [
                 {
                     "type": "tool_use",
                     "id": "toolu_003",
-                    "name": "headroom_retrieve",
+                    "name": "legroom_retrieve",
                     "input": {"hash": "feedbackhash3"},
                 },
             ]
@@ -391,10 +391,10 @@ class TestStreamingFeedbackIntegration:
         mock_store = MagicMock()
         mock_store.retrieve.side_effect = RuntimeError("store unavailable")
         with patch(
-            "headroom.cache.compression_store.get_compression_store",
+            "legroom.cache.compression_store.get_compression_store",
             return_value=mock_store,
         ):
-            proxy = HeadroomProxy.__new__(HeadroomProxy)
+            proxy = LegroomProxy.__new__(LegroomProxy)
             proxy.config = MagicMock()
             proxy.config.ccr_inject_tool = True
 
@@ -407,7 +407,7 @@ class TestParseSSEToolUse:
 
     def test_parse_sse_extracts_tool_use(self):
         """SSE with tool_use content_block should be parsed correctly."""
-        from headroom.proxy.server import HeadroomProxy
+        from legroom.proxy.server import LegroomProxy
 
         sse_data = (
             'data: {"type":"message_start","message":{"id":"msg_01","model":"claude-3-5-sonnet-20241022","role":"assistant","stop_reason":null,"usage":{"input_tokens":100,"output_tokens":0}}}\n'
@@ -418,7 +418,7 @@ class TestParseSSEToolUse:
             "\n"
             'data: {"type":"content_block_stop","index":0}\n'
             "\n"
-            'data: {"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"toolu_abc","name":"headroom_retrieve"}}\n'
+            'data: {"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"toolu_abc","name":"legroom_retrieve"}}\n'
             "\n"
             'data: {"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\\"hash\\": \\"abc123\\"}"}}\n'
             "\n"
@@ -427,7 +427,7 @@ class TestParseSSEToolUse:
             'data: {"type":"message_delta","delta":{"stop_reason":"tool_use"},"usage":{"output_tokens":50}}\n'
         )
 
-        proxy = HeadroomProxy.__new__(HeadroomProxy)
+        proxy = LegroomProxy.__new__(LegroomProxy)
         result = proxy._parse_sse_to_response(sse_data, "anthropic")
 
         assert result is not None
@@ -439,14 +439,14 @@ class TestParseSSEToolUse:
 
         tool_block = result["content"][1]
         assert tool_block["type"] == "tool_use"
-        assert tool_block["name"] == "headroom_retrieve"
+        assert tool_block["name"] == "legroom_retrieve"
         assert tool_block["id"] == "toolu_abc"
         assert tool_block["input"]["hash"] == "abc123"
 
     def test_parse_sse_non_anthropic_returns_none(self):
         """Non-anthropic provider should return None."""
-        from headroom.proxy.server import HeadroomProxy
+        from legroom.proxy.server import LegroomProxy
 
-        proxy = HeadroomProxy.__new__(HeadroomProxy)
+        proxy = LegroomProxy.__new__(LegroomProxy)
         result = proxy._parse_sse_to_response("data: {}", "openai")
         assert result is None

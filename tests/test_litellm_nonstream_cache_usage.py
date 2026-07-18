@@ -15,7 +15,7 @@ from types import SimpleNamespace
 
 import pytest
 
-litellm_backend = pytest.importorskip("headroom.backends.litellm")
+litellm_backend = pytest.importorskip("legroom.backends.litellm")
 _anthropic_usage_from_litellm = litellm_backend._anthropic_usage_from_litellm
 
 

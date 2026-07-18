@@ -4,7 +4,7 @@ contain an `index <hex>..<hex>` line."""
 
 from __future__ import annotations
 
-from headroom.transforms.content_router import CompressionStrategy, ContentRouter
+from legroom.transforms.content_router import CompressionStrategy, ContentRouter
 
 
 def _lossless_first(content: str, strategy: CompressionStrategy):

@@ -73,7 +73,7 @@ class TestAnthropicToolSchemaCompactionTransforms:
     must appear in ``transforms_applied``."""
 
     def test_l1_appends_transform_label(self) -> None:
-        from headroom.proxy.tool_schema_compaction import compact_tools
+        from legroom.proxy.tool_schema_compaction import compact_tools
 
         payload = _make_anthropic_payload_with_tools()
         body, modified, before, after = compact_tools(payload)
@@ -86,7 +86,7 @@ class TestAnthropicToolSchemaCompactionTransforms:
         assert before > after
 
     def test_l1_skips_label_when_no_compaction(self) -> None:
-        from headroom.proxy.tool_schema_compaction import compact_tools
+        from legroom.proxy.tool_schema_compaction import compact_tools
 
         payload = _make_anthropic_payload_with_tools()
         # Already compact — remove annotation keys AND normalise description
@@ -114,8 +114,8 @@ class TestAnthropicToolDescCompactionTransforms:
     ``anthropic:tool_desc_compaction`` must appear in ``transforms_applied``."""
 
     def test_l2_appends_transform_label(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        import headroom.proxy.tool_schema_compaction as _mod
-        from headroom.proxy.tool_schema_compaction import (
+        import legroom.proxy.tool_schema_compaction as _mod
+        from legroom.proxy.tool_schema_compaction import (
             compact_tool_descriptions,
             tool_desc_max_chars,
         )
@@ -124,7 +124,7 @@ class TestAnthropicToolDescCompactionTransforms:
         # per-process cache first: an earlier test in the shard may have read
         # the (unset) env and pinned max_chars to 0, which would swallow our
         # setenv below.
-        monkeypatch.setenv("HEADROOM_TOOL_DESC_MAX_CHARS", "20")
+        monkeypatch.setenv("LEGROOM_TOOL_DESC_MAX_CHARS", "20")
         _mod._TOOL_DESC_MAX_CHARS = None
 
         payload = _make_anthropic_payload_with_tools()
@@ -138,8 +138,8 @@ class TestAnthropicToolDescCompactionTransforms:
         _mod._TOOL_DESC_MAX_CHARS = None
 
     def test_l2_skips_label_when_disabled(self) -> None:
-        import headroom.proxy.tool_schema_compaction as _mod
-        from headroom.proxy.tool_schema_compaction import tool_desc_max_chars
+        import legroom.proxy.tool_schema_compaction as _mod
+        from legroom.proxy.tool_schema_compaction import tool_desc_max_chars
 
         # Reset the per-process cache so the env var is re-read.
         _mod._TOOL_DESC_MAX_CHARS = None
@@ -162,11 +162,11 @@ class TestAnthropicSystemCompactionTransforms:
     ``anthropic:system_prompt_compaction`` must appear in ``transforms_applied``."""
 
     def test_l3_appends_transform_label(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from headroom.proxy.system_compaction import (
+        from legroom.proxy.system_compaction import (
             compact_system_prompt,
         )
 
-        monkeypatch.setenv("HEADROOM_SYSTEM_COMPACT", "1")
+        monkeypatch.setenv("LEGROOM_SYSTEM_COMPACT", "1")
 
         payload = _make_anthropic_payload_with_long_system()
 
@@ -190,9 +190,9 @@ class TestAnthropicSystemCompactionTransforms:
         assert before > after
 
     def test_l3_skips_label_when_disabled(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from headroom.proxy.system_compaction import system_compact_enabled
+        from legroom.proxy.system_compaction import system_compact_enabled
 
-        monkeypatch.delenv("HEADROOM_SYSTEM_COMPACT", raising=False)
+        monkeypatch.delenv("LEGROOM_SYSTEM_COMPACT", raising=False)
         assert system_compact_enabled() is False
         # When disabled, the handler skips L3 entirely, so no append.
 
@@ -203,7 +203,7 @@ class TestAnthropicSystemCompactionTransforms:
 # The tests above exercise the helper return values in isolation. These below
 # drive the *handler wiring* end-to-end: a real ``_handle_anthropic_request``
 # runs against a tool-bearing payload, the live ``compact_tools`` mutates it,
-# and the L1 label must surface on the ``x-headroom-transforms`` response
+# and the L1 label must surface on the ``x-legroom-transforms`` response
 # header. This is the gap the maintainer flagged -- the bug lived in the
 # handler's append call, not in the helpers.
 # ---------------------------------------------------------------------------
@@ -214,7 +214,7 @@ pytest.importorskip("fastapi")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from headroom.proxy.server import ProxyConfig, create_app  # noqa: E402
+from legroom.proxy.server import ProxyConfig, create_app  # noqa: E402
 
 
 def _make_proxy_client() -> TestClient:
@@ -255,7 +255,7 @@ def _ok_response(msg_id: str) -> httpx.Response:
 class TestAnthropicHandlerReportsL1Transform:
     """End-to-end: when L1 tool-schema compaction mutates the request, the
     handler must append ``anthropic:tool_schema_compaction`` so it reaches the
-    ``x-headroom-transforms`` response header -- not just the helper's
+    ``x-legroom-transforms`` response header -- not just the helper's
     ``modified`` flag."""
 
     def test_l1_label_reaches_response_header(self) -> None:
@@ -314,7 +314,7 @@ class TestAnthropicHandlerReportsL1Transform:
             )
 
         assert response.status_code == 200, response.text
-        transforms_header = response.headers.get("x-headroom-transforms", "")
+        transforms_header = response.headers.get("x-legroom-transforms", "")
         assert "anthropic:tool_schema_compaction" in transforms_header, (
-            f"expected L1 label in x-headroom-transforms, got: {transforms_header!r}"
+            f"expected L1 label in x-legroom-transforms, got: {transforms_header!r}"
         )

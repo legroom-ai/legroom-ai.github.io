@@ -1,5 +1,5 @@
 """
-Headroom ADVERSARIAL Benchmark: True Worst Cases
+Legroom ADVERSARIAL Benchmark: True Worst Cases
 
 The previous "worst case" scenarios still had JSON structure.
 This benchmark tests TRUE adversarial cases:
@@ -26,11 +26,11 @@ except ImportError:
     OPENAI_AVAILABLE = False
 
 try:
-    from headroom import HeadroomClient, OpenAIProvider
+    from legroom import LegroomClient, OpenAIProvider
 
-    HEADROOM_AVAILABLE = True
+    LEGROOM_AVAILABLE = True
 except ImportError:
-    HEADROOM_AVAILABLE = False
+    LEGROOM_AVAILABLE = False
 
 
 # =============================================================================
@@ -331,7 +331,7 @@ Each paper's findings are important. Don't skip any paper.
 Focus on methodology differences and key findings.""",
         user_query="Synthesize these research papers. For each paper, summarize the key methodology and findings. Then identify common themes and contradictions across papers.",
         tools=[generate_research_paper_excerpts(num_papers=10)],
-        expected_behavior="Headroom should have minimal compression - prose has no structural redundancy",
+        expected_behavior="Legroom should have minimal compression - prose has no structural redundancy",
     )
 
 
@@ -345,7 +345,7 @@ Every changed line matters. Look for bugs, style issues, and potential problems.
 Don't skip any file or change.""",
         user_query="Review this diff carefully. For each file, identify: 1) What changed, 2) Any bugs or issues, 3) Style concerns. Be thorough.",
         tools=[generate_code_diff(num_files=15, changes_per_file=20)],
-        expected_behavior="Headroom should struggle - code changes are unique and can't be summarized",
+        expected_behavior="Legroom should struggle - code changes are unique and can't be summarized",
     )
 
 
@@ -358,7 +358,7 @@ def create_encrypted_analysis_scenario() -> AdversarialScenario:
 Describe what you observe about the data format and structure.""",
         user_query="Examine this encrypted data blob. What can you tell about its format? Is there any visible structure? What's the encoding?",
         tools=[generate_encrypted_data(size_kb=20)],
-        expected_behavior="Headroom CANNOT compress this - random data has no patterns",
+        expected_behavior="Legroom CANNOT compress this - random data has no patterns",
     )
 
 
@@ -370,7 +370,7 @@ def create_small_data_scenario() -> AdversarialScenario:
         system_prompt="""You are a data analyst. Analyze this small dataset.""",
         user_query="What patterns do you see in this data? Provide summary statistics and insights.",
         tools=[generate_tiny_dataset(num_items=5)],
-        expected_behavior="Headroom has no opportunity - data is already minimal",
+        expected_behavior="Legroom has no opportunity - data is already minimal",
     )
 
 
@@ -383,7 +383,7 @@ def create_conversation_context_scenario() -> AdversarialScenario:
 Pay attention to who said what and how opinions evolved.""",
         user_query="Summarize this meeting. Who took which positions? How did the discussion evolve? What were the action items and who owns them?",
         tools=[generate_conversation_history(num_messages=50)],
-        expected_behavior="Headroom should preserve conversation flow - context matters",
+        expected_behavior="Legroom should preserve conversation flow - context matters",
     )
 
 
@@ -468,7 +468,7 @@ def run_adversarial_benchmark(api_key: str = None) -> dict:
         raise ValueError("OPENAI_API_KEY required")
 
     print("=" * 70)
-    print("HEADROOM ADVERSARIAL BENCHMARK")
+    print("LEGROOM ADVERSARIAL BENCHMARK")
     print("Testing TRUE worst cases for compression")
     print("=" * 70)
 
@@ -478,16 +478,16 @@ def run_adversarial_benchmark(api_key: str = None) -> dict:
 
     baseline_client = OpenAI(api_key=api_key)
 
-    if HEADROOM_AVAILABLE:
-        db_path = os.path.join(tempfile.gettempdir(), "headroom_adversarial.db")
-        headroom_client = HeadroomClient(
+    if LEGROOM_AVAILABLE:
+        db_path = os.path.join(tempfile.gettempdir(), "legroom_adversarial.db")
+        legroom_client = LegroomClient(
             original_client=OpenAI(api_key=api_key),
             provider=OpenAIProvider(),
             store_url=f"sqlite:///{db_path}",
             default_mode="optimize",
         )
     else:
-        headroom_client = None
+        legroom_client = None
 
     scenarios = [
         create_research_synthesis_scenario(),
@@ -516,19 +516,19 @@ def run_adversarial_benchmark(api_key: str = None) -> dict:
         print(f"   Cost: ${baseline.cost_usd:.4f}")
         results.append(baseline)
 
-        # Headroom
-        if headroom_client:
-            print("\n[2/2] HEADROOM...")
-            headroom = run_scenario(headroom_client, scenario, "headroom")
-            print(f"   Input tokens: {headroom.input_tokens:,}")
-            print(f"   Cost: ${headroom.cost_usd:.4f}")
-            results.append(headroom)
+        # Legroom
+        if legroom_client:
+            print("\n[2/2] LEGROOM...")
+            legroom = run_scenario(legroom_client, scenario, "legroom")
+            print(f"   Input tokens: {legroom.input_tokens:,}")
+            print(f"   Cost: ${legroom.cost_usd:.4f}")
+            results.append(legroom)
 
             if baseline.input_tokens > 0:
-                change = (headroom.input_tokens - baseline.input_tokens) / baseline.input_tokens
+                change = (legroom.input_tokens - baseline.input_tokens) / baseline.input_tokens
                 print(f"\n   📊 Token change: {change:+.1%}")
                 if change > 0:
-                    print("   ⚠️  HEADROOM INCREASED TOKENS (overhead > savings)")
+                    print("   ⚠️  LEGROOM INCREASED TOKENS (overhead > savings)")
                 elif change > -0.1:
                     print("   ⚡ Minimal compression (as expected for adversarial data)")
                 else:
@@ -539,14 +539,14 @@ def run_adversarial_benchmark(api_key: str = None) -> dict:
     print("ADVERSARIAL BENCHMARK SUMMARY")
     print("=" * 70)
 
-    print(f"\n{'Scenario':<30} {'Baseline':>12} {'Headroom':>12} {'Change':>12}")
+    print(f"\n{'Scenario':<30} {'Baseline':>12} {'Legroom':>12} {'Change':>12}")
     print("-" * 66)
 
     baseline_results = [r for r in results if r.mode == "baseline"]
-    headroom_results = [r for r in results if r.mode == "headroom"]
+    legroom_results = [r for r in results if r.mode == "legroom"]
 
     for br in baseline_results:
-        hr = next((r for r in headroom_results if r.scenario_name == br.scenario_name), None)
+        hr = next((r for r in legroom_results if r.scenario_name == br.scenario_name), None)
         if hr and br.input_tokens > 0:
             change = (hr.input_tokens - br.input_tokens) / br.input_tokens
             print(

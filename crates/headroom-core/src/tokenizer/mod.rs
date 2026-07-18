@@ -1,6 +1,6 @@
-//! Token counting for Headroom transforms.
+//! Token counting for Legroom transforms.
 //!
-//! Mirrors the public surface of the Python `headroom.tokenizers` package:
+//! Mirrors the public surface of the Python `legroom.tokenizers` package:
 //! a `Tokenizer` trait, a tiktoken-backed counter for OpenAI / o-series models
 //! (via the `tiktoken-rs` crate, which uses the same BPE data files as Python's
 //! `tiktoken` and therefore returns byte-identical token IDs), and an estimation
@@ -13,7 +13,7 @@
 //! Rust binary self-contained.
 //!
 //! # What this is NOT
-//! - Not used by `headroom-proxy` yet (Stage 2 is library-only; no production
+//! - Not used by `legroom-proxy` yet (Stage 2 is library-only; no production
 //!   wiring).
 //! - Not a real Anthropic Claude tokenizer (Anthropic doesn't publish theirs;
 //!   estimation matches what the Python implementation does).

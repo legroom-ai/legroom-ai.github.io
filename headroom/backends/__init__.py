@@ -1,4 +1,4 @@
-"""Headroom Backends - API translation layers for different LLM providers.
+"""Legroom Backends - API translation layers for different LLM providers.
 
 Backends handle the translation between the proxy's canonical format
 (Anthropic Messages API) and provider-specific APIs.
@@ -9,10 +9,10 @@ Supported backend libraries:
 
 Usage:
     # LiteLLM backend
-    headroom proxy --backend litellm-bedrock --region us-west-2
+    legroom proxy --backend litellm-bedrock --region us-west-2
 
     # any-llm backend
-    headroom proxy --backend anyllm --anyllm-provider openai
+    legroom proxy --backend anyllm --anyllm-provider openai
 """
 
 from .anyllm import AnyLLMBackend

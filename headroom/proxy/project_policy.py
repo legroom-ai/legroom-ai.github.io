@@ -6,9 +6,9 @@ from collections.abc import Mapping
 from typing import Any
 from urllib.parse import quote, unquote, urlsplit, urlunsplit
 
-from headroom.proxy.savings_tracker import sanitize_project_name
+from legroom.proxy.savings_tracker import sanitize_project_name
 
-PROJECT_HEADER = "x-headroom-project"
+PROJECT_HEADER = "x-legroom-project"
 PROJECT_PATH_PREFIX = "/p/"
 
 
@@ -17,7 +17,7 @@ def classify_project(headers: Mapping[str, Any] | Any) -> str | None:
     get = getattr(headers, "get", None)
     if get is None:
         return None
-    value = get(PROJECT_HEADER) or get("X-Headroom-Project")
+    value = get(PROJECT_HEADER) or get("X-Legroom-Project")
     return sanitize_project_name(value)
 
 

@@ -182,7 +182,7 @@ def compute_semantic_similarity(
         ) from e
 
     # Use centralized registry for shared model instances
-    from headroom.models.ml_models import MLModelRegistry
+    from legroom.models.ml_models import MLModelRegistry
 
     model = MLModelRegistry.get_sentence_transformer(model_name)
 

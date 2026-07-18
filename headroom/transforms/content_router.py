@@ -20,7 +20,7 @@ Routing Strategy:
 5. Reassemble and return with routing metadata
 
 Usage:
-    >>> from headroom.transforms import ContentRouter
+    >>> from legroom.transforms import ContentRouter
     >>> router = ContentRouter()
     >>> result = router.compress(content)  # Auto-routes to best compressor
     >>> print(result.strategy_used)
@@ -110,7 +110,7 @@ def _compression_deadline_seconds() -> float:
     try:
         return max(
             0.0,
-            float(os.environ.get("HEADROOM_COMPRESSION_DEADLINE_MS", "20000")) / 1000.0,
+            float(os.environ.get("LEGROOM_COMPRESSION_DEADLINE_MS", "20000")) / 1000.0,
         )
     except ValueError:
         return 20.0
@@ -412,20 +412,20 @@ def _section_debug(section: ContentSection, index: int) -> dict[str, Any]:
 
 def _resolve_detect_backend() -> str:
     """Pick the content-detection backend: ``"rust"`` or ``"python"``."""
-    backend = os.environ.get("HEADROOM_DETECT_BACKEND", "").strip().lower()
+    backend = os.environ.get("LEGROOM_DETECT_BACKEND", "").strip().lower()
     if backend in ("python", "rust"):
         return backend
     return "python" if sys.platform == "win32" else "rust"
 
 
-_DETECT_TIMEOUT_ENV = "HEADROOM_DETECT_TIMEOUT_SECS"
+_DETECT_TIMEOUT_ENV = "LEGROOM_DETECT_TIMEOUT_SECS"
 _DEFAULT_DETECT_TIMEOUT_SECS = 5.0
 
 
 def _detect_timeout_secs() -> float:
     """Watchdog budget (seconds) for one native detect call.
 
-    Override with ``HEADROOM_DETECT_TIMEOUT_SECS``; blank, non-numeric, or
+    Override with ``LEGROOM_DETECT_TIMEOUT_SECS``; blank, non-numeric, or
     non-positive values fall back to the default.
     """
     raw = os.environ.get(_DETECT_TIMEOUT_ENV, "").strip()
@@ -462,7 +462,7 @@ def _rust_detect_watchdogged(rust_detect: Any, content: str, timeout: float) -> 
         except BaseException as exc:  # noqa: BLE001 — relayed to the caller's degrade path
             box["error"] = exc
 
-    worker = threading.Thread(target=_run, name="headroom-detect-watchdog", daemon=True)
+    worker = threading.Thread(target=_run, name="legroom-detect-watchdog", daemon=True)
     worker.start()
     worker.join(timeout)
     if worker.is_alive():
@@ -509,12 +509,12 @@ def _strip_detection_envelope(content: str) -> str:
 def _detect_content(content: str) -> DetectionResult:
     """Detect content type via the native chain, with a safe Windows default.
 
-    Stage-3d (PR5) wired this through `headroom._core.detect_content_type`,
+    Stage-3d (PR5) wired this through `legroom._core.detect_content_type`,
     which runs the magika→unidiff→PlainText chain. On Windows, native Magika
     initialization can leave an ONNX Runtime thread alive after timeout, so the
     default backend there is the pure-Python regex detector.
 
-    Set `HEADROOM_DETECT_BACKEND=rust` or `python` to force a backend.
+    Set `LEGROOM_DETECT_BACKEND=rust` or `python` to force a backend.
 
     The Rust binding returns the legacy `DetectionResult` shape with
     `confidence=1.0` and an empty metadata dict. Existing callers
@@ -534,7 +534,7 @@ def _detect_content(content: str) -> DetectionResult:
             logger.warning(
                 "Content detection using pure-Python backend "
                 "(native Magika/ONNX detector is unsafe by default on Windows; "
-                "override with HEADROOM_DETECT_BACKEND=rust)."
+                "override with LEGROOM_DETECT_BACKEND=rust)."
             )
         return _regex_detect_content_type(content)
 
@@ -544,7 +544,7 @@ def _detect_content(content: str) -> DetectionResult:
         # another stuck daemon thread, so route straight to pure-Python.
         return _regex_detect_content_type(content)
 
-    from headroom._core import detect_content_type as _rust_detect
+    from legroom._core import detect_content_type as _rust_detect
 
     try:
         if sys.platform == "win32":
@@ -724,25 +724,25 @@ def _net_cost_cache_ttl_seconds() -> float:
     """Provider cache TTL (seconds) used to decay P_alive from idle time.
 
     Defaults to Anthropic's 5-minute tier; overridable via
-    ``HEADROOM_NET_COST_CACHE_TTL_SECONDS`` for other providers/tiers. A
+    ``LEGROOM_NET_COST_CACHE_TTL_SECONDS`` for other providers/tiers. A
     malformed or non-positive value falls back to the default with a warning
     rather than producing a divide-by-zero or negative TTL (same posture as
-    the other ``HEADROOM_NET_COST_*`` env guards).
+    the other ``LEGROOM_NET_COST_*`` env guards).
     """
-    raw = os.environ.get("HEADROOM_NET_COST_CACHE_TTL_SECONDS", "")
+    raw = os.environ.get("LEGROOM_NET_COST_CACHE_TTL_SECONDS", "")
     if not raw:
         return _NET_COST_CACHE_TTL_SECONDS
     try:
         ttl = float(raw)
     except ValueError:
         logger.warning(
-            "HEADROOM_NET_COST_CACHE_TTL_SECONDS malformed; using default %s",
+            "LEGROOM_NET_COST_CACHE_TTL_SECONDS malformed; using default %s",
             _NET_COST_CACHE_TTL_SECONDS,
         )
         return _NET_COST_CACHE_TTL_SECONDS
     if not math.isfinite(ttl) or ttl <= 0.0:
         logger.warning(
-            "HEADROOM_NET_COST_CACHE_TTL_SECONDS invalid; using default %s",
+            "LEGROOM_NET_COST_CACHE_TTL_SECONDS invalid; using default %s",
             _NET_COST_CACHE_TTL_SECONDS,
         )
         return _NET_COST_CACHE_TTL_SECONDS
@@ -1108,7 +1108,7 @@ class ContentRouterConfig:
     force_kompress_all: bool = False
 
     # No-CCR lossless mode. When True the router compresses LOG/SEARCH/DIFF
-    # content with format-native lossless compaction (headroom.transforms.
+    # content with format-native lossless compaction (legroom.transforms.
     # lossless_compaction) instead of the lossy Rust drop path, and never
     # emits a `<<ccr:…>>` / `Retrieve …` retrieval marker. SmartCrusher is
     # additionally forced marker-free via smart_crusher_lossless_only.
@@ -1116,7 +1116,7 @@ class ContentRouterConfig:
     # Cross-turn (whole-conversation) verbatim de-dup. Replaces a contiguous span
     # in a later tool output that already appeared verbatim in an earlier tool
     # output with an in-context pointer. Prefix-monotonic (cache-safe) and
-    # information-preserving (the original stays in context). Env: HEADROOM_DEDUPE=1.
+    # information-preserving (the original stays in context). Env: LEGROOM_DEDUPE=1.
     # Runs in both modes: lossless references verbatim/folded content; CCR mode
     # references the earlier block's kompressed-but-CCR-recoverable form
     # (deterministic content-hash → stable → still cache-safe, no added loss).
@@ -1127,7 +1127,7 @@ class ContentRouterConfig:
     # meaningful chunk — recovering the semantic word-drop that plain lossless
     # leaves on the table while never doing worse than the fold. DIFF folds are
     # never lossy-chained (Kompressing hunks breaks `git apply`). No-op in
-    # lossless-only mode. Env: HEADROOM_LOSSLESS_THEN_LOSSY=1.
+    # lossless-only mode. Env: LEGROOM_LOSSLESS_THEN_LOSSY=1.
     lossless_then_lossy: bool = False
     min_section_tokens: int = 20  # Min tokens to compress a section
 
@@ -1181,7 +1181,7 @@ class ContentRouterConfig:
     # worth taking. The prefix-cache-bust cost this once guarded against (a small
     # win can cost more than it saves once the invalidated suffix is re-written)
     # is instead handled precisely by the opt-in net-cost policy
-    # (HEADROOM_NET_COST_POLICY=1); tool-output accuracy by the reversibility
+    # (LEGROOM_NET_COST_POLICY=1); tool-output accuracy by the reversibility
     # gate — both independent of this floor. Lower these (e.g. 0.85/0.65) to
     # restore a savings floor that only accepts wins big enough to justify the
     # cache bust as context fills.
@@ -1195,7 +1195,7 @@ class ContentRouterConfig:
     smart_crusher_with_compaction: bool = True
     # Strict lossless-only mode for SmartCrusher. None → leave the
     # crusher config's own value untouched; True/False force it. Wired
-    # from the proxy's `HEADROOM_LOSSLESS_ONLY` env var so a real session
+    # from the proxy's `LEGROOM_LOSSLESS_ONLY` env var so a real session
     # can run marker-free without constructing the crusher by hand.
     smart_crusher_lossless_only: bool | None = None
 
@@ -1277,7 +1277,7 @@ class ContentRouterConfig:
 class ContentRouter(Transform):
     """Intelligent router that selects optimal compression strategy.
 
-    ContentRouter is the recommended entry point for Headroom's compression.
+    ContentRouter is the recommended entry point for Legroom's compression.
     It analyzes content and routes it to the most appropriate compressor,
     handling mixed content by splitting and reassembling.
 
@@ -1327,7 +1327,7 @@ class ContentRouter(Transform):
     # (default 0.05 => Kompress must cut >= 5% beyond the fold). Below that the
     # marginal lossy win isn't worth the accuracy cost when a lossless fold is
     # already in hand, so the pure fold is kept. Overridable at runtime via env
-    # HEADROOM_LOSSY_MIN_EXTRA_SAVINGS (read in __init__) so the gate can be tuned
+    # LEGROOM_LOSSY_MIN_EXTRA_SAVINGS (read in __init__) so the gate can be tuned
     # per deployment without a code edit + overlay rebuild. Higher = stricter
     # (fewer lossy chains, safer); 0 = keep the lossy pass on any improvement.
     _DEFAULT_LOSSY_MIN_EXTRA_SAVINGS = 0.05
@@ -1342,7 +1342,7 @@ class ContentRouter(Transform):
         Args:
             config: Router configuration. Uses defaults if None.
             observer: Optional `CompressionObserver` (see
-                `headroom.transforms.observability`) called once per
+                `legroom.transforms.observability`) called once per
                 routing decision after `compress()` finishes. The
                 proxy's `PrometheusMetrics` is the production
                 implementation — it increments per-strategy counters
@@ -1388,7 +1388,7 @@ class ContentRouter(Transform):
         # dense JSON/code correctly, unlike word count). 0 disables the gate.
         try:
             self._kompress_max_tokens: int = int(
-                os.environ.get("HEADROOM_KOMPRESS_MAX_TOKENS", "50000")
+                os.environ.get("LEGROOM_KOMPRESS_MAX_TOKENS", "50000")
             )
         except ValueError:
             self._kompress_max_tokens = 50000
@@ -1397,16 +1397,16 @@ class ContentRouter(Transform):
         # the fast extractive TextCrusher (real prose savings) instead of the
         # LogCompressor (~0 savings on prose). Opt-in, default off.
         self._text_crusher_enabled: bool = os.environ.get(
-            "HEADROOM_TEXT_CRUSHER", ""
+            "LEGROOM_TEXT_CRUSHER", ""
         ).strip().lower() in ("1", "true", "yes", "on")
         self._text_crusher: Any = None
-        # Cross-turn dedup: config field OR env HEADROOM_DEDUPE (robust to how the
+        # Cross-turn dedup: config field OR env LEGROOM_DEDUPE (robust to how the
         # config was built). Effective only in lossless mode (guarded in apply()).
         self._cross_turn_dedup_enabled: bool = (
             self.config.enable_cross_turn_dedup
-            or os.environ.get("HEADROOM_DEDUPE", "").strip().lower() in ("1", "true", "yes", "on")
+            or os.environ.get("LEGROOM_DEDUPE", "").strip().lower() in ("1", "true", "yes", "on")
         )
-        # EXPERIMENT (HEADROOM_EXPERIMENTAL_READ_KEEP_RATIO): file reads are
+        # EXPERIMENT (LEGROOM_EXPERIMENTAL_READ_KEEP_RATIO): file reads are
         # protected verbatim by default so the agent keeps exact bytes to patch.
         # This probe instead LIGHTLY lossy-compresses a protected read with
         # Kompress at the given keep ratio (e.g. 0.9 = keep ~90%), trading a small
@@ -1414,22 +1414,22 @@ class ContentRouter(Transform):
         # 0/unset = OFF (verbatim, today's behavior). Resolve-risk probe only.
         try:
             self._exp_read_keep_ratio: float = float(
-                os.environ.get("HEADROOM_EXPERIMENTAL_READ_KEEP_RATIO", "") or 0
+                os.environ.get("LEGROOM_EXPERIMENTAL_READ_KEEP_RATIO", "") or 0
             )
         except ValueError:
             self._exp_read_keep_ratio = 0.0
-        # Lossless-then-lossy. Config field OR env HEADROOM_LOSSLESS_THEN_LOSSY.
+        # Lossless-then-lossy. Config field OR env LEGROOM_LOSSLESS_THEN_LOSSY.
         # Only takes effect in lossy mode (STAGE 0 guards on `not config.lossless`).
         self._lossless_then_lossy: bool = self.config.lossless_then_lossy or os.environ.get(
-            "HEADROOM_LOSSLESS_THEN_LOSSY", ""
+            "LEGROOM_LOSSLESS_THEN_LOSSY", ""
         ).strip().lower() in ("1", "true", "yes", "on")
         # Lossless-then-lossy gate: keep the lossy chain only if it saves at least
         # this fraction MORE than the fold. Env override
-        # (HEADROOM_LOSSY_MIN_EXTRA_SAVINGS) falls back to the class default; a
+        # (LEGROOM_LOSSY_MIN_EXTRA_SAVINGS) falls back to the class default; a
         # malformed value falls back rather than crashing.
         try:
             self._lossy_min_extra_savings: float = float(
-                os.environ.get("HEADROOM_LOSSY_MIN_EXTRA_SAVINGS")
+                os.environ.get("LEGROOM_LOSSY_MIN_EXTRA_SAVINGS")
                 or self._DEFAULT_LOSSY_MIN_EXTRA_SAVINGS
             )
         except (TypeError, ValueError):
@@ -1451,7 +1451,7 @@ class ContentRouter(Transform):
 
         self._cache = CompressionCache()
 
-        # Cache-churn fix (HEADROOM_FREEZE_BLOCK_DECISION, default off):
+        # Cache-churn fix (LEGROOM_FREEZE_BLOCK_DECISION, default off):
         # freeze each block's compress-vs-passthrough verdict on first
         # sighting so it stops depending on the per-turn ``min_ratio`` drift.
         # Keyed by the same ``content_key`` as ``_cache``; value True =
@@ -1472,7 +1472,7 @@ class ContentRouter(Transform):
         self._frozen_lock = threading.Lock()
         # Reset verdicts whenever the shadowed cache is cleared.
         self._cache.register_on_clear(self._clear_frozen_verdicts)
-        # Instrumentation for the freeze (HEADROOM_FREEZE_BLOCK_DECISION): a
+        # Instrumentation for the freeze (LEGROOM_FREEZE_BLOCK_DECISION): a
         # "pin" is a turn where the frozen compress verdict overrode a tightened
         # per-turn ``min_ratio`` that would otherwise downgrade the block to
         # skip — i.e. revert it to original text and bust the provider prefix
@@ -1545,11 +1545,11 @@ class ContentRouter(Transform):
     def _freeze_block_decision_enabled(self) -> bool:
         """Whether the per-block verdict freeze is active (default off).
 
-        Reads ``HEADROOM_FREEZE_BLOCK_DECISION`` each call so it can be
+        Reads ``LEGROOM_FREEZE_BLOCK_DECISION`` each call so it can be
         toggled per-process without restart in tests. Default off → the
         verdict store is never touched and behaviour is byte-identical.
         """
-        return os.environ.get("HEADROOM_FREEZE_BLOCK_DECISION", "").strip().lower() in {
+        return os.environ.get("LEGROOM_FREEZE_BLOCK_DECISION", "").strip().lower() in {
             "1",
             "true",
             "yes",
@@ -1838,7 +1838,7 @@ class ContentRouter(Transform):
         ceiling and is routed off ML, "within" when it passes the gate.
         Goes through the same observer hook as ``_observe`` so the metric
         reaches the PrometheusMetrics singleton without ``content_router``
-        importing ``headroom.proxy`` (no cycle). Defensive: a missing
+        importing ``legroom.proxy`` (no cycle). Defensive: a missing
         method or a buggy observer must not break the compression.
         """
         if self._observer is None:
@@ -2053,7 +2053,7 @@ class ContentRouter(Transform):
         Returns ``(folded, "lossless_<kind>")`` when a real byte shrink happened,
         else ``(content, None)``.
         """
-        from headroom.transforms.lossless_compaction import compact_lossless
+        from legroom.transforms.lossless_compaction import compact_lossless
 
         # Apply losslessness to the OUTPUT structure, not to the classification:
         # try the fold implied by the detected strategy first, then the others.
@@ -2174,7 +2174,7 @@ class ContentRouter(Transform):
         _ll_content, _ll_label = self._lossless_first(content, strategy)
 
         # ── LOSSLESS-ONLY mode: stop at the byte-exact fold ──────────────────
-        # HEADROOM_LOSSLESS=1 is an explicit no-unrecoverable-loss contract (the
+        # LEGROOM_LOSSLESS=1 is an explicit no-unrecoverable-loss contract (the
         # constructor forces markers off + SmartCrusher lossless-only). So we
         # NEVER layer a lossy drop on top here — the fold IS the answer. When it
         # folds, return it; otherwise leave the block verbatim (passthrough),
@@ -2688,7 +2688,7 @@ class ContentRouter(Transform):
                         logger.warning(
                             "Kompress model not ready; requests will not be "
                             "compressed. Check HuggingFace connectivity or "
-                            "pre-download: headroom-ai[ml] + first-run warmup."
+                            "pre-download: legroom-ai[ml] + first-run warmup."
                         )
                         self._kompress_warned = True
                 else:
@@ -2704,10 +2704,10 @@ class ContentRouter(Transform):
                             "allow_download": False,
                         }
                         # When custom tags are protected, ``text_to_compress`` is
-                        # the placeholdered intermediate ({{HEADROOM_TAG_N}}). Pass
+                        # the placeholdered intermediate ({{LEGROOM_TAG_N}}). Pass
                         # the pre-protection ``content`` as ``ccr_original`` so CCR
                         # stores the real text, not the placeholder — otherwise a
-                        # later full retrieval returns {{HEADROOM_TAG_N}} and the
+                        # later full retrieval returns {{LEGROOM_TAG_N}} and the
                         # protected block is lost from the retrieval path. Only set
                         # it when tags were protected so callers/compressors that
                         # don't accept the kwarg are unaffected on the common path.
@@ -2730,7 +2730,7 @@ class ContentRouter(Transform):
         return compressed, compressed_tokens or _estimate_tokens(compressed)
 
     def _experimental_compress_read(self, content: Any, context: str = "") -> str | None:
-        """EXPERIMENT (HEADROOM_EXPERIMENTAL_READ_KEEP_RATIO): lightly Kompress a
+        """EXPERIMENT (LEGROOM_EXPERIMENTAL_READ_KEEP_RATIO): lightly Kompress a
         protected file read instead of passing it verbatim.
 
         Reads are protected to keep the exact bytes the agent patches from, so
@@ -2973,7 +2973,7 @@ class ContentRouter(Transform):
 
     def _get_text_crusher(self) -> Any:
         """Get TextCrusher (Phase 2, lazy load). Returns None when disabled, or
-        when the native ``headroom._core`` extension is not built (mirrors the
+        when the native ``legroom._core`` extension is not built (mirrors the
         ImportError handling of the other ``_get_*`` compressor getters)."""
         if not getattr(self, "_text_crusher_enabled", False):
             return None
@@ -2984,7 +2984,7 @@ class ContentRouter(Transform):
                 cfg = self.config.text_crusher or TextCrusherConfig()
                 self._text_crusher = TextCrusher(cfg)
             except ImportError:
-                logger.debug("TextCrusher (headroom._core) unavailable; disabling gate route")
+                logger.debug("TextCrusher (legroom._core) unavailable; disabling gate route")
                 self._text_crusher_enabled = False
         return self._text_crusher
 
@@ -3014,7 +3014,7 @@ class ContentRouter(Transform):
 
     def _get_diff_compressor(self) -> Any:
         """Get DiffCompressor (lazy load). Rust-only — Python implementation
-        retired in Stage 3b. The wheel (`headroom._core`) is a hard import.
+        retired in Stage 3b. The wheel (`legroom._core`) is a hard import.
         """
         if self._diff_compressor is None:
             from .diff_compressor import DiffCompressor, DiffCompressorConfig
@@ -3077,10 +3077,10 @@ class ContentRouter(Transform):
             status["magika"] = "skipped"
 
         # Surface which onnxruntime dylib the Rust detection chain will load.
-        # On Windows `headroom._ort` pins ORT_DYLIB_PATH at import time; an
+        # On Windows `legroom._ort` pins ORT_DYLIB_PATH at import time; an
         # unset value there means the bare DLL search applies, which lands on
         # the Windows ML System32 build known to deadlock ort session init
-        # (Win11 24H2+, see headroom/_ort.py).
+        # (Win11 24H2+, see legroom/_ort.py).
         if sys.platform.startswith("win"):
             ort_dylib = os.environ.get("ORT_DYLIB_PATH")
             if ort_dylib:
@@ -3155,7 +3155,7 @@ class ContentRouter(Transform):
         if model_id == "disabled":
             return None
 
-        # Remote Kompress (HEADROOM_KOMPRESS_ENDPOINT): offload inference to a
+        # Remote Kompress (LEGROOM_KOMPRESS_ENDPOINT): offload inference to a
         # hosted /compress endpoint so a sandboxed proxy needs no local ML deps.
         # Intercepts BOTH default and custom-model paths (the endpoint's deployed
         # model is authoritative) and bypasses is_kompress_available() — there is
@@ -3206,14 +3206,14 @@ class ContentRouter(Transform):
         return self._kompress
 
     def _get_remote_kompress(self) -> Any:
-        """Return a cached RemoteKompressCompressor when HEADROOM_KOMPRESS_ENDPOINT
+        """Return a cached RemoteKompressCompressor when LEGROOM_KOMPRESS_ENDPOINT
         is set, else None.
 
         The endpoint runs the model, so this needs no local ML deps and no
         is_kompress_available() gate. Cached per ContentRouter instance so the
         httpx connection pool is reused across requests.
         """
-        endpoint = os.environ.get("HEADROOM_KOMPRESS_ENDPOINT", "").strip()
+        endpoint = os.environ.get("LEGROOM_KOMPRESS_ENDPOINT", "").strip()
         if not endpoint:
             return None
         if getattr(self, "_kompress_remote", None) is None:
@@ -3222,7 +3222,7 @@ class ContentRouter(Transform):
 
             self._kompress_remote = RemoteKompressCompressor(
                 endpoint=endpoint,
-                token=os.environ.get("HEADROOM_KOMPRESS_ENDPOINT_TOKEN") or None,
+                token=os.environ.get("LEGROOM_KOMPRESS_ENDPOINT_TOKEN") or None,
                 config=KompressConfig(enable_ccr=self.config.ccr_inject_marker),
             )
             logger.info("Kompress: using remote endpoint %s", endpoint)
@@ -3381,8 +3381,8 @@ class ContentRouter(Transform):
         estimators: ΔT is the candidate's exact token saving (the compressed
         form is already computed when this runs), S is the token total after
         the slot, and R / P_alive are env-tunable constants
-        (``HEADROOM_NET_COST_EXPECTED_READS``, default 10;
-        ``HEADROOM_NET_COST_P_ALIVE``, default 1.0 — the conservative
+        (``LEGROOM_NET_COST_EXPECTED_READS``, default 10;
+        ``LEGROOM_NET_COST_P_ALIVE``, default 1.0 — the conservative
         full-penalty assumption). Every decision is logged with its inputs
         and counted in ``route_counts`` so the flag can be validated from
         telemetry before any default-on.
@@ -3404,7 +3404,7 @@ class ContentRouter(Transform):
         counter for telemetry.
 
         #856 P3b (idle-timer compaction): ``p_alive_override``, when supplied
-        by the caller, replaces the static ``HEADROOM_NET_COST_P_ALIVE``
+        by the caller, replaces the static ``LEGROOM_NET_COST_P_ALIVE``
         constant. It is derived in ``apply`` from how long the session has
         been idle relative to the provider cache TTL
         (``max(0, 1 − idle_s / ttl)``). As the cached suffix nears lapse
@@ -3437,12 +3437,12 @@ class ContentRouter(Transform):
         # telemetry) even though ``net_mutation_gain`` clamps it internally.
         reads, p_alive = 10.0, 1.0
         try:
-            _reads = float(os.environ.get("HEADROOM_NET_COST_EXPECTED_READS", "") or 10.0)
+            _reads = float(os.environ.get("LEGROOM_NET_COST_EXPECTED_READS", "") or 10.0)
             if not math.isfinite(_reads):
                 raise ValueError("non-finite")
             reads = _reads
         except ValueError:
-            logger.warning("HEADROOM_NET_COST_EXPECTED_READS malformed; using 10")
+            logger.warning("LEGROOM_NET_COST_EXPECTED_READS malformed; using 10")
         # #856 P3b: an idle-derived override takes precedence over the static
         # env constant. ``net_mutation_gain`` clamps p_alive to [0, 1]
         # internally, but clamp here too so the value logged/branched on below
@@ -3452,12 +3452,12 @@ class ContentRouter(Transform):
             p_alive = min(max(p_alive_override, 0.0), 1.0)
         else:
             try:
-                _p_alive = float(os.environ.get("HEADROOM_NET_COST_P_ALIVE", "") or 1.0)
+                _p_alive = float(os.environ.get("LEGROOM_NET_COST_P_ALIVE", "") or 1.0)
                 if not math.isfinite(_p_alive):
                     raise ValueError("non-finite")
                 p_alive = _p_alive
             except ValueError:
-                logger.warning("HEADROOM_NET_COST_P_ALIVE malformed; using 1.0")
+                logger.warning("LEGROOM_NET_COST_P_ALIVE malformed; using 1.0")
         gain = float(policy.net_mutation_gain(delta_t, suffix, reads, p_alive))
         allowed = gain > 0.0
         logger.info(
@@ -3608,7 +3608,7 @@ class ContentRouter(Transform):
             if is_tool_excluded(name, exclude_tools)
         }
 
-        # Read protection (HEADROOM_PROTECT_READS=1): for bash-family agents the
+        # Read protection (LEGROOM_PROTECT_READS=1): for bash-family agents the
         # exclude-by-tool-NAME set above never catches file reads (they are `bash`
         # tool calls whose COMMAND is a cat/sed/head/...). Mark those tool_use_ids so
         # their output is never LOSSY-compressed (the agent needs exact bytes to edit;
@@ -3616,7 +3616,7 @@ class ContentRouter(Transform):
         # Type-specific by design: grep/test/ls output stays compressible, so the
         # cache-mode delta still compresses whenever the newest turn is NOT a read.
         self._protect_read_tool_ids = set()
-        if os.environ.get("HEADROOM_PROTECT_READS", "0").strip().lower() not in (
+        if os.environ.get("LEGROOM_PROTECT_READS", "0").strip().lower() not in (
             "0",
             "",
             "false",
@@ -3643,7 +3643,7 @@ class ContentRouter(Transform):
         # cat/sed/head code reads are protected on ANY model/harness, not just
         # those that emit tool-call/tool_result blocks.
         self._protect_read_msg_indices: set[int] = set()
-        if os.environ.get("HEADROOM_PROTECT_READS", "0").strip().lower() not in (
+        if os.environ.get("LEGROOM_PROTECT_READS", "0").strip().lower() not in (
             "0",
             "",
             "false",
@@ -3785,7 +3785,7 @@ class ContentRouter(Transform):
         # token sums are precomputed once (reverse cumulative) so each
         # candidate's S lookup is O(1). v1 estimator per the issue: S is the
         # token total of every message after the candidate.
-        netcost_enabled = os.environ.get("HEADROOM_NET_COST_POLICY") == "1"
+        netcost_enabled = os.environ.get("LEGROOM_NET_COST_POLICY") == "1"
         netcost_suffix_tokens: list[int] = []
         # #856 P3a: shared batch-reclaim state for this request. ``floor`` is
         # the shallowest slot admitted as a net-positive mutation; once set,
@@ -3823,7 +3823,7 @@ class ContentRouter(Transform):
         # one trades a 90% read discount for a 25% write penalty (Anthropic).
         # That binary floor leaves money on the table: a 50K-token stale tool
         # dump with only a 10K cached suffix after it pays for itself many
-        # times over. With HEADROOM_NET_COST_POLICY=1 a *string-content*
+        # times over. With LEGROOM_NET_COST_POLICY=1 a *string-content*
         # frozen message instead falls through to the normal candidate
         # pipeline, where the P2 break-even gate (_net_cost_allows) decides
         # per candidate: its S is the full invalidated suffix after the slot,
@@ -4139,7 +4139,7 @@ class ContentRouter(Transform):
         # --- Pass 2: Parallel compression of all cache-miss messages ---
         if pending_tasks:
             max_workers = min(
-                len(pending_tasks), int(os.environ.get("HEADROOM_COMPRESS_WORKERS", "4"))
+                len(pending_tasks), int(os.environ.get("LEGROOM_COMPRESS_WORKERS", "4"))
             )
             t_parallel_start = time.perf_counter()
 
@@ -4167,7 +4167,7 @@ class ContentRouter(Transform):
 
                         # ponytail: daemon watchdog cannot stop native GIL holds; native layer owns that fix.
                         worker = threading.Thread(
-                            target=_run, name="headroom-single-compress-watchdog", daemon=True
+                            target=_run, name="legroom-single-compress-watchdog", daemon=True
                         )
                         worker.start()
                         worker.join(deadline_s)
@@ -4368,7 +4368,7 @@ class ContentRouter(Transform):
         # messages/blocks hit each route this request — skip reasons (small,
         # user_msg, non_string, recent_code, analysis_ctx, content_blocks,
         # excluded_tool, read_protected, error_protected, already_compressed, …)
-        # plus successful compressions. Makes "what is Headroom missing?" answerable
+        # plus successful compressions. Makes "what is Legroom missing?" answerable
         # per provider shape (e.g. OpenAI plain-string user obs vs Anthropic
         # tool_result blocks) directly from a run's logs. INFO so it's on by default.
         _nonzero = {k: v for k, v in route_counts.items() if v}
@@ -4528,7 +4528,7 @@ class ContentRouter(Transform):
         prompt-cache prefix stays byte-stable across turns. Never raises.
         """
         try:
-            from headroom.transforms.cross_turn_dedup import DedupBlock, dedup_blocks
+            from legroom.transforms.cross_turn_dedup import DedupBlock, dedup_blocks
 
             locs: list[tuple[int, int | None, int | None]] = []
             dblocks: list[DedupBlock] = []
@@ -4771,7 +4771,7 @@ class ContentRouter(Transform):
                     if _tr_list_form_early
                     else _tr_content
                 )
-                # Read protection (HEADROOM_PROTECT_READS): never LOSSY-compress a file
+                # Read protection (LEGROOM_PROTECT_READS): never LOSSY-compress a file
                 # read (cat/sed/head/...) whose content is SOURCE CODE — pass it verbatim
                 # so the agent keeps exact bytes to edit from. A read of DATA (json/csv/
                 # log/lockfile/text) is not byte-patched, so it falls through to its
@@ -5053,7 +5053,7 @@ class ContentRouter(Transform):
             ``True`` the caller should update the block with the returned
             content and set ``any_compressed``.
         """
-        # Cache-churn fix (HEADROOM_FREEZE_BLOCK_DECISION, default off):
+        # Cache-churn fix (LEGROOM_FREEZE_BLOCK_DECISION, default off):
         # mirror the plain-STRING path's per-block verdict freeze here, because
         # for Claude Code / Anthropic traffic the prefix is dominated by
         # ``tool_result`` content-blocks that flow through this helper. This is a

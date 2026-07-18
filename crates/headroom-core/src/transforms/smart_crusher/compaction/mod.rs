@@ -118,7 +118,7 @@ impl CompactionStage {
 
     /// Like [`Self::run`], but stash every opaque-blob payload into `store`
     /// under the same hash the rendered `<<ccr:HASH,...>>` marker carries,
-    /// so `GET /v1/retrieve/{hash}` and the `headroom_retrieve` tool can
+    /// so `GET /v1/retrieve/{hash}` and the `legroom_retrieve` tool can
     /// serve the original back. `SmartCrusher::crush_array`'s lossless
     /// branch passes the proxy's CCR store here; previously it called
     /// [`Self::run`], which rendered markers whose payload was never stored

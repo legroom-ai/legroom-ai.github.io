@@ -1,6 +1,6 @@
 """Content-addressed compression cache with LRU eviction.
 
-Used in "token headroom mode" to avoid re-compressing messages across turns.
+Used in "token legroom mode" to avoid re-compressing messages across turns.
 Maps original content hashes to their compressed versions.
 """
 

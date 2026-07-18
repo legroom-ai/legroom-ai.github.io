@@ -4,7 +4,7 @@ When content is compressed, the LLM needs to know what it's missing.
 Instead of just "[480 items omitted]", we generate a categorical summary:
 "[480 items omitted: 150 log entries (3 with errors), 200 test results (12 failures)]"
 
-This helps the LLM decide whether to call headroom_retrieve and what to search for.
+This helps the LLM decide whether to call legroom_retrieve and what to search for.
 
 Used by:
 - SmartCrusher: categorizes dropped JSON items by field values

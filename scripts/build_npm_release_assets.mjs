@@ -139,7 +139,7 @@ function rewriteOpenClawDependency(spec) {
   const packageJsonPath = path.join(openClawDir, "package.json");
   const pkg = readJson(packageJsonPath);
   pkg.dependencies = pkg.dependencies || {};
-  pkg.dependencies["headroom-ai"] = spec;
+  pkg.dependencies["legroom-ai"] = spec;
   writeJson(packageJsonPath, pkg);
 }
 
@@ -168,7 +168,7 @@ try {
   runNpm(["run", "build"], sdkDir);
   runNpm(["version", version, "--no-git-tag-version", "--allow-same-version"], sdkDir);
   runNpm(["pack", "--pack-destination", assetsDir], sdkDir);
-  const sdkTarballPath = assertTarballBuilt("headroom-ai");
+  const sdkTarballPath = assertTarballBuilt("legroom-ai");
 
   rewriteOpenClawLocalDependency(sdkTarballPath);
   if (!flags.has("--skip-install")) {
@@ -184,7 +184,7 @@ try {
   rewriteOpenClawReleaseDependency();
   runNode(["prepare-dist.mjs"], openClawDir);
   runNpm(["pack", "--pack-destination", assetsDir], openClawDir);
-  assertTarballBuilt("headroom-openclaw");
+  assertTarballBuilt("legroom-openclaw");
 
   if (!flags.has("--no-verify")) {
     runNode(["scripts/verify_npm_release_assets.mjs", assetsDir, version], rootDir);

@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from collections.abc import Mapping
 
-from headroom.proxy.project_context import with_project_prefix
+from legroom.proxy.project_context import with_project_prefix
 
 DEFAULT_API_URL = "https://api.x.ai"
 PROXY_ENV_KEY = "GROK_CLI_CHAT_PROXY_BASE_URL"

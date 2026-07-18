@@ -1,6 +1,6 @@
 """Session-start self-heal for a wrap base_url left by a dead proxy (issue #2221).
 
-`headroom wrap claude` persists ANTHROPIC_BASE_URL=<proxy> into project-local
+`legroom wrap claude` persists ANTHROPIC_BASE_URL=<proxy> into project-local
 .claude/settings.local.json so cc-daemon conversation workers (which read
 settings fresh) also route through the proxy. When the proxy dies via hard
 reboot / SIGKILL no cleanup fires, so the stale URL lingers and bricks a later
@@ -17,7 +17,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from headroom.cli import wrap as wrap_cli
+from legroom.cli import wrap as wrap_cli
 
 
 def _settings(tmp_path: Path) -> Path:
@@ -116,7 +116,7 @@ def test_noop_when_no_marker(tmp_path: Path) -> None:
     path.parent.mkdir(parents=True)
     path.write_text(json.dumps({"env": {"ANTHROPIC_BASE_URL": "http://x"}}), encoding="utf-8")
     assert wrap_cli._check_and_clear_dead_wrap_marker(path, key="ANTHROPIC_BASE_URL") is None
-    # Untouched — no marker means no evidence the URL is Headroom's to clear.
+    # Untouched — no marker means no evidence the URL is Legroom's to clear.
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert payload["env"]["ANTHROPIC_BASE_URL"] == "http://x"
 
@@ -187,7 +187,7 @@ def test_transient_blip_does_not_clear_live_marker(tmp_path: Path, monkeypatch) 
 
 # --- SessionStart self-heal hook install (wrap claude) --------------------
 
-_HOOK_MARKER = "headroom-wrap-selfheal"
+_HOOK_MARKER = "legroom-wrap-selfheal"
 
 
 def test_wrap_installs_sessionstart_only_selfheal_hook(tmp_path: Path) -> None:
@@ -284,7 +284,7 @@ def test_selfheal_command_clears_dead_marker(tmp_path: Path, monkeypatch) -> Non
     wrap_cli._write_claude_wrap_base_url("http://127.0.0.1:8787", settings_path=path)
     wrap_cli._write_wrap_marker(path, port=_closed_port(), key="ANTHROPIC_BASE_URL", previous=None)
 
-    result = CliRunner().invoke(wrap_cli.wrap, ["selfheal", "--marker", "headroom-wrap-selfheal"])
+    result = CliRunner().invoke(wrap_cli.wrap, ["selfheal", "--marker", "legroom-wrap-selfheal"])
     assert result.exit_code == 0
     # env held only our key, so the now-empty settings file is removed entirely.
     assert not path.exists()
@@ -299,7 +299,7 @@ def test_selfheal_command_preserves_live_marker(tmp_path: Path, monkeypatch) -> 
         wrap_cli._write_wrap_marker(path, port=port, key="ANTHROPIC_BASE_URL", previous=None)
 
         result = CliRunner().invoke(
-            wrap_cli.wrap, ["selfheal", "--marker", "headroom-wrap-selfheal"]
+            wrap_cli.wrap, ["selfheal", "--marker", "legroom-wrap-selfheal"]
         )
         assert result.exit_code == 0
         payload = json.loads(path.read_text(encoding="utf-8"))

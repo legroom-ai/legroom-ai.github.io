@@ -85,7 +85,7 @@ pub fn classify_compressible_path(path: &str) -> Option<CompressibleEndpoint> {
     }
 }
 
-/// Strip the `[1m]` context-window tier suffix that the Headroom
+/// Strip the `[1m]` context-window tier suffix that the Legroom
 /// CLI appends to Anthropic model IDs (e.g. `glm-5.2[1m]`,
 /// `claude-3-7-sonnet[1m]`) before forwarding to the upstream
 /// Anthropic API. The upstream does not recognize the suffix and

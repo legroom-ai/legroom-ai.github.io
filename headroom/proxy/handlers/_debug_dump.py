@@ -17,12 +17,12 @@ def _debug_dump_mode(config: Any) -> str:
 
     - "off"      : nothing written (default, and forced in stateless mode)
     - "redacted" : structure, roles, and lengths only — content elided
-                   (``HEADROOM_DEBUG_DUMP=1``/``true``/``on``/``redacted``)
-    - "full"     : everything including content (``HEADROOM_DEBUG_DUMP=full``)
+                   (``LEGROOM_DEBUG_DUMP=1``/``true``/``on``/``redacted``)
+    - "full"     : everything including content (``LEGROOM_DEBUG_DUMP=full``)
     """
     if getattr(config, "stateless", False):
         return "off"
-    raw = os.environ.get("HEADROOM_DEBUG_DUMP", "").strip().lower()
+    raw = os.environ.get("LEGROOM_DEBUG_DUMP", "").strip().lower()
     if raw in ("full", "all", "content"):
         return "full"
     if raw in ("1", "true", "yes", "on", "redacted"):

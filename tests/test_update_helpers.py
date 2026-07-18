@@ -9,18 +9,18 @@ import sysconfig
 import pytest
 from click.testing import CliRunner
 
-from headroom import update_check as uc
-from headroom.cli import update as up
-from headroom.cli.main import main
+from legroom import update_check as uc
+from legroom.cli import update as up
+from legroom.cli.main import main
 
 
 @pytest.fixture(autouse=True)
 def _env(tmp_path, monkeypatch):
-    monkeypatch.setenv("HEADROOM_WORKSPACE_DIR", str(tmp_path))
-    monkeypatch.setenv("HEADROOM_UPDATE_CHECK", "on")
-    monkeypatch.delenv("HEADROOM_STATELESS", raising=False)
+    monkeypatch.setenv("LEGROOM_WORKSPACE_DIR", str(tmp_path))
+    monkeypatch.setenv("LEGROOM_UPDATE_CHECK", "on")
+    monkeypatch.delenv("LEGROOM_STATELESS", raising=False)
     monkeypatch.delenv("CI", raising=False)
-    monkeypatch.delenv("HEADROOM_IN_DOCKER", raising=False)
+    monkeypatch.delenv("LEGROOM_IN_DOCKER", raising=False)
     monkeypatch.delenv("CONDA_PREFIX", raising=False)
 
 
@@ -53,12 +53,12 @@ def test_in_virtualenv_false(monkeypatch):
 
 
 def test_in_docker_env_flag(monkeypatch):
-    monkeypatch.setenv("HEADROOM_IN_DOCKER", "1")
+    monkeypatch.setenv("LEGROOM_IN_DOCKER", "1")
     assert up._in_docker() is True
 
 
 def test_in_docker_default_false():
-    # No HEADROOM_IN_DOCKER and (almost certainly) no /.dockerenv on the runner.
+    # No LEGROOM_IN_DOCKER and (almost certainly) no /.dockerenv on the runner.
     assert isinstance(up._in_docker(), bool)
 
 
@@ -107,7 +107,7 @@ def test_package_location_handles_missing(monkeypatch):
 
 def test_user_site_and_membership(monkeypatch):
     monkeypatch.setattr(up, "_user_site", lambda: "/home/u/.local/site")
-    assert up._is_user_site_install("/home/u/.local/site/headroom_ai") is True
+    assert up._is_user_site_install("/home/u/.local/site/legroom_ai") is True
     assert up._is_user_site_install("/home/u/.local/site") is True
     assert up._is_user_site_install("/usr/lib/python3/site") is False
     assert up._is_user_site_install(None) is False
@@ -121,7 +121,7 @@ def test_user_site_no_sibling_prefix_match(monkeypatch):
 
 def test_format_cmd_quotes_spaces(monkeypatch):
     monkeypatch.setattr(up.sys, "platform", "linux")
-    out = up._format_cmd(["/path with space/python", "-m", "pip", "install", "-U", "headroom-ai"])
+    out = up._format_cmd(["/path with space/python", "-m", "pip", "install", "-U", "legroom-ai"])
     assert "'/path with space/python'" in out
 
 
@@ -160,7 +160,7 @@ def test_build_windows_handoff_argv_preserves_pip_argv(monkeypatch, operator):
         "pip",
         "install",
         "-U",
-        f"headroom-ai[foo{operator}calc]",
+        f"legroom-ai[foo{operator}calc]",
     ]
 
     handoff_argv = up._build_windows_handoff_argv(pip_argv)
@@ -205,9 +205,9 @@ def test_managed_env_guidance(monkeypatch, platform, needle):
 
 
 def test_spec_with_and_without_extras():
-    assert up._spec(None) == "headroom-ai"
-    assert up._spec("all") == "headroom-ai[all]"
-    assert up._spec("[proxy]") == "headroom-ai[proxy]"
+    assert up._spec(None) == "legroom-ai"
+    assert up._spec("all") == "legroom-ai[all]"
+    assert up._spec("[proxy]") == "legroom-ai[proxy]"
 
 
 # --------------------------------------------------------------------------- #
@@ -240,7 +240,7 @@ def test_update_missing_tool_surfaces_command(monkeypatch):
         up,
         "detect_install_method",
         lambda extras=None: up.InstallMethod(
-            kind="pipx", can_self_update=True, argv=["pipx", "upgrade", "headroom-ai"]
+            kind="pipx", can_self_update=True, argv=["pipx", "upgrade", "legroom-ai"]
         ),
     )
 
@@ -308,13 +308,13 @@ def test_select_latest_info_fallback_prerelease_filtered():
 
 
 def test_run_check_disabled_returns_none(monkeypatch):
-    monkeypatch.setenv("HEADROOM_UPDATE_CHECK", "off")
+    monkeypatch.setenv("LEGROOM_UPDATE_CHECK", "off")
     monkeypatch.setattr(uc, "fetch_latest_version", lambda **k: pytest.fail("no fetch"))
     assert uc.run_check() is None
 
 
 def test_maybe_check_async_disabled_returns_none(monkeypatch):
-    monkeypatch.setenv("HEADROOM_UPDATE_CHECK", "off")
+    monkeypatch.setenv("LEGROOM_UPDATE_CHECK", "off")
     assert uc.maybe_check_async() is None
 
 

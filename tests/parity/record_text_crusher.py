@@ -2,7 +2,7 @@
 
 Locks the Rust core's ``compress`` output for a fixed set of deterministic
 scenarios so a future change to the Rust algorithm is caught as a regression.
-The Python wrapper delegates to ``headroom._core.TextCrusher``, so these
+The Python wrapper delegates to ``legroom._core.TextCrusher``, so these
 fixtures are recorded from (and verified against) the native implementation.
 
 Re-record after an intentional algorithm change:
@@ -15,7 +15,7 @@ import hashlib
 import json
 import os
 
-from headroom.transforms.text_crusher import TextCrusher
+from legroom.transforms.text_crusher import TextCrusher
 
 FIXTURE_DIR = os.path.join(os.path.dirname(__file__), "fixtures", "text_crusher")
 

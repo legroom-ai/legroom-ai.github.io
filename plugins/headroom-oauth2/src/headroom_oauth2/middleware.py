@@ -1,6 +1,6 @@
 """ASGI middleware that injects a refreshed OAuth2 bearer on each upstream request.
 
-Headroom's litellm backend forwards the request's `Authorization` bearer to the
+Legroom's litellm backend forwards the request's `Authorization` bearer to the
 upstream as the API key, so setting it here makes the minted token reach the
 backend with no core changes.
 """
@@ -13,7 +13,7 @@ import logging
 
 from .provider import OAuth2Error
 
-log = logging.getLogger("headroom_oauth2")
+log = logging.getLogger("legroom_oauth2")
 
 
 class OAuth2Middleware:

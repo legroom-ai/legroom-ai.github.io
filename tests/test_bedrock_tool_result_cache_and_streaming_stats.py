@@ -27,11 +27,11 @@ from tests._dotenv import importorskip_no_env_leak
 
 importorskip_no_env_leak("litellm")
 
-from headroom.backends.litellm import LiteLLMBackend  # noqa: E402
+from legroom.backends.litellm import LiteLLMBackend  # noqa: E402
 
 
 def _backend(provider: str = "bedrock") -> LiteLLMBackend:
-    with patch("headroom.backends.litellm._fetch_bedrock_inference_profiles", return_value={}):
+    with patch("legroom.backends.litellm._fetch_bedrock_inference_profiles", return_value={}):
         return LiteLLMBackend(provider=provider, region="us-east-1")
 
 
@@ -146,8 +146,8 @@ class TestStreamingCacheStatsCompletion:
     @pytest.mark.asyncio
     async def test_stream_options_include_usage_requested(self):
         with (
-            patch("headroom.backends.litellm.acompletion", new_callable=AsyncMock) as mock_acomp,
-            patch("headroom.backends.litellm._fetch_bedrock_inference_profiles", return_value={}),
+            patch("legroom.backends.litellm.acompletion", new_callable=AsyncMock) as mock_acomp,
+            patch("legroom.backends.litellm._fetch_bedrock_inference_profiles", return_value={}),
         ):
             mock_acomp.return_value = self._mock_stream_with_final_usage()()
             backend = LiteLLMBackend(provider="bedrock", region="us-east-1")
@@ -166,8 +166,8 @@ class TestStreamingCacheStatsCompletion:
     @pytest.mark.asyncio
     async def test_terminal_message_delta_carries_real_cache_stats(self):
         with (
-            patch("headroom.backends.litellm.acompletion", new_callable=AsyncMock) as mock_acomp,
-            patch("headroom.backends.litellm._fetch_bedrock_inference_profiles", return_value={}),
+            patch("legroom.backends.litellm.acompletion", new_callable=AsyncMock) as mock_acomp,
+            patch("legroom.backends.litellm._fetch_bedrock_inference_profiles", return_value={}),
         ):
             mock_acomp.return_value = self._mock_stream_with_final_usage(
                 cache_read=1200, cache_write=300, prompt_tokens=1500
@@ -209,8 +209,8 @@ class TestStreamingCacheStatsCompletion:
             yield chunk
 
         with (
-            patch("headroom.backends.litellm.acompletion", new_callable=AsyncMock) as mock_acomp,
-            patch("headroom.backends.litellm._fetch_bedrock_inference_profiles", return_value={}),
+            patch("legroom.backends.litellm.acompletion", new_callable=AsyncMock) as mock_acomp,
+            patch("legroom.backends.litellm._fetch_bedrock_inference_profiles", return_value={}),
         ):
             mock_acomp.return_value = mock_stream()
             backend = LiteLLMBackend(provider="openrouter")
@@ -230,8 +230,8 @@ class TestStreamingCacheStatsCompletion:
         """If only input_tokens came back (no caching engaged), the trailing
         message_delta should include input_tokens but no empty cache_* keys."""
         with (
-            patch("headroom.backends.litellm.acompletion", new_callable=AsyncMock) as mock_acomp,
-            patch("headroom.backends.litellm._fetch_bedrock_inference_profiles", return_value={}),
+            patch("legroom.backends.litellm.acompletion", new_callable=AsyncMock) as mock_acomp,
+            patch("legroom.backends.litellm._fetch_bedrock_inference_profiles", return_value={}),
         ):
             mock_acomp.return_value = self._mock_stream_with_final_usage(
                 cache_read=0, cache_write=0, prompt_tokens=42

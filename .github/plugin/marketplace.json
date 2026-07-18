@@ -1,26 +1,26 @@
 {
-  "name": "headroom-marketplace",
+  "name": "legroom-marketplace",
   "owner": {
-    "name": "Headroom Contributors"
+    "name": "Legroom Contributors"
   },
   "metadata": {
-    "description": "Headroom marketplace for Claude Code and GitHub Copilot CLI plugins.",
+    "description": "Legroom marketplace for Claude Code and GitHub Copilot CLI plugins.",
     "version": "0.31.0"
   },
   "plugins": [
     {
-      "name": "headroom",
-      "source": "./plugins/headroom-agent-hooks",
-      "description": "Headroom startup hooks for Claude Code and GitHub Copilot CLI.",
+      "name": "legroom",
+      "source": "./plugins/legroom-agent-hooks",
+      "description": "Legroom startup hooks for Claude Code and GitHub Copilot CLI.",
       "version": "0.31.0",
       "author": {
-        "name": "Headroom Contributors",
-        "url": "https://github.com/ghaliba3/headroom"
+        "name": "Legroom Contributors",
+        "url": "https://github.com/legroom-ai/legroom-ai.github.io"
       },
-      "homepage": "https://github.com/ghaliba3/headroom",
-      "repository": "https://github.com/ghaliba3/headroom",
+      "homepage": "https://github.com/legroom-ai/legroom-ai.github.io",
+      "repository": "https://github.com/legroom-ai/legroom-ai.github.io",
       "keywords": [
-        "headroom",
+        "legroom",
         "hooks",
         "claude-code",
         "copilot-cli"

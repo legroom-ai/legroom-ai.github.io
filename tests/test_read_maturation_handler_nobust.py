@@ -24,7 +24,7 @@ directly on the FORWARDED bytes:
    in that order.
 
 Note on cache-state isolation: the CCR store is persistent (SQLite at
-~/.headroom/ccr_store.db by default) and shared across processes, so stale
+~/.legroom/ccr_store.db by default) and shared across processes, so stale
 entries from prior runs can perturb maturation timing. Run against a clean
 store for deterministic results.
 """
@@ -40,7 +40,7 @@ pytest.importorskip("fastapi")
 import httpx
 from fastapi.testclient import TestClient
 
-from headroom.proxy.server import ProxyConfig, create_app
+from legroom.proxy.server import ProxyConfig, create_app
 
 MODEL = "claude-haiku-4-5-20251001"
 SYSTEM = [
@@ -137,9 +137,9 @@ def test_verbatim_read_never_cache_written_before_maturation(monkeypatch):
     # processes by default, so stale entries from other runs would perturb
     # maturation timing and make this test non-deterministic. The in-memory
     # backend gives a pristine store per test.
-    from headroom.cache.compression_store import reset_compression_store
+    from legroom.cache.compression_store import reset_compression_store
 
-    monkeypatch.setenv("HEADROOM_CCR_BACKEND", "memory")
+    monkeypatch.setenv("LEGROOM_CCR_BACKEND", "memory")
     reset_compression_store()
 
     # Match the real proxy: cache machinery ON (the prefix tracker + compression
@@ -198,7 +198,7 @@ def test_verbatim_read_never_cache_written_before_maturation(monkeypatch):
                     headers={
                         "x-api-key": "test-key",
                         "anthropic-version": "2023-06-01",
-                        "x-headroom-session-id": "nobust-1",
+                        "x-legroom-session-id": "nobust-1",
                         "content-type": "application/json",
                     },
                     json={
@@ -291,7 +291,7 @@ def _drive_session(config, n_turns: int, session_id: str) -> list[list[dict]]:
                     headers={
                         "x-api-key": "test-key",
                         "anthropic-version": "2023-06-01",
-                        "x-headroom-session-id": session_id,
+                        "x-legroom-session-id": session_id,
                         "content-type": "application/json",
                     },
                     json={
@@ -325,9 +325,9 @@ def test_quiesce_turns_config_is_honored(monkeypatch):
     turn 1). With quiesce_turns=2 it must mature at turn 2 — not the built-in
     default of 5. Currently the handler hardcodes ReadMaturationConfig(enabled=
     True), ignoring the configured value, so this fails (matures at 5)."""
-    from headroom.cache.compression_store import reset_compression_store
+    from legroom.cache.compression_store import reset_compression_store
 
-    monkeypatch.setenv("HEADROOM_CCR_BACKEND", "memory")
+    monkeypatch.setenv("LEGROOM_CCR_BACKEND", "memory")
     reset_compression_store()
 
     config = ProxyConfig(
@@ -351,18 +351,18 @@ def test_quiesce_turns_config_is_honored(monkeypatch):
 def test_read_maturation_knobs_from_env(monkeypatch):
     """Operators must be able to tune maturation via env vars (the pilot
     playbook says 'pick quiesce_turns')."""
-    from headroom.proxy.server import _MULTI_WORKER_CONFIG_ENV, _proxy_config_from_env
+    from legroom.proxy.server import _MULTI_WORKER_CONFIG_ENV, _proxy_config_from_env
 
     # _proxy_config_from_env short-circuits on a prebuilt multi-worker JSON
-    # config and ignores the HEADROOM_* vars entirely. Clear it so this test
+    # config and ignores the LEGROOM_* vars entirely. Clear it so this test
     # actually exercises the env-var parsing path it claims to (and isn't
-    # poisoned by a leaked HEADROOM_PROXY_CONFIG_JSON from another test).
+    # poisoned by a leaked LEGROOM_PROXY_CONFIG_JSON from another test).
     monkeypatch.delenv(_MULTI_WORKER_CONFIG_ENV, raising=False)
 
-    monkeypatch.setenv("HEADROOM_READ_MATURATION", "1")
-    monkeypatch.setenv("HEADROOM_READ_MATURATION_QUIESCE_TURNS", "3")
-    monkeypatch.setenv("HEADROOM_READ_MATURATION_MAX_HOLD_TURNS", "10")
-    monkeypatch.setenv("HEADROOM_READ_MATURATION_MIN_SIZE_BYTES", "4096")
+    monkeypatch.setenv("LEGROOM_READ_MATURATION", "1")
+    monkeypatch.setenv("LEGROOM_READ_MATURATION_QUIESCE_TURNS", "3")
+    monkeypatch.setenv("LEGROOM_READ_MATURATION_MAX_HOLD_TURNS", "10")
+    monkeypatch.setenv("LEGROOM_READ_MATURATION_MIN_SIZE_BYTES", "4096")
 
     cfg = _proxy_config_from_env()
 

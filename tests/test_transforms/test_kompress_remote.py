@@ -1,8 +1,8 @@
 import httpx
 
-from headroom.transforms.content_router import ContentRouter, ContentRouterConfig
-from headroom.transforms.kompress_compressor import KompressConfig
-from headroom.transforms.kompress_remote import RemoteKompressCompressor
+from legroom.transforms.content_router import ContentRouter, ContentRouterConfig
+from legroom.transforms.kompress_compressor import KompressConfig
+from legroom.transforms.kompress_remote import RemoteKompressCompressor
 
 
 def _long_text() -> str:
@@ -140,8 +140,8 @@ def test_remote_kompress_non_numeric_field_fails_open() -> None:
 
 
 def test_content_router_selects_remote_kompress_from_env(monkeypatch) -> None:
-    monkeypatch.setenv("HEADROOM_KOMPRESS_ENDPOINT", "https://kompress.example")
-    monkeypatch.setenv("HEADROOM_KOMPRESS_ENDPOINT_TOKEN", "secret")
+    monkeypatch.setenv("LEGROOM_KOMPRESS_ENDPOINT", "https://kompress.example")
+    monkeypatch.setenv("LEGROOM_KOMPRESS_ENDPOINT_TOKEN", "secret")
 
     router = ContentRouter(ContentRouterConfig(ccr_inject_marker=False))
     compressor = router._get_kompress()

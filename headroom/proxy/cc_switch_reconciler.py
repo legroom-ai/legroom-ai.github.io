@@ -1,4 +1,4 @@
-"""cc-switch reconciler: keep Headroom in the request path without fighting cc-switch.
+"""cc-switch reconciler: keep Legroom in the request path without fighting cc-switch.
 
 Background
 ----------
@@ -13,32 +13,32 @@ real endpoint + token, e.g.::
 
 Claude Code re-reads that file, so a running session immediately follows the
 switch. The problem: that overwrite blows away any ``ANTHROPIC_BASE_URL`` that
-points at Headroom.
+points at Legroom.
 
 What this does
 --------------
 A lightweight in-process watcher (poll-based, robust against atomic renames):
 
 1. Detects cc-switch's overwrite.
-2. **Captures** the real provider endpoint and sets it as Headroom's upstream
-   (runtime, no restart -- ``HeadroomProxy.ANTHROPIC_API_URL`` is a class attr
+2. **Captures** the real provider endpoint and sets it as Legroom's upstream
+   (runtime, no restart -- ``LegroomProxy.ANTHROPIC_API_URL`` is a class attr
    read per request).
-3. **Rewrites only** ``env.ANTHROPIC_BASE_URL`` back to Headroom's local URL,
+3. **Rewrites only** ``env.ANTHROPIC_BASE_URL`` back to Legroom's local URL,
    leaving the token / model / everything else untouched.
 
-Result: ``Claude -> Headroom (compress) -> selected provider``. cc-switch never
+Result: ``Claude -> Legroom (compress) -> selected provider``. cc-switch never
 knows; it is the *trigger*, not a coordination partner. The token rides in the
-request (Claude -> Headroom -> upstream, passed through verbatim); Headroom
+request (Claude -> Legroom -> upstream, passed through verbatim); Legroom
 never reads or stores it.
 
 Safety
 ------
-- Loop-safe: once ``base_url`` already equals Headroom's URL, it is left alone.
+- Loop-safe: once ``base_url`` already equals Legroom's URL, it is left alone.
 - Official / empty env (``{"env": {}}``, what cc-switch writes for "Claude
   Official") is **left direct** by default -- subscription OAuth through a custom
-  base URL is fragile, so v1 does not route it through Headroom. Set
-  ``HEADROOM_CC_SWITCH_ROUTE_OFFICIAL=1`` to route official through Headroom too.
-- Gated entirely behind ``HEADROOM_CC_SWITCH_RECONCILE=1`` -- off by default, so
+  base URL is fragile, so v1 does not route it through Legroom. Set
+  ``LEGROOM_CC_SWITCH_ROUTE_OFFICIAL=1`` to route official through Legroom too.
+- Gated entirely behind ``LEGROOM_CC_SWITCH_RECONCILE=1`` -- off by default, so
   it never affects users who do not opt in.
 """
 
@@ -62,7 +62,7 @@ def _settings_path() -> Path:
 
 
 def reconciler_enabled() -> bool:
-    return os.environ.get("HEADROOM_CC_SWITCH_RECONCILE", "").strip().lower() in (
+    return os.environ.get("LEGROOM_CC_SWITCH_RECONCILE", "").strip().lower() in (
         "1",
         "true",
         "yes",
@@ -71,7 +71,7 @@ def reconciler_enabled() -> bool:
 
 
 def _route_official() -> bool:
-    return os.environ.get("HEADROOM_CC_SWITCH_ROUTE_OFFICIAL", "").strip().lower() in (
+    return os.environ.get("LEGROOM_CC_SWITCH_ROUTE_OFFICIAL", "").strip().lower() in (
         "1",
         "true",
         "yes",
@@ -80,7 +80,7 @@ def _route_official() -> bool:
 
 
 class CCSwitchReconciler:
-    """Polls Claude settings.json and keeps Headroom in the path (see module docstring)."""
+    """Polls Claude settings.json and keeps Legroom in the path (see module docstring)."""
 
     def __init__(
         self,
@@ -160,7 +160,7 @@ class CCSwitchReconciler:
                 env["ANTHROPIC_BASE_URL"] = self.proxy_url
                 data["env"] = env
                 self._atomic_write(data)
-                logger.info("cc-switch reconciler: official -> route via Headroom")
+                logger.info("cc-switch reconciler: official -> route via Legroom")
                 return True
             return False  # leave official direct (default, safe for OAuth)
 
@@ -180,7 +180,7 @@ class CCSwitchReconciler:
         return True
 
     def _atomic_write(self, data: dict) -> None:
-        # Per-process temp name: multiple Headroom processes reconciling the
+        # Per-process temp name: multiple Legroom processes reconciling the
         # same settings.json must not clobber each other's temp file.
         tmp = self.path.with_name(f"{self.path.name}.{os.getpid()}.hrtmp")
         tmp.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
