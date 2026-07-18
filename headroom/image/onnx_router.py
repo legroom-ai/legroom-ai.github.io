@@ -5,8 +5,8 @@ and image analysis (SigLIP), matching the accuracy of the PyTorch
 versions at 15x smaller size and no GPU requirement.
 
 Models auto-downloaded from HuggingFace on first use:
-- chopratejas/technique-router-onnx (~32 MB)
-- chopratejas/siglip-image-encoder-onnx (~95 MB)
+- ghaliba3/technique-router-onnx (~32 MB)
+- ghaliba3/siglip-image-encoder-onnx (~95 MB)
 """
 
 from __future__ import annotations
@@ -24,8 +24,8 @@ from headroom.onnx_runtime import create_cpu_session_options, hf_hub_download_lo
 
 logger = logging.getLogger(__name__)
 
-_TECHNIQUE_ROUTER_REPO = "chopratejas/technique-router-onnx"
-_SIGLIP_ENCODER_REPO = "chopratejas/siglip-image-encoder-onnx"
+_TECHNIQUE_ROUTER_REPO = "ghaliba3/technique-router-onnx"
+_SIGLIP_ENCODER_REPO = "ghaliba3/siglip-image-encoder-onnx"
 
 
 # ImageSignals, RouteDecision, Technique imported from trained_router

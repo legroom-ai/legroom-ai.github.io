@@ -608,7 +608,7 @@ def install_apply(
 )
 @click.option(
     "--image",
-    default="ghcr.io/chopratejas/headroom:latest",
+    default="ghcr.io/ghaliba3/headroom:latest",
     show_default=True,
     help="Docker image to use when Docker is selected.",
 )

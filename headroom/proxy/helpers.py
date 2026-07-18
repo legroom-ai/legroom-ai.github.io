@@ -944,7 +944,7 @@ def _get_image_compressor():
         # the optional image stack is importable.
         compressor = ImageCompressor()
         if _image_compressor_available is None:
-            logger.info("Image compression enabled (model: chopratejas/technique-router)")
+            logger.info("Image compression enabled (model: ghaliba3/technique-router)")
         _image_compressor_available = True
         return compressor
     except ImportError as e:
@@ -2770,7 +2770,7 @@ def format_tool_search_disabled_hint(tools: list[Any]) -> str:
         "ENABLE_TOOL_SEARCH is unset with a custom ANTHROPIC_BASE_URL. Set "
         "ENABLE_TOOL_SEARCH=true (or auto) to keep on-demand tool loading active, "
         "or launch via `headroom wrap claude` (which sets it automatically). "
-        "See https://github.com/chopratejas/headroom/issues/746"
+        "See https://github.com/ghaliba3/headroom/issues/746"
     )
 
 

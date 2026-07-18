@@ -50,7 +50,7 @@ class MLModelConfig:
             Alternative: en_core_web_md (~120MB, more accurate)
 
         technique_router: Model for image optimization routing.
-            Default: chopratejas/technique-router (~100MB)
+            Default: ghaliba3/technique-router (~100MB)
     """
 
     # Text Embeddings (SentenceTransformer)
@@ -70,7 +70,7 @@ class MLModelConfig:
     # Image Technique Router
     technique_router: str = field(
         default_factory=lambda: os.environ.get(
-            "HEADROOM_TECHNIQUE_ROUTER", "chopratejas/technique-router"
+            "HEADROOM_TECHNIQUE_ROUTER", "ghaliba3/technique-router"
         )
     )
 
@@ -91,7 +91,7 @@ class MLModelConfig:
             "en_core_web_md": 120,
             "en_core_web_lg": 560,
             # Technique Router
-            "chopratejas/technique-router": 100,
+            "ghaliba3/technique-router": 100,
         }
     )
 

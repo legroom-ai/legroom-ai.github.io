@@ -912,7 +912,7 @@ Compressed request → LLM → Response
 
 A fine-tuned MiniLM classifier hosted on HuggingFace:
 
-- **Model**: `chopratejas/technique-router`
+- **Model**: `ghaliba3/technique-router`
 - **Size**: ~128MB (downloaded once, cached)
 - **Accuracy**: 93.7% on 1,157 training examples
 - **Latency**: ~10ms CPU, ~2ms GPU

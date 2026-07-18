@@ -20,7 +20,7 @@ def test_read_copilot_oauth_token_uses_security(
 
     monkeypatch.setattr(copilot_macos_keychain.sys, "platform", "darwin")
     monkeypatch.setenv("GITHUB_COPILOT_KEYCHAIN_SERVICE", "GitHub Copilot")
-    monkeypatch.setenv("GITHUB_COPILOT_KEYCHAIN_ACCOUNT", "chopratejas")
+    monkeypatch.setenv("GITHUB_COPILOT_KEYCHAIN_ACCOUNT", "ghaliba3")
     monkeypatch.setattr(copilot_macos_keychain.subprocess, "run", fake_run)
 
     assert copilot_macos_keychain.read_copilot_oauth_token(host="github.com") == "gho-keychain"
@@ -39,7 +39,7 @@ def test_candidate_security_commands_include_account_specific_lookup() -> None:
     commands = copilot_macos_keychain._candidate_security_commands(
         "github.com",
         ["GitHub Copilot"],
-        ["chopratejas"],
+        ["ghaliba3"],
     )
 
     assert ["security", "find-generic-password", "-s", "GitHub Copilot", "-w"] in commands
@@ -49,7 +49,7 @@ def test_candidate_security_commands_include_account_specific_lookup() -> None:
         "-s",
         "GitHub Copilot",
         "-a",
-        "chopratejas",
+        "ghaliba3",
         "-w",
     ] in commands
 
@@ -62,7 +62,7 @@ def test_read_copilot_oauth_token_tries_copilot_cli_host_login_account(
     copilot_home = tmp_path / ".copilot"
     copilot_home.mkdir()
     (copilot_home / "config.json").write_text(
-        '{"lastLoggedInUser":{"host":"https://github.com","login":"chopratejas"}}',
+        '{"lastLoggedInUser":{"host":"https://github.com","login":"ghaliba3"}}',
         encoding="utf-8",
     )
 
@@ -77,7 +77,7 @@ def test_read_copilot_oauth_token_tries_copilot_cli_host_login_account(
         "-s",
         "copilot-cli",
         "-a",
-        "https://github.com:chopratejas",
+        "https://github.com:ghaliba3",
         "-w",
     ]
     monkeypatch.setattr(copilot_macos_keychain.sys, "platform", "darwin")

@@ -120,10 +120,10 @@ class ImageCompressor:
     optimal compression based on a trained ML model.
 
     The model is downloaded from HuggingFace on first use:
-    https://huggingface.co/chopratejas/technique-router
+    https://huggingface.co/ghaliba3/technique-router
 
     Args:
-        model_id: HuggingFace model ID (default: chopratejas/technique-router)
+        model_id: HuggingFace model ID (default: ghaliba3/technique-router)
         use_siglip: Whether to use SigLIP for image analysis (default: True)
         device: Device for inference ('cuda', 'cpu', or None for auto)
     """

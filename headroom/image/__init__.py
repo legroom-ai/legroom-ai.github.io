@@ -25,7 +25,7 @@ The compression technique is selected by a trained ML model:
 - CROP: Region-specific → 50-90% savings (extract region)
 - TRANSCODE: Text extraction → 99% savings (OCR to text)
 
-Model: https://huggingface.co/chopratejas/technique-router
+Model: https://huggingface.co/ghaliba3/technique-router
 """
 
 from .compressor import (

@@ -10,7 +10,7 @@ proxy runs Kompress text compression on ONNX Runtime alone. The loader
 ``_OnnxModel``, which expects a single graph output named ``final_scores``
 (per-token importance in ``[0, 1]``, kept when ``> 0.5``).
 
-``chopratejas/kompress-v2-base`` ships only PyTorch weights
+``ghaliba3/kompress-v2-base`` ships only PyTorch weights
 (``model.safetensors`` / ``merged.pt``) — no ONNX. So pointing Headroom at v2
 without an ONNX export would silently force the heavier ``[ml]`` (torch) path
 on every proxy install. This script reproduces v1's exact ONNX contract from
@@ -27,10 +27,10 @@ Requires
 Usage
 -----
     # Convert + verify locally (writes onnx/kompress-int8.onnx):
-    python scripts/export_kompress_v2_onnx.py --model-id chopratejas/kompress-v2-base
+    python scripts/export_kompress_v2_onnx.py --model-id ghaliba3/kompress-v2-base
 
     # Convert, verify, and upload back to the HF repo (needs `huggingface-cli login`):
-    python scripts/export_kompress_v2_onnx.py --model-id chopratejas/kompress-v2-base --upload
+    python scripts/export_kompress_v2_onnx.py --model-id ghaliba3/kompress-v2-base --upload
 """
 
 from __future__ import annotations
@@ -45,7 +45,7 @@ logger = logging.getLogger("export_kompress_v2_onnx")
 
 # ModernBERT encoder + tokenizer base (must match training and the loader).
 BASE_MODEL = "answerdotai/ModernBERT-base"
-DEFAULT_MODEL_ID = "chopratejas/kompress-v2-base"
+DEFAULT_MODEL_ID = "ghaliba3/kompress-v2-base"
 
 
 def _build_core(model_id: str):

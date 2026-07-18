@@ -267,7 +267,7 @@ class MLModelRegistry:
         """Get shared technique router model and tokenizer.
 
         Args:
-            model_path: Path to model (default: chopratejas/technique-router).
+            model_path: Path to model (default: ghaliba3/technique-router).
             device: Device to use. Auto-detected if None.
 
         Returns:

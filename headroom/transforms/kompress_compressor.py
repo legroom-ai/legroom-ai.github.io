@@ -1,6 +1,6 @@
 """Kompress: ModernBERT token compressor for structured tool outputs.
 
-Auto-downloads the model from HuggingFace (chopratejas/kompress-v2-base)
+Auto-downloads the model from HuggingFace (ghaliba3/kompress-v2-base)
 on first use.
 
 Requires the [ml] extra: pip install headroom-ai[ml]
@@ -38,7 +38,7 @@ from .base import Transform
 logger = logging.getLogger(__name__)
 
 # Default HuggingFace model ID
-HF_MODEL_ID = "chopratejas/kompress-v2-base"
+HF_MODEL_ID = "ghaliba3/kompress-v2-base"
 
 # Tokens matching this pattern are always kept regardless of model score.
 # Numbers, ALLCAPS identifiers, dotted paths, unix paths, file extensions,
@@ -987,7 +987,7 @@ class KompressConfig:
     Example — financial documents::
 
         KompressConfig(
-            model_id="chopratejas/kompress-finance",
+            model_id="ghaliba3/kompress-finance",
             chunk_words=50,
             score_threshold=0.5,
         )

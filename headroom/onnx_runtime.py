@@ -52,10 +52,10 @@ def cpu_arena_enabled() -> bool:
 # HEADROOM_HF_PIN=off to bypass pinning (e.g. when intentionally evaluating a
 # newer model revision). To upgrade a model, bump its SHA here deliberately.
 _PINNED_REVISIONS: dict[str, str] = {
-    # chopratejas/kompress-v2-base @ 2026-06-10
-    "chopratejas/kompress-v2-base": "b1563631b35bfdcee37587ad530147497d820d4c",
-    "chopratejas/technique-router-onnx": "27b0b4bfa510a1cff66d888072c0b807082721a8",
-    "chopratejas/siglip-image-encoder-onnx": "d0a9fbd66d4bd8c761bff592d44831f7c2ae184e",
+    # ghaliba3/kompress-v2-base @ 2026-06-10
+    "ghaliba3/kompress-v2-base": "b1563631b35bfdcee37587ad530147497d820d4c",
+    "ghaliba3/technique-router-onnx": "27b0b4bfa510a1cff66d888072c0b807082721a8",
+    "ghaliba3/siglip-image-encoder-onnx": "d0a9fbd66d4bd8c761bff592d44831f7c2ae184e",
     # Third-party repo — pinning matters most here.
     "Qdrant/all-MiniLM-L6-v2-onnx": "5f1b8cd78bc4fb444dd171e59b18f3a3af89a079",
 }

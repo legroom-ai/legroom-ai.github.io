@@ -3143,7 +3143,7 @@ class ContentRouter(Transform):
         """Get KompressCompressor (lazy load). Downloads from HuggingFace on first use.
 
         Respects runtime kompress_model kwarg:
-        - None: use default (chopratejas/kompress-v2-base) — cached on self
+        - None: use default (ghaliba3/kompress-v2-base) — cached on self
         - "disabled": return None (skip ML compression entirely)
         - any model ID string: create compressor with that model
           (model weights are cached at module level in kompress_compressor.py,
@@ -3232,7 +3232,7 @@ class ContentRouter(Transform):
         """Create an ImageCompressor for one optimization pass.
 
         The ImageCompressor handles image token compression using:
-        - Trained MiniLM classifier from HuggingFace (chopratejas/technique-router)
+        - Trained MiniLM classifier from HuggingFace (ghaliba3/technique-router)
         - SigLIP for image analysis
         - Provider-specific compression (OpenAI detail, Anthropic/Google resize)
         """
@@ -3257,7 +3257,7 @@ class ContentRouter(Transform):
         directly or as part of the transform pipeline.
 
         Uses ImageCompressor with trained MiniLM router from HuggingFace
-        (chopratejas/technique-router) + SigLIP for image analysis.
+        (ghaliba3/technique-router) + SigLIP for image analysis.
 
         Args:
             messages: Messages potentially containing images.

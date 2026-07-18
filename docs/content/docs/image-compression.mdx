@@ -26,7 +26,7 @@ User uploads image + asks question
    Compressed request to LLM
 ```
 
-The router is a fine-tuned MiniLM classifier (`chopratejas/technique-router` on HuggingFace) with 93.7% accuracy across 1,157 training examples.
+The router is a fine-tuned MiniLM classifier (`ghaliba3/technique-router` on HuggingFace) with 93.7% accuracy across 1,157 training examples.
 
 ## Compression Techniques
 
@@ -121,7 +121,7 @@ The compressor adapts its strategy per provider:
 from headroom.image import ImageCompressor
 
 compressor = ImageCompressor(
-    model_id="chopratejas/technique-router",  # HuggingFace model
+    model_id="ghaliba3/technique-router",  # HuggingFace model
     use_siglip=True,   # Enable image analysis
     device="cuda",     # Use GPU if available (auto, cuda, cpu, mps)
 )
